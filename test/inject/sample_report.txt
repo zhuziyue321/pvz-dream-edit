@@ -1,0 +1,8 @@
+================ PVZ AUTOPILOT ================
+时间: 2026-09-30T00:46:11
+场景脚本: res://test/inject/scenario.gd
+引擎: 4.6.2-stable (official)
+无头模式: true
+
+已关闭自动存档（避免日志噪声）
+看门狗: 180 秒

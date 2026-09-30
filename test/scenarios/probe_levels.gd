@@ -1,0 +1,45 @@
+extends RefCounted
+## 临时探针：打印每个关卡资源的「地图/玩法开关」实际取值。
+## 用来核对 .tres 里写成 null 的属性到底落到了什么值（nil 赋值会退回脚本默认值）。
+
+
+func run(a) -> void:
+	var paths := _find("res://resources/level_date_resource")
+	paths.sort()
+	a.log("[LVL] 共 %d 个关卡资源" % paths.size())
+	for p in paths:
+		var para: Resource = load(p)
+		if para == null:
+			a.log("[LVL] !! 加载失败 " + p)
+			continue
+		a.log("[LVL] %s" % p.replace("res://resources/level_date_resource/", ""))
+		a.log("   sences=%s BG=%s round=%s monster=%s card=%s pot=%s potmode=%s maxwave=%s multy=%s start_sun=%s" % [
+			str(para.game_sences), str(para.game_BG), str(para.game_round), str(para.monster_mode),
+			str(para.card_mode), str(para.is_pot_mode), str(para.pot_mode), str(para.max_wave),
+			str(para.zombie_multy), str(para.start_sun)])
+		a.log("   column=%s bowling=%s bowling_col=%s hammer=%s seed_rain=%s mini_zombie=%s zombie_mode=%s" % [
+			str(para.is_mode_column), str(para.is_bowling_stripe), str(para.plant_cell_col_j),
+			str(para.is_hammer), str(para.is_seed_rain), str(para.is_mini_zombie), str(para.is_zombie_mode)])
+		a.log("   day=%s daysun=%s mower=%s canhome=%s choose=%s show=%s fog=%s rain=%s preplant=%d" % [
+			str(para.is_day), str(para.is_day_sun), str(para.is_lawn_mover), str(para.is_zombie_can_home),
+			str(para.can_choosed_card), str(para.look_show_zombie), str(para.is_fog), str(para.is_rain),
+			para.all_pre_plant_data.size()])
+	a.log("[LVL] 结束")
+	a.quit_game()
+
+
+func _find(dir_path: String) -> Array[String]:
+	var out: Array[String] = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return out
+	dir.list_dir_begin()
+	var n := dir.get_next()
+	while n != "":
+		if dir.current_is_dir():
+			out.append_array(_find(dir_path + "/" + n))
+		elif n.ends_with(".tres"):
+			out.append(dir_path + "/" + n)
+		n = dir.get_next()
+	dir.list_dir_end()
+	return out

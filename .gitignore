@@ -1,0 +1,24 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+.vscode
+assets
+
+# 调试通道产生的日志（本地排查用，不要提交）
+debug_channel_log.txt
+debug_channel_auto_log.txt
+
+# 会话里随手写的补丁/跑批临时脚本（清理时直接删）
+.dsh_*
+
+# autopilot 本地跑批留下的临时物（用户目录镜像、重定向输出、注入报告）
+test/_userdir/
+test/_ud_*/
+test/_run_out.txt
+test/_probe_version.txt
+test/inject/report.txt
+
+# agents
+agents.state.json
+.openagentpack/versions/
+.env

@@ -1,0 +1,167 @@
+extends RefCounted
+## 白天 1-1 全流程：主菜单 -> 选关 -> 选土豆地雷 -> choosed_card_start_game()
+##                -> 点战斗卡 -> 种在 (1,1) -> 盯梢到僵尸被炸
+##
+## 坐标纪律（2026-09-30 定位到的根因，见 docs/AI调试通道.md 第五节）：
+## 关卡里有 Camera2D，画布变换原点不是 0，所以 Control.get_global_rect() 得到的
+## 并不是屏幕上能点到的位置。所有点击一律交给 autopilot 的 screen_center()。
+
+const GRID := "/root/MainGame/CanvasLayerCardSlot/CardSlotRoot/CardSlotNorm/CardSlotCandidate/AllCardPage/GridContainerPlant"
+const CARD_LIST := "/root/MainGame/CanvasLayerCardSlot/CardSlotRoot/CardSlotContainer/CardSlotBattle/CardUiList"
+## 目标格：第 2 行第 2 列（row_col = (1,1)，即 PlantCell8）
+const TARGET_ROW := 1
+const TARGET_COL := 1
+
+
+func _sun() -> int:
+	return Global.main_game.card_manager.card_slot_battle.sun_value
+
+
+func _cell_plants(row: int, col: int) -> Array[String]:
+	var out: Array[String] = []
+	var pcm = Global.main_game.plant_cell_manager
+	if pcm == null or pcm.all_plant_cells.is_empty():
+		return out
+	var pc = pcm.all_plant_cells[row][col]
+	if not is_instance_valid(pc):
+		return out
+	for k in pc.plant_in_cell:
+		var p = pc.plant_in_cell[k]
+		if is_instance_valid(p):
+			out.append(str(p.plant_type))
+	return out
+
+
+func run(a) -> void:
+	a.log("STEP0 canvas_origin=" + str(a.canvas_origin()) + "（非 0 就说明关卡相机在动，"
+		+ "所有 rect 中心都必须经过 screen_center 换算）")
+
+	## ---- 1 主菜单 ----
+	a.log("STEP1 主菜单：等按钮滑入动画结束")
+	await a.wait_stable("/root/StartMenu/BG_Right/Menu/Button1", 8.0)
+	await a.click_first("Menu/Button1")
+	if not await a.wait_scene("choose_level", 12.0):
+		a.log("STEP1 失败: 没进选关")
+		a.finish()
+		return
+
+	## ---- 2 选关 ----
+	var gcl: Node = a.get_node_or_null("/root/ChooseLevel/AllPage/GridContainer")
+	if gcl == null:
+		a.log("STEP2 失败: 没有选关容器")
+		a.finish()
+		return
+	var chosen := ""
+	for ch in gcl.get_children():
+		var nm := str(ch.name)
+		if not nm.begins_with("ChooseLevelButton"):
+			continue
+		var btn := ch.get_node_or_null("TextureButton")
+		if btn == null or (btn as BaseButton).disabled:
+			continue
+		if nm == "ChooseLevelButton":
+			## 第 1 关没有编号后缀，不要按编号反拼路径
+			chosen = nm
+			break
+		if chosen == "":
+			chosen = nm
+	a.log("STEP2 选中关卡节点 = " + chosen)
+	if chosen == "":
+		a.log("STEP2 失败: 没有可用关卡")
+		a.finish()
+		return
+	await a.press_first(chosen + "/TextureButton")
+	if not await a.wait_scene("main_game", 10.0):
+		a.log("STEP2 失败: 没进关卡")
+		a.finish()
+		return
+	await a.wait(8.0)
+
+	## ---- 3 选卡（土豆地雷 = Card5）----
+	var g: Node = a.get_node_or_null(GRID)
+	var potato: Node = null
+	if g != null:
+		for ph in g.get_children():
+			var cc := ph.get_node_or_null("CardCandidateContainer")
+			if cc == null:
+				continue
+			for c in cc.get_children():
+				if str(c.name) == "Card5":
+					potato = cc
+	if potato == null:
+		a.log("STEP3 失败: 没找到 Card5")
+		a.finish()
+		return
+	a.log("STEP3 土豆地雷占位 = " + str(potato.get_path()))
+	await a.click_node(str(potato.get_path()))
+	await a.wait(0.6)
+
+	## 必须走 choosed_card_start_game()：它会先收起选卡面板再 main_game_start()。
+	## 直接调 main_game_start() 是旁路，选卡面板会残留在屏幕上（并且继续吃掉草坪的点击）。
+	Global.main_game.choosed_card_start_game()
+	await a.wait(8.0)
+	if Global.main_game.main_game_progress != 3:
+		a.log("STEP4 失败: 阶段=%d，没到 MAIN_GAME(3)" % Global.main_game.main_game_progress)
+		a.finish()
+		return
+	var sun0 := _sun()
+	a.log("STEP4 阶段=3 卡槽=%d 阳光=%d" % [
+		Global.main_game.card_manager.card_slot_battle.curr_cards.size(), sun0])
+	a.log("STEP4b 进关卡后 canvas_origin=%s（这就是草地不能直接用 rect 中心的原因）"
+		% str(a.canvas_origin()))
+
+	## ---- 4 点战斗卡槽第一张卡 ----
+	var cl: Node = a.get_node_or_null(CARD_LIST)
+	var card: Node = null
+	if cl != null:
+		for slot in cl.get_children():
+			for c in slot.get_children():
+				if c is Control and (c as Control).is_visible_in_tree() and c.get("sun_cost") != null:
+					card = c
+					break
+			if card != null:
+				break
+	if card == null:
+		a.log("STEP5 失败: 卡槽没卡")
+		a.finish()
+		return
+	var cost: int = int(card.get("sun_cost"))
+	a.log("STEP5 战斗卡 = %s 价格=%d" % [str(card.get_path()), cost])
+	await a.click_node(str(card.get_path()))
+	await a.wait(0.8)
+	a.log("STEP5b 点卡后 手持类型=%d 手持中=%s 阳光=%d（点卡不扣阳光）" % [
+		Global.main_game.hand_manager.get_curr_hand_type(),
+		str(Global.main_game.hand_manager.is_holding_hand()), _sun()])
+
+	## ---- 5 种在 (1,1) ----
+	var before := _cell_plants(TARGET_ROW, TARGET_COL)
+	a.log("STEP6 种植前 row_col=(%d,%d) 植物=%s 阳光=%d" % [
+		TARGET_ROW, TARGET_COL, str(before), _sun()])
+	await a.click_plant_cell(TARGET_ROW, TARGET_COL)
+	await a.wait(1.0)
+	var after := _cell_plants(TARGET_ROW, TARGET_COL)
+	var sun_end := _sun()
+	var planted := after.size() > before.size()
+	var charged := sun_end <= sun0 - cost
+	a.log("STEP7 种植后 植物=%s 阳光=%d (种植=%s 扣费=%s)" % [
+		str(after), sun_end, str(planted), str(charged)])
+	a.log("STEP8 格子权威坐标: " + a.describe_plant_cells())
+	if planted and charged:
+		a.log("[PLANT] result=PASS 种下 %s，阳光 %d -> %d" % [str(after), sun0, sun_end])
+	else:
+		a.log("[PLANT] result=FAIL 种植=%s 扣费=%s" % [str(planted), str(charged)])
+		var tb: Control = a.get_node_or_null("/root/MainGame/PlantCellsRoot/PlantCellsRow2/PlantCell8/Button")
+		if tb != null:
+			var tp: Vector2 = a.screen_center(tb)
+			await a.probe_hover(tp.x, tp.y)
+	await a.dump("种下之后")
+
+	## ---- 6 盯梢：等僵尸走到土豆地雷上被炸 ----
+	a.log("")
+	a.log("==== 盯梢（等爆炸）====")
+	var cell_path := "/root/MainGame/PlantCellsRoot/PlantCellsRow%d/PlantCell%d" % [
+		TARGET_ROW + 1, 9 - TARGET_COL]
+	for i in range(90):
+		await a.observe("盯梢", cell_path)
+		await a.wait(1.0)
+	a.finish()
