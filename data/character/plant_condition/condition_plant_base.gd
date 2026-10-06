@@ -30,11 +30,11 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.
 	## 普通植物非紫卡
 	elif not is_purple_card:
 		## 当前可以种植普通植物 and 当前格子地形符合 and 当前格子对应的植物位置为空
-		if plant_cell.can_common_plant and plant_condition & plant_cell.curr_condition and not is_instance_valid(plant_cell.plant_in_cell[place_plant_in_cell]):
+		if plant_cell.can_common_plant and plant_condition & plant_cell.curr_condition and not is_instance_valid(plant_cell.get_plant(place_plant_in_cell)):
 			## 如果是壳类植物,若当前植物格子中Norm为玉米加农炮
 			if place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Shell \
-			and is_instance_valid(plant_cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm])\
-			and plant_cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm].plant_type == CharacterRegistry.PlantType.P048CobCannon:
+			and is_instance_valid(plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm))\
+			and plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm).plant_type == CharacterRegistry.PlantType.P048CobCannon:
 				return false
 
 			return true
@@ -63,13 +63,13 @@ func get_preplant_purple(plant_cell:PlantCell, curr_plant_type:CharacterRegistry
 	## 当前格子存在前置种植植物
 	var condition_precondition_plant :ResourcePlantCondition = Global.character_registry.get_plant_info(precondition_plant, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	var place_precondition_plant:CharacterRegistry.PlacePlantInCell = condition_precondition_plant.place_plant_in_cell
-	if is_instance_valid(plant_cell.plant_in_cell[place_precondition_plant]) and\
-	plant_cell.plant_in_cell[place_precondition_plant].plant_type == precondition_plant:
+	if is_instance_valid(plant_cell.get_plant(place_precondition_plant)) and\
+	plant_cell.get_plant(place_precondition_plant).plant_type == precondition_plant:
 		## 如果种植位置不相同,并且当前植物格子已有紫卡植物位置的植物
-		if place_precondition_plant != place_plant_in_cell and is_instance_valid(plant_cell.plant_in_cell[place_plant_in_cell]):
+		if place_precondition_plant != place_plant_in_cell and is_instance_valid(plant_cell.get_plant(place_plant_in_cell)):
 			return null
 		else:
-			return plant_cell.plant_in_cell[place_precondition_plant]
+			return plant_cell.get_plant(place_precondition_plant)
 	else:
 		return null
 
@@ -87,7 +87,7 @@ func get_all_preplant_purple(all_plant_cells: Array[Array], curr_plant_type: Cha
 
 ## 一般特殊植物(不能有同一位置植物)种植函数判断是否可以种植
 func judge_special_plants_condition(plant_cell:PlantCell) -> bool:
-	if is_instance_valid(plant_cell.plant_in_cell[place_plant_in_cell]):
+	if is_instance_valid(plant_cell.get_plant(place_plant_in_cell)):
 		return false
 	else:
 		return _judge_special_plants_condition(plant_cell)

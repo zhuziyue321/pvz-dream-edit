@@ -7,8 +7,8 @@ func _judge_special_plants_condition(plant_cell:PlantCell) -> bool:
 	## 当前格子满足种植地形
 	if plant_condition & plant_cell.curr_condition:
 		## 当前格子对应位置没有被种植
-		if plant_cell.plant_in_cell[place_plant_in_cell] == null:
+		if plant_cell.get_plant(place_plant_in_cell) == null:
 			## 睡莲要求当前格子主体位置未被种植
-			if plant_cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm] == null:
+			if plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm) == null:
 				return true
 	return false
