@@ -6,7 +6,7 @@ class_name ZombieDeathBomb
 
 
 func activate_it():
-	reparent(owner.get_parent())
+	reparent(owner.get_sibling_layer())
 	gpu_particles_2d.emitting = true
 	gpu_particles_2d_2.emitting = true
 

@@ -5,7 +5,7 @@ class_name BrainBody
 ## 角色被压扁时死亡消失,copy body保留两秒后消失
 func be_flattened_body():
 	var body_copy = duplicate()
-	owner.get_parent().add_child(body_copy)
+	owner.get_sibling_layer().add_child(body_copy)
 	body_copy.copy_be_flattened()
 	body_copy.global_position = global_position
 

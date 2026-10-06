@@ -6,8 +6,8 @@ class_name CharredComponent
 
 ## 播放灰烬动画,将灰烬组件从角色本体中移动到角色父节点
 func play_charred_anim():
-	#GlobalUtils.child_node_change_parent(self, owner_character.get_parent())
-	reparent(owner_character.get_parent())
+	#GlobalUtils.child_node_change_parent(self, owner_character.get_sibling_layer())
+	reparent(owner_character.get_sibling_layer())
 	visible = true
 
 

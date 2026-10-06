@@ -25,8 +25,8 @@ func activate_it():
 	is_activate = true
 	visible = true
 	explode()
-	#GlobalUtils.child_node_change_parent(self, owner.get_parent())
-	reparent(owner.get_parent())
+	#GlobalUtils.child_node_change_parent(self, owner.get_sibling_layer())
+	reparent(owner.get_sibling_layer())
 	gpu_particles_2d.emitting = true
 	gpu_particles_2d_2.emitting = true
 	await gpu_particles_2d.finished

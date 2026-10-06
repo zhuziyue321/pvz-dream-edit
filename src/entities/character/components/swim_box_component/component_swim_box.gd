@@ -33,14 +33,14 @@ func _on_area_2d_area_exited(area: Area2D) -> void:
 func appear_splash():
 	## 水花
 	var splash = SceneRegistry.SPLASH.instantiate()
-	splash.position = shadow.global_position - owner.get_parent().global_position + Vector2(0, 15)
-	owner.get_parent().add_child.call_deferred(splash)
+	splash.position = shadow.global_position - owner.get_sibling_layer().global_position + Vector2(0, 15)
+	owner.get_sibling_layer().add_child.call_deferred(splash)
 
 ## 特殊位置水花
 func appear_splash_special_pos():
 	## 水花
 	var splash = SceneRegistry.SPLASH.instantiate()
-	splash.position = special_splash_pos_node.global_position - owner.get_parent().global_position + Vector2(0, 15)
+	splash.position = special_splash_pos_node.global_position - owner.get_sibling_layer().global_position + Vector2(0, 15)
 
-	owner.get_parent().add_child.call_deferred(splash)
+	owner.get_sibling_layer().add_child.call_deferred(splash)
 
