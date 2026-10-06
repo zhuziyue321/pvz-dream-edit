@@ -2,7 +2,7 @@ extends RefCounted
 ## 白天 1-1 全流程：主菜单 -> 选关 -> 选土豆地雷 -> choosed_card_start_game()
 ##                -> 点战斗卡 -> 种在 (1,1) -> 盯梢到僵尸被炸
 ##
-## 坐标纪律（2026-09-30 定位到的根因，见 docs/AI调试通道.md 第五节）：
+## 坐标纪律（2026-09-30 定位到的根因，见 docs/AI调试通道.md 第六节）：
 ## 关卡里有 Camera2D，画布变换原点不是 0，所以 Control.get_global_rect() 得到的
 ## 并不是屏幕上能点到的位置。所有点击一律交给 autopilot 的 screen_center()。
 

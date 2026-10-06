@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="ResourceMapData" format=3 uid="uid://0lt6771cu5g"]
+
+[ext_resource type="Script" uid="uid://bjr52bp0ry7u" path="res://data/map/map_row_data.gd" id="1_dafkd"]
+[ext_resource type="Script" uid="uid://bdkqk3y2isyir" path="res://data/map/map_data.gd" id="2_gg6a6"]
+[ext_resource type="Script" uid="uid://ssxxwnoaav3a" path="res://src/world/background/map_bg_anim_front.gd" id="3_bgfront"]
+[ext_resource type="Texture2D" uid="uid://bgv7ax50hda8y" path="res://assets/image/background/background1unsodded.jpg" id="4_unsod"]
+[ext_resource type="Texture2D" uid="uid://gdgupvmdvt1x" path="res://assets/image/background/sod1row.png" id="5_sod"]
+[ext_resource type="PackedScene" path="res://src/world/background/main_game_bg_front_5row.tscn" id="8_bgscene"]
+
+[sub_resource type="Resource" id="Resource_row0"]
+script = ExtResource("1_dafkd")
+plant_cell_type = 3
+zombie_row_type = 3
+row_y = 82.0
+col_dx = null
+col_dy = null
+zombie_create_global_pos = Vector2(950, 166)
+have_lawn_mover = false
+
+[sub_resource type="Resource" id="Resource_row1"]
+script = ExtResource("1_dafkd")
+plant_cell_type = 3
+zombie_row_type = 3
+row_y = 182.0
+col_dx = null
+col_dy = null
+zombie_create_global_pos = Vector2(950, 267)
+have_lawn_mover = false
+
+[sub_resource type="Resource" id="Resource_row2"]
+script = ExtResource("1_dafkd")
+row_y = 282.0
+col_dx = null
+col_dy = null
+zombie_create_global_pos = Vector2(950, 363)
+
+[sub_resource type="Resource" id="Resource_row3"]
+script = ExtResource("1_dafkd")
+plant_cell_type = 3
+zombie_row_type = 3
+row_y = 381.0
+col_dx = null
+col_dy = null
+zombie_create_global_pos = Vector2(950, 454)
+have_lawn_mover = false
+
+[sub_resource type="Resource" id="Resource_row4"]
+script = ExtResource("1_dafkd")
+plant_cell_type = 3
+zombie_row_type = 3
+row_y = 478.0
+col_dx = null
+col_dy = null
+zombie_create_global_pos = Vector2(950, 554)
+have_lawn_mover = false
+
+[resource]
+script = ExtResource("2_gg6a6")
+display_name = "front1row（1-1 专用 5 行草坪，只有中间 1 行有草皮）"
+map_bg_script = ExtResource("3_bgfront")
+map_bg_scene = ExtResource("8_bgscene")
+bg_base_texture = ExtResource("4_unsod")
+bg_sod_overlay = ExtResource("5_sod")
+col_x = PackedFloat32Array(45, 124, 204, 284, 365, 446, 526, 605, 686)
+col_width = PackedFloat32Array(78, 78, 78, 78, 78, 78, 78, 78, 78)
+rows = Array[ExtResource("1_dafkd")]([SubResource("Resource_row0"), SubResource("Resource_row1"), SubResource("Resource_row2"), SubResource("Resource_row3"), SubResource("Resource_row4")])

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_5b16"]
+
+[resource]
+script = ExtResource("1_5b16")
+text = "我讨厌这些糊涂的飞贼僵尸!!!"
+is_crazy = true

@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## 机器可读汇总：最后一行 [INIT] result=PASS|FAIL failed=<n>
 
-const LEVEL := "res://resources/level_date_resource/mode_adventure/adventure_01_01.tres"
+const LEVEL := "res://src/levels/mode_adventure/adventure_01_01.gd"
 
 var _failed := 0
 
@@ -36,7 +36,7 @@ func run(a) -> void:
 #region 关卡准备
 
 func _boot(a) -> bool:
-	var para: Resource = load(LEVEL)
+	var para: Resource = (load(LEVEL) as GDScript).new()
 	if para == null:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
@@ -48,7 +48,9 @@ func _boot(a) -> bool:
 	if Global.main_game == null:
 		a.log("!! Global.main_game 为空")
 		return false
-	Global.main_game.main_game_start()
+	## 卡槽被系统自动填满时会跳过选卡直接开始，这里不要重复触发开始流程
+	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		Global.main_game.main_game_start()
 	await a.wait(3.0)
 	return Global.main_game.main_game_progress != null
 

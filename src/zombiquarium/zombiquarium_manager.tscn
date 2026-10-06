@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/zombiquarium/zombiquarium_manager.gd" id="1_mgr"]
+[ext_resource type="Texture2D" uid="uid://dw41vpl3xij30" path="res://assets/image/garden/aquarium1.jpg" id="2_bg"]
+
+[node name="Zombiquarium" type="Node2D"]
+z_as_relative = false
+z_index = 4000
+script = ExtResource("1_mgr")
+
+[node name="Background" type="Sprite2D" parent="."]
+texture = ExtResource("2_bg")
+centered = false
+
+[node name="Pets" type="Node2D" parent="."]
+
+[node name="Brains" type="Node2D" parent="."]
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 12
+
+[node name="Hud" type="Control" parent="UI"]
+
+[node name="AdviceLabel" type="Label" parent="UI/Hud"]
+offset_left = 100.0
+offset_top = 524.0
+offset_right = 700.0
+offset_bottom = 552.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonBuyPet" type="Button" parent="UI/Hud"]
+offset_left = 150.0
+offset_top = 558.0
+offset_right = 350.0
+offset_bottom = 590.0
+
+[node name="ButtonBuyTrophy" type="Button" parent="UI/Hud"]
+offset_left = 450.0
+offset_top = 558.0
+offset_right = 650.0
+offset_bottom = 590.0

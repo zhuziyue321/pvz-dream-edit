@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/items/rake/rake.gd" id="1_rake"]
+[ext_resource type="Texture2D" uid="uid://dqd4aoy81vvxp" path="res://assets/reanim/rake1.png" id="2_rake1"]
+[ext_resource type="Texture2D" uid="uid://begtux3g1oemy" path="res://assets/reanim/rake2.png" id="3_rake2"]
+[ext_resource type="Texture2D" uid="uid://cfddgbnpn1cri" path="res://assets/reanim/rake_handle.png" id="4_handle"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rake"]
+size = Vector2(36, 30)
+
+[node name="Rake" type="Node2D"]
+script = ExtResource("1_rake")
+
+[node name="Body" type="Node2D" parent="."]
+
+[node name="RakeHead" type="Sprite2D" parent="Body"]
+texture = ExtResource("2_rake1")
+
+[node name="RakeHeadHit" type="Sprite2D" parent="Body"]
+visible = false
+texture = ExtResource("3_rake2")
+
+[node name="Handle" type="Node2D" parent="Body"]
+position = Vector2(-47, 7)
+rotation = -1.5707964
+
+[node name="HandleSprite" type="Sprite2D" parent="Body/Handle"]
+texture = ExtResource("4_handle")
+
+[node name="Area2D" type="Area2D" parent="."]
+position = Vector2(0, -14)
+collision_layer = 0
+collision_mask = 513
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_rake")
+
+[connection signal="area_entered" from="Area2D" to="." method="_on_area_entered"]

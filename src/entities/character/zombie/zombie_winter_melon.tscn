@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3 uid="uid://moh5faf5cr2qa"] 
+[ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://ujiovgacmpew0" path="res://src/entities/character/components/zombie_plant_component/component_zombie_plant.gd" id="2_plant"]
+[ext_resource type="Script" uid="uid://n3lx95zcxsds0" path="res://src/entities/character/components/attack_behavior_component/component_attack_zom_botany.gd" id="4_atk"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zomray"]
+size = Vector2(760, 70)
+
+[node name="Zombie043WinterMelonZombie" instance=ExtResource("1_base")]
+zombie_type = 43
+
+[node name="HpComponent" parent="." index="4"]
+max_hp_armor1 = 300
+
+[node name="AttackComponent" parent="." index="6" node_paths=PackedStringArray("markers_2d_bullet")]
+script = ExtResource("4_atk")
+attack_cd = 3
+attack_bullet_type = 15
+markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
+
+[node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="1"]
+
+[node name="DetectComponent" parent="AttackComponent" index="0"]
+
+[node name="Area2d" parent="AttackComponent/DetectComponent" index="0"]
+position = Vector2(-380, -40)
+
+[node name="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2d" index="0"]
+position = Vector2(0, 0)
+shape = SubResource("RectangleShape2D_zomray")
+
+[node name="Marker2D" type="Marker2D" parent="Body/BodyCorrect" index="25"]
+position = Vector2(0, -38)
+
+[node name="ZombiePlantComponent" type="Node2D" parent="." index="13"]
+script = ExtResource("2_plant")
+
+[connection signal="timeout" from="AttackComponent/BulletAttackCdTimer" to="AttackComponent" method="_on_bullet_attack_cd_timer_timeout"]

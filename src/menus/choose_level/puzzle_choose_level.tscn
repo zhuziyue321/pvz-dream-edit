@@ -1,0 +1,318 @@
+[gd_scene load_steps=30 format=3 uid="uid://dgklqsx0f80jh"]
+
+[ext_resource type="Theme" uid="uid://cx302yraw066y" path="res://data/ui/themes/choose_level_theme.tres" id="1_exhd4"]
+[ext_resource type="Script" uid="uid://jru6xfv7g4f1" path="res://src/menus/choose_level/choose_level.gd" id="2_6fnvv"]
+[ext_resource type="Texture2D" uid="uid://bwevuvs5nnwfx" path="res://assets/image/ui/ui_challenge/Challenge_Background.jpg" id="3_fr1af"]
+[ext_resource type="PackedScene" uid="uid://bhjnqm3kqr2fq" path="res://src/menus/choose_level/choose_level_button.tscn" id="4_sq4rf"]
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_10.png" id="301_pot"]
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_11.png" id="302_zombie"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_01.gd" id="5_vh145"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_02.gd" id="9_xfk1d"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_03.gd" id="10_nmcjh"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_04.gd" id="11_ir4ma"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_05.gd" id="12_trlsx"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_06.gd" id="13_rmpky"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_07.gd" id="14_dy8ya"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_08.gd" id="15_b70kq"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_09.gd" id="16_qnaq8"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_pot_10.gd" id="17_2nv74"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_01.gd" id="32_sq4rf"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_02.gd" id="34_5lle5"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_03.gd" id="35_0wo60"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_04.gd" id="36_wa8nq"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_05.gd" id="37_6r68j"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_06.gd" id="38_dfvnb"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_07.gd" id="39_37oen"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_08.gd" id="40_tddj0"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_09.gd" id="42_jf455"]
+[ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_10.gd" id="43_jf455"]
+[ext_resource type="Texture2D" uid="uid://xc3kqag3vqlq" path="res://assets/image/ui/ui_level/Almanac_CloseButton.png" id="30_8h7qg"]
+[ext_resource type="Texture2D" uid="uid://c82uuprowr5d" path="res://assets/image/ui/ui_level/Almanac_CloseButtonHighlight.png" id="31_gpkej"]
+[ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="32_j5lj8"]
+
+[node name="ChooseLevel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_exhd4")
+script = ExtResource("2_6fnvv")
+game_mode = 103
+metadata/_edit_vertical_guides_ = [-68.0]
+
+[node name="BG" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_fr1af")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -67.0
+offset_top = 22.0
+offset_right = 77.0
+offset_bottom = 72.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/outline_size = 8
+theme_override_constants/shadow_outline_size = 6
+theme_override_font_sizes/font_size = 36
+text = "解 谜 模 式"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AllPage" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="GridContainer" type="GridContainer" parent="AllPage"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -365.0
+offset_top = 88.0
+offset_right = 367.0
+offset_bottom = 557.0
+grow_horizontal = 2
+theme_override_constants/h_separation = 53
+theme_override_constants/v_separation = 3
+columns = 5
+
+[node name="ChooseLevelButton" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("5_vh145")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton/TextureButton" index="0"]
+text = "花瓶终结者"
+
+[node name="ChooseLevelButton2" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("9_xfk1d")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton2/TextureButton" index="0"]
+text = "一路向左"
+
+[node name="ChooseLevelButton3" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("10_nmcjh")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton3/TextureButton" index="0"]
+text = "第3个花瓶"
+
+[node name="ChooseLevelButton4" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("11_ir4ma")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton4/TextureButton" index="0"]
+text = "连锁反应"
+
+[node name="ChooseLevelButton5" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("12_trlsx")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton5/TextureButton" index="0"]
+text = "金属狂潮"
+
+[node name="ChooseLevelButton6" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("13_rmpky")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton6/TextureButton" index="0"]
+text = "胆怯的制陶工"
+
+[node name="ChooseLevelButton7" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("14_dy8ya")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton7/TextureButton" index="0"]
+text = "戏法时刻"
+
+[node name="ChooseLevelButton8" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("15_b70kq")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton8/TextureButton" index="0"]
+text = "连锁反应之二"
+
+[node name="ChooseLevelButton9" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("16_qnaq8")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton9/TextureButton" index="0"]
+text = "破坏之王"
+
+[node name="ChooseLevelButton10" parent="AllPage/GridContainer" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("17_2nv74")
+preview_icon = ExtResource("301_pot")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton10/TextureButton" index="0"]
+text = "花瓶终结者（无限）"
+
+[node name="ChooseLevelButton11" parent="AllPage/GridContainer" index="10" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("32_sq4rf")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton11/TextureButton" index="0"]
+text = "僵尸公敌"
+
+[node name="ChooseLevelButton12" parent="AllPage/GridContainer" index="11" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("34_5lle5")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton12/TextureButton" index="0"]
+text = "僵尸公敌2"
+
+[node name="ChooseLevelButton13" parent="AllPage/GridContainer" index="12" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("35_0wo60")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton13/TextureButton" index="0"]
+text = "地道战"
+
+[node name="ChooseLevelButton14" parent="AllPage/GridContainer" index="13" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("36_wa8nq")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton14/TextureButton" index="0"]
+theme_override_font_sizes/font_size = 14
+text = "完全防御"
+
+[node name="ChooseLevelButton15" parent="AllPage/GridContainer" index="14" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("37_6r68j")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton15/TextureButton" index="0"]
+text = "死亡气球"
+
+[node name="ChooseLevelButton16" parent="AllPage/GridContainer" index="15" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("38_dfvnb")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton16/TextureButton" index="0"]
+text = "力拔山河"
+
+[node name="ChooseLevelButton17" parent="AllPage/GridContainer" index="16" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("39_37oen")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton17/TextureButton" index="0"]
+text = "太空舞步"
+
+[node name="ChooseLevelButton18" parent="AllPage/GridContainer" index="17" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("40_tddj0")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton18/TextureButton" index="0"]
+text = "飞檐走壁"
+
+[node name="ChooseLevelButton19" parent="AllPage/GridContainer" index="18" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("42_jf455")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton19/TextureButton" index="0"]
+text = "大混战"
+
+[node name="ChooseLevelButton20" parent="AllPage/GridContainer" index="19" instance=ExtResource("4_sq4rf")]
+layout_mode = 2
+level_script = ExtResource("43_jf455")
+preview_icon = ExtResource("302_zombie")
+
+[node name="Label" parent="AllPage/GridContainer/ChooseLevelButton20/TextureButton" index="0"]
+theme_override_font_sizes/font_size = 14
+text = "僵尸公敌（无限）"
+
+[node name="MainMenu" type="TextureButton" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -147.0
+offset_top = -32.0
+offset_right = -58.0
+offset_bottom = -6.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("30_8h7qg")
+texture_pressed = ExtResource("31_gpkej")
+texture_click_mask = ExtResource("32_j5lj8")
+
+[node name="Label" type="Label" parent="MainMenu"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -38.5
+offset_top = -10.0
+offset_right = 18.5
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 13
+text = "主菜单"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="MainMenu" to="." method="back_start_menu"]
+
+[editable path="AllPage/GridContainer/ChooseLevelButton"]
+[editable path="AllPage/GridContainer/ChooseLevelButton2"]
+[editable path="AllPage/GridContainer/ChooseLevelButton3"]
+[editable path="AllPage/GridContainer/ChooseLevelButton4"]
+[editable path="AllPage/GridContainer/ChooseLevelButton5"]
+[editable path="AllPage/GridContainer/ChooseLevelButton6"]
+[editable path="AllPage/GridContainer/ChooseLevelButton7"]
+[editable path="AllPage/GridContainer/ChooseLevelButton8"]
+[editable path="AllPage/GridContainer/ChooseLevelButton9"]
+[editable path="AllPage/GridContainer/ChooseLevelButton10"]
+[editable path="AllPage/GridContainer/ChooseLevelButton11"]
+[editable path="AllPage/GridContainer/ChooseLevelButton12"]
+[editable path="AllPage/GridContainer/ChooseLevelButton13"]
+[editable path="AllPage/GridContainer/ChooseLevelButton14"]
+[editable path="AllPage/GridContainer/ChooseLevelButton15"]
+[editable path="AllPage/GridContainer/ChooseLevelButton16"]
+[editable path="AllPage/GridContainer/ChooseLevelButton17"]
+[editable path="AllPage/GridContainer/ChooseLevelButton18"]
+[editable path="AllPage/GridContainer/ChooseLevelButton19"]
+[editable path="AllPage/GridContainer/ChooseLevelButton20"]

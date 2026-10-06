@@ -1,0 +1,37 @@
+extends Panel
+class_name PanelCreateNewUser
+
+## 创建成功后发出(带新用户名)。User 收到后把列表选中项切到这个新用户,
+## 否则玩家"新建了档"却仍选中旧档,点「好」只是切回旧档,看上去像新档没生效。
+signal new_user_created(user_name: String)
+
+@onready var line_edit: LineEdit = $Panel/LineEdit
+@onready var dialog_error: DialogError = $DialogError
+
+@onready var button_ok: PVZButtonBase = $HBoxContainer/ButtonOK
+@onready var button_cancel: PVZButtonBase = $HBoxContainer/ButtonCancel
+
+func _ready() -> void:
+	button_ok.pressed.connect(_on_button_ok_pressed)
+	button_cancel.pressed.connect(_on_button_cancel_pressed)
+
+## 当按下ok按钮时
+func _on_button_ok_pressed():
+	var new_user_name = line_edit.text
+	var add_user_res = Global.user_manager.add_user(new_user_name)
+	if add_user_res.is_empty():
+		new_user_created.emit(new_user_name)
+		_disappear_create_new_user_panel()
+	else:
+		dialog_error.update_text(add_user_res)
+		dialog_error.visible = true
+
+
+## 当按下取消按钮时
+func _on_button_cancel_pressed():
+	_disappear_create_new_user_panel()
+
+func _disappear_create_new_user_panel():
+	line_edit.text = ""
+	visible = false
+

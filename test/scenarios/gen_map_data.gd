@@ -5,18 +5,18 @@ extends RefCounted
 
 const ENTRIES: Array[Dictionary] = [
 	{
-		"level": "res://resources/level_date_resource/mode_adventure/adventure_01_01.tres",
-		"out": "res://resources/map_resource/map_front.tres",
+		"level": "res://src/levels/mode_adventure/adventure_01_01.gd",
+		"out": "res://data/map/map_front.tres",
 		"name": "front（白天草坪）",
 	},
 	{
-		"level": "res://resources/level_date_resource/mode_adventure/adventure_03_01.tres",
-		"out": "res://resources/map_resource/map_pool.tres",
+		"level": "res://src/levels/mode_adventure/adventure_03_01.gd",
+		"out": "res://data/map/map_pool.tres",
 		"name": "pool（泳池/浓雾）",
 	},
 	{
-		"level": "res://resources/level_date_resource/mode_adventure/adventure_05_01.tres",
-		"out": "res://resources/map_resource/map_roof.tres",
+		"level": "res://src/levels/mode_adventure/adventure_05_01.gd",
+		"out": "res://data/map/map_roof.tres",
 		"name": "roof（屋顶）",
 	},
 ]
@@ -30,7 +30,7 @@ func run(a) -> void:
 
 
 func _gen_one(a, entry: Dictionary) -> void:
-	var para: Resource = load(entry["level"])
+	var para: Resource = (load(entry["level"]) as GDScript).new()
 	if para == null:
 		a.log("!! 关卡加载失败: " + str(entry["level"]))
 		return

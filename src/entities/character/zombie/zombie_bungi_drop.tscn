@@ -1,0 +1,89 @@
+[gd_scene load_steps=19 format=3]
+
+; 空投僵尸的蹦极僵尸：与偷植物的蹦极僵尸（zombie_021_bungi）共用外形，
+; 但它更像一段投放动画而不是僵尸，区别有五点：
+;   1. 没有靶子（BungeeTarget 在脚本里隐藏）
+;   2. 每帧画面都相同：降落 / 落地等 / 起飞分别放
+;      Zombie_bungi_drop_static 与 Zombie_bungi_raise_static，
+;      两者都是原版 Zombie_bungi_raise 的最后一帧（抱着东西的姿态）抽出来的单帧动画，
+;      起飞那一个额外保留了 raise_start 方法轨，靠它把投放完的蹦极僵尸撤走
+;   3. 没有前后摇：drop_start_delay / grab_start_delay 都是 0
+;   4. 落地后不是偷植物，而是把吊在绳子上的那只僵尸放到场上
+;   5. 受击框全程禁用，不参与任何索敌（脚本里把 enable_hurt_box_on_drop 重写成空实现）
+[ext_resource type="PackedScene" uid="uid://bbg8g31tr56th" path="res://src/entities/character/zombie/zombie_bungi.tscn" id="1_bungi"]
+[ext_resource type="Script" path="res://src/entities/character/zombie/zombie_bungi_drop.gd" id="2_drop"]
+[ext_resource type="Animation" path="res://animation/character/zombie/zombie_bungi/zombie_bungi_drop_static.tres" id="3_static"]
+[ext_resource type="Animation" path="res://animation/character/zombie/zombie_bungi/zombie_bungi_raise_static.tres" id="4_raise_static"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_drop"]
+_data = {
+&"Zombie_bungi_drop": ExtResource("3_static"),
+&"Zombie_bungi_idle": ExtResource("3_static"),
+&"Zombie_bungi_raise": ExtResource("4_raise_static")
+}
+
+[sub_resource type="AnimationNodeAnimation" id="Anim_hold_drop"]
+animation = &"Zombie_bungi_drop"
+
+[sub_resource type="AnimationNodeAnimation" id="Anim_hold_idle"]
+animation = &"Zombie_bungi_idle"
+
+[sub_resource type="AnimationNodeAnimation" id="Anim_raise"]
+animation = &"Zombie_bungi_raise"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Trans_idle"]
+advance_mode = 2
+advance_expression = "is_idle"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Trans_drop"]
+advance_mode = 2
+advance_expression = "not is_idle"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Trans_drop_end"]
+advance_mode = 2
+advance_expression = "is_drop_end"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Trans_raise"]
+switch_mode = 2
+advance_mode = 2
+advance_expression = "is_grab"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Trans_umbrella"]
+advance_mode = 2
+advance_expression = "is_umbrella_raise"
+
+[sub_resource type="AnimationNodeStateMachine" id="StateMachine_drop"]
+states/End/position = Vector2(959, 101)
+states/Start/position = Vector2(119, 89)
+states/Zombie_bungi_drop/node = SubResource("Anim_hold_drop")
+states/Zombie_bungi_drop/position = Vector2(375, 89)
+states/Zombie_bungi_idle/node = SubResource("Anim_hold_idle")
+states/Zombie_bungi_idle/position = Vector2(271, 8)
+states/Zombie_bungi_raise/node = SubResource("Anim_raise")
+states/Zombie_bungi_raise/position = Vector2(704, 89)
+transitions = ["Start", "Zombie_bungi_idle", SubResource("Trans_idle"), "Start", "Zombie_bungi_drop", SubResource("Trans_drop"), "Zombie_bungi_drop", "Zombie_bungi_idle", SubResource("Trans_drop_end"), "Zombie_bungi_idle", "Zombie_bungi_raise", SubResource("Trans_raise"), "Zombie_bungi_drop", "Zombie_bungi_raise", SubResource("Trans_umbrella")]
+graph_offset = Vector2(-64, -89)
+
+[sub_resource type="AnimationNodeTimeScale" id="TimeScale_drop"]
+
+[sub_resource type="AnimationNodeBlendTree" id="BlendTree_drop"]
+graph_offset = Vector2(-191, 41)
+nodes/StateMachine/node = SubResource("StateMachine_drop")
+nodes/StateMachine/position = Vector2(-140, 120)
+nodes/TimeScale/node = SubResource("TimeScale_drop")
+nodes/TimeScale/position = Vector2(100, 120)
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
+
+[node name="Zombie026BungiDrop" instance=ExtResource("1_bungi")]
+script = ExtResource("2_drop")
+zombie_type = 26
+drop_start_delay = 0.0
+grab_start_delay = 0.0
+
+[node name="AnimationPlayer" parent="." index="12"]
+libraries = {
+&"": SubResource("AnimationLibrary_drop")
+}
+
+[node name="AnimationTree" parent="." index="13"]
+tree_root = SubResource("BlendTree_drop")

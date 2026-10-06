@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_2a14"]
+
+[resource]
+script = ExtResource("1_2a14")
+text = "但你仍可以通过向日葵来获得阳光。"

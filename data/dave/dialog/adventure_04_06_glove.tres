@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_detail"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_000.tres" id="2_g0"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_001.tres" id="3_g1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_002.tres" id="4_g2"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_003.tres" id="5_g3"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_004.tres" id="6_g4"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_005.tres" id="7_g5"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_006.tres" id="8_g6"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_06/glove_007.tres" id="9_g7"]
+[ext_resource type="PackedScene" path="res://src/dave/hand_item/hand_glove.tscn" id="10_handglove"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="11_res"]
+
+[resource]
+script = ExtResource("11_res")
+dialog_detail_list = Array[ExtResource("1_detail")]([ExtResource("2_g0"), ExtResource("3_g1"), ExtResource("4_g2"), ExtResource("5_g3"), ExtResource("6_g4"), ExtResource("7_g5"), ExtResource("8_g6"), ExtResource("9_g7")])
+all_hand_itmes_scene = Array[PackedScene]([ExtResource("10_handglove")])

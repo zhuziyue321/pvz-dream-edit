@@ -1,0 +1,18 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/store/goods_rake.gd" id="1_rake"]
+[ext_resource type="PackedScene" uid="uid://oia7m8j6yhjl" path="res://src/store/goods.tscn" id="2_goods"]
+[ext_resource type="Texture2D" uid="uid://5vh3bkf5ea1w" path="res://assets/image/main_game_item/icon_rake.png" id="3_icon"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/store/rake.tres" id="4_dialog"]
+
+[node name="GoodsRake" instance=ExtResource("2_goods")]
+script = ExtResource("1_rake")
+dialog_detail = ExtResource("4_dialog")
+
+[node name="StoreIcon" type="TextureRect" parent="."]
+z_index = -1
+layout_mode = 0
+offset_right = 67.0
+offset_bottom = 68.0
+mouse_filter = 2
+texture = ExtResource("3_icon")

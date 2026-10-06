@@ -1,0 +1,12 @@
+[gd_scene load_steps=4 format=3 uid="uid://wa7zx7wcm4rxc"] 
+[ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://ujiovgacmpew0" path="res://src/entities/character/components/zombie_plant_component/component_zombie_plant.gd" id="2_plant"]
+
+[node name="Zombie039PumpkinZombie" instance=ExtResource("1_base")]
+zombie_type = 39
+
+[node name="HpComponent" parent="." index="4"]
+max_hp_armor1 = 1100
+
+[node name="ZombiePlantComponent" type="Node2D" parent="." index="13"]
+script = ExtResource("2_plant")

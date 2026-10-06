@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_detail"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_000.tres" id="2_op0"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_001.tres" id="3_op1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_002.tres" id="4_op2"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_003.tres" id="5_op3"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_004.tres" id="6_op4"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_005.tres" id="7_op5"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_006.tres" id="8_op6"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_007.tres" id="9_op7"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_008.tres" id="10_op8"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_009.tres" id="11_op9"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_05/opening_010.tres" id="12_op10"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="13_dave"]
+
+[resource]
+; 原版冒险模式 5-5 开场戴夫台词
+; 台词文本: data/strings/lawn_strings.txt 的 CRAZY_DAVE_1301~1311
+; 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Plants_vs._Zombies/Dialogue) 的 Level 5-5 段
+; 原版口径: 前 3 句(1301~1303,禅境花园收尾)只在第一轮说,后 8 句(1304~1311,警告飞贼僵尸)每轮都说;
+; 本仓库的 dave_dialog_only_first_playthrough 是整段级开关,这里按"每轮都播"处理(见 docs/参考存档/特殊关卡.md)
+script = ExtResource("13_dave")
+dialog_detail_list = Array[ExtResource("1_detail")]([ExtResource("2_op0"), ExtResource("3_op1"), ExtResource("4_op2"), ExtResource("5_op3"), ExtResource("6_op4"), ExtResource("7_op5"), ExtResource("8_op6"), ExtResource("9_op7"), ExtResource("10_op8"), ExtResource("11_op9"), ExtResource("12_op10")])

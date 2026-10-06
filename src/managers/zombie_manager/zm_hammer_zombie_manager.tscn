@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://0num78yxy82x" path="res://src/managers/zombie_manager/zm_hammer_zombie_manager.gd" id="1_src"]
+
+[node name="HammerZombieManager" type="Node"]
+script = ExtResource("1_src")
+
+[node name="HammerZombieTimer" type="Timer" parent="."]

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_detail"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_01/opening_000.tres" id="2_op0"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_01/opening_001.tres" id="3_op1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_01/opening_002.tres" id="4_op2"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_05_01/opening_003.tres" id="5_op3"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="6_dave"]
+
+[resource]
+; 原版冒险模式 5-1 开场（进入屋顶场景）戴夫台词
+; 台词文本: data/strings/lawn_strings.txt 的 CRAZY_DAVE_1201~1204
+; 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Plants_vs._Zombies/Dialogue) 的 Level 5-1 段
+script = ExtResource("6_dave")
+dialog_detail_list = Array[ExtResource("1_detail")]([ExtResource("2_op0"), ExtResource("3_op1"), ExtResource("4_op2"), ExtResource("5_op3")])

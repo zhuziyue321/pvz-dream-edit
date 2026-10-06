@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_a537h"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_000.tres" id="2_ossah"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_001.tres" id="3_k3j4q"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_002.tres" id="4_m2ue1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_003.tres" id="5_yhlho"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_004.tres" id="6_85xnn"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_005.tres" id="7_xxgao"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_01_05/opening_006.tres" id="8_omadr"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="9_nfw7m"]
+
+[resource]
+script = ExtResource("9_nfw7m")
+dialog_detail_list = Array[ExtResource("1_a537h")]([ExtResource("2_ossah"), ExtResource("3_k3j4q"), ExtResource("4_m2ue1"), ExtResource("5_yhlho"), ExtResource("6_85xnn"), ExtResource("7_xxgao"), ExtResource("8_omadr")])

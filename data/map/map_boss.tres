@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="ResourceMapData" format=3 uid="uid://tcwtpkb1ddo3"]
+
+[ext_resource type="Script" uid="uid://bjr52bp0ry7u" path="res://data/map/map_row_data.gd" id="1_hqu08"]
+[ext_resource type="Script" uid="uid://bdkqk3y2isyir" path="res://data/map/map_data.gd" id="2_2fjuk"]
+[ext_resource type="Script" uid="uid://d0ahugrwv7t1t" path="res://src/world/background/map_bg_anim_roof.gd" id="3_bgroof"]
+[ext_resource type="PackedScene" path="res://src/world/background/main_game_bg_boss.tscn" id="8_bgscene"]
+
+[sub_resource type="Resource" id="Resource_42mpu"]
+script = ExtResource("1_hqu08")
+plant_cell_type = 2
+row_y = 88.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(99, 84, 63, 45, 17, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(951, 163)
+lawn_mover_type = 2
+
+[sub_resource type="Resource" id="Resource_m04ro"]
+script = ExtResource("1_hqu08")
+plant_cell_type = 2
+row_y = 173.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(99, 84, 63, 45, 17, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(951, 244)
+lawn_mover_type = 2
+
+[sub_resource type="Resource" id="Resource_2phaw"]
+script = ExtResource("1_hqu08")
+plant_cell_type = 2
+row_y = 259.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(99, 84, 63, 45, 17, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(951, 332)
+lawn_mover_type = 2
+
+[sub_resource type="Resource" id="Resource_n0fv2"]
+script = ExtResource("1_hqu08")
+plant_cell_type = 2
+row_y = 343.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(99, 84, 63, 45, 17, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(951, 413)
+lawn_mover_type = 2
+
+[sub_resource type="Resource" id="Resource_njldv"]
+script = ExtResource("1_hqu08")
+plant_cell_type = 2
+row_y = 430.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(99, 84, 63, 45, 17, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(951, 500)
+lawn_mover_type = 2
+
+[resource]
+script = ExtResource("2_2fjuk")
+game_sences = 2
+display_name = "boss（夜屋顶·僵王关）"
+map_bg_script = ExtResource("3_bgroof")
+map_bg_scene = ExtResource("8_bgscene")
+have_slope = true
+zombie_go_home_panel = Rect2(-5, -304, 204, 491)
+zombie_go_home_marker = Vector2(117, 448)
+col_x = PackedFloat32Array(42, 131, 213, 292, 374, 456, 537, 614, 694)
+col_width = PackedFloat32Array(76, 76, 75, 76, 75, 76, 68, 70, 75)
+rows = Array[ExtResource("1_hqu08")]([SubResource("Resource_42mpu"), SubResource("Resource_m04ro"), SubResource("Resource_2phaw"), SubResource("Resource_n0fv2"), SubResource("Resource_njldv")])

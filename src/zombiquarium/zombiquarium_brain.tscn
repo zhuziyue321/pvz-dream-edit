@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/zombiquarium/zombiquarium_brain.gd" id="1_brain"]
+[ext_resource type="Texture2D" uid="uid://c5trsg2kf0hmk" path="res://assets/image/main_game_item/brain.png" id="2_brain"]
+
+[node name="ZombiquariumBrain" type="Sprite2D"]
+texture = ExtResource("2_brain")
+script = ExtResource("1_brain")

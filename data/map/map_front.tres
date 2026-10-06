@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="ResourceMapData" format=3]
+
+[ext_resource type="Script" path="res://data/map/map_row_data.gd" id="1_dafkd"]
+[ext_resource type="Script" path="res://data/map/map_data.gd" id="2_gg6a6"]
+[ext_resource type="Script" path="res://src/world/background/map_bg_anim_front.gd" id="3_bgfront"]
+[ext_resource type="PackedScene" path="res://src/world/background/main_game_bg_front.tscn" id="8_bgscene"]
+
+[sub_resource type="Resource" id="Resource_ybg58"]
+script = ExtResource("1_dafkd")
+row_y = 82.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 166)
+
+[sub_resource type="Resource" id="Resource_33dq5"]
+script = ExtResource("1_dafkd")
+row_y = 182.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 267)
+
+[sub_resource type="Resource" id="Resource_fxhrh"]
+script = ExtResource("1_dafkd")
+row_y = 282.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 363)
+
+[sub_resource type="Resource" id="Resource_if6o7"]
+script = ExtResource("1_dafkd")
+row_y = 381.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 454)
+
+[sub_resource type="Resource" id="Resource_boq3x"]
+script = ExtResource("1_dafkd")
+row_y = 478.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 554)
+
+[resource]
+script = ExtResource("2_gg6a6")
+display_name = "front（白天草坪）"
+map_bg_script = ExtResource("3_bgfront")
+map_bg_scene = ExtResource("8_bgscene")
+col_x = PackedFloat32Array(45, 124, 204, 284, 365, 446, 526, 605, 686)
+col_width = PackedFloat32Array(78, 78, 78, 78, 78, 78, 78, 78, 78)
+rows = Array[ExtResource("1_dafkd")]([SubResource("Resource_ybg58"), SubResource("Resource_33dq5"), SubResource("Resource_fxhrh"), SubResource("Resource_if6o7"), SubResource("Resource_boq3x")])

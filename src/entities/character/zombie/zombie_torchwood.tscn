@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=3 uid="uid://abcp6fygiad6v"] 
+[ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_base"]
+[ext_resource type="Script" uid="uid://ujiovgacmpew0" path="res://src/entities/character/components/zombie_plant_component/component_zombie_plant.gd" id="2_plant"]
+[ext_resource type="Script" uid="uid://z2j163tlf40xj" path="res://src/entities/character/zombie/zombie_torchwood.gd" id="3_self"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_torch"]
+size = Vector2(70, 80)
+
+[node name="Zombie037TorchwoodZombie" instance=ExtResource("1_base")]
+script = ExtResource("3_self")
+zombie_type = 37
+
+[node name="HpComponent" parent="." index="4"]
+max_hp_armor1 = 300
+
+[node name="Area2DUpBullet" type="Area2D" parent="." index="13"]
+unique_name_in_owner = true
+collision_layer = 0
+collision_mask = 8
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2DUpBullet" index="0"]
+shape = SubResource("RectangleShape2D_torch")
+
+[node name="ZombiePlantComponent" type="Node2D" parent="." index="14"]
+script = ExtResource("2_plant")

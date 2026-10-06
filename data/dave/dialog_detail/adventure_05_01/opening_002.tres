@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_5a12"]
+
+[resource]
+script = ExtResource("1_5a12")
+text = "考虑到你屋顶的角度，你会需要用到卷心菜投手的。"

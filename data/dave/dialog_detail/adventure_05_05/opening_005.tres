@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_5b15"]
+
+[resource]
+script = ExtResource("1_5b15")
+text = "为什么？ 因为接下来是一个接一个的飞贼僵尸。"

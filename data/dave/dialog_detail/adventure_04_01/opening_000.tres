@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_4a10"]
+
+[resource]
+script = ExtResource("1_4a10")
+text = "你知道，他们曾叫我 “迷雾男”。"

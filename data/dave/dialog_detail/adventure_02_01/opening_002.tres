@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_2a12"]
+
+[resource]
+script = ExtResource("1_2a12")
+text = "你会注意到夜间和僵尸作战不同于白天。"

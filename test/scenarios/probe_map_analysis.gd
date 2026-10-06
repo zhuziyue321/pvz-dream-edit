@@ -5,10 +5,15 @@ extends RefCounted
 ## 并核对 PlantCell.row_col 与 all_plant_cells 下标是否一致。
 
 const LEVELS: Array[String] = [
-	"res://resources/level_date_resource/mode_adventure/adventure_01_01.tres",
-	"res://resources/level_date_resource/mode_adventure/adventure_03_01.tres",
-	"res://resources/level_date_resource/mode_adventure/adventure_05_01.tres",
+	## 1-1：5 行草坪，只有中间 1 行铺了草皮（map_front_1row）
+	"res://src/levels/mode_adventure/adventure_01_01.gd",
+	## 1-2 / 1-3：5 行草坪（map_front_5row）
+	"res://src/levels/mode_adventure/adventure_01_02.gd",
+	"res://src/levels/mode_adventure/adventure_03_01.gd",
+	"res://src/levels/mode_adventure/adventure_05_01.gd",
 ]
+
+const ProbeUtil := preload("res://test/scenarios/probe_util.gd")
 
 
 func run(a) -> void:
@@ -20,7 +25,7 @@ func run(a) -> void:
 
 
 func _probe_scene(a, path: String) -> void:
-	var para: Resource = load(path)
+	var para: Resource = (load(path) as GDScript).new()
 	if para == null:
 		a.log("!! 关卡加载失败: " + path)
 		return
@@ -33,6 +38,10 @@ func _probe_scene(a, path: String) -> void:
 	if mg == null:
 		a.log("   !! Global.main_game 为空")
 		return
+	## 推车是关卡流程里的一项（「准备-安放-植物」之前登场，见 LevelTimelineEventLawnMover），
+	## 这里替玩家点「开始游戏」并等推车到位，否则下面打出来的一定是「没有推车」
+	await ProbeUtil.click_start(a)
+	await ProbeUtil.wait_lawn_mowers(a, 20.0)
 	a.log("   canvas_origin=%s" % str(a.canvas_origin()))
 	var map_data = para.map_data
 	if map_data == null:

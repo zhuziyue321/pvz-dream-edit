@@ -18,19 +18,23 @@ config/windows_native_icon="res://pvz_icon.ico"
 
 [autoload]
 
-Log="*res://scripts/autoload/util/logger.gd"
-Global="*res://scenes/autoload/global.tscn"
-SoundManager="*res://scenes/autoload/sound_manager.tscn"
-SceneRegistry="*res://scripts/autoload/scene_registry.gd"
-AllCards="*res://scenes/autoload/all_cards.tscn"
-GlobalUtils="*res://scripts/autoload/util/global_utils.gd"
-EventBus="*res://scripts/autoload/event_bus.gd"
-TreePauseManager="*res://scripts/autoload/tree_pause_manager.gd"
-DebugChannel="*res://scripts/autoload/debug_channel.gd"
+Log="*res://src/core/autoload/logger.gd"
+Global="*res://src/core/autoload/global.tscn"
+SoundManager="*res://src/core/autoload/sound_manager.tscn"
+SceneRegistry="*res://src/core/autoload/scene_registry.gd"
+AllCards="*res://src/core/autoload/all_cards.tscn"
+GlobalUtils="*res://src/core/autoload/global_utils.gd"
+EventBus="*res://src/core/autoload/event_bus.gd"
+TreePauseManager="*res://src/core/autoload/tree_pause_manager.gd"
+DebugChannel="*res://src/core/autoload/debug_channel.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
 
 [display]
 
-window/size/viewport_width=1066
+window/size/viewport_width=800
 window/size/viewport_height=600
 window/stretch/mode="canvas_items"
 
@@ -43,6 +47,11 @@ enabled=PackedStringArray("res://addons/DragNDropNodes/plugin.cfg", "res://addon
 ShortcutKeys_Shovel={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":70,"key_label":0,"unicode":102,"location":0,"echo":false,"script":null)
+]
+}
+ShortcutKeys_Glove={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":71,"key_label":0,"unicode":103,"location":0,"echo":false,"script":null)
 ]
 }
 ShortcutKeys_Card1={
@@ -95,6 +104,16 @@ ShortcutKeys_Card10={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":48,"key_label":0,"unicode":48,"location":0,"echo":false,"script":null)
 ]
 }
+ShortcutKeys_WinLevel={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":68,"key_label":0,"unicode":100,"location":0,"echo":false,"script":null)
+]
+}
+ShortcutKeys_KillAllZombie={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":true,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":75,"key_label":0,"unicode":107,"location":0,"echo":false,"script":null)
+]
+}
 
 [layer_names]
 
@@ -102,13 +121,13 @@ ShortcutKeys_Card10={
 2d_physics/layer_2="PlantHurtBoxDetection"
 2d_physics/layer_3="ZombieHurtBoxDetection"
 2d_physics/layer_4="BulletFromPlant"
-2d_physics/layer_5="ZombieHurtBoxDetectionOnAttack"
-2d_physics/layer_6="ZombieHurtBoxDetectionBeHypnotized"
+2d_physics/layer_5="Deprecated_OnAttackDetection"
+2d_physics/layer_6="Deprecated_BeHypnotizedDetection"
 2d_physics/layer_7="Bowling"
 2d_physics/layer_8="BulletFromZombie"
 2d_physics/layer_9="PlantHurtBoxReal"
 2d_physics/layer_10="ZombieHurtBoxReal"
-2d_physics/layer_11="ZombieHurtBoxRealBeHypnotized"
+2d_physics/layer_11="Deprecated_BeHypnotizedReal"
 2d_physics/layer_12="ItemDetect"
 2d_physics/layer_13="ItemReal"
 

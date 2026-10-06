@@ -1,0 +1,115 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://src/world/background/main_game_home.gd" id="1_home"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background5.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background1_gameover_interior_overlay.png" id="3_o1"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background2_gameover_interior_overlay.png" id="4_o2"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background3_gameover_interior_overlay.png" id="5_o3"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background4_gameover_interior_overlay.png" id="6_o4"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background1_gameover_mask.png" id="7_m1"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background2_gameover_mask.png" id="8_m2"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background3_gameover_mask.png" id="9_m3"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background4_gameover_mask.png" id="10_m4"]
+[ext_resource type="Texture2D" path="res://assets/image/background/background5_gameover_mask.png" id="11_m5"]
+[ext_resource type="Script" path="res://src/world/background/main_game_slope.gd" id="12_slope"]
+[ext_resource type="PackedScene" path="res://src/world/background/slope.tscn" id="13_slopeinst"]
+
+[sub_resource type="RectangleShape2D" id="14_rect"]
+size = Vector2(150, 600)
+
+[sub_resource type="StyleBoxFlat" id="15_sb"]
+
+[node name="Background" type="Sprite2D"]
+process_mode = 3
+position = Vector2(-210, 0)
+texture = ExtResource("2_bg")
+centered = false
+
+[node name="Home" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("1_home")
+
+[node name="Area2DHome" type="Area2D" parent="Home"]
+process_mode = 3
+position = Vector2(132.306, 8)
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Home/Area2DHome"]
+position = Vector2(-28.93, 290.79)
+shape = SubResource("14_rect")
+
+[node name="Door" type="Node2D" parent="Home"]
+
+[node name="DoorDown" type="Node2D" parent="Home/Door"]
+
+[node name="Background1GameoverInteriorOverlay" type="Sprite2D" parent="Home/Door/DoorDown"]
+visible = false
+position = Vector2(130.311, 321)
+texture = ExtResource("3_o1")
+
+[node name="Background2GameoverInteriorOverlay" type="Sprite2D" parent="Home/Door/DoorDown"]
+visible = false
+position = Vector2(150.311, 335)
+texture = ExtResource("4_o2")
+
+[node name="Background3GameoverInteriorOverlay" type="Sprite2D" parent="Home/Door/DoorDown"]
+visible = false
+position = Vector2(73, 340)
+texture = ExtResource("5_o3")
+
+[node name="Background4GameoverInteriorOverlay" type="Sprite2D" parent="Home/Door/DoorDown"]
+visible = false
+position = Vector2(73, 339)
+texture = ExtResource("6_o4")
+
+[node name="PanelZombieGoHome" type="Panel" parent="Home/Door/DoorDown"]
+unique_name_in_owner = true
+clip_children = 1
+offset_left = -5.0
+offset_top = -304.0
+offset_right = 199.0
+offset_bottom = 187.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("15_sb")
+
+[node name="Marker2DZombieGoHome" type="Marker2D" parent="Home/Door/DoorDown/PanelZombieGoHome"]
+unique_name_in_owner = true
+position = Vector2(117, 448)
+
+[node name="DoorMask" type="Node2D" parent="Home/Door"]
+
+[node name="Background1GameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(113.59, 326)
+texture = ExtResource("7_m1")
+
+[node name="Background2GameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(114.59, 328)
+texture = ExtResource("8_m2")
+
+[node name="Background3GameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(71, 344)
+texture = ExtResource("9_m3")
+
+[node name="Background4GameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(138, 305)
+texture = ExtResource("10_m4")
+
+[node name="Background5GameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(108, 139)
+texture = ExtResource("11_m5")
+
+[node name="RoofSlope" type="Node2D" parent="."]
+position = Vector2(420, 0)
+script = ExtResource("12_slope")
+
+[node name="Slope" parent="RoofSlope" instance=ExtResource("13_slopeinst")]
+position = Vector2(-210, 0)
+
+[connection signal="area_entered" from="Home/Area2DHome" to="Home" method="_on_area_2d_home_area_entered"]

@@ -1,0 +1,59 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/garden/bg_03_tree_of_wisdom.gd" id="1_tree"]
+[ext_resource type="Texture2D" path="res://assets/reanim/tree_bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/reanim/tree_grass.png" id="3_grass"]
+[ext_resource type="PackedScene" path="res://src/garden/tree_of_wisdom_clouds.tscn" id="4_clouds"]
+[ext_resource type="Texture2D" path="res://assets/reanim/tree01.png" id="5_sprout"]
+[ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="6_theme"]
+
+[node name="TreeOfWisdomBg" type="Sprite2D"]
+texture = ExtResource("2_bg")
+centered = false
+script = ExtResource("1_tree")
+garden_bg_type = 3
+
+[node name="GardenPlantCellAll" type="Node2D" parent="."]
+
+[node name="TreeOfWisdomClouds" parent="." instance=ExtResource("4_clouds")]
+
+[node name="Grass" type="Sprite2D" parent="."]
+position = Vector2(0, 393)
+texture = ExtResource("3_grass")
+centered = false
+
+[node name="Tree" type="Node2D" parent="."]
+
+[node name="Trunk" type="Sprite2D" parent="Tree"]
+texture = ExtResource("5_sprout")
+centered = false
+
+[node name="RootOverlay" type="Sprite2D" parent="Tree"]
+visible = false
+centered = false
+
+[node name="HeightLabel" type="Label" parent="."]
+offset_left = 300.0
+offset_top = 82.0
+offset_right = 500.0
+offset_bottom = 112.0
+theme = ExtResource("6_theme")
+theme_override_constants/outline_size = 4
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "0英尺高"
+horizontal_alignment = 1
+
+[node name="WisdomLabel" type="Label" parent="."]
+offset_left = 110.0
+offset_top = 512.0
+offset_right = 740.0
+offset_bottom = 588.0
+theme = ExtResource("6_theme")
+theme_override_constants/outline_size = 4
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 21
+autowrap_mode = 3
+text = "请给我点肥料吧！"
+horizontal_alignment = 1
+vertical_alignment = 1

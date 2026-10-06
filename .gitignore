@@ -4,12 +4,27 @@
 .vscode
 assets
 
+# 遗留素材目录（被引用的图已迁入 assets/）与参考项目副本：
+# 都不入库；目录下各放一个 .gdignore，让 Godot 不扫描、不导入、不产生 uid 冲突
+/images/
+/PVZ-Godot-main/
+# 参考副本目录名会随版本变（历史用 PVZ-Godot-main，现为 PVZ-Godot-Dream_<日期>_v<版本>），
+# 用通配兜住，避免改名后规则再次失配。
+/PVZ-Godot-*/
+
 # 调试通道产生的日志（本地排查用，不要提交）
 debug_channel_log.txt
 debug_channel_auto_log.txt
 
 # 会话里随手写的补丁/跑批临时脚本（清理时直接删）
 .dsh_*
+/_tmp_*.gd
+
+# 无头跑批 / 泄漏检测留下的重定向输出（清理时直接删）
+/_import_err.txt
+/_import_out.txt
+/_leak_err.txt
+/_leak_out.txt
 
 # autopilot 本地跑批留下的临时物（用户目录镜像、重定向输出、注入报告）
 test/_userdir/

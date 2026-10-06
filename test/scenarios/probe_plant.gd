@@ -95,7 +95,9 @@ func _pick_card(a) -> void:
 
 
 func _to_battle(a) -> bool:
-	Global.main_game.choosed_card_start_game()
+	## 卡槽被系统自动填满时关卡已跳过选卡并进入主游戏，不要重复触发开始流程
+	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		Global.main_game.choosed_card_start_game()
 	await a.wait(6.0)
 	a.log("阶段=%d 阳光=%d" % [
 		Global.main_game.main_game_progress,

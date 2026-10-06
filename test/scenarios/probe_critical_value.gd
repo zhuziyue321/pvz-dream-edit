@@ -11,7 +11,8 @@ extends RefCounted
 ##
 ## 机器可读汇总：最后一行 [CRIT] result=PASS|FAIL failed=<n>
 
-const LEVEL := "res://resources/level_date_resource/mode_adventure/adventure_01_01.tres"
+const LEVEL := "res://src/levels/mode_adventure/adventure_01_01.gd"
+const ProbeUtil := preload("res://test/scenarios/probe_util.gd")
 
 var _failed := 0
 
@@ -23,7 +24,9 @@ func run(a) -> void:
 		_finish(a)
 		return
 
-	var z: Zombie000Base = await _new_norm_zombie(a, 0)
+	## 地图是按行配推车的（1-1 的 map_front_1row 只有最中间那一行有），
+	## 推车断言用的僵尸要落在有车的那一行
+	var z: Zombie000Base = await _new_norm_zombie(a, _mower_lane())
 	if z == null:
 		_finish(a)
 		return
@@ -40,15 +43,15 @@ func run(a) -> void:
 	await _check_below(a, z, comp)
 	await _check_drain(a, z, comp)
 	await _check_leave(a, z, comp)
-	await _check_mower_healthy(a, z)
 	await _check_mower_blocked(a)
+	await _check_mower_healthy(a, z)
 	_finish(a)
 
 
 #region 关卡与僵尸准备
 
 func _boot(a) -> bool:
-	var para: Resource = load(LEVEL)
+	var para: Resource = (load(LEVEL) as GDScript).new()
 	if para == null:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
@@ -60,10 +63,11 @@ func _boot(a) -> bool:
 	if Global.main_game == null:
 		a.log("!! Global.main_game 为空")
 		return false
-	Global.main_game.main_game_start()
-	await a.wait(3.0)
+	## 替玩家点「开始游戏」：小推车是在「准备-安放-植物」之前登场的，
+	## 提前开战会让流程停在选卡那一步，推车永远不出现（断言会白失败）
+	await ProbeUtil.click_start(a)
+	await ProbeUtil.wait_lawn_mowers(a, 20.0)
 	return Global.main_game.main_game_progress != null
-
 
 func _new_norm_zombie(a, lane: int) -> Zombie000Base:
 	var mgr := Global.main_game.zombie_manager
@@ -85,6 +89,17 @@ func _mower_of(lane: int) -> LawnMover:
 		return null
 	var mower: LawnMover = gim.all_lawn_movers[lane]
 	return mower if is_instance_valid(mower) else null
+
+
+## 第一行真的配了推车的行号：没铺草皮的行本来就没有推车（见地图数据 have_lawn_mover）
+func _mower_lane() -> int:
+	var gim = Global.main_game.game_item_manager.gim_lawn_mover
+	if gim == null:
+		return 0
+	for lane in range(gim.all_lawn_movers.size()):
+		if is_instance_valid(gim.all_lawn_movers[lane]):
+			return lane
+	return 0
 
 #endregion
 
@@ -112,14 +127,14 @@ func _check_death_boundary(a, z: Zombie000Base, comp: CriticalValueComponent) ->
 ## 三种小推车（小推车 / 泳池清洁器 / 屋顶清洁器）必须共用 LawnMover 的触发过滤：
 ## 子类各自复制一份的话，"临界值以下不触发"就会在泳池与屋顶漏掉（原版三种清洁器行为一致）
 func _check_mower_family(a) -> void:
-	var base_path := "res://scripts/item/lawn_mover/lawn_mower.gd"
+	var base_path := "res://src/items/lawn_mower/lawn_mower.gd"
 	var base_text := FileAccess.get_file_as_string(base_path)
 	_check(a, "基类 LawnMover 实现了启动触发过滤", base_text.contains("func start_trigger_filter"))
 	_check(a, "触发过滤里按临界值拦截", base_text.contains("is_below_critical_value"))
 	_check(a, "触发过滤里拦截已死亡的僵尸", base_text.contains("zombie.is_death"))
 	for sub_path: String in [
-		"res://scripts/item/lawn_mover/pool_cleaner.gd",
-		"res://scripts/item/lawn_mover/roof_cleaner.gd",
+		"res://src/items/lawn_mower/pool_cleaner.gd",
+		"res://src/items/lawn_mower/roof_cleaner.gd",
 	]:
 		var sub_text := FileAccess.get_file_as_string(sub_path)
 		_check(a, "%s 未重写触发过滤（沿用基类）" % sub_path.get_file(),
@@ -201,8 +216,9 @@ func _check_leave(a, z: Zombie000Base, comp: CriticalValueComponent) -> void:
 ## 小推车规则（正例）：健康的僵尸照常触发小推车
 ## 注意：本函数会让行车不再可用（is_moving = true），必须放在所有"不触发"的断言之后
 func _check_mower_healthy(a, z: Zombie000Base) -> void:
-	var mower := _mower_of(0)
-	_check(a, "行0小推车存在", mower != null, "null" if mower == null else str(mower.get_path()))
+	var lane := z.lane
+	var mower := _mower_of(lane)
+	_check(a, "行%d小推车存在" % lane, mower != null, "null" if mower == null else str(mower.get_path()))
 	if mower == null or not is_instance_valid(z):
 		return
 	_check(a, "触发前小推车未启动", mower.is_moving == false)
@@ -215,12 +231,12 @@ func _check_mower_healthy(a, z: Zombie000Base) -> void:
 ## 小推车规则（反例）：临界值以下 / 已死亡的僵尸都不触发小推车
 func _check_mower_blocked(a) -> void:
 	## 反例一：本体血量在临界值以下（但仍存活）
-	var z: Zombie000Base = await _new_norm_zombie(a, 1)
+	var z: Zombie000Base = await _new_norm_zombie(a, _mower_lane())
 	if z == null:
 		return
 	var comp: CriticalValueComponent = z.get_node_or_null(^"CriticalValueComponent")
 	if comp == null:
-		_check(a, "行1僵尸挂了临界值组件", false, "null")
+		_check(a, "推车行僵尸挂了临界值组件", false, "null")
 		return
 	comp.critical_value_type = CriticalValueComponent.E_CriticalValueType.Ratio
 	comp.critical_value_ratio = 0.5
@@ -229,11 +245,11 @@ func _check_mower_blocked(a) -> void:
 	var target_hp: int = death_hp + maxi((critical - death_hp) / 2, 1)
 	z.hp_component.Hp_loss(z.hp_component.max_hp - target_hp, BulletRegistry.AttackMode.Real, true, false)
 	await a.wait(0.3)
-	var mower := _mower_of(1)
-	_check(a, "行1小推车存在", mower != null, "null" if mower == null else str(mower.get_path()))
+	var mower := _mower_of(z.lane)
+	_check(a, "行%d小推车存在" % z.lane, mower != null, "null" if mower == null else str(mower.get_path()))
 	if mower == null:
 		return
-	_check(a, "行1僵尸血量已在临界值以下但存活",
+	_check(a, "推车行僵尸血量已在临界值以下但存活",
 		is_instance_valid(z) and not z.is_death and z.is_below_critical_value,
 		"curr_hp=%d 临界值=%d is_death=%s" % [z.hp_component.curr_hp, critical, str(z.is_death)])
 	mower.start_trigger_filter(z)

@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="ResourceMapData" format=3]
+
+[ext_resource type="Script" path="res://data/map/map_row_data.gd" id="1_xmpi0"]
+[ext_resource type="Script" path="res://data/map/map_data.gd" id="2_wlgeg"]
+[ext_resource type="Script" path="res://src/world/background/map_bg_anim_pool.gd" id="3_bgpool"]
+[ext_resource type="PackedScene" path="res://src/world/background/main_game_bg_pool.tscn" id="8_bgscene"]
+
+[sub_resource type="Resource" id="Resource_p0emt"]
+script = ExtResource("1_xmpi0")
+row_y = 88.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 158)
+
+[sub_resource type="Resource" id="Resource_mqwso"]
+script = ExtResource("1_xmpi0")
+row_y = 179.0
+row_height = 83.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 254)
+
+[sub_resource type="Resource" id="Resource_q807i"]
+script = ExtResource("1_xmpi0")
+plant_cell_type = 1
+zombie_row_type = 1
+row_y = 288.0
+row_height = 75.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(952.43994, 351.852)
+lawn_mover_type = 1
+
+[sub_resource type="Resource" id="Resource_8f6ck"]
+script = ExtResource("1_xmpi0")
+plant_cell_type = 1
+zombie_row_type = 1
+row_y = 366.0
+row_height = 74.0
+col_dx = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(949, 424)
+lawn_mover_type = 1
+
+[sub_resource type="Resource" id="Resource_5xqqt"]
+script = ExtResource("1_xmpi0")
+row_y = 445.0
+row_height = 77.0
+col_dx = PackedFloat32Array(0, 1, 2, 4, 5, 6, 7, 9, 11)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 513)
+
+[sub_resource type="Resource" id="Resource_6mnpo"]
+script = ExtResource("1_xmpi0")
+row_y = 525.0
+row_height = 71.0
+col_dx = PackedFloat32Array(0, 1, 2, 4, 5, 6, 7, 9, 11)
+col_dy = PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0)
+zombie_create_global_pos = Vector2(950, 593)
+
+[resource]
+script = ExtResource("2_wlgeg")
+game_sences = 1
+display_name = "pool（泳池/浓雾）"
+map_bg_script = ExtResource("3_bgpool")
+map_bg_scene = ExtResource("8_bgscene")
+zombie_go_home_panel = Rect2(50, -19, 200, 600)
+zombie_go_home_marker = Vector2(72, 424)
+col_x = PackedFloat32Array(49, 129, 209, 288, 368, 447, 527, 606, 685)
+col_width = PackedFloat32Array(76, 76, 75, 76, 75, 76, 75, 76, 76)
+rows = Array[ExtResource("1_xmpi0")]([SubResource("Resource_p0emt"), SubResource("Resource_mqwso"), SubResource("Resource_q807i"), SubResource("Resource_8f6ck"), SubResource("Resource_5xqqt"), SubResource("Resource_6mnpo")])

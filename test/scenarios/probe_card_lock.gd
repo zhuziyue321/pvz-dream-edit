@@ -30,12 +30,15 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP1 1-1 锁槽
 	var para = Global.main_game.game_para
 	a.log("STEP1 关卡=%s 卡槽=%d 拥有卡数=%d" % [
-		para.level_id, para.max_choosed_card_num, state.curr_plant.size()])
+		para.level_id, para.get_max_choosed_card_num(), state.curr_plant.size()])
 	_check(a, "1-1 触发锁槽", para.is_locked_card_slot == true, str(para.is_locked_card_slot))
-	_check(a, "1-1 预选卡=拥有的卡", _first_n(para.pre_choosed_card_list_plant, state.curr_plant.size()) == state.curr_plant,
-		str(para.pre_choosed_card_list_plant))
+	var prechosen_ids: Array = para.prechosen_cards.map(func(r): return r.content_id)
+	_check(a, "1-1 预选卡=拥有的卡", _first_n(prechosen_ids, state.curr_plant.size()) == state.curr_plant,
+		str(prechosen_ids))
 	var battle = Global.main_game.card_manager.card_slot_battle
-	_check(a, "1-1 出战卡槽被填满", battle.curr_cards.size() == para.max_choosed_card_num,
+	## 卡槽数由存档决定（基准 6 + 已购扩充）：1-1 只有 1 张已拥有卡，出战卡槽只填这一张，其余为空槽
+	_check(a, "1-1 卡槽数=6", para.get_max_choosed_card_num() == 6, str(para.get_max_choosed_card_num()))
+	_check(a, "1-1 出战卡槽只放已拥有的卡", battle.curr_cards.size() == state.curr_plant.size(),
 		str(battle.curr_cards.size()))
 	if battle.curr_cards.size() > 0:
 		var c0 = battle.curr_cards[0]
@@ -44,7 +47,7 @@ func run(a) -> void:
 		## 预选卡没有连接点击信号 -> 点了也不会被取消（"固定"）
 		c0._on_button_pressed()
 		await a.wait(0.5)
-		_check(a, "1-1 预选卡不可取消", battle.curr_cards.size() == para.max_choosed_card_num,
+		_check(a, "1-1 预选卡不可取消", battle.curr_cards.size() == state.curr_plant.size(),
 			str(battle.curr_cards.size()))
 
 	# ------------------------------------------------ STEP2 新档 金钱/商店 未解锁
@@ -98,12 +101,12 @@ func run(a) -> void:
 		_check(a, "找到商店根节点", false, "null")
 		_finish(a)
 		return
-	var grid = store.get_node_or_null("Bg/Car2/Panel/PlantCardGoodsContainer")
-	_check(a, "找到植物卡片商品容器", grid != null)
-	if grid == null:
-		_finish(a)
-		return
-	var goods_kids = grid.get_children()
+	## 紫卡与模仿者按「一行为一页」分三行摆放
+	var rows: Array = store.plant_card_rows
+	_check(a, "找到紫卡商品行", rows != null and rows.size() > 0, str(rows))
+	var goods_kids: Array[Node] = []
+	for row in rows:
+		goods_kids.append_array(row.get_children())
 	_check(a, "商店生成 9 个植物卡商品", goods_kids.size() == 9, str(goods_kids.size()))
 
 	var g_041 = _find_goods(goods_kids, CharacterRegistry.PlantType.P041GatlingPea)
@@ -115,12 +118,12 @@ func run(a) -> void:
 	if g_041 != null:
 		_check(a, "机枪射手售价 5000", g_041.price == 5000, str(g_041.price))
 
-	## 翻页：第 2 页显示植物卡、隐藏花园商品
-	store._show_page(1)
-	await a.wait(0.3)
-	_check(a, "第2页显示植物卡容器", grid.visible)
-	_check(a, "第2页隐藏花园商品行",
-		not store.get_node("Bg/Car2/Panel/HBoxContainer").visible)
+	## 翻页：一页两行（4 格 ×2）；3-4 时货架只有第一页，禅境花园页还没上架
+	_check(a, "3-4 时货架只有 1 页", store.get_page_num() == 1, str(store.get_page_num()))
+	_check(a, "第一页同时显示道具行与第一批紫卡行",
+		store.row_tools.visible and store.row_upgrade_first.visible)
+	_check(a, "3-4 时禅境花园页还没上架",
+		not store.get_node("Bg/Car2/Panel/RowGarden").visible)
 
 	# ------------------------------------------------ STEP5 购买
 	a.log("STEP5 购买机枪射手")
@@ -134,25 +137,28 @@ func run(a) -> void:
 		_check(a, "已购买的商品标记已拥有", not g_041.is_have_goods)
 
 	# ------------------------------------------------ STEP6 反例：槽数不够时不锁
-	a.log("STEP6 拥有 3 张卡进 1-2（卡槽 2）")
+	a.log("STEP6 拥有 7 张卡进 1-2（卡槽 6）")
 	state.curr_plant.assign([
 		CharacterRegistry.PlantType.P001PeaShooterSingle,
 		CharacterRegistry.PlantType.P002SunFlower,
 		CharacterRegistry.PlantType.P003CherryBomb,
+		CharacterRegistry.PlantType.P004WallNut,
+		CharacterRegistry.PlantType.P005PotatoMine,
+		CharacterRegistry.PlantType.P006SnowPea,
+		CharacterRegistry.PlantType.P007Chomper,
 	])
-	var p2 = load("res://resources/level_date_resource/mode_adventure/adventure_01_02.tres")
+	var p2 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 	p2.set_choose_level(ADV, 0, "0002")
 	Global.game_para = p2
 	a.get_tree().change_scene_to_file(
 		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront])
 	await a.wait(3.0)
 	var para2 = Global.main_game.game_para
-	a.log("  1-2 卡槽=%d 拥有卡数=%d" % [para2.max_choosed_card_num, state.curr_plant.size()])
+	a.log("  1-2 卡槽=%d 拥有卡数=%d" % [para2.get_max_choosed_card_num(), state.curr_plant.size()])
 	_check(a, "槽数<拥有卡数时不锁槽", para2.is_locked_card_slot == false, str(para2.is_locked_card_slot))
-	_check(a, "1-2 保持关卡配置的预选卡",
-		para2.pre_choosed_card_list_plant[0] == CharacterRegistry.PlantType.P001PeaShooterSingle
-		and para2.pre_choosed_card_list_plant[1] == CharacterRegistry.PlantType.P002SunFlower,
-		str(para2.pre_choosed_card_list_plant))
+	_check(a, "槽数<拥有卡数时无预选卡(玩家自由选卡)",
+		para2.get_valid_pre_choosed_card_num() == 0, str(para2.get_valid_pre_choosed_card_num()))
+	_check(a, "槽数<拥有卡数时不跳过选卡", not para2.is_no_choose_permission())
 
 	# ------------------------------------------------ STEP7 通关 5-10 后的商店扩展
 	a.log("STEP7 模拟通关冒险模式（5-10，序号 50）")
@@ -174,7 +180,7 @@ func run(a) -> void:
 		state.unlock_plant(CharacterRegistry.PlantType.P999Imitater)
 		_check(a, "购买模仿者后已解锁", state.is_plant_unlocked(CharacterRegistry.PlantType.P999Imitater))
 		## 重新进关卡验证入口显示
-		var p3 = load("res://resources/level_date_resource/mode_adventure/adventure_01_02.tres")
+		var p3 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 		p3.set_choose_level(ADV, 0, "0002")
 		Global.game_para = p3
 		a.get_tree().change_scene_to_file(

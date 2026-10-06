@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_detail"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_05/more_vases_000.tres" id="2_mv0"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_05/more_vases_001.tres" id="3_mv1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_05/more_vases_002.tres" id="4_mv2"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_05/more_vases_003.tres" id="5_mv3"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_04_05/more_vases_004.tres" id="6_mv4"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="7_dave"]
+
+[resource]
+; 原版冒险模式 4-5 砸完第 1 批罐子后戴夫台词（戴夫再摆一批罐子）
+; 台词文本: data/strings/lawn_strings.txt 的 CRAZY_DAVE_2700~2704
+; 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Level_4-5?action=raw) 的 Speech Transcript 段
+script = ExtResource("7_dave")
+dialog_detail_list = Array[ExtResource("1_detail")]([ExtResource("2_mv0"), ExtResource("3_mv1"), ExtResource("4_mv2"), ExtResource("5_mv3"), ExtResource("6_mv4")])

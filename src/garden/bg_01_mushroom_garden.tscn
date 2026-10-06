@@ -1,0 +1,61 @@
+[gd_scene load_steps=4 format=3 uid="uid://rxfipnfad63l"]
+
+[ext_resource type="Texture2D" uid="uid://b1ep2uxfhmii3" path="res://assets/image/garden/Background_MushroomGarden.jpg" id="1_lq3y3"]
+[ext_resource type="Script" uid="uid://r3i58bb3k04m" path="res://src/garden/garden_bg_page.gd" id="2_ivykr"]
+[ext_resource type="PackedScene" uid="uid://bp3u3o8nttci" path="res://src/garden/plant_cell_garden.tscn" id="2_lq3y3"]
+
+[node name="BackgroundMushroomGarden" type="Sprite2D"]
+texture = ExtResource("1_lq3y3")
+centered = false
+script = ExtResource("2_ivykr")
+garden_bg_type = 1
+
+[node name="GardenPlantCellAll" type="Node2D" parent="."]
+
+[node name="PlantCell" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 389.0
+offset_top = 232.0
+offset_right = 464.0
+offset_bottom = 307.0
+
+[node name="PlantCell2" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 358.0
+offset_top = 327.0
+offset_right = 433.0
+offset_bottom = 402.0
+
+[node name="PlantCell3" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 557.0
+offset_top = 318.0
+offset_right = 632.0
+offset_bottom = 393.0
+
+[node name="PlantCell4" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 242.0
+offset_top = 398.0
+offset_right = 317.0
+offset_bottom = 473.0
+
+[node name="PlantCell5" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 457.0
+offset_top = 416.0
+offset_right = 532.0
+offset_bottom = 491.0
+
+[node name="PlantCell6" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 109.0
+offset_top = 474.0
+offset_right = 184.0
+offset_bottom = 549.0
+
+[node name="PlantCell7" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 300.0
+offset_top = 489.0
+offset_right = 375.0
+offset_bottom = 564.0
+
+[node name="PlantCell8" parent="GardenPlantCellAll" instance=ExtResource("2_lq3y3")]
+offset_left = 484.0
+offset_top = 504.0
+offset_right = 559.0
+offset_bottom = 579.0

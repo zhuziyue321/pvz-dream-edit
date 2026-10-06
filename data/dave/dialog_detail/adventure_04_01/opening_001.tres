@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogDetailResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_4a11"]
+
+[resource]
+script = ExtResource("1_4a11")
+text = "因为我曾停留在雾中并突然跳出来，吓呆了一大群人！"
