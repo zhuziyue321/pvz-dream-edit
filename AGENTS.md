@@ -19,7 +19,7 @@
 | 架构主线        | 数据驱动 + 组件化：角色 = base 场景 + 若干 `ComponentNormBase` 组件；资源一律 `res://` 绝对路径引用                                            |
 | 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，不入 git）、`test/`、`docs/`、`tools/` |
 | autoload 单例 | `Log` `Global` `SoundManager` `SceneRegistry` `AllCards` `GlobalUtils` `EventBus` `TreePauseManager` `DebugChannel` |
-| 验证方式        | **打开游戏（带窗口）实测**，见 [docs/验证流程.md](./docs/验证流程.md)；改动较小 / 确定不会出问题 /**验证成本过高（反馈里附人工验证方法）**&#x5219;**免验证**              |
+| 验证方式        | **编译门禁必过**：`test/check_scripts.ps1`（硬约束 §1-7）；**打开游戏实测为建议**，改动较小 / 确定不会出问题 /**成本过高（反馈里附人工验证方法）**&#x5219;不开，见 [docs/验证流程.md](./docs/验证流程.md)              |
 
 人类向项目介绍见 [README.md](./README.md)，文档地图见 [docs/README.md](./docs/README.md)。
 
@@ -62,11 +62,11 @@
 
 1. **架构主线：数据驱动 + 组件化** —— 角色 = base 场景 + 若干 `ComponentNormBase` 组件；状态本体在组件里，宿主只做转发、不复制组件状态。
 2. **组件只通过 `owner` / 信号 / 场景配置通信** —— 禁止 `get_parent()` 抓宿主改字段、禁止组件间硬编码绝对路径。
-3. **生命周期入口固定** —— 禁止子类重写 `_ready()`，重写 `ready_norm()` / `ready_show()` / `ready_garden()` / `ready_norm_signal_connect()`。
-4. **类型映射一律走注册表** —— `CharacterRegistry` / `BulletRegistry` / `MainSceneRegistry`；禁止业务代码散落 `preload` 类型映射。
-5. **资源一律 `res://` 绝对路径引用** —— 移动 / 重命名连 `.uid` 一起带走并更新引用字符串；批量改名**必须先关闭 Godot 编辑器**。
+3. **角色与组件的生命周期入口固定** —— **仅** `Character000Base` / `ComponentNormBase` 的子类禁止重写 `_ready()`，改重写角色侧的 `character_ready()` / `ready_norm()` / `ready_show()` / `ready_garden()` / `ready_norm_signal_connect()`、组件侧的 `component_ready()`；UI / 管理器 / 子弹 / 僵王技能等其余类不受此限。
+4. **类型映射一律走注册表** —— `CharacterRegistry` / `BulletRegistry` / `MainSceneRegistry`；禁止业务代码散落「类型 ID → 场景 / 脚本」映射表（`preload` 一个具体数据资源不受此限）。
+5. **资源一律 `res://` 绝对路径引用** —— 移动 / 重名的操作细节（`.uid` 跟随、是否先关编辑器）为**参考**，见 [M-01](./docs/参考存档/规范细则存档.md#m-01-res-引用与改名)。
 6. **日志一律 `Log.*`** —— 禁止裸 `print()` / `printerr()`。
-7. **改动触达玩法行为必须打开游戏（带窗口）实测** —— 静态检查已全部移除，递归爆栈、autoload 初始化顺序这类故障只有真跑才暴露；**改动较小 / 确定不会出问题则可免验证**，**验证过于艰难耗时的也可不验证，但必须在反馈里给出人工验证方法**（判定见 [docs/验证流程.md](./docs/验证流程.md) §1 与 §1.1）。
+7. **交付前跑一次编译门禁** —— 必须跑 `powershell -ExecutionPolicy Bypass -File test/check_scripts.ps1` 且 `real compile errors = 0`；**是否再打开游戏实测不再强制**（109 条历史工作记录里真正开游戏实测的仅约 9 条，强制要求长期被架空），按 [V-01](./docs/参考存档/规范细则存档.md#v-01-改动较小可免验证) 判断。
 8. **一关专属机制留在关卡脚本里，不进游戏本体** —— 只有一关（或极少数关）用到的特殊机制写在 `src/levels/mode_*/<关卡>.gd`（继承 `LevelScriptBase`）里；本体不认识任何具体关卡 id / 玩法名，被 ≥2~3 关复用时才上浮成通用字段 / 组件 / 规则；该关**额外的专属脚本必须**与它同目录、文件名以它的文件名为前缀（细则见 [D-07](./docs/参考存档/规范细则存档.md#d-07-关卡脚本-vs-游戏本体一次性机制的落位)）。
 
 **应该**（默认遵守，例外写明理由）：跨 Agent 记忆只落在文档里 —— 踩坑与流程结论写进 `docs/`，只写在回复里下一个 Agent 看不到。
@@ -83,7 +83,7 @@
 1. 按 §2 取文档，先过一遍 [项目规范.md](./docs/项目规范.md) §1 的 8 条硬约束。
 2. 照 [参考存档](./docs/参考存档/规范细则存档.md) 里对应条目的**正例**写（参考，非强制）；新增单位（植物 / 僵尸 / 子弹）先取空闲编号并登记注册表（硬约束 §1-4）。
 3. 按 [验证流程.md](./docs/验证流程.md) §1 判断要不要验证：**改动较小 / 确定不会出问题 → 免验证**；**验证过于艰难耗时 → 可免验证，但反馈里必须写清人工验证方法**（§1.1）。
-4. 需要验证 → **打开游戏（带窗口）实测**，按 [验证流程.md](./docs/验证流程.md) §3 的人工回归清单逐条过。
+4. 交付前**必跑编译门禁**（`powershell -ExecutionPolicy Bypass -File test/check_scripts.ps1`，要 `real compile errors = 0`）；值得时再**打开游戏（带窗口）实测**，按 [验证流程.md](./docs/验证流程.md) §3 的人工回归清单逐条过。
 5. **文档与代码同步**：行为或约定变了，同步改对应 md（见 §5）。
 6. **经验沉淀 + 流程归档（收尾应该做）**：本次踩到的坑按 E-04 **当场**写进文档；再按 E-05 在 [docs/工作记录/](./docs/工作记录/README.md) 新建 `<日期>_<主题>.md`（含弯路、踩坑三段式、推荐度、最简路径）并在 README 索引补行，让后来的 Agent 能查、能比、能选最简单的那条。  
    **这次是照某条旧记录做的** → **可以**在旧记录文末追加「补充 / 评价」（只追加不改原文、**双向引用**、不占索引新行），结论推翻旧评价时**可以**改索引那条记录的「推荐度」。

@@ -9,8 +9,7 @@ signal signal_scaredy_end
 ## 害怕时影响的节点
 @export var scaredy_influence_components:Array[ComponentNormBase]
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	detect_component.signal_can_attack.connect(func():signal_scaredy_start.emit())
 	detect_component.signal_not_can_attack.connect(func():signal_scaredy_end.emit())
 

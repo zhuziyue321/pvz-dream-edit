@@ -43,7 +43,7 @@ func _ready_component() -> void:
 	## 总开关关闭时不订阅拿手套事件：即使有人绕过解锁判定强行启用组件，也收不到点击
 	if not ConstFeatureSwitch.GLOVE_ENABLED:
 		return
-	EventBus.subscribe("main_game_click_glove", _on_click_glove)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_CLICK_GLOVE, _on_click_glove)
 
 
 ## 本局是否可以持有手套：关卡允许操作草坪 + 全局解锁进度（通关冒险 4-5 后戴夫才把手套交给玩家）

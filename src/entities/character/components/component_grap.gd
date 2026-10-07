@@ -4,8 +4,11 @@ class_name GrapComponent
 @onready var anim_tanglekelp_grab: AnimationPlayer = $Anim_Tanglekelp_grab
 
 func activate_it_to_grap_zombie(zombie:Zombie000Base):
-	get_parent().remove_child(self)
-	zombie.body.add_child(self)
+	## 把自己从当前宿主摘下、挂到目标僵尸身上。
+	## 用 reparent(..., false) 而不是 get_parent().remove_child(self)：
+	## 组件不该知道「自己挂在谁下面」（硬约束 §1-2），且 Godot 的 reparent 自带「摘+挂」两步。
+	## 第二参数传 false = 保持本地 transform（等价于旧的 remove_child + add_child）。
+	reparent(zombie.body, false)
 	visible = true
 	## 如果在潜水
 	if zombie.curr_be_attack_status == Zombie000Base.E_BeAttackStatusZombie.IsDownPool:

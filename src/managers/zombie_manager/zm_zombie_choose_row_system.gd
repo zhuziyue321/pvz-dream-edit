@@ -91,7 +91,7 @@ func init_zombie_choose_row_system(zombie_rows: Array = []):
 
 	is_initialized = true
 	## 丢车保护：小推车触发时由 LawnMover 推送
-	EventBus.subscribe("lawn_mover_triggered", on_lawn_mover_triggered)
+	EventBus.subscribe(ConstEventName.LAWN_MOVER_TRIGGERED, on_lawn_mover_triggered)
 	set_process(true)
 
 

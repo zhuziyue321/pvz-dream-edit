@@ -33,7 +33,7 @@ func ready_norm():
 	cob_cannon_bright_dark()
 
 	## 玉米加农炮种植时删除前轮的植物格子的玉米投手,同时更新前轮的植物格子的数据
-	plant_cell_next = Global.main_game.plant_cell_manager.all_plant_cells[row_col.x][row_col.y+1]
+	plant_cell_next = get_main_game().plant_cell_manager.all_plant_cells[row_col.x][row_col.y+1]
 	var next_norm_plant := plant_cell_next.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	if is_instance_valid(next_norm_plant):
 		next_norm_plant.character_death_disappear()
@@ -87,9 +87,11 @@ func attack_start(target_global_pos:Vector2):
 func shoot_bullet():
 	is_attack = false
 
-	var bullet_cob_cannon :Bullet016CobCannon =  Global.bullet_registry.get_bullet_scenes(BulletRegistry.BulletType.Bullet016CobCannon).instantiate()
+	var bullet_cob_cannon :Bullet016CobCannon = Global.bullet_registry.create_bullet(
+		BulletRegistry.BulletType.Bullet016CobCannon
+	)
 	bullet_cob_cannon.init_cannon(attack_target_global_pos)
-	Global.main_game.bullets.add_child(bullet_cob_cannon)
+	get_main_game().bullets.add_child(bullet_cob_cannon)
 	bullet_cob_cannon.global_position = marker_2d_bullet.global_position
 
 	SoundManager.play_character_SFX("coblaunch")

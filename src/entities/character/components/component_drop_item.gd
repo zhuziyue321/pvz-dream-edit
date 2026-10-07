@@ -31,7 +31,7 @@ func drop_coin():
 	var r = randf()
 	if r < drop_coin_rate:
 
-		EventBus.push_event("create_coin", [
+		EventBus.push_event(ConstEventName.CREATE_COIN, [
 			drop_coin_silver_glod_diamond_rate,\
 			Vector2(clamp(global_position.x, 0, get_viewport().get_visible_rect().size.x),\
 			clamp(global_position.y-correct_y, 0, get_viewport().get_visible_rect().size.y)),
@@ -46,7 +46,7 @@ func drop_garden_plant():
 		return
 	var r = randf()
 	if r < drop_garden_plant_rate:
-		EventBus.push_event("create_garden_plant", [
+		EventBus.push_event(ConstEventName.CREATE_GARDEN_PLANT, [
 			Vector2(clamp(global_position.x, 0, get_viewport().get_visible_rect().size.x),\
 			clamp(global_position.y-50, 0, get_viewport().get_visible_rect().size.y))
 		])
@@ -72,7 +72,7 @@ func drop_chocolate():
 
 	var r = randf()
 	if r < drop_chocolate_rate:
-		EventBus.push_event("create_chocolate", [
+		EventBus.push_event(ConstEventName.CREATE_CHOCOLATE, [
 			Vector2(clamp(global_position.x, 0, get_viewport().get_visible_rect().size.x),\
 			clamp(global_position.y-correct_y, 0, get_viewport().get_visible_rect().size.y))
 		])

@@ -56,9 +56,7 @@ var garden_date_init:Dictionary
 
 
 #region 初始化相关
-func _ready() -> void:
-	super()
-
+func character_ready() -> void:
 	if plant_type == 0:
 		Log.error(name, "植物类型未赋值")
 

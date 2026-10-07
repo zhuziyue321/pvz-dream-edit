@@ -183,7 +183,7 @@ func _on_boss_trophy_requested(global_pos: Vector2, instance_id: int) -> void:
 		return
 	_boss_trophy_created = true
 	_boss_trophy_pending_id = 0
-	EventBus.push_event("create_trophy", [global_pos])
+	EventBus.push_event(ConstEventName.CREATE_TROPHY, [global_pos])
 
 
 ## [param instance_id] 即将离树的登记实例；直接移除不计为击杀。

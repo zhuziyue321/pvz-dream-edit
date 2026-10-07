@@ -12,4 +12,4 @@ func _start_bomb_fx():
 
 ## 爆炸冰冻所有敌人
 func _bomb_all_enemy():
-	EventBus.push_event("ice_all_zombie", [time_ice, time_decelerate])
+	EventBus.push_event(ConstEventName.ICE_ALL_ZOMBIE, [time_ice, time_decelerate])

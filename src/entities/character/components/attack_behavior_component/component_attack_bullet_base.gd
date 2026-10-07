@@ -29,11 +29,14 @@ signal signal_shoot_bullet
 
 ## 主游戏场景子弹父节点
 var bullets: Node2D
-func _ready() -> void:
+func component_ready() -> void:
+	## 必须调 super：基类只分派一次 component_ready()（不会逐级级联），
+	## 不调的话 AttackComponentBase 里的 detect_component_init() 不执行，
+	## 攻击状态永远收不到「有敌人」，表现为植物/僵尸站着不攻击且无报错
 	super()
 	bullet_attack_cd_timer.wait_time = attack_cd
-	if is_instance_valid(Global.main_game):
-		bullets = Global.main_game.bullets
+	if is_instance_valid(get_main_game()):
+		bullets = get_main_game().bullets
 	## 是否使用行属性进行攻击判断
 	is_lane = detect_component.is_lane
 
@@ -86,7 +89,7 @@ func set_cancel_attack():
 func _shoot_bullet():
 	signal_shoot_bullet.emit()
 	for i in range(markers_2d_bullet.size()):
-		var bullet:Bullet000Base = Global.bullet_registry.get_bullet_scenes(attack_bullet_type).instantiate()
+		var bullet:Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
 		var bullet_paras = get_bullet_paras(markers_2d_bullet[i].global_position, detect_component.ray_area_direction[i])
 		#Log.debug(bullet_paras)
 		bullet.init_bullet(bullet_paras)

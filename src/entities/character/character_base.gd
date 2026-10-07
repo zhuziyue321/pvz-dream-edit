@@ -121,6 +121,8 @@ enum E_CharacterInitType{
 
 #endregion
 func _ready() -> void:
+	## 与初始化类型**无关**的角色初始化写在 character_ready() 里，由本处统一调用（硬约束 1-3）
+	character_ready()
 	match character_init_type:
 		E_CharacterInitType.IsNorm:
 			ready_norm()
@@ -128,6 +130,18 @@ func _ready() -> void:
 			ready_show()
 		E_CharacterInitType.IsGarden:
 			ready_garden()
+
+
+## **角色的初始化入口之一**：与 `character_init_type` 无关的那部分初始化
+##
+## 子类的初始化分两种，按「要不要区分出战 / 展示 / 花园」选一个写：
+##   · 不区分 → 重写本方法（三条分支都会跑到）
+##   · 要区分 → 重写 `ready_norm()` / `ready_show()` / `ready_garden()`
+## **都不要重写 `_ready()`**（硬约束 1-3）：生命周期分派在基类这里，
+## 子类一重写就有可能漏掉 `super()`，整条「按 init_type 分发」的链路悄悄失效，
+## 症状是「这个植物既不攻击也不产阳光」，但没有任何报错。
+func character_ready() -> void:
+	pass
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
@@ -245,7 +259,7 @@ func be_hypno():
 	signal_character_be_hypno.emit()
 	## 广播给场上所有检测组件：敌我关系变了，下一帧重新判定目标
 	## （魅惑不再切换受击层，光靠信号只有被魅惑者自己的组件会重判）
-	EventBus.push_event("character_be_hypno", [self])
+	EventBus.push_event(ConstEventName.CHARACTER_BE_HYPNO, [self])
 	update_direction_x_root(-1)
 
 	#hurt_box_component.disable_component(ComponentNormBase.E_IsEnableFactor.Hypno)
@@ -351,3 +365,39 @@ func cancel_ice():
 ## 想要「宿主那一层」就问宿主，由宿主决定它自己属于哪一层（硬约束 1-2）。
 func get_sibling_layer() -> Node:
 	return get_parent()
+
+
+## 主场景访问器：角色需要的主场景能力一律走这里，**不要**在实体里直接写 Global.main_game。
+##
+## 为什么：直接取全局单例等于让角色（僵尸 / 植物 / 僵王）隐式依赖「当前一定有一局主游戏」，
+## 而展示态（图鉴、卡片静态预览、花园）没有主场景，那些分支只能靠调用点散落的
+## is_instance_valid() 各兜各的（历史上 seed_packet 就因此接过已释放实例）。
+## 收进本方法之后：实体代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处。
+##
+## 组件请用 ComponentNormBase 提供的同名访问器（它内部转问 owner，即本角色）。
+func get_main_game() -> MainGameManager:
+	return Global.main_game
+
+
+## **组件取「宿主身上某个节点」的统一入口**（替代在组件里拼 `$"../XXX"`）
+##
+## 为什么不让组件写相对路径：`../AnimationTree` 这类写法等于让组件同时假设了三件事 ——
+## 「宿主是我的父节点」「目标节点在宿主的第几层」「它没有挪进 Body 之类的子容器」。
+## 宿主结构一改（多包一层、某个孩子挪位置），组件会**静默取到 null** 而不报错，
+## 症状是「这个角色不动了 / 不播动画了」，排查成本很高。
+##
+## 走本函数后，这些假设被收进「宿主」一个对象：组件只说「我要宿主身上的 X」，
+## 由宿主回答自己的结构。将来宿主结构调整，组件侧一行都不用动。
+##
+## 用法（组件里的 @onready，写法与原来的 `$"../X"` 一一对应）：
+##[codeblock]
+##	@onready var animation_tree: AnimationTree = Character000Base.host_node_of(owner, ^"AnimationTree")
+##[/codeblock]
+##
+## owner 为空时返回 null（运行时裸 new 出来、还没挂进宿主场景的节点会走这条分支），
+## 调用方照旧判空即可 —— 与原来 `$"../X"` 在节点缺失时的行为一致。
+static func host_node_of(character_owner: Node, host_path: NodePath) -> Node:
+	var host := character_owner as Character000Base
+	if host == null:
+		return null
+	return host.get_node_or_null(host_path)

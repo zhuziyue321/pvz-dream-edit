@@ -166,7 +166,7 @@ func init_zombie(zombie_init_para:Dictionary):
 			if zombie_init_para.has(E_ZInitAttr.CurrZombieRowType):
 				self.curr_zombie_row_type = zombie_init_para[E_ZInitAttr.CurrZombieRowType]
 			else:
-				self.curr_zombie_row_type = Global.main_game.zombie_manager.all_zombie_rows[lane].zombie_row_type
+				self.curr_zombie_row_type = get_main_game().zombie_manager.all_zombie_rows[lane].zombie_row_type
 			self.curr_wave = zombie_init_para.get(E_ZInitAttr.CurrWave, -1)
 
 
@@ -183,9 +183,9 @@ func ready_norm():
 	head_node = ZombieButterUtil.find_head_node(self)
 	curr_be_attack_status = init_be_attack_status
 	## 若生成位置在斜面中,生成时修正斜面位置
-	if is_instance_valid(Global.main_game.main_game_slope):
+	if is_instance_valid(get_main_game().main_game_slope):
 		## 获取对应位置的斜面y相对位置
-		var slope_y_first = Global.main_game.main_game_slope.get_all_slope_y(global_position.x)
+		var slope_y_first = get_main_game().main_game_slope.get_all_slope_y(global_position.x)
 		move_y_zombie(slope_y_first)
 	## 僵尸普通攻击组件连接信号
 	#if attack_component is AttackComponentZombieNorm:

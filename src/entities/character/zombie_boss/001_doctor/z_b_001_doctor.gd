@@ -167,7 +167,7 @@ func _select_skill_scene_config() -> bool:
 	# 编辑器直接运行博士场景或没有关卡参数时，默认选择屋顶。
 	var scene_type: MainSceneRegistry.MainScenes = MainSceneRegistry.MainScenes.MainGameRoof
 	# 只读取实际包含当前博士的关卡，避免离树或切场景后错误采用其他关卡资源。
-	var game: MainGameManager = Global.main_game
+	var game: MainGameManager = get_main_game()
 	if is_instance_valid(game) and game.is_ancestor_of(self) and game.game_para != null:
 		scene_type = game.game_para.game_sences
 	skill_scene_config = skill_scene_configs.get(scene_type)

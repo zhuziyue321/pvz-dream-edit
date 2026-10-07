@@ -130,14 +130,14 @@ signal signal_curr_zombie_num_change(num:int)
 func _ready():
 	boss_registry = ZmBossRegistry.new(self)
 	## 注册事件总线
-	EventBus.subscribe("ice_all_zombie", ice_all_zombie)
+	EventBus.subscribe(ConstEventName.ICE_ALL_ZOMBIE, ice_all_zombie)
 	## 火爆辣椒销毁道具[冰道和梯子]
-	EventBus.subscribe("jalapeno_bomb_item_lane", jalapeno_bomb_item_lane)
-	EventBus.subscribe("jalapeno_bomb_lane_zombie", jalapeno_bomb_lane_zombie)
-	EventBus.subscribe("blover_blow_away_in_sky_zombie", blover_blow_away_in_sky_zombie)
+	EventBus.subscribe(ConstEventName.JALAPENO_BOMB_ITEM_LANE, jalapeno_bomb_item_lane)
+	EventBus.subscribe(ConstEventName.JALAPENO_BOMB_LANE_ZOMBIE, jalapeno_bomb_lane_zombie)
+	EventBus.subscribe(ConstEventName.BLOVER_BLOW_AWAY_IN_SKY_ZOMBIE, blover_blow_away_in_sky_zombie)
 	## 非刷怪模式最后一波僵尸
-	EventBus.subscribe("end_wave_zombie", func():is_end_wave=true)
-	EventBus.subscribe("test_death_all_zombie", death_all_zombie)
+	EventBus.subscribe(ConstEventName.END_WAVE_ZOMBIE, func():is_end_wave=true)
+	EventBus.subscribe(ConstEventName.TEST_DEATH_ALL_ZOMBIE, death_all_zombie)
 
 	create_zombie_rows_from_map_data()
 
@@ -339,7 +339,7 @@ func _on_zombie_hypno(zombie:Zombie000Base):
 
 	## 如果到了最后一波刷新,且最后一个僵尸被魅惑
 	if is_end_wave and curr_zombie_num == 0:
-		EventBus.push_event("create_trophy", [zombie.global_position])
+		EventBus.push_event(ConstEventName.CREATE_TROPHY, [zombie.global_position])
 		if is_instance_valid(multi_round_end_wave_timer):
 			multi_round_end_wave_timer.stop()
 
@@ -354,7 +354,7 @@ func _on_zombie_dead(zombie: Zombie000Base) -> void:
 
 		## 如果到了最后一波刷新,且僵尸全部死亡
 		if is_end_wave and curr_zombie_num == 0:
-			EventBus.push_event("create_trophy", [zombie.global_position])
+			EventBus.push_event(ConstEventName.CREATE_TROPHY, [zombie.global_position])
 			if is_instance_valid(multi_round_end_wave_timer):
 				multi_round_end_wave_timer.stop()
 #endregion
@@ -397,7 +397,7 @@ func multi_round_end_wave_timer_start():
 
 ## 触发开始下一轮game
 func _on_trigger_start_next_round_game():
-	EventBus.push_event("start_next_round_game")
+	EventBus.push_event(ConstEventName.START_NEXT_ROUND_GAME)
 	multi_round_end_wave_timer.stop()
 #endregion
 
@@ -533,7 +533,7 @@ func clear_bosses_for_next_round() -> void:
 func _try_finish_wave(global_pos: Vector2) -> void:
 	if not is_end_wave or curr_zombie_num != 0:
 		return
-	EventBus.push_event("create_trophy", [global_pos])
+	EventBus.push_event(ConstEventName.CREATE_TROPHY, [global_pos])
 	if is_instance_valid(multi_round_end_wave_timer):
 		multi_round_end_wave_timer.stop()
 #endregion

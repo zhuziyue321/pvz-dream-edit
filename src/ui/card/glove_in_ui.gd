@@ -9,7 +9,7 @@ class_name UIGlove
 
 ## 鼠标点击手套：交给手持物组件处理（拿到手上）
 func _on_button_pressed() -> void:
-	EventBus.push_event("main_game_click_glove")
+	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_GLOVE)
 
 
 ## 刷新增手套界面

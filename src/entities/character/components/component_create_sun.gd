@@ -45,14 +45,14 @@ func _on_character_death():
 		remaining_sun_on_zombie_mode = 0
 
 #endregion
-func _ready() -> void:
+func component_ready() -> void:
 	#if get_tree().current_scene != MainGameManager:
 	if not get_tree().current_scene is MainGameManager:
 		return
 	create_interval = randf_range(create_time_range_first.x, create_time_range_first.y)
 	create_sun_timer.start(create_interval)
 
-	EventBus.subscribe("main_game_progress_update", _on_main_game_progress_update)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_PROGRESS_UPDATE, _on_main_game_progress_update)
 
 ## 主游戏进程改变时,修改生产阳光组件
 func _on_main_game_progress_update(curr_main_game_progress:MainGameManager.E_MainGameProgress):
@@ -98,8 +98,8 @@ func _spawn_sun():
 	SoundManager.play_character_SFX(&"Throw1")
 	for i in range(num_create_sun):
 		var new_sun:Sun = SceneRegistry.SUN.instantiate()
-		new_sun.init_sun(sun_value, Global.main_game.suns.to_local(marker_2d_create_sun.global_position))
-		Global.main_game.suns.add_child(new_sun)
+		new_sun.init_sun(sun_value, get_main_game().suns.to_local(marker_2d_create_sun.global_position))
+		get_main_game().suns.add_child(new_sun)
 
 		# 控制阳光下落
 		var tween = new_sun.create_tween()

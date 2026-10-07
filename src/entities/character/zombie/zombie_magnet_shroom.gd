@@ -47,7 +47,7 @@ func _on_magnet_timer_timeout() -> void:
 
 ## 找到本行玩家的磁力菇（没有返回 null）
 func _find_magnet_plant() -> Plant000Base:
-	var all_plant_cells: Array = Global.main_game.plant_cell_manager.all_plant_cells
+	var all_plant_cells: Array = get_main_game().plant_cell_manager.all_plant_cells
 	if lane < 0 or lane >= all_plant_cells.size():
 		return null
 	for cell in all_plant_cells[lane]:

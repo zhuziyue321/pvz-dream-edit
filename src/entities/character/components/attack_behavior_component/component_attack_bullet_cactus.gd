@@ -3,7 +3,7 @@ class_name AttackComponentBulletCactus
 
 var is_rise:= false
 
-func _ready() -> void:
+func component_ready() -> void:
 	super()
 	## 仙人掌使用自身的掩码组件独立于检测组件动态修改子弹掩码
 	if not is_instance_valid(can_attack_status_component):

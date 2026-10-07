@@ -30,8 +30,8 @@ func _ready() -> void:
 		movement_component.parabola_movement_ready(target_enemy_glo_pos_init)
 
 	## 是否有斜坡
-	is_have_slope = is_instance_valid(Global.main_game.main_game_slope)
-	global_pos_y_shadow = Global.main_game.get_row_base_global_y(lane)
+	is_have_slope = is_instance_valid(get_main_game().main_game_slope)
+	global_pos_y_shadow = get_main_game().get_row_base_global_y(lane)
 
 	update_shadow_global_pos()
 
@@ -94,8 +94,8 @@ func update_shadow_global_pos():
 ## 场景有斜坡时更新默认影子y值
 func update_global_pos_y_shadow_on_have_slope():
 	## 获取相对斜坡的位置
-	var slope_y = Global.main_game.main_game_slope.get_all_slope_y(global_position.x)
-	global_pos_y_shadow = Global.main_game.get_row_base_global_y(lane) + slope_y
+	var slope_y = get_main_game().main_game_slope.get_all_slope_y(global_position.x)
+	global_pos_y_shadow = get_main_game().get_row_base_global_y(lane) + slope_y
 
 
 ## 抛物线子弹先对Norm进行攻击

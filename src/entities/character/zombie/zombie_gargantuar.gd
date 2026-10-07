@@ -59,9 +59,9 @@ func create_imp():
 		Zombie000Base.E_ZInitAttr.Lane:lane,
 		Zombie000Base.E_ZInitAttr.IsPotZombie: is_pot_zombie,
 	}
-	Global.main_game.zombie_manager.create_norm_zombie(
+	get_main_game().zombie_manager.create_norm_zombie(
 		CharacterRegistry.ZombieType.Z025Imp,
-		Global.main_game.zombie_manager.all_zombie_rows[lane],
+		get_main_game().zombie_manager.all_zombie_rows[lane],
 		zombie_init_para,
 		_get_imp_throw_glo_pos(),
 		update_imp_throw_pos
@@ -72,10 +72,10 @@ func _get_imp_throw_glo_pos()->Vector2:
 	var target_x_imp_throw = clamp(global_position.x - XThrow, RangeXImpThrow.x, RangeXImpThrow.y)
 	var target_x_imp_throw_res = target_x_imp_throw + randf_range(RangeRandomXThrow.x, RangeRandomXThrow.y)
 	#prints("全局位置:", global_position.x, "投掷位置:", target_x_imp_throw, "随机位置:", target_x_imp_throw_res)
-	glo_pos_imp_be_thrown = Vector2(target_x_imp_throw_res, Global.main_game.zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)
+	glo_pos_imp_be_thrown = Vector2(target_x_imp_throw_res, get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)
 	return glo_pos_imp_be_thrown
-	#Vector2(target_x_imp_throw_res - Global.main_game.zombie_manager.all_zombie_rows[lane].global_position.x, \
-	#Global.main_game.zombie_manager.all_zombie_rows[lane].zombie_create_position.position.y)
+	#Vector2(target_x_imp_throw_res - get_main_game().zombie_manager.all_zombie_rows[lane].global_position.x, \
+	#get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.position.y)
 
 ## 更新投掷小鬼的位置
 func update_imp_throw_pos(zombie_imp:Zombie025Imp):

@@ -81,7 +81,7 @@ func encyclopedia():
 
 ## 重新开始
 func resume_game():
-	EventBus.push_event("set_keep_system_cursor_visible", true)
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
 
 	Global.main_game.save_manager.re_main_game()
 
@@ -93,7 +93,7 @@ func resume_game():
 
 ## 返回主菜单
 func return_main_menu():
-	EventBus.push_event("set_keep_system_cursor_visible", true)
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
 	TreePauseManager.end_tree_pause_clear_all_pause_factors()
 	Global.time_scale = 1.0
 	Engine.time_scale = Global.time_scale

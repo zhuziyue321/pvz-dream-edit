@@ -68,7 +68,7 @@ func _on_texture_button_pressed() -> void:
 
 	## 本关结算线上的掉落物：收尾表演由 CanvasLayerWhiteScreen 接管，本体也由它在白屏到底时释放
 	if is_level_complete_drop:
-		EventBus.push_event("level_complete_pickup", [self])
+		EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP, [self])
 		return
 
 	texture_button.visible = false

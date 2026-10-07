@@ -228,7 +228,7 @@ func _wait_seeing_stars_result(mg: MainGameManager) -> void:
 	while is_instance_valid(mg) and mg.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 		if is_all_star_cells_planted():
 			Log.debug(str("观星：") + str(star_cells.size()) + str(" 个轮廓点全部种上杨桃，通关"))
-			EventBus.push_event("create_trophy", [get_star_center_global_position()])
+			EventBus.push_event(ConstEventName.CREATE_TROPHY, [get_star_center_global_position()])
 			return
 		if _get_passed_flag_num(mg) >= MAX_FLAG:
 			Log.debug(str("观星：第 ") + str(MAX_FLAG) + str(" 面旗帜已升起，还剩 ")

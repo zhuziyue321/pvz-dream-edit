@@ -213,5 +213,5 @@ Agent 标识:        A / B / C / D
 
 - 全仓脚本 333 个（`.gd`），最大业务脚本 `character_registry.gd` 756 行，被 67 个文件引用。
 - autoload 单例 9 个：`Log Global SoundManager SceneRegistry AllCards GlobalUtils EventBus TreePauseManager DebugChannel`。
-- 验证方式：**打开游戏（带窗口）实测**；改动较小 / 确定不会出问题 → 免验证。
+- 验证方式：**编译门禁必过**（`test/check_scripts.ps1`）；**打开游戏（带窗口）实测为建议**，改动较小 / 确定不会出问题 → 不开。
 - 红线 14 条见 [项目规范.md](项目规范.md) §8；仓库已无静态检查器，靠评审 + 打开游戏实测兜底。

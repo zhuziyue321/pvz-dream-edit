@@ -33,8 +33,7 @@ func update_is_attack_factors(value:bool, factor:E_IsAttackFactors):
 
 signal signal_change_is_attack(value:bool)
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	detect_component_init()
 
 func detect_component_init():

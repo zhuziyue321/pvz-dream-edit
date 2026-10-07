@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CrazyDaveDialogResource" format=3]
+
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="1_detail"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_000.tres" id="2_op0"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_001.tres" id="3_op1"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_002.tres" id="4_op2"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_003.tres" id="5_op3"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_004.tres" id="6_op4"]
+[ext_resource type="Resource" path="res://data/dave/dialog_detail/adventure_02_05/opening_005.tres" id="7_op5"]
+[ext_resource type="Script" path="res://data/dave/crazy_dave_dialog_resource.gd" id="8_dave"]
+
+[resource]
+; 原版冒险模式 2-5 开场戴夫台词（锤僵尸关：戴夫拿「打地鼠」作比介绍本关玩法）
+; 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Level_2-5?action=raw) 的 Dialogue 段
+; 中文台词按游戏中文版语音转写(https://www.ximalaya.com/ask/a23193331)，与 wiki 英文原文逐句对应
+script = ExtResource("8_dave")
+dialog_detail_list = Array[ExtResource("1_detail")]([ExtResource("2_op0"), ExtResource("3_op1"), ExtResource("4_op2"), ExtResource("5_op3"), ExtResource("6_op4"), ExtResource("7_op5")])

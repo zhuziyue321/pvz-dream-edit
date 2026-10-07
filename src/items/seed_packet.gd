@@ -100,7 +100,7 @@ func _on_texture_button_pressed() -> void:
 		reminder_info._init_info([tip_text], tip_show_time)
 
 	if is_level_complete_drop:
-		EventBus.push_event("level_complete_pickup", [self])
+		EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP, [self])
 		return
 
 	var target_position := get_card_slot_target()

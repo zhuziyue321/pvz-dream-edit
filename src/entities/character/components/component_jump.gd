@@ -39,8 +39,7 @@ signal signal_jump_end_end()
 ## 我是僵尸模式检测脑子
 signal signal_detect_brain()
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	_ensure_can_attack_status_component()
 
 

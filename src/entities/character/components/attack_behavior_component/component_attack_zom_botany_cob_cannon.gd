@@ -11,9 +11,9 @@ func _shoot_bullet() -> void:
 	var target := detect_component.enemy_can_be_attacked
 	if not is_instance_valid(target) or markers_2d_bullet.is_empty():
 		return
-	var bullet: Bullet016CobCannon = Global.bullet_registry.get_bullet_scenes(
+	var bullet: Bullet016CobCannon = Global.bullet_registry.create_bullet(
 		BulletRegistry.BulletType.Bullet016CobCannon
-	).instantiate()
+	)
 	bullet.init_cannon(target.global_position)
 	## 阵营：僵尸方玉米炮，炸弹炸的是玩家的植物（见 bullet_cob_cannon.gd）
 	bullet.bullet_camp = get_bullet_camp()

@@ -45,9 +45,9 @@ var plant_cell_garden:PlantCellGarden
 ## 发芽成长信号,组件与植物根节点连接信号
 signal signal_sprout_grow
 
-func _ready() -> void:
-	## 必须调 super：ComponentNormBase._ready() 负责「场景里配了 is_enable_default = false 就禁用组件」
-	super._ready()
+func component_ready() -> void:
+	## 「场景里配了 is_enable_default = false 就禁用组件」由基类 ComponentNormBase._ready()
+	## 负责，基类在里面调用本 component_ready()，这里不需要（也不许）自己调 super
 	## 需求气泡
 	garden_speech_bubble = SceneRegistry.GARDEN_SPEECH_BUBBLE.instantiate()
 	add_child(garden_speech_bubble)
@@ -94,7 +94,7 @@ func _on_coin_timer_timeout():
 		create_coin_timer.start(create_coin_time_cd + randf_range(-5, 5))
 	else:
 		create_coin_timer.stop()
-	EventBus.push_event("create_coin", [[0.7, 0.25, 0.05], global_position_create_coin])
+	EventBus.push_event(ConstEventName.CREATE_COIN, [[0.7, 0.25, 0.05], global_position_create_coin])
 
 ## 检测当前是否需要触发，读档时使用
 func _check_if_need_should_trigger():
@@ -153,7 +153,7 @@ func satisfy_need(item: GardenManager.E_NeedItem):
 	var is_update_growth_stage := false
 	match curr_need_item:
 		GardenManager.E_NeedItem.WateringCan:
-			EventBus.push_event("create_coin", [[0.5, 0.5, 0.0], global_position_create_coin])
+			EventBus.push_event(ConstEventName.CREATE_COIN, [[0.5, 0.5, 0.0], global_position_create_coin])
 			curr_water_time += 1
 			# 开启下一次需求计时
 			_calculate_next_need_time(short_time_range_need_item_next)
@@ -163,8 +163,8 @@ func satisfy_need(item: GardenManager.E_NeedItem):
 				up_growth_stage()
 			else:
 				Log.debug("不应该出现该语句，当前满足完美状态需求，")
-			EventBus.push_event("create_coin", [[0.0, 0.95, 0.05], global_position_create_coin])
-			EventBus.push_event("create_coin", [[0.0, 0.95, 0.05], global_position_create_coin])
+			EventBus.push_event(ConstEventName.CREATE_COIN, [[0.0, 0.95, 0.05], global_position_create_coin])
+			EventBus.push_event(ConstEventName.CREATE_COIN, [[0.0, 0.95, 0.05], global_position_create_coin])
 
 			curr_water_time = 0
 			max_water_time = randi_range(3, 5)  # 重置新的最大次数

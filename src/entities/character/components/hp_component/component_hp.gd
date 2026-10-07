@@ -1,5 +1,12 @@
 extends Node2D
 class_name HpComponent
+## 血量组件
+##
+## 为什么**不**继承 ComponentNormBase：血量组件确实挂在每个角色身上，看着该进组件体系，
+## 也确实曾经自己重写 _ready()。但接入基类会让它一并继承 `is_enabling` / 禁用因素
+## 那套机制，而血量是角色存活与攻击判定的基础 —— 接入后出现过
+## 「植物和僵尸都不攻击」的回归（与 AnimComponentBase 那次同类）。故保持 Node2D。
+## 初始化写在 `_ready()` 里（本类不是组件，不参与 component_ready() 分派）。
 
 @onready var owner_character: Character000Base = owner
 

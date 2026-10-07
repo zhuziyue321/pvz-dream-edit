@@ -17,12 +17,12 @@ func get_roll_animation() -> StringName:
 
 ## 复用寒冰菇的全场冰冻事件，不限制火球所在行。
 func _subscribe_counter_events() -> void:
-	EventBus.subscribe("ice_all_zombie", _on_ice_all_zombie)
+	EventBus.subscribe(ConstEventName.ICE_ALL_ZOMBIE, _on_ice_all_zombie)
 
 
 ## 取消寒冰菇事件订阅；销毁与退出场景时重复调用安全。
 func _unsubscribe_counter_events() -> void:
-	EventBus.unsubscribe("ice_all_zombie", _on_ice_all_zombie)
+	EventBus.unsubscribe(ConstEventName.ICE_ALL_ZOMBIE, _on_ice_all_zombie)
 
 
 ## 寒冰菇生效时直接消除火球，不对球施加冰冻或减速。[br]

@@ -42,4 +42,4 @@ func run_flow(mg: MainGameManager) -> void:
 	if is_instance_valid(slot_ui):
 		slot_ui.queue_free()
 
-	EventBus.push_event("create_trophy", [Vector2(400, 300)])
+	EventBus.push_event(ConstEventName.CREATE_TROPHY, [Vector2(400, 300)])

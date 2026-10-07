@@ -6,7 +6,7 @@ class_name BombEffectDoom
 
 func activate_bomb_effect():
 	super()
-	EventBus.push_event("canvas_layer_effect_once", [CanvasLayerEffect.E_CanvasLayerEffectType.Doom])
+	EventBus.push_event(ConstEventName.CANVAS_LAYER_EFFECT_ONCE, [CanvasLayerEffect.E_CanvasLayerEffectType.Doom])
 
 	if not is_instance_valid(animation_player):
 		queue_free()

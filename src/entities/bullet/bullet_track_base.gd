@@ -18,7 +18,7 @@ func _ready() -> void:
 func init_bullet(bullet_paras:Dictionary[E_InitParasAttr,Variant]):
 	super(bullet_paras)
 	z_index = 4000
-	detect_component_global = Global.main_game.detect_component_global
+	detect_component_global = get_main_game().detect_component_global
 
 	target_enemy = bullet_paras.get(E_InitParasAttr.Enemy, null)
 

@@ -178,14 +178,14 @@ func start_next_wave() -> void:
 
 ## 携带解锁道具的僵尸死亡，推送掉落事件（由 DropItemManager 实例化道具）
 func _on_unlock_zombie_death(unlock_zombie: Zombie000Base) -> void:
-	EventBus.push_event("create_unlock_drop", [unlock_zombie.global_position])
+	EventBus.push_event(ConstEventName.CREATE_UNLOCK_DROP, [unlock_zombie.global_position])
 
 ## 墓碑伏击:先补一批新墓碑(仅会生长的关卡),再由场上每个墓碑各放出一只僵尸
 ## 僵尸种类固定为普通 / 路障 / 铁桶三选一(见 zombie_type_candidate_tombstone)
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Grave_(PvZ))
 func call_tombstone_create_zombie():
 	if is_tombstone_respawn:
-		EventBus.push_event("create_tombstone", [randi()%3+1])
+		EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [randi()%3+1])
 		await get_tree().create_timer(1.0, false).timeout
 	for i in range(Global.main_game.plant_cell_manager.tombstone_list.size()):
 		var new_zombie_type = zombie_type_candidate_tombstone.pick_random()
@@ -219,7 +219,7 @@ func is_battle_started() -> bool:
 
 ## 进度条上要画几面旗帜（每 10 波一面）
 func get_flag_num() -> int:
-	return max_wave_one_round / 10
+	return floori(float(max_wave_one_round) / 10.0)
 
 ## 取走「本帧要升旗」的旗帜下标（-1 = 不升）
 func take_flag_raise_index() -> int:

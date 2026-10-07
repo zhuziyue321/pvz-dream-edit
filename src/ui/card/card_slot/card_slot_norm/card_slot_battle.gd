@@ -22,9 +22,9 @@ var sun_value:
 
 func _ready() -> void:
 	Global.config_service.signal_change_disappear_spare_card_placeholder.connect(judge_disappear_add_card_bar)
-	EventBus.subscribe("test_change_sun_value", func(value): sun_value = value)
-	EventBus.subscribe("add_sun_value", func(value): sun_value+=value)
-	EventBus.subscribe("update_card_purple_sun_cost", update_card_purple_sun_cost)
+	EventBus.subscribe(ConstEventName.TEST_CHANGE_SUN_VALUE, func(value): sun_value = value)
+	EventBus.subscribe(ConstEventName.ADD_SUN_VALUE, func(value): sun_value+=value)
+	EventBus.subscribe(ConstEventName.UPDATE_CARD_PURPLE_SUN_COST, update_card_purple_sun_cost)
 
 
 ## 初始化出战卡槽，管理器调用
@@ -37,7 +37,7 @@ func init_card_slot_battle(max_choosed_card_num:int, sun:int):
 	card_placeholder_ori.free()		## 立即删除掉该节点，下面获取卡槽占位节点
 	cards_placeholder = card_ui_list.get_children()
 	## 更新阳光收集位置
-	EventBus.push_event("update_marker_2d_sun_target", marker_2d_sun_target)
+	EventBus.push_event(ConstEventName.UPDATE_MARKER_2D_SUN_TARGET, marker_2d_sun_target)
 
 	return cards_placeholder
 

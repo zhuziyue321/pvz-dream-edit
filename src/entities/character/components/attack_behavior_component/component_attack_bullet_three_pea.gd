@@ -10,13 +10,13 @@ var bullet_border_compensation := 0
 var attack_ray_coll_shape:Array[CollisionShape2D]
 
 ## 初始化三线射手攻击组件
-func _ready() -> void:
+func component_ready() -> void:
 	super()
 	## 检测组件下还有非 Area2D 子节点(如 CanAttackStatusComponent)，只取射线区域
 	for node in detect_component.get_children():
 		if node is Area2D:
 			attack_ray_coll_shape.append((node as Area2D).get_child(0))
-	if is_instance_valid(Global.main_game):
+	if is_instance_valid(get_main_game()):
 		_init_attack_component_bullet_three_pea(owner.row_col)
 
 
@@ -39,7 +39,7 @@ func _shoot_bullet():
 func _create_bullte(await_time:float, i:int=1, change_y_target:bool=false):
 	if await_time:
 		await get_tree().create_timer(await_time).timeout
-	var bullet: Bullet000Base = Global.bullet_registry.get_bullet_scenes(attack_bullet_type).instantiate()
+	var bullet: Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
 	var bullet_paras: Dictionary = _build_three_pea_bullet_paras(i, change_y_target)
 	bullet.init_bullet(bullet_paras)
 	bullets.add_child(bullet)
@@ -70,7 +70,7 @@ func _build_three_pea_bullet_paras(i: int, change_y_target: bool) -> Dictionary:
 func _judge_position_bullet_position(row_col:Vector2i):
 	if row_col.x == 0:
 		bullet_border_compensation = 1
-	elif row_col.x == Global.main_game.plant_cell_manager.row_col.x - 1:
+	elif row_col.x == get_main_game().plant_cell_manager.row_col.x - 1:
 		bullet_border_compensation = -1
 	else:
 		bullet_border_compensation = 0

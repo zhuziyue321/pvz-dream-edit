@@ -265,10 +265,13 @@ func _collect_registries() -> void:
 	else:
 		_report.line("!! Global.character_registry 为空")
 	var br = Global.get("bullet_registry")
-	if br != null and br.get("BulletTypeMap") != null:
-		_report.line("子弹注册表: %d" % br.BulletTypeMap.size())
+	if br != null:
+		## 子弹场景现在按需加载，这里报「登记数 / 已缓存数」两个口径
+		_report.line("子弹注册表: 登记=%d 已缓存=%d" % [
+			BulletRegistry.BULLET_SCENE_PATHS.size(), br.get_cached_scene_count()
+		])
 	else:
-		_report.line("子弹注册表: 取不到（成员名可能已变）")
+		_report.line("!! Global.bullet_registry 为空")
 	if AllCards != null:
 		_report.line("AllCards: 植物卡=%d 僵尸卡=%d 僵王卡=%d" % [
 			AllCards.all_plant_card_prefabs.size(), AllCards.all_zombie_card_prefabs.size(),

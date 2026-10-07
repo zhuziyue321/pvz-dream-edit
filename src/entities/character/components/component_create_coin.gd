@@ -19,7 +19,7 @@ var create_speed := 1.0
 ## 阳光生产间隔
 var create_interval :float
 
-func _ready() -> void:
+func component_ready() -> void:
 	#if get_tree().current_scene != MainGameManager:
 	if not get_tree().current_scene is MainGameManager:
 		return
@@ -38,7 +38,7 @@ func change_production_interval():
 
 ## 掉落金银钻
 func drop_coin():
-	EventBus.push_event("create_coin", [
+	EventBus.push_event(ConstEventName.CREATE_COIN, [
 			drop_coin_silver_glod_diamond_rate, marker_2d_create_coin.global_position
 		])
 

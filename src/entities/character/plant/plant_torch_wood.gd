@@ -32,8 +32,9 @@ func _on_area_2d_up_bullet_area_exited(area: Area2D) -> void:
 ## 升级子弹
 func _up_bullet(curr_bullet:Bullet000Base):
 	if curr_bullet not in curr_bullet_up:
-		var new_bullet_up_scenes = Global.bullet_registry.get_bullet_scenes(bullet_upgrade_data[curr_bullet.bullet_type])
-		var bullet_up :Bullet000Base = new_bullet_up_scenes.instantiate()
+		var bullet_up :Bullet000Base = Global.bullet_registry.create_bullet(
+			bullet_upgrade_data[curr_bullet.bullet_type]
+		)
 		bullet_up.init_bullet(curr_bullet.get_bullet_paras())
 		curr_bullet_up.append(bullet_up)
 		bullets.call_deferred("add_child", bullet_up)

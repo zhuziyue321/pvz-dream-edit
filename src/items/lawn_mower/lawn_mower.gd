@@ -59,7 +59,7 @@ func start_trigger_filter(zombie :Zombie000Base):
 ## 启动小推车（所有触发点统一走这里，子类实现 _do_start_mower）
 func _start_mower():
 	## 丢车保护：本行一段时间内不出怪（原版机制），由选行系统订阅
-	EventBus.push_event("lawn_mover_triggered", [lane])
+	EventBus.push_event(ConstEventName.LAWN_MOVER_TRIGGERED, [lane])
 	_do_start_mower()
 
 ## 各类型小推车启动时的表现，子类重写

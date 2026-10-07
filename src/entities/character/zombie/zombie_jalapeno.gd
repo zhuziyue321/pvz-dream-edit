@@ -29,7 +29,7 @@ func _on_change_is_attack(value: bool) -> void:
 
 ## 烧掉本行所有植物
 func _burn_lane() -> void:
-	var all_plant_cells: Array = Global.main_game.plant_cell_manager.all_plant_cells
+	var all_plant_cells: Array = get_main_game().plant_cell_manager.all_plant_cells
 	if lane < 0 or lane >= all_plant_cells.size():
 		Log.error("火爆辣椒僵尸的行号越界：" + str(lane))
 		return

@@ -5,7 +5,7 @@ extends LevelScriptBase
 ## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(_main_game: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,

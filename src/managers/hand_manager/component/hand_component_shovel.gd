@@ -27,7 +27,7 @@ func get_hand_component_type() -> E_HandComponentType:
 func _ready_component() -> void:
 	## 关卡参数决定本关允不允许有铲子，已通关 1-4 决定玩家手上有没铲子（两者都要满足）
 	change_is_enabling(is_can_has_shovel(), E_IsEnableFactor.HandItem)
-	EventBus.subscribe("main_game_click_shovel", _on_click_shovel)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_CLICK_SHOVEL, _on_click_shovel)
 
 
 ## 本局是否可以持有铲子：关卡没禁用铲子 + 玩家已通关 1-4 拿到铲子

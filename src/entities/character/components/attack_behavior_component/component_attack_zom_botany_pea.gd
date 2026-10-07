@@ -47,11 +47,11 @@ var bullets: Node2D
 var is_head_plant_alive := true
 
 
-func _ready() -> void:
+func component_ready() -> void:
 	super()
 	bullet_attack_cd_timer.wait_time = attack_cd
-	if is_instance_valid(Global.main_game):
-		bullets = Global.main_game.bullets
+	if is_instance_valid(get_main_game()):
+		bullets = get_main_game().bullets
 	## owner 的 @onready（hp_component）在本组件之后才赋值（Godot 先跑子节点 _ready 再跑父节点），
 	## 所以「头顶植物被打掉」的信号必须等 owner ready 完再连
 	if owner.is_node_ready():
@@ -106,7 +106,7 @@ func _shoot_bullet() -> void:
 	for marker in markers_2d_bullet:
 		if not is_instance_valid(marker):
 			continue
-		var bullet: Bullet000Base = Global.bullet_registry.get_bullet_scenes(attack_bullet_type).instantiate()
+		var bullet: Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
 		bullet.init_bullet(_get_bullet_paras(marker.global_position))
 		bullets.add_child(bullet)
 	_play_head_shoot_anim()

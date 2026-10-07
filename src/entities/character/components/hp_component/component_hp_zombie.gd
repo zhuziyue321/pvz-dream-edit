@@ -69,6 +69,8 @@ signal signal_armor2_death
 signal signal_zombie_hp_loss(all_loss_hp:int)
 
 func _ready() -> void:
+	## 必须调 super：HpComponent._ready() 负责把 curr_hp 初始化成 max_hp，
+	## 并接上血条显示的配置信号。基类 ComponentNormBase._ready() 会调用到本方法。
 	super()
 	self.curr_hp_armor1 = max_hp_armor1
 	self.curr_hp_armor2 = max_hp_armor2

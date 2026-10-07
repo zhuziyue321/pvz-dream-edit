@@ -17,10 +17,24 @@
     Use it as a cheap first gate (seconds) before spending minutes on a real run:
         check_scripts.ps1   ->      then   run_autopilot.ps1 -Scenario probe_x -Windowed
 
-    KNOWN LIMITATION: Godot only compiles scripts reachable from something it loads,
+    KNOWN LIMITATION 1: Godot only compiles scripts reachable from something it loads,
     so a brand-new script that nothing imports yet may slip through unnoticed. Run it
-    again after the file has been referenced (or after a full editor scan). Errors in
-    existing scripts are always caught - that was verified by injecting a broken symbol.
+    again after the file has been referenced (or after a full editor scan).
+
+    KNOWN LIMITATION 2 (实测 2026-10-07，**勿把 PASS 当成「没有问题」**):
+    `--import` 并不对所有脚本做**方法调用解析**，因此「在某个基类上不存在的方法」抓不到。
+    实证：`src/managers/portal_manager.gd` 是 `extends MainGameSubManager`（再往上是 Node），
+    却在 self 上调用 `get_world_2d()`（那是 CanvasItem / Viewport 的方法）。
+    Godot 编辑器明确报错 `Function "get_world_2d()" not found in base self`，
+    而本门禁当时输出 **PASS（real compile errors = 0）**，stderr 里连一行相关输出都没有。
+    该文件挂在 `main_game_base.tscn` 上，说明 --import 并未完整分析到它。
+
+    所以本门禁能抓：语法错误、类型推断问题、循环依赖、缺失的类与全局符号。
+    抓不到：方法在基类上不存在、参数个数/类型不匹配这类**语义**错误
+    （EventBus 的 payload 同理，靠运行期校验兜，见 EventBus._validate_payload）。
+
+    规避：改动涉及「在非 CanvasItem 的 Node 上调 2D 方法」时，务必在 Godot 编辑器里
+    看一眼（编辑器实时下划线会标出来），或真正打开游戏跑到那段逻辑。
 
     A curated list of messages that are noisy but harmless is skipped (see $Known below).
     Exit code: 0 = no unexpected errors, 1 = at least one real compile problem.

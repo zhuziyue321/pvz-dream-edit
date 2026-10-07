@@ -20,7 +20,8 @@ var wait_time_bomb :float= 0.0
 ## 小丑触发爆炸信号
 signal signal_trigger_bomb
 
-func _ready() -> void:
+func component_ready() -> void:
+	super()
 	owner = owner as Zombie000Base
 	## 如果出战角色
 	if owner.character_init_type == Character000Base.E_CharacterInitType.IsNorm:

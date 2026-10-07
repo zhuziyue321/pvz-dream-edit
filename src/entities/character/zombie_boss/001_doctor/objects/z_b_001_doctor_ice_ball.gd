@@ -17,12 +17,12 @@ func get_roll_animation() -> StringName:
 
 ## 复用火爆辣椒清除本行道具的事件，无需给冰球添加植物攻击检测层。
 func _subscribe_counter_events() -> void:
-	EventBus.subscribe("jalapeno_bomb_item_lane", _on_jalapeno_bomb_item_lane)
+	EventBus.subscribe(ConstEventName.JALAPENO_BOMB_ITEM_LANE, _on_jalapeno_bomb_item_lane)
 
 
 ## 取消辣椒事件订阅；EventBus 允许重复取消，也会清理订阅元数据。
 func _unsubscribe_counter_events() -> void:
-	EventBus.unsubscribe("jalapeno_bomb_item_lane", _on_jalapeno_bomb_item_lane)
+	EventBus.unsubscribe(ConstEventName.JALAPENO_BOMB_ITEM_LANE, _on_jalapeno_bomb_item_lane)
 
 
 ## 火爆辣椒生效时消除同行冰球。[param target_lane] 为技能所在行，从 0 开始。

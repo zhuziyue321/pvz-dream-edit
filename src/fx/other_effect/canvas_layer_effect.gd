@@ -20,7 +20,7 @@ func _ready() -> void:
 	for i in all_panel_effect.keys():
 		all_ori_color[i] = all_panel_effect[i].modulate
 	## 注册事件总线
-	EventBus.subscribe("canvas_layer_effect_once", canvas_layer_effect_once)
+	EventBus.subscribe(ConstEventName.CANVAS_LAYER_EFFECT_ONCE, canvas_layer_effect_once)
 
 ## 发生一次全屏光效
 func canvas_layer_effect_once(canvas_layer_effect_type:E_CanvasLayerEffectType, duration: float = 0.3):

@@ -101,13 +101,13 @@ func set_create_card_interval(interval: float) -> void:
 ## 按倍率调整出卡间隔：1 恢复关卡原始间隔，0.5 表示间隔减半（出卡速度翻倍）。[br]
 ## 基准取关卡初始化算出的原始间隔，所以反复调用同一个倍率不会叠加；
 ## 还没走过 init 的实例（编辑器直接跑场景）回退到当前 create_new_card_cd。
-func set_create_card_interval_scale(scale: float) -> void:
-	if not is_finite(scale) or scale <= 0.0:
-		Log.warn("传送带卡槽：出卡间隔倍率必须是正数，收到 %s，本次设置已忽略" % str(scale))
+func set_create_card_interval_scale(interval_scale: float) -> void:
+	if not is_finite(interval_scale) or interval_scale <= 0.0:
+		Log.warn("传送带卡槽：出卡间隔倍率必须是正数，收到 %s，本次设置已忽略" % str(interval_scale))
 		return
-	create_card_interval_scale = scale
+	create_card_interval_scale = interval_scale
 	var base_interval: float = base_create_card_interval if base_create_card_interval > 0.0 else create_new_card_cd
-	set_create_card_interval(base_interval * scale)
+	set_create_card_interval(base_interval * interval_scale)
 
 #endregion
 

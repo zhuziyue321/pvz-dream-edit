@@ -45,7 +45,7 @@ func _on_button_pressed() -> void:
 		else:
 			target_position = Global.main_game.marker_2d_sun_target_default.global_position
 
-		EventBus.push_event("add_sun_value", [sun_value])
+		EventBus.push_event(ConstEventName.ADD_SUN_VALUE, [sun_value])
 
 	var tween:Tween = get_tree().create_tween()
 	# 将节点从当前位置移动到(100, 200)，耗时0.5秒

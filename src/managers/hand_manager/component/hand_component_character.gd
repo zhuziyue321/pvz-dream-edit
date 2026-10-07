@@ -34,7 +34,7 @@ func get_hand_component_type() -> E_HandComponentType:
 
 
 func _ready_component() -> void:
-	EventBus.subscribe("main_game_click_card", _on_click_card)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_CLICK_CARD, _on_click_card)
 
 
 ## 点击卡片：拿到手上
@@ -55,7 +55,7 @@ func enter_hand(payload: Variant = null) -> bool:
 	_clear_curr_data()
 
 	curr_card = card
-	EventBus.push_event("hand_card_take", [curr_card])
+	EventBus.push_event(ConstEventName.HAND_CARD_TAKE, [curr_card])
 
 	## 僵王：召唤不检查格子占用、水陆或行号，虚影落在格子的普通植物位置
 	if curr_card.card_type == ResourceCardReference.CardType.ZombieBoss:
@@ -128,7 +128,7 @@ func _clear_curr_data() -> void:
 	_is_boss_card = false
 	## 若当前存在卡片，事件总线推清除当前卡片数据，种子雨卡槽接受判断
 	if is_instance_valid(curr_card):
-		EventBus.push_event("hand_card_release", [curr_card])
+		EventBus.push_event(ConstEventName.HAND_CARD_RELEASE, [curr_card])
 	curr_card = null
 
 	if is_instance_valid(characte_static):

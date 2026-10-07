@@ -187,7 +187,7 @@ func _on_button_pressed() -> void:
 	if is_main_game:
 		## 可以点击
 		if is_can_click:
-			EventBus.push_event("main_game_click_card", [self])
+			EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_CARD, [self])
 		else:
 			SoundManager.play_other_SFX("buzzer")
 	else:

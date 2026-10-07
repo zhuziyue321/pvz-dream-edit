@@ -35,8 +35,8 @@ var curr_temp_card_in_hm:Card
 signal signal_hand_card_release(card:Card)
 
 func _ready():
-	EventBus.subscribe("hand_card_release", _on_hand_card_release)
-	EventBus.subscribe("hand_card_take", _on_hand_card_take)
+	EventBus.subscribe(ConstEventName.HAND_CARD_RELEASE, _on_hand_card_release)
+	EventBus.subscribe(ConstEventName.HAND_CARD_TAKE, _on_hand_card_take)
 
 ## 当手持物拿到新卡片时
 func _on_hand_card_take(curr_card:Card):

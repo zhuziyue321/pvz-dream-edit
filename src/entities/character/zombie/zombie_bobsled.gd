@@ -38,7 +38,7 @@ func _play_anim(anim_name:StringName):
 ## 判断冰道是否在冰道上(0.3秒检测一次,不在冰道上掉100血)
 func judge_is_in_ice_road():
 	var is_in_road = false
-	for ice_road:IceRoad in Global.main_game.zombie_manager.all_ice_roads[lane]:
+	for ice_road:IceRoad in get_main_game().zombie_manager.all_ice_roads[lane]:
 		## 如果冰道最左边 < 当前位置+偏移
 		if ice_road.left_x < global_position.x - 50:
 			is_in_road = true
@@ -67,12 +67,12 @@ func death_language():
 				Zombie000Base.E_ZInitAttr.Lane:lane,
 				Zombie000Base.E_ZInitAttr.CurrWave:curr_wave,
 			}
-			Global.main_game.zombie_manager.call_deferred(
+			get_main_game().zombie_manager.call_deferred(
 				"create_norm_zombie",
 				CharacterRegistry.ZombieType.Z1001BobsledSingle,
 				zombie_row,
 				zombie_init_para,
-				Vector2(sub_zombie_body.global_position.x, Global.main_game.zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)
+				Vector2(sub_zombie_body.global_position.x, get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)
 			)
 
 ## 调整雪橇车和僵尸的显示顺序

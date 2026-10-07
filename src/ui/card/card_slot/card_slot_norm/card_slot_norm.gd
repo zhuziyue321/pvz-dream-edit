@@ -91,7 +91,7 @@ func _on_cancal_card_button_pressed() -> void:
 ## 开始游戏按钮
 func _on_texture_button_pressed() -> void:
 	## 卡槽正常选卡结束开始游戏
-	EventBus.push_event("card_slot_norm_start_game")
+	EventBus.push_event(ConstEventName.CARD_SLOT_NORM_START_GAME)
 	#card_disconnect_click_in_choose()
 	## 保存上次选卡
 	save_choosed_cards()

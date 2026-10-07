@@ -24,7 +24,7 @@ var bullets: Node2D
 
 func ready_norm() -> void:
 	super()
-	bullets = Global.main_game.bullets
+	bullets = get_main_game().bullets
 
 
 func ready_norm_signal_connect() -> void:
@@ -49,7 +49,7 @@ func _up_bullet(curr_bullet: Bullet000Base) -> void:
 	if curr_bullet in curr_bullet_up:
 		return
 	var new_type: BulletRegistry.BulletType = bullet_upgrade_data[curr_bullet.bullet_type]
-	var bullet_up: Bullet000Base = Global.bullet_registry.get_bullet_scenes(new_type).instantiate()
+	var bullet_up: Bullet000Base = Global.bullet_registry.create_bullet(new_type)
 	bullet_up.init_bullet(curr_bullet.get_bullet_paras())
 	curr_bullet_up.append(bullet_up)
 	bullets.call_deferred("add_child", bullet_up)

@@ -68,7 +68,7 @@ func run_flow(mg: MainGameManager) -> void:
 	var wave_manager := mg.zombie_manager.zombie_wave_manager
 	wave_manager.signal_wave_refresh.connect(func(_is_end_wave: bool) -> void:
 		if wave_manager.curr_wave > 0:
-			EventBus.push_event("add_sun_value", [SUN_EVERY_WAVE])
+			EventBus.push_event(ConstEventName.ADD_SUN_VALUE, [SUN_EVERY_WAVE])
 	)
 
 	## 开战

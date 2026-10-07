@@ -79,8 +79,8 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 	for plant_cells_row in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in plant_cells_row:
 			_connect_cell(plant_cell)
-	EventBus.subscribe("hand_card_take", _on_hand_card_take)
-	EventBus.subscribe("hand_card_release", _on_hand_card_release)
+	EventBus.subscribe(ConstEventName.HAND_CARD_TAKE, _on_hand_card_take)
+	EventBus.subscribe(ConstEventName.HAND_CARD_RELEASE, _on_hand_card_release)
 
 
 ## 收摊：断格子信号、退订事件、释放虚影 —— **可重复调用**
@@ -93,8 +93,8 @@ func _free_column_items() -> void:
 			for plant_cell: PlantCell in plant_cells_row:
 				_disconnect_cell(plant_cell)
 		main_game = null
-	EventBus.unsubscribe("hand_card_take", _on_hand_card_take)
-	EventBus.unsubscribe("hand_card_release", _on_hand_card_release)
+	EventBus.unsubscribe(ConstEventName.HAND_CARD_TAKE, _on_hand_card_take)
+	EventBus.unsubscribe(ConstEventName.HAND_CARD_RELEASE, _on_hand_card_release)
 
 
 func _connect_cell(plant_cell: PlantCell) -> void:

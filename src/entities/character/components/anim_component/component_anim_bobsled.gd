@@ -9,7 +9,7 @@ class_name AnimComponentBobsled
 ]
 
 func _ready() -> void:
-	## ready中获取动画角色原始速度
+	## 初始化时获取动画角色原始速度
 	animation_origin_speed = animation_player.speed_scale
 	animation_player.animation_finished.connect(_on_animation_finished)
 

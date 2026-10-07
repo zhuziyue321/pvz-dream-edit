@@ -6,7 +6,7 @@ class_name DIM_GardenPlant
 @export var all_drop_garden_plant_parent: Node2D
 
 func _ready() -> void:
-	EventBus.subscribe("create_garden_plant", create_garden_plant)
+	EventBus.subscribe(ConstEventName.CREATE_GARDEN_PLANT, create_garden_plant)
 
 ## 掉落花园植物
 func create_garden_plant(global_position_new_garden_plant:Vector2):

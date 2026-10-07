@@ -72,8 +72,7 @@ signal signal_leave_critical(curr_hp: int)
 @onready var hp_component: HpComponent = %HpComponent
 
 
-func _ready() -> void:
-	super._ready()
+func component_ready() -> void:
 	if is_drain_hp and drain_interval <= 0.0:
 		Log.error(str(owner.name) + str(" 临界值组件的 drain_interval 必须大于 0，已停止自动掉血"))
 	## 自定义临界值不高于死亡血量时，僵尸会先死、永远进不了临界值（默认的 DeathBoundary 不受影响）

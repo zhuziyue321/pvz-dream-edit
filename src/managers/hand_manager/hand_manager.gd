@@ -27,7 +27,7 @@ var idle_hand_type: HandComponentBase.E_HandComponentType = HandComponentBase.E_
 
 
 func _ready() -> void:
-	EventBus.subscribe("main_game_progress_update", _on_main_game_progress_update)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_PROGRESS_UPDATE, _on_main_game_progress_update)
 
 
 func init_manager() -> void:

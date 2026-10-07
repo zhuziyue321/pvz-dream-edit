@@ -32,8 +32,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-## 参考项目 PVZ-Godot-main 不是本仓库的一部分（已在 .gitignore + .gdignore 里排除），
-## 需要移植时才手动放到仓库根目录；也可以直接 --ref <目录> 指向别的副本。
+## 参考项目 PVZ-Godot-main 不是本仓库的一部分（仓库里的参考副本已于 2026-10-07 删除），
+## 需要再移植时用 --ref <目录> 指向仓库外的任意副本。
 DEFAULT_REF_DIR = os.path.join(ROOT, "PVZ-Godot-main", "animation", "character", "zombie", "999_zombie_boss")
 DST_DIR = os.path.join(ROOT, "animation", "character", "zombie", "zombie_boss")
 TSCN = os.path.join(ROOT, "src", "entities", "character", "zombie", "zombie_boss.tscn")

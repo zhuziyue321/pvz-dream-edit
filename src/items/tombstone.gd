@@ -109,6 +109,6 @@ func tombstone_death():
 	## 原版:墓碑被清除后会掉一个银币($10),偶尔掉更值钱的(金币 / 巧克力 / 钻石 / 禅境花园植物)
 	## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Grave_(PvZ))
 	## 待核实: 更值钱掉落物的具体概率未查到,暂只实现「必掉一个银币」
-	EventBus.push_event("create_coin", [[1.0, 0.0, 0.0], global_position])
+	EventBus.push_event(ConstEventName.CREATE_COIN, [[1.0, 0.0, 0.0], global_position])
 	plant_cell.tombstone.plant_cell.tombstone_death_update_plant_cell_data()
 	queue_free()

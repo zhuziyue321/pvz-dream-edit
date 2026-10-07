@@ -19,7 +19,7 @@ var attack_value_factor:Dictionary[E_AttackValueFactor, float] = {}
 var frame_counter := 0
 
 
-func _ready() -> void:
+func component_ready() -> void:
 	super()
 	curr_attack_value_per_min = init_attack_value_per_min
 

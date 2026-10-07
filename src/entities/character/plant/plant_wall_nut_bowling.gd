@@ -7,7 +7,7 @@ var bullets:Node2D
 ## 初始化正常出战角色
 func ready_norm():
 	super()
-	bullets = Global.main_game.bullets
+	bullets = get_main_game().bullets
 	await get_tree().physics_frame
 	_launch_bowling()
 	character_death_disappear()

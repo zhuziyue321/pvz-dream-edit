@@ -850,7 +850,7 @@ func _win() -> void:
 	if center == null:
 		Log.error("僵尸迷阵：取不到棋盘中心格，跳过奖杯但照常结算")
 	else:
-		EventBus.push_event("create_trophy", center.global_position)
+		EventBus.push_event(ConstEventName.CREATE_TROPHY, center.global_position)
 	signal_beghouled_win.emit()
 
 

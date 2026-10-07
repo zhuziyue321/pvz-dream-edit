@@ -16,8 +16,8 @@ func blow_away_fog():
 	if is_blow_away_once:
 		return
 	is_blow_away_once = true
-	var fog: Fog = Global.main_game.background_manager.get_fog()
+	var fog: Fog = get_main_game().background_manager.get_fog()
 	if is_instance_valid(fog):
 		fog.be_flow_away()
 
-	EventBus.push_event("blover_blow_away_in_sky_zombie")
+	EventBus.push_event(ConstEventName.BLOVER_BLOW_AWAY_IN_SKY_ZOMBIE)

@@ -99,7 +99,7 @@ func load_and_apply_config() -> void:
 	open_all_level = config.get_value("user_control", "open_all_level", false)
 	track_bullet_mouse = config.get_value("user_control", "track_bullet_mouse", false)
 
-	EventBus.push_event("on_config_update")
+	EventBus.push_event(ConstEventName.ON_CONFIG_UPDATE)
 
 func save_config() -> void:
 	var path := _get_config_path()

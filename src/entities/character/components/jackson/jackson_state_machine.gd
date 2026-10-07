@@ -8,7 +8,7 @@ class_name JacksonStateMachine
 @onready var move_component: MoveComponent = %MoveComponent
 @onready var node_drop: Node2D = %NodeDrop
 
-@onready var zombie_009_jackson: Zombie009Jackson = $".."
+@onready var zombie_009_jackson: Zombie009Jackson = owner as Zombie009Jackson
 var jackson_manager: JacksonManager
 
 ## 舞王动画状态

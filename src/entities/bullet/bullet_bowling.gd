@@ -16,8 +16,8 @@ var curr_enemy :Character000Base
 
 func _ready() -> void:
 	super._ready()
-	for row in Global.main_game.zombie_manager.all_zombie_rows.size():
-		y_every_lane.append(Global.main_game.get_row_base_global_y(row))
+	for row in get_main_game().zombie_manager.all_zombie_rows.size():
+		y_every_lane.append(get_main_game().get_row_base_global_y(row))
 	SoundManager.play_bullet_attack_SFX(SoundManager.TypeBulletSFX.Bowling)
 
 

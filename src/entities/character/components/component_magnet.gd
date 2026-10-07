@@ -19,8 +19,7 @@ signal signal_attack_start
 ## 攻击完毕(冷却完成)
 signal signal_attack_cd_end
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	attack_cd_timer.wait_time = attack_cd
 
 ## 启用组件

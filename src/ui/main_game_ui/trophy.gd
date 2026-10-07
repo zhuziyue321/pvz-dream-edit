@@ -34,7 +34,7 @@ func _on_trophy_button_pressed() -> void:
 	tween_glow.tween_property(glow, "modulate:a", 1, 5.0)
 
 	await get_tree().create_timer(5.0).timeout
-	EventBus.push_event("win_main_game")
+	EventBus.push_event(ConstEventName.WIN_MAIN_GAME)
 
 
 func _on_trophy_button_mouse_entered() -> void:

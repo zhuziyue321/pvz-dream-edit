@@ -33,3 +33,29 @@ func set_bullet_camp(camp:CharacterRegistry.CharacterType, is_force:=false) -> v
 ## 基类没有攻击框，什么都不做
 func apply_bullet_camp() -> void:
 	pass
+
+
+## 主场景访问器：子弹需要的主场景能力一律走这里，**不要**直接写 Global.main_game。
+##
+## 为什么：直接取全局单例等于让子弹隐式依赖「当前一定有一局主游戏」。收进本方法之后，
+## 子弹代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处
+## （角色侧对应 Character000Base.get_main_game，组件侧见 ComponentNormBase）。
+func get_main_game() -> MainGameManager:
+	return Global.main_game
+
+
+## **子弹组件取「子弹身上某个节点」的统一入口**（替代在组件里拼 `$"../XXX"`）
+##
+## 与 `Character000Base.host_node_of()` 是同一套约定，只是宿主换成了子弹：
+## 相对路径等于让组件假设「子弹是我的父节点、目标在第几层」，
+## 子弹结构调整时组件会静默取到 null。改由子弹自己回答自己的结构。
+##
+## 用法（子弹组件里的 @onready）：
+##[codeblock]
+##	@onready var body: Node2D = Bullet000Base.host_node_of(owner, ^"Body")
+##[/codeblock]
+static func host_node_of(bullet_owner: Node, bullet_path: NodePath) -> Node:
+	var host := bullet_owner as Bullet000Base
+	if host == null:
+		return null
+	return host.get_node_or_null(bullet_path)

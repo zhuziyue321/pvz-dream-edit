@@ -41,7 +41,7 @@ var is_lawn_movers_inited:bool = false
 
 func _ready() -> void:
 	## 补充小推车
-	EventBus.subscribe("replenish_lawn_mover", replenish_lawn_mover)
+	EventBus.subscribe(ConstEventName.REPLENISH_LAWN_MOVER, replenish_lawn_mover)
 
 ## 初始化小推车（首次布场 / 从存档恢复）
 ##

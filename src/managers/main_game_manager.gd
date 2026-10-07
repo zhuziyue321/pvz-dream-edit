@@ -7,13 +7,13 @@ class_name MainGameManager
 @export var test_change_sun_value := 9999:
 	set(value):
 		test_change_sun_value = value
-		EventBus.push_event("test_change_sun_value", [value])
+		EventBus.push_event(ConstEventName.TEST_CHANGE_SUN_VALUE, [value])
 
 ## 所有僵尸死亡
 @export var test_death_all_zombie:=false:
 	set(value):
 		Log.debug("设置值")
-		EventBus.push_event("test_death_all_zombie")
+		EventBus.push_event(ConstEventName.TEST_DEATH_ALL_ZOMBIE)
 
 ## 游戏速度
 ## INFO: 游戏速度超过8会代码执行顺序会有问题，可能会导致一些莫名其妙的bug
@@ -252,7 +252,7 @@ var is_pause_on_re_choose_card:=false
 var main_game_progress := E_MainGameProgress.NONE:
 	set(value):
 		main_game_progress = value
-		EventBus.push_event("main_game_progress_update", [value])
+		EventBus.push_event(ConstEventName.MAIN_GAME_PROGRESS_UPDATE, [value])
 		_apply_custom_cursor_mode(value)
 
 #endregion
@@ -361,17 +361,17 @@ func _ready() -> void:
 ## 主游戏管理器事件总线订阅
 func event_bus_subscribe():
 	## 自定义光标模式下，打开 / 关闭面板时是否保持系统鼠标可见
-	EventBus.subscribe("set_keep_system_cursor_visible", set_keep_system_cursor_visible)
+	EventBus.subscribe(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, set_keep_system_cursor_visible)
 	## 僵尸进家 / 创建奖杯 / 游戏胜利：这三个事件由对应的子管理器自己订阅
 	## （见 MgmLoseManager.init_manager 与 MgmRewardManager.init_manager）
 	## 正常选卡结束后开始游戏
-	EventBus.subscribe("card_slot_norm_start_game", _on_card_slot_norm_start_game)
+	EventBus.subscribe(ConstEventName.CARD_SLOT_NORM_START_GAME, _on_card_slot_norm_start_game)
 	## 多轮游戏触发下一轮游戏
-	EventBus.subscribe("start_next_round_game", start_next_round_game)
+	EventBus.subscribe(ConstEventName.START_NEXT_ROUND_GAME, start_next_round_game)
 	## 更新阳光收集位置
-	EventBus.subscribe("update_marker_2d_sun_target", update_marker_2d_sun_target)
+	EventBus.subscribe(ConstEventName.UPDATE_MARKER_2D_SUN_TARGET, update_marker_2d_sun_target)
 	## 第一次掉落钱（提示由 MainGameManager 弹出，全局只弹一次）
-	EventBus.subscribe("first_coin_drop", _on_first_coin_drop)
+	EventBus.subscribe(ConstEventName.FIRST_COIN_DROP, _on_first_coin_drop)
 
 
 ## 更新阳光收集位置

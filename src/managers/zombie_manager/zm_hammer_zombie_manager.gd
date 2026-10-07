@@ -106,7 +106,7 @@ func create_one_group_min_zombie():
 	if idle_tombstones.is_empty():
 		## 场上没有墓碑了（都被啃光）→ 先补一批
 		if Global.main_game.plant_cell_manager.tombstone_list.is_empty():
-			EventBus.push_event("create_tombstone", [randi()%3+1])
+			EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [randi()%3+1])
 			await get_tree().create_timer(2).timeout
 			idle_tombstones = _idle_tombstone_list()
 		## 墓碑还在、只是都在冒头：本组跳过，等下一小组
@@ -188,9 +188,9 @@ func _on_hammer_zombie_timer_timeout() -> void:
 			## 等待3秒创建墓碑后再等待两秒
 			await get_tree().create_timer(3).timeout
 			if Global.main_game.plant_cell_manager.tombstone_list.size() >= 5:
-				EventBus.push_event("create_tombstone", [1])
+				EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [1])
 			else:
-				EventBus.push_event("create_tombstone", [5 - Global.main_game.plant_cell_manager.tombstone_list.size()])
+				EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [5 - Global.main_game.plant_cell_manager.tombstone_list.size()])
 			await get_tree().create_timer(2).timeout
 			hammer_zombie_timer.wait_time = interval_every_group + randf_range(-0.1, 0.1)
 
@@ -211,7 +211,7 @@ func is_battle_started() -> bool:
 
 ## 进度条上要画几面旗帜（每 10 波一面）
 func get_flag_num() -> int:
-	return max_wave / 10
+	return floori(float(max_wave) / 10.0)
 
 ## 取走「本帧要升旗」的旗帜下标（-1 = 不升）
 func take_flag_raise_index() -> int:
@@ -225,4 +225,3 @@ func take_flag_reset() -> bool:
 	_is_flag_reset_pending = false
 	return is_reset
 #endregion
-

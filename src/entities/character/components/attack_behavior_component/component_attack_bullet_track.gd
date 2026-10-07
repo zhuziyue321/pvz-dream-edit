@@ -15,9 +15,9 @@ var detect_component_global:DetectComponent
 
 ## 全局攻击组件不与自身的检测组件信号连接,与全局攻击信号连接
 func detect_component_init():
-	if is_instance_valid(Global.main_game):
-		bullets = Global.main_game.bullets
-		detect_component_global = Global.main_game.detect_component_global
+	if is_instance_valid(get_main_game()):
+		bullets = get_main_game().bullets
+		detect_component_global = get_main_game().detect_component_global
 		detect_component_global.signal_can_attack.connect(update_is_attack_factors.bind(true, E_IsAttackFactors.RayEnemy))
 		detect_component_global.signal_not_can_attack.connect(update_is_attack_factors.bind(false, E_IsAttackFactors.RayEnemy))
 

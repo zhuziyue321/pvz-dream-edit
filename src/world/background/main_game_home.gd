@@ -40,7 +40,7 @@ func init_home(game_BG: ConstLevelData.GameBg):
 func _on_area_2d_home_area_entered(area: Area2D) -> void:
 	Log.debug("僵尸进家")
 	var zombie :Zombie000Base = area.owner
-	EventBus.push_event("zombie_go_home", [zombie])
+	EventBus.push_event(ConstEventName.ZOMBIE_GO_HOME, [zombie])
 
 ## 僵尸无法进房，禁用房子
 func disable_home():

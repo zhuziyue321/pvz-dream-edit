@@ -19,7 +19,7 @@ const ZOMBIE_MODE_LOSE_CHECK_INTERVAL := 1.0
 
 func init_manager() -> void:
 	## 僵尸进家
-	EventBus.subscribe("zombie_go_home", on_zombie_go_home)
+	EventBus.subscribe(ConstEventName.ZOMBIE_GO_HOME, on_zombie_go_home)
 	## 我是僵尸模式：僵尸进家不判负（is_zombie_can_home = false），
 	## 失败只能靠「僵尸死光 + 阳光不够再放一只」来判，见 _on_zombie_mode_lose_check_timeout
 	if game_para.is_zombie_mode:

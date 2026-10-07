@@ -337,7 +337,7 @@ func try_buy_trophy(trophy_screen_pos: Vector2) -> bool:
 		return false
 	Log.debug("僵尸水族馆：买下奖杯，通关")
 	_finish(true)
-	EventBus.push_event("create_trophy", [trophy_screen_pos])
+	EventBus.push_event(ConstEventName.CREATE_TROPHY, [trophy_screen_pos])
 	return true
 
 

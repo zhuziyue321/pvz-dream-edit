@@ -12,9 +12,9 @@ var _is_collected := false
 
 func run(main_game: MainGameManager) -> void:
 	_is_collected = false
-	EventBus.subscribe("add_sun_value", _on_add_sun_value)
+	EventBus.subscribe(ConstEventName.ADD_SUN_VALUE, _on_add_sun_value)
 	await wait_until(main_game, func(): return _is_collected)
-	EventBus.unsubscribe("add_sun_value", _on_add_sun_value)
+	EventBus.unsubscribe(ConstEventName.ADD_SUN_VALUE, _on_add_sun_value)
 
 
 func _on_add_sun_value(_sun_value: int) -> void:

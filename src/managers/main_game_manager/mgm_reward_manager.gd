@@ -31,11 +31,11 @@ var is_pickup_perform_finished := false
 
 func init_manager() -> void:
 	## 创建奖杯
-	EventBus.subscribe("create_trophy", create_trophy)
+	EventBus.subscribe(ConstEventName.CREATE_TROPHY, create_trophy)
 	## 游戏胜利
-	EventBus.subscribe("win_main_game", win_main_game)
+	EventBus.subscribe(ConstEventName.WIN_MAIN_GAME, win_main_game)
 	## 通关掉落物被点开后的收尾表演播完（见 CanvasLayerWhiteScreen）
-	EventBus.subscribe("level_complete_pickup_finished", _on_level_complete_pickup_finished)
+	EventBus.subscribe(ConstEventName.LEVEL_COMPLETE_PICKUP_FINISHED, _on_level_complete_pickup_finished)
 
 
 ## 创建奖杯（冒险模式首次通关时改成掉本关奖励，见 drop_adventure_reward_on_level_complete）

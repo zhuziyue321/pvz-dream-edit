@@ -46,33 +46,97 @@ enum AttackMode {
 
 	}
 
-@export var BulletTypeMap :Dictionary[BulletType, PackedScene]= {
-	BulletType.Bullet001Pea : preload("res://src/entities/bullet/bullet_pea.tscn"),
-	BulletType.Bullet002PeaSnow : preload("res://src/entities/bullet/bullet_pea_snow.tscn"),
-	BulletType.Bullet003Puff : preload("res://src/entities/bullet/bullet_puff.tscn"),
-	BulletType.Bullet004Fume : preload("res://src/entities/bullet/bullet_fume.tscn"),
-	BulletType.Bullet005PuffLongTime : preload("res://src/entities/bullet/bullet_puff_long_time.tscn"),
-	BulletType.Bullet006PeaFire : preload("res://src/entities/bullet/bullet_pea_fire.tscn"),
-	BulletType.Bullet007Cactus : preload("res://src/entities/bullet/bullet_cactus.tscn"),
-	BulletType.Bullet008Star : preload("res://src/entities/bullet/bullet_star.tscn"),
 
-	BulletType.Bullet009Cabbage :preload("res://src/entities/bullet/bullet_cabbage.tscn"),
-	BulletType.Bullet010Corn :preload("res://src/entities/bullet/bullet_corn.tscn"),
-	BulletType.Bullet011Butter :preload("res://src/entities/bullet/bullet_butter.tscn"),
-	BulletType.Bullet012Melon :preload("res://src/entities/bullet/bullet_melon.tscn"),
+## 子弹类型 → 场景路径
+##
+## 为什么这里存**路径字符串**而不是 `preload` 好的 PackedScene：
+## BulletRegistry 是 autoload 单例，在项目启动时就构造完毕。原先 19 个 preload 意味着
+## 玩家还在主菜单、一发子弹都没打出去的时候，全部子弹场景（连同它们的纹理、动画、
+## 音效引用）就已经常驻内存了；而一局对战通常只用到其中三五种。
+## 改成按需 `load()`：第一次真正要发射某种子弹时才加载，之后缓存在 _scene_cache 里。
+##
+## 本表**刻意不加 @export**：它是「类型 → 资源」的映射，按硬约束 1-4 该由注册表独占，
+## 不该在检查器里再被改写一遍。取场景一律走 get_bullet_scenes()。
+const BULLET_SCENE_PATHS: Dictionary[BulletType, String] = {
+	BulletType.Bullet001Pea: "res://src/entities/bullet/bullet_pea.tscn",
+	BulletType.Bullet002PeaSnow: "res://src/entities/bullet/bullet_pea_snow.tscn",
+	BulletType.Bullet003Puff: "res://src/entities/bullet/bullet_puff.tscn",
+	BulletType.Bullet004Fume: "res://src/entities/bullet/bullet_fume.tscn",
+	BulletType.Bullet005PuffLongTime: "res://src/entities/bullet/bullet_puff_long_time.tscn",
+	BulletType.Bullet006PeaFire: "res://src/entities/bullet/bullet_pea_fire.tscn",
+	BulletType.Bullet007Cactus: "res://src/entities/bullet/bullet_cactus.tscn",
+	BulletType.Bullet008Star: "res://src/entities/bullet/bullet_star.tscn",
 
-	BulletType.Bullet013Basketball :preload("res://src/entities/bullet/bullet_basketball.tscn"),
+	BulletType.Bullet009Cabbage: "res://src/entities/bullet/bullet_cabbage.tscn",
+	BulletType.Bullet010Corn: "res://src/entities/bullet/bullet_corn.tscn",
+	BulletType.Bullet011Butter: "res://src/entities/bullet/bullet_butter.tscn",
+	BulletType.Bullet012Melon: "res://src/entities/bullet/bullet_melon.tscn",
 
-	BulletType.Bullet014CattailBullet :preload("res://src/entities/bullet/bullet_cattail_bullet.tscn"),
-	BulletType.Bullet015WinterMelon :preload("res://src/entities/bullet/bullet_winter_melon.tscn"),
+	BulletType.Bullet013Basketball: "res://src/entities/bullet/bullet_basketball.tscn",
 
-	BulletType.Bullet016CobCannon :preload("res://src/entities/bullet/bullet_cob_cannon.tscn"),
+	BulletType.Bullet014CattailBullet: "res://src/entities/bullet/bullet_cattail_bullet.tscn",
+	BulletType.Bullet015WinterMelon: "res://src/entities/bullet/bullet_winter_melon.tscn",
 
-	BulletType.Bullet1001Bowling :preload("res://src/entities/bullet/bullet_bowling.tscn"),
-	BulletType.Bullet1002BowlingBomb :preload("res://src/entities/bullet/bullet_bowling_bomb.tscn"),
-	BulletType.Bullet1003BowlingBig :preload("res://src/entities/bullet/bullet_bowling_big.tscn"),
+	BulletType.Bullet016CobCannon: "res://src/entities/bullet/bullet_cob_cannon.tscn",
+
+	BulletType.Bullet1001Bowling: "res://src/entities/bullet/bullet_bowling.tscn",
+	BulletType.Bullet1002BowlingBomb: "res://src/entities/bullet/bullet_bowling_bomb.tscn",
+	BulletType.Bullet1003BowlingBig: "res://src/entities/bullet/bullet_bowling_big.tscn",
 }
 
-## 获取子弹场景方法
+## 已加载过的场景缓存（按需加载的配套：第二次取同一种子弹不再走 load）
+var _scene_cache: Dictionary[BulletType, PackedScene] = {}
+
+
+## 获取子弹场景
+##
+## 第一次取某种子弹时才真正 load，之后命中 _scene_cache。
+## 取不到（类型没登记 / 文件缺失）会 Log.error 并返回 null —— 与原来
+## `BulletTypeMap.get()` 对未知 key 返回 null 的行为一致，调用方照旧判空。
 func get_bullet_scenes(bullet_type:BulletType) -> PackedScene:
-	return BulletTypeMap.get(bullet_type)
+	if _scene_cache.has(bullet_type):
+		return _scene_cache[bullet_type]
+
+	## 注意不能写成 `var path := BULLET_SCENE_PATHS.get(...)`：
+	## Dictionary.get() 的返回值是 Variant（哪怕字典本身是 typed 的），
+	## 用 := 会把 path 推断成 Variant，项目把「推断自 Variant」当编译错误。
+	var path: String = BULLET_SCENE_PATHS.get(bullet_type, "")
+	if path == "":
+		Log.error("子弹类型没有登记场景路径: %d" % bullet_type)
+		return null
+
+	var scene := load(path) as PackedScene
+	if scene == null:
+		Log.error("子弹场景加载失败: %s" % path)
+		return null
+
+	_scene_cache[bullet_type] = scene
+	return scene
+
+
+## 生成一颗子弹（**只创建，不入场景树**，调用方负责 add_child）
+##
+## 为什么收口出这个方法：原先 7 个文件里散着 9 处
+## `Global.bullet_registry.get_bullet_scenes(t).instantiate()`，
+## 每个调用方都得先知道「有注册表」「要调 get_bullet_scenes」「还得自己 instantiate」三步。
+## 收口之后调用方只说「我要一颗 X 型子弹」；将来要加预热 / 统计 / 复用，只改这一处。
+func create_bullet(bullet_type:BulletType) -> Bullet000Base:
+	var scene := get_bullet_scenes(bullet_type)
+	if scene == null:
+		return null
+	return scene.instantiate() as Bullet000Base
+
+
+## 预热：提前把一批子弹场景加载进缓存
+##
+## 按需加载的代价是「第一次发射某种子弹时要等一次加载」。
+## 关卡开局若已知会用到哪些子弹（按本关的植物 / 僵尸构成），可以在载入界面或开场演出时
+## 调一次本方法把卡顿挪到不敏感的时刻。传空数组是安全的空操作。
+func preload_bullet_scenes(bullet_types: Array[BulletType]) -> void:
+	for bullet_type in bullet_types:
+		get_bullet_scenes(bullet_type)
+
+
+## 已缓存的子弹场景数量（调试 / 自检用）
+func get_cached_scene_count() -> int:
+	return _scene_cache.size()

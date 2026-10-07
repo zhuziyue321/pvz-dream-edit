@@ -25,7 +25,7 @@ static func on_eat_garlic(zombie: Zombie000Base) -> void:
 ## 换到相邻的同类型行（陆换陆、水换水）
 ## 选不到可换的行就直接返回（例如 陆/水/陆 布局里水行僵尸上下都不是水）
 static func update_lane(zombie: Zombie000Base) -> void:
-	var all_zombie_rows = Global.main_game.zombie_manager.all_zombie_rows
+	var all_zombie_rows = zombie.get_main_game().zombie_manager.all_zombie_rows
 	## 可以换的行索引
 	var can_update_zombie_row_i: Array[int] = []
 	if zombie.lane != 0 and all_zombie_rows[zombie.lane - 1].zombie_row_type == zombie.curr_zombie_row_type:

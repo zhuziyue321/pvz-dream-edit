@@ -10,7 +10,7 @@ var tombstone_num := 0
 
 func _ready() -> void:
 	## 注册创建墓碑全局事件
-	EventBus.subscribe("create_tombstone", create_tombstone)
+	EventBus.subscribe(ConstEventName.CREATE_TOMBSTONE, create_tombstone)
 
 ## 初始化墓碑管理器
 ## 只建立「该位置有没有墓碑」的二维表。格子行列号由 PlantCellManager 统一赋值，

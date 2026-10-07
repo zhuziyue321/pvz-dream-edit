@@ -52,4 +52,4 @@ func _on_brain_death(brain:BrainOnZombieMode):
 	curr_brain.erase(brain)
 	curr_brain_num -= 1
 	if curr_brain_num == 0:
-		EventBus.push_event("create_trophy", brain.global_position)
+		EventBus.push_event(ConstEventName.CREATE_TROPHY, brain.global_position)

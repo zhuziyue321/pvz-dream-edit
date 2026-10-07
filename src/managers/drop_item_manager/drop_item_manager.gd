@@ -15,11 +15,11 @@ const UNLOCK_DROP_TIP_TIME := 4.0
 
 
 func _ready() -> void:
-	EventBus.subscribe("gold_magnet_attract_once", gold_magnet_attract_once)
+	EventBus.subscribe(ConstEventName.GOLD_MAGNET_ATTRACT_ONCE, gold_magnet_attract_once)
 	## 关卡中途掉落的解锁道具（由僵尸波次管理器在携带道具的僵尸死亡时推送）
-	EventBus.subscribe("create_unlock_drop", create_unlock_drop)
+	EventBus.subscribe(ConstEventName.CREATE_UNLOCK_DROP, create_unlock_drop)
 	## 僵尸掉的巧克力（买了蜗牛之后才掉，见 DropItemComponent.drop_chocolate）
-	EventBus.subscribe("create_chocolate", create_chocolate)
+	EventBus.subscribe(ConstEventName.CREATE_CHOCOLATE, create_chocolate)
 
 func init_manager() -> void:
 	pass

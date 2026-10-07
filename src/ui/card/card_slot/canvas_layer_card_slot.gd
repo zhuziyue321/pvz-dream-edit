@@ -8,7 +8,7 @@ func _ready() -> void:
 	Global.config_service.signal_change_card_slot_top_mouse_focus.connect(card_slot_top_mouse_focus)
 	card_slot_root.mouse_entered.connect(_on_bg_mouse_entered)
 	card_slot_root.mouse_exited.connect(_on_bg_mouse_exited)
-	EventBus.subscribe("main_game_progress_update", _on_main_game_progress_update)
+	EventBus.subscribe(ConstEventName.MAIN_GAME_PROGRESS_UPDATE, _on_main_game_progress_update)
 
 #region 卡槽处于焦点时置顶
 func _on_bg_mouse_entered() -> void:

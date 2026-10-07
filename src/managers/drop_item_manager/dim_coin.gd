@@ -9,7 +9,7 @@ class_name DIM_Coin
 @export var all_drop_coin_parent: Node2D
 
 func _ready() -> void:
-	EventBus.subscribe("create_coin", create_coin)
+	EventBus.subscribe(ConstEventName.CREATE_COIN, create_coin)
 
 
 ## 生产金币,按概率生产，概率和为1,
@@ -40,4 +40,4 @@ func create_coin(probability:Array=[0.5, 0.5, 0], global_position_new_coin:Vecto
 	new_coin.launch(target_position)
 	## 第一次掉钱:通知主游戏弹一次「存钱买道具」提示(全局只弹一次,判定在 MainGameManager)
 	if is_instance_valid(Global.global_game_state) and not Global.global_game_state.is_first_coin_advice_shown:
-		EventBus.push_event("first_coin_drop", [new_coin])
+		EventBus.push_event(ConstEventName.FIRST_COIN_DROP, [new_coin])

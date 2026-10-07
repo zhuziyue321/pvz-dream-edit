@@ -13,7 +13,6 @@ var is_imitater_material := false
 func init_imitater_material(value:bool) -> void:
 	is_imitater_material = value
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	if is_imitater_material:
 		body.imitater_update_material()

@@ -229,7 +229,7 @@ func _get_active_game() -> MainGameManager:
 		or not doctor.is_inside_tree() or doctor.character_init_type != Character000Base.E_CharacterInitType.IsNorm:
 		return null
 	# 全局关卡必须仍持有当前博士，避免切换场景后旧实例向新关卡释放技能。
-	var game: MainGameManager = Global.main_game
+	var game: MainGameManager = doctor.get_main_game()
 	if not is_instance_valid(game) or game.is_queued_for_deletion() or not game.is_ancestor_of(doctor) \
 		or game.main_game_progress != MainGameManager.E_MainGameProgress.MAIN_GAME:
 		return null

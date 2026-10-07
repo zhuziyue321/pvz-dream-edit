@@ -36,6 +36,12 @@ var time_need_call_zombie := 0
 ## 是否被魅惑，若被魅惑，舞王召唤魅惑伴舞
 var is_hypnotized := false
 
+
+## 主场景访问器：本类不继承 ComponentNormBase（它是 Node），故自行转问 owner（宿主舞王）。
+## 目的与 ComponentNormBase.get_main_game() 一致 —— 业务代码里不直接写 Global.main_game。
+func get_main_game() -> MainGameManager:
+	return Global.main_game
+
 func _ready() -> void:
 	animation_player.set_blend_time('armraise', 'walk', 0.2)
 
@@ -174,9 +180,9 @@ func call_zombie_dancer():
 					Zombie000Base.E_ZInitAttr.CharacterInitType:Character000Base.E_CharacterInitType.IsNorm,
 					Zombie000Base.E_ZInitAttr.Lane:new_zombie_dancer_lane_and_pos["lane"],
 				}
-				var _new_zombie_dancer:Zombie010Dancer = Global.main_game.zombie_manager.create_norm_zombie(
+				var _new_zombie_dancer:Zombie010Dancer = get_main_game().zombie_manager.create_norm_zombie(
 					CharacterRegistry.ZombieType.Z010Dancer,
-					Global.main_game.zombie_manager.all_zombie_rows[new_zombie_dancer_lane_and_pos["lane"]],
+					get_main_game().zombie_manager.all_zombie_rows[new_zombie_dancer_lane_and_pos["lane"]],
 					zombie_init_para,
 					new_zombie_dancer_lane_and_pos["pos"],
 					call_dancer_init.bind(i)
@@ -200,18 +206,18 @@ func get_new_zombie_dancer_lane_and_glo_pos(i:int, lane_Jackson:int, global_post
 	## 上下左右顺序
 	if i == 0:
 		## 舞王在第一行，或者召唤行为泳池行
-		if lane_Jackson == 0 or Global.main_game.zombie_manager.all_zombie_rows[lane_Jackson - 1].zombie_row_type == CharacterRegistry.ZombieRowType.Pool:
+		if lane_Jackson == 0 or get_main_game().zombie_manager.all_zombie_rows[lane_Jackson - 1].zombie_row_type == CharacterRegistry.ZombieRowType.Pool:
 			return false
-		var global_pos = Vector2(global_postion_jackson.x, Global.main_game.zombie_manager.all_zombie_rows[lane_Jackson - 1].zombie_create_position.global_position.y)
+		var global_pos = Vector2(global_postion_jackson.x, get_main_game().zombie_manager.all_zombie_rows[lane_Jackson - 1].zombie_create_position.global_position.y)
 
 		return {
 			"lane":lane_Jackson - 1,
 			"pos": global_pos
 		}
 	elif i == 1:
-		if lane_Jackson == Global.main_game.zombie_manager.all_zombie_rows.size() - 1 or Global.main_game.zombie_manager.all_zombie_rows[lane_Jackson + 1].zombie_row_type == CharacterRegistry.ZombieRowType.Pool:
+		if lane_Jackson == get_main_game().zombie_manager.all_zombie_rows.size() - 1 or get_main_game().zombie_manager.all_zombie_rows[lane_Jackson + 1].zombie_row_type == CharacterRegistry.ZombieRowType.Pool:
 			return false
-		var global_pos = Vector2(global_postion_jackson.x, Global.main_game.zombie_manager.all_zombie_rows[lane_Jackson + 1].zombie_create_position.global_position.y)
+		var global_pos = Vector2(global_postion_jackson.x, get_main_game().zombie_manager.all_zombie_rows[lane_Jackson + 1].zombie_create_position.global_position.y)
 
 		return {
 			"lane":lane_Jackson + 1,
@@ -236,5 +242,5 @@ func change_manager_parent():
 		## 死亡的僵尸已经置为null
 		if zombie_dancers[i] is Zombie009Jackson:
 			curr_master_id = i
-			get_parent().remove_child(self)
-			zombie_dancers[i].add_child(self)
+			## 见 component_grap.gd 的同名注释：改 reparent(..., false)，不再 get_parent().remove_child(self)
+			reparent(zombie_dancers[i], false)

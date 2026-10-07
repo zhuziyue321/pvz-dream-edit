@@ -55,7 +55,7 @@ func _ready() -> void:
 	for ray in all_rays.get_children():
 		_all_ray_init_transform.append(ray.transform)
 	visible = false
-	EventBus.subscribe("level_complete_pickup", play_pickup)
+	EventBus.subscribe(ConstEventName.LEVEL_COMPLETE_PICKUP, play_pickup)
 
 
 ## 发光组里的子节点（不走绝对路径，从 %PickupAwardLight 往下取，免得跟别的层重名）
@@ -121,7 +121,7 @@ func finish_perform(pickup: Node2D) -> void:
 		pickup.queue_free()
 	award_light.visible = false
 	Log.debug("通关掉落物收尾表演结束，屏幕已全白")
-	EventBus.push_event("level_complete_pickup_finished")
+	EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP_FINISHED)
 
 
 ## 复位到「还没播」的状态，重打关卡时不会残留上一次的白屏 / 辉光

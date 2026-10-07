@@ -5,10 +5,9 @@ class_name FogClearerComponent
 
 var fog_node:Fog
 
-func _ready() -> void:
-	super._ready()
-	if is_instance_valid(Global.main_game):
-		fog_node = Global.main_game.background_manager.get_fog()
+func component_ready() -> void:
+	if is_instance_valid(get_main_game()):
+		fog_node = get_main_game().background_manager.get_fog()
 	if is_instance_valid(fog_node):
 		fog_node.add_fog_clearer(area_2d_fog_clear)
 

@@ -18,9 +18,9 @@ func run(main_game: MainGameManager) -> void:
 	_is_taken = false
 	if LevelWaitCondition.is_holding_card(main_game, plant_type):
 		return
-	EventBus.subscribe("hand_card_take", _on_hand_card_take)
+	EventBus.subscribe(ConstEventName.HAND_CARD_TAKE, _on_hand_card_take)
 	await wait_until(main_game, func(): return _is_taken)
-	EventBus.unsubscribe("hand_card_take", _on_hand_card_take)
+	EventBus.unsubscribe(ConstEventName.HAND_CARD_TAKE, _on_hand_card_take)
 
 
 func _on_hand_card_take(card: Card) -> void:

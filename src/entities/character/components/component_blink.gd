@@ -7,8 +7,7 @@ class_name BlinkComponent
 ## 眨眼body变化,每个精灵图对应两个纹理图片
 @export var all_blink_body_change:Array[ResourceBodyChange]
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	blink_timer.wait_time = blink_time
 	if is_enabling:
 		blink_timer.start(blink_time + randf_range(-1,1))

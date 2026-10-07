@@ -5,25 +5,8 @@ extends LevelScriptBase
 ## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
-## 关卡开场戴夫对话：在 run_flow() 里现场构造并传给 dave_dialog
-func _build_dave_dialog() -> CrazyDaveDialogResource:
-	var crazy_dave_dialog_detail_resource_0 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_0.text = "晚上好，{PLAYER_NAME}。"
-	var crazy_dave_dialog_detail_resource_1 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_1.text = "那些僵尸不会那么容易就放弃吧？"
-	var crazy_dave_dialog_detail_resource_2 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_2.text = "你会注意到夜间和僵尸作战不同于白天。"
-	var crazy_dave_dialog_detail_resource_3 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_3.text = "首先，不能从天上得到阳光。"
-	var crazy_dave_dialog_detail_resource_4 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_4.text = "但你仍可以通过向日葵来获得阳光。"
-	var crazy_dave_dialog_detail_resource_5 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_5.text = "而且你很幸运，你得到了小喷菇。"
-	var crazy_dave_dialog_detail_resource_6 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_6.text = "尽可能多地种植这些蘑菇吧，你会挺过去的。"
-	var crazy_dave_dialog_resource_0 := CrazyDaveDialogResource.new()
-	crazy_dave_dialog_resource_0.dialog_detail_list.assign([crazy_dave_dialog_detail_resource_0, crazy_dave_dialog_detail_resource_1, crazy_dave_dialog_detail_resource_2, crazy_dave_dialog_detail_resource_3, crazy_dave_dialog_detail_resource_4, crazy_dave_dialog_detail_resource_5, crazy_dave_dialog_detail_resource_6])
-	return crazy_dave_dialog_resource_0
+## 本关开场戴夫对话：台词在数据层，见 res://data/dave/dialog/adventure_02_01_opening.tres
+const DAVE_OPENING := preload("res://data/dave/dialog/adventure_02_01_opening.tres")
 
 
 func _init() -> void:
@@ -44,7 +27,7 @@ func run_flow(_mg: MainGameManager) -> void:
 	]
 
 	## 关卡戴夫对话
-	await dave_dialog(_build_dave_dialog())
+	await dave_dialog(DAVE_OPENING)
 	## 展示僵尸
 	await show_zombie(zombie_list)
 	## 选卡
@@ -55,5 +38,3 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10, zombie_list)
-
-

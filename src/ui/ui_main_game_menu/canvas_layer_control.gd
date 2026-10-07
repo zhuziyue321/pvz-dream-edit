@@ -17,7 +17,7 @@ class_name CanvasLayerConsole
 
 func _ready() -> void:
 	init_console_panel()
-	EventBus.subscribe("on_config_update", on_config_update)
+	EventBus.subscribe(ConstEventName.ON_CONFIG_UPDATE, on_config_update)
 
 
 ## 初始化控制台
@@ -44,12 +44,12 @@ func _update_console_panel():
 ## 关闭控制台
 func _on_texture_button_pressed() -> void:
 	visible = false
-	EventBus.push_event("set_keep_system_cursor_visible", false)
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, false)
 	Global.config_service.save_config()
 
 func appear_canvas_layer_control() -> void:
 	visible = true
-	EventBus.push_event("set_keep_system_cursor_visible", true)
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
 
 ## 自动收集阳光
 func _on_check_box_toggled(toggled_on: bool) -> void:

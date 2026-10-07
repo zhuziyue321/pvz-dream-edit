@@ -30,9 +30,9 @@ var all_must_plants_on_zombie_mode:Dictionary[CharacterRegistry.PlantType, int] 
 
 func _ready() -> void:
 	## 火爆辣椒爆炸特效
-	EventBus.subscribe("jalapeno_bomb_effect", jalapeno_bomb_effect)
+	EventBus.subscribe(ConstEventName.JALAPENO_BOMB_EFFECT, jalapeno_bomb_effect)
 	## 火爆辣椒销毁道具[冰道和梯子]
-	EventBus.subscribe("jalapeno_bomb_item_lane", jalapeno_bomb_item_lane)
+	EventBus.subscribe(ConstEventName.JALAPENO_BOMB_ITEM_LANE, jalapeno_bomb_item_lane)
 
 	create_plant_cells_from_map_data()
 	build_all_plant_cells()
@@ -110,14 +110,14 @@ func _get_map_data() -> ResourceMapData:
 ## 更新植物信息(创建新植物)
 func update_plant_info_create(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
 	curr_plant_num[plant_type] = curr_plant_num.get(plant_type, 0) + 1
-	EventBus.push_event("update_card_purple_sun_cost")
+	EventBus.push_event(ConstEventName.UPDATE_CARD_PURPLE_SUN_COST)
 
 ## 更新植物信息(植物死亡)
 func update_plant_info_free(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
 	## 用 get() 兜底：植物可能在记录创建前就被销毁（例如读档先删后建），
 	## 直接 curr_plant_num[plant_type] -= 1 在键不存在时会报错
 	curr_plant_num[plant_type] = curr_plant_num.get(plant_type, 0) - 1
-	EventBus.push_event("update_card_purple_sun_cost")
+	EventBus.push_event(ConstEventName.UPDATE_CARD_PURPLE_SUN_COST)
 	if curr_plant_num[plant_type] < 0:
 		Log.error(str(plant_type) + str(":该植物类型数量小于0"))
 		curr_plant_num.erase(plant_type)
@@ -274,9 +274,9 @@ func pot_open_update(is_zombie:bool, glo_pos:Vector2):
 	if curr_pot_num == 0:
 		## 如果最后一个罐子是僵尸，并且场上有僵尸,让僵尸管理器管理最终胜利
 		if is_zombie or Global.main_game.zombie_manager.curr_zombie_num != 0:
-			EventBus.push_event("end_wave_zombie")
+			EventBus.push_event(ConstEventName.END_WAVE_ZOMBIE)
 		else:
-			EventBus.push_event("create_trophy", glo_pos)
+			EventBus.push_event(ConstEventName.CREATE_TROPHY, glo_pos)
 
 #endregion
 

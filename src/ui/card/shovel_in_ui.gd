@@ -9,7 +9,7 @@ class_name UIShovel
 
 ## 鼠标点击铲子：交给手持物组件处理（拿到手上）
 func _on_button_pressed() -> void:
-	EventBus.push_event("main_game_click_shovel")
+	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_SHOVEL)
 
 
 ## 刷新增铲子界面

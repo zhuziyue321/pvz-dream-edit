@@ -78,8 +78,7 @@ enum E_MoveFactor{
 
 signal signal_move_body_y(move_y_value:float)
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	curr_speed = ori_speed
 
 ## 根据角色速度修改移动速度

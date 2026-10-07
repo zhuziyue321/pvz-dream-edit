@@ -101,14 +101,13 @@ signal signal_can_attack
 ## 无可攻击敌人，取消攻击信号
 signal signal_not_can_attack
 
-func _ready() -> void:
-	## 必须调 super：ComponentNormBase._ready() 负责「场景里配了 is_enable_default = false 就禁用组件」，
-	## 不调的话这条会丢，配了默认禁用的检测组件一进关就开始检测敌人
-	super._ready()
+func component_ready() -> void:
+	## 「场景里配了 is_enable_default = false 就禁用组件」由基类 ComponentNormBase._ready()
+	## 负责、并由基类调用本方法 —— 否则配了默认禁用的检测组件一进关就开始检测敌人
 	_ensure_can_attack_status_component()
 	## 魅惑不再切换碰撞层，周围已经重叠着的检测组件收不到 area_entered，
 	## 靠这条广播让全场重新判定一次敌我（见 _on_character_be_hypno）
-	EventBus.subscribe("character_be_hypno", _on_character_be_hypno)
+	EventBus.subscribe(ConstEventName.CHARACTER_BE_HYPNO, _on_character_be_hypno)
 	if owner is Plant000Base:
 		update_curr_collision_lay(1)
 	elif owner is Zombie000Base:
@@ -134,7 +133,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	EventBus.unsubscribe("character_be_hypno", _on_character_be_hypno)
+	EventBus.unsubscribe(ConstEventName.CHARACTER_BE_HYPNO, _on_character_be_hypno)
 
 
 ## 僵王状态变化（受击窗口开关）只标记重查；受击框启停产生的进入/退出事件还会再刷新一次

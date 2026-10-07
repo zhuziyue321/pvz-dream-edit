@@ -74,11 +74,11 @@ var _spin_tick: int = 0
 func _ready() -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
 	_build_ui()
-	EventBus.subscribe("add_sun_value", _on_sun_added)
+	EventBus.subscribe(ConstEventName.ADD_SUN_VALUE, _on_sun_added)
 
 
 func _exit_tree() -> void:
-	EventBus.unsubscribe("add_sun_value", _on_sun_added)
+	EventBus.unsubscribe(ConstEventName.ADD_SUN_VALUE, _on_sun_added)
 	if _spin_timer != null and is_instance_valid(_spin_timer):
 		_spin_timer.queue_free()
 

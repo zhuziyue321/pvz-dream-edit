@@ -5,27 +5,10 @@ extends LevelScriptBase
 ## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
-## 关卡开场戴夫对话：在 run_flow() 里现场构造并传给 dave_dialog
-## 原版冒险模式 2-5 开场（锤僵尸关：戴夫拿「打地鼠」作比介绍本关玩法）
-## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Level_2-5?action=raw) 的 Dialogue 段
-## 中文台词按游戏中文版语音转写(https://www.ximalaya.com/ask/a23193331)，与 wiki 英文原文逐句对应
+## 本关开场戴夫对话（锤僵尸关：戴夫拿「打地鼠」作比介绍本关玩法）
+## 台词在数据层，见 res://data/dave/dialog/adventure_02_05_opening.tres
 ## 待核实: 第 5 句 mallet 的转写原文作「短鎚」，这里按本仓库锤子道具的叫法取「木槌」
-func _build_dave_dialog() -> CrazyDaveDialogResource:
-	var crazy_dave_dialog_detail_resource_0 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_0.text = "你玩过“打僵尸”的游戏吗？"
-	var crazy_dave_dialog_detail_resource_1 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_1.text = "这就像是玩打地鼠。"
-	var crazy_dave_dialog_detail_resource_2 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_2.text = "你看，那些毛茸茸的小老鼠是在你的草坪里打洞吗？"
-	var crazy_dave_dialog_detail_resource_3 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_3.text = "耶，就像那样，但不是鼹鼠，而是僵尸。"
-	var crazy_dave_dialog_detail_resource_4 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_4.text = "而且不是铁锹，是木槌。"
-	var crazy_dave_dialog_detail_resource_5 := CrazyDaveDialogDetailResource.new()
-	crazy_dave_dialog_detail_resource_5.text = "当然不是我，是你！"
-	var crazy_dave_dialog_resource_0 := CrazyDaveDialogResource.new()
-	crazy_dave_dialog_resource_0.dialog_detail_list.assign([crazy_dave_dialog_detail_resource_0, crazy_dave_dialog_detail_resource_1, crazy_dave_dialog_detail_resource_2, crazy_dave_dialog_detail_resource_3, crazy_dave_dialog_detail_resource_4, crazy_dave_dialog_detail_resource_5])
-	return crazy_dave_dialog_resource_0
+const DAVE_OPENING := preload("res://data/dave/dialog/adventure_02_05_opening.tres")
 
 
 func _init() -> void:
@@ -53,7 +36,7 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 
 func run_flow(_mg: MainGameManager) -> void:
 	## 关卡戴夫对话
-	await dave_dialog(_build_dave_dialog())
+	await dave_dialog(DAVE_OPENING)
 	## 准备安放植物
 	## 初始化小推车
 	await init_lawn_mover()
@@ -64,5 +47,3 @@ func run_flow(_mg: MainGameManager) -> void:
 		CharacterRegistry.ZombieType.Z003Cone,
 		CharacterRegistry.ZombieType.Z005Bucket,
 	])
-
-

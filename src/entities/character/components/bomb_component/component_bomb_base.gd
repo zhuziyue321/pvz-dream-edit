@@ -25,8 +25,7 @@ var is_bomb:= false
 ## 爆炸一次信号,毁灭菇使用
 signal signal_bomb_once
 
-func _ready() -> void:
-	super()
+func component_ready() -> void:
 	_ensure_can_attack_status_component()
 
 

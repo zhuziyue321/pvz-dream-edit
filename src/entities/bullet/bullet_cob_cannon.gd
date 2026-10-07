@@ -26,9 +26,9 @@ func _ready() -> void:
 	await get_tree().create_timer(1, false).timeout
 
 	## 移动爆炸检测框的y值
-	if is_instance_valid(Global.main_game.main_game_slope):
+	if is_instance_valid(get_main_game().main_game_slope):
 		## 获取对应位置的斜面y相对位置
-		var slope_y_first = Global.main_game.main_game_slope.get_all_slope_y(global_position.x)
+		var slope_y_first = get_main_game().main_game_slope.get_all_slope_y(global_position.x)
 
 		area_2d_bomb.position.y -= slope_y_first
 

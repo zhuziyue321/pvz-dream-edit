@@ -37,9 +37,9 @@ func update_body_correct_pos_throw():
 	## 计算新的 BodyCorrect 的位置（相对于 Body 的 local 位置）
 	var desired_bodycorrect_local = target_pos_anim_head_to_body - anim_head_1_to_body
 	var slope_y_first :float = 0
-	if is_instance_valid(Global.main_game.main_game_slope):
+	if is_instance_valid(get_main_game().main_game_slope):
 		## 获取对应位置的斜面y相对位置
-		slope_y_first = Global.main_game.main_game_slope.get_all_slope_y(global_position.x)
+		slope_y_first = get_main_game().main_game_slope.get_all_slope_y(global_position.x)
 	body_correct.position = desired_bodycorrect_local + pos_body_correct - Vector2(0, slope_y_first)
 
 	var tween:Tween = create_tween()
