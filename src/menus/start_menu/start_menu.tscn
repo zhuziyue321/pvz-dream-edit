@@ -83,9 +83,6 @@
 [ext_resource type="Script" uid="uid://bubdoydqtlc6d" path="res://src/menus/start_menu/panel_create_new_user.gd" id="79_xqlaa"]
 [ext_resource type="Script" uid="uid://b6dhsamdijupk" path="res://src/menus/start_menu/panel_rename_user.gd" id="81_dj5t5"]
 [ext_resource type="Script" uid="uid://cwusfudks6mhf" path="res://src/ui/dialog_error.gd" id="82_krdmy"]
-[ext_resource type="Texture2D" uid="uid://ctpsdjku0juuj" path="res://assets/image/ui/ui_start_menu/Present.png" id="83_tf8pn"]
-[ext_resource type="BitMap" uid="uid://d3xxtmghn6vi4" path="res://assets/image/ui/ui_start_menu/Present_mask.png" id="84_mpctx"]
-[ext_resource type="Texture2D" uid="uid://dygmxfnai40iw" path="res://assets/image/ui/ui_start_menu/PresentOpen.png" id="84_x7dp7"]
 
 [sub_resource type="Animation" id="Animation_xll4c"]
 resource_name = "Idle"
@@ -1268,26 +1265,6 @@ _data = {
 &"RESET": SubResource("Animation_yl4bl")
 }
 
-[sub_resource type="GDScript" id="GDScript_mpctx"]
-script/source = "extends TextureButton
-
-
-@onready var mouse: TextureRect = $mouse
-@onready var default: TextureRect = $default
-
-func _ready() -> void:
-	texture_normal = null
-	_on_mouse_exited()
-
-func _on_mouse_entered() -> void:
-	mouse.visible = true
-	default.visible = false
-
-func _on_mouse_exited() -> void:
-	mouse.visible = false
-	default.visible = true
-"
-
 [sub_resource type="LabelSettings" id="LabelSettings_x7dp7"]
 font = ExtResource("54_343qg")
 font_size = 19
@@ -2099,39 +2076,6 @@ texture = ExtResource("51_63h8x")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="BG_Right/Leaf" unique_id=1995342491]
 libraries/ = SubResource("AnimationLibrary_31n4o")
 speed_scale = 0.1
-
-[node name="CustomButton" type="TextureButton" parent="BG_Right" unique_id=1936599218]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -38.0
-offset_top = 356.0
-offset_right = 42.0
-offset_bottom = 436.0
-grow_horizontal = 2
-mouse_default_cursor_shape = 2
-texture_normal = ExtResource("83_tf8pn")
-texture_click_mask = ExtResource("84_mpctx")
-stretch_mode = 5
-script = SubResource("GDScript_mpctx")
-
-[node name="default" type="TextureRect" parent="BG_Right/CustomButton" unique_id=1479650694]
-layout_mode = 1
-offset_right = 80.0
-offset_bottom = 80.0
-texture = ExtResource("83_tf8pn")
-stretch_mode = 2
-
-[node name="mouse" type="TextureRect" parent="BG_Right/CustomButton" unique_id=829620639]
-visible = false
-layout_mode = 1
-offset_left = -14.0
-offset_top = -21.0
-offset_right = 94.0
-offset_bottom = 96.0
-texture = ExtResource("84_x7dp7")
-stretch_mode = 2
 
 [node name="Version" type="Label" parent="BG_Right" unique_id=862557868]
 layout_mode = 0
@@ -3040,9 +2984,6 @@ offset_bottom = -178.0
 [connection signal="pressed" from="BG_Right/Item/TextureButton" to="." method="_on_item_button_1_pressed"]
 [connection signal="pressed" from="BG_Right/Item/TextureButton2" to="." method="_on_item_button_2_pressed"]
 [connection signal="pressed" from="BG_Right/Item/TextureButton3" to="." method="_on_item_button_3_pressed"]
-[connection signal="mouse_entered" from="BG_Right/CustomButton" to="BG_Right/CustomButton" method="_on_mouse_entered"]
-[connection signal="mouse_exited" from="BG_Right/CustomButton" to="BG_Right/CustomButton" method="_on_mouse_exited"]
-[connection signal="pressed" from="BG_Right/CustomButton" to="." method="_on_custom_button_pressed"]
 [connection signal="pressed" from="WoodSign/ButtonUserUpdate" to="." method="_on_button_update_user_pressed"]
 [connection signal="toggled" from="StartMenuOptionDialog/Option/FullScreen/CheckButton" to="." method="_on_full_screen_button_toggled"]
 [connection signal="pressed" from="StartMenuOptionDialog/Return" to="StartMenuOptionDialog" method="return_button_pressed"]

@@ -52,7 +52,7 @@ func get_zombie_init_para_extra() -> Dictionary:
 	}
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版本关的僵尸：普僵 / 路障 / 铁桶 / 铁门 / 潜水 / 洗冰车 / 海豚骑士 / 玩偶匣
 	## （洗冰车的冰道与音效、海豚骑士与玩偶匣的入场音效是原版留给玩家的行踪线索）

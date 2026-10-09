@@ -27,6 +27,8 @@ func _init() -> void:
 	max_choosed_card_num = 3
 	start_sun = 0
 	prechosen_cards = ResourceCardReference.create_plant_list([5, 12, 3])
+	## 本关通关掉落：魅惑菇（种子包）
+	level_complete_loot = "hypno_shroom_seed_packet"
 
 
 ## 进关时装上「锤僵尸」玩法（与迷你游戏 15 共用同一条规则，见 LevelRuleHammerZombie）
@@ -34,7 +36,7 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 	LevelRuleHammerZombie.install(mg)
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 关卡戴夫对话
 	await dave_dialog(DAVE_OPENING)
 	## 准备安放植物
@@ -47,3 +49,8 @@ func run_flow(_mg: MainGameManager) -> void:
 		CharacterRegistry.ZombieType.Z003Cone,
 		CharacterRegistry.ZombieType.Z005Bucket,
 	])
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

@@ -57,6 +57,14 @@ var _is_flag_reset_pending := false
 
 ## 波次刷新信号,给zombie_manager,删除魅惑僵尸，更新是否为最后一波
 signal signal_wave_refresh(is_end_wave:bool)
+## 一波已经开起来（参数：这一波的波次号）—— 通用观测口，谁想"知道开了第几波"就连它
+signal wave_started(wave:int)
+
+## 开下一波的闸门（通用问询口，不带联机字样）：返回 false = 这一次不许本地开波
+##
+## 默认恒为空 Callable（照旧开）。联机客户端由模组占住：它的波次由主机下发，
+## 不能按自己本地的刷新定时器推进（两端定时器各跑各的，波次会岔开）。
+var start_next_wave_gate: Callable = Callable()
 
 
 func _ready() -> void:
@@ -117,6 +125,9 @@ func set_progress_bar(curr_flag:int=-1):
 
 ## 开始刷新下一波,发射刷新下一波信号
 func start_next_wave() -> void:
+	## 闸门：被占住时（联机客户端等主机下发）这一次直接不开
+	if start_next_wave_gate.is_valid() and not bool(start_next_wave_gate.call()):
+		return
 	curr_wave += 1
 	var curr_wave_all_zombies:Array[Zombie000Base]
 	## 旗前波
@@ -167,13 +178,15 @@ func start_next_wave() -> void:
 
 	## 本波有僵尸携带解锁道具，它死亡时在原地把道具掉出来
 	if curr_wave == drop_unlock_wave and not curr_wave_all_zombies.is_empty():
-		var unlock_zombie: Zombie000Base = curr_wave_all_zombies.pick_random()
+		## 走 `GameRng`：哪一只带解锁道具两端要挑到同一只（挑谁不影响胜负，但会占一次随机序列）
+		var unlock_zombie: Zombie000Base = GameRng.pick_random(curr_wave_all_zombies)
 		unlock_zombie.signal_character_death.connect(
 			_on_unlock_zombie_death.bind(unlock_zombie), CONNECT_ONE_SHOT
 		)
 		Log.debug(str("第") + str(curr_wave) + str("波僵尸携带解锁道具"))
 
 	signal_wave_refresh.emit(curr_wave == max_wave - 1)
+	wave_started.emit(curr_wave)
 
 
 ## 携带解锁道具的僵尸死亡，推送掉落事件（由 DropItemManager 实例化道具）
@@ -185,10 +198,10 @@ func _on_unlock_zombie_death(unlock_zombie: Zombie000Base) -> void:
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Grave_(PvZ))
 func call_tombstone_create_zombie():
 	if is_tombstone_respawn:
-		EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [randi()%3+1])
+		EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [GameRng.randi_range(1, 3)])
 		await get_tree().create_timer(1.0, false).timeout
 	for i in range(Global.main_game.plant_cell_manager.tombstone_list.size()):
-		var new_zombie_type = zombie_type_candidate_tombstone.pick_random()
+		var new_zombie_type = GameRng.pick_random(zombie_type_candidate_tombstone)
 		Global.main_game.plant_cell_manager.tombstone_list[i].create_new_zombie(new_zombie_type)
 
 ## 更新每秒旗帜进度(僵尸波次更新管理器信号触发)

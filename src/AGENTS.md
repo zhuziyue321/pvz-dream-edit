@@ -30,6 +30,7 @@
 | [`entities/`](entities/) | 游戏实体：`character/`（base / components / plant / zombie）、`bullet/` |
 | [`levels/`](levels/AGENTS.md) | 内置关卡（按 `mode_*` 分目录）+ `core/` 关卡基类与时间轴 |
 | [`managers/`](managers/) | 管理器：波次、卡槽、手持物、格子、掉落、时间轴 |
+| [`mods/`](mods/) | **模组**：原版之外的玩法（现役：手套）。入口 `mod_manager.gd`（autoload）+ `mod_base.gd` + `mod_ids.gd`，装载规则见 [../../docs/参考存档/模组机制.md](../../docs/参考存档/模组机制.md) |
 | [`ui/`](ui/) | 界面：卡片 / 卡槽 / 金币 / 关卡内 HUD / 菜单 |
 | [`world/`](world/) | 战斗场景世界：`background/` 背景、`camera/` 相机 |
 | [`main/`](main/) | 主战斗场景入口 `main_game_base.tscn` |

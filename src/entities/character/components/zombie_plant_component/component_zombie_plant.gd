@@ -1,6 +1,13 @@
-extends Node2D
+extends ComponentNormBase
 class_name ZombiePlantComponent
 ## 植物僵尸的「头顶植物」组件（原版 ZomBotany）
+##
+## 为什么继承 ComponentNormBase 而不是裸 Node2D（两者都是 Node2D，场景不用改）：
+## 本组件此前是唯一一个「名字叫 Component、放在 components/ 下，却不进组件体系」的组件 ——
+## 它自己重写 `_ready()`，于是拿不到框架统一的两件事：
+##   ① `is_enable_default`（场景里关掉组件是否真的生效）—— 子类重写 `_ready()` 漏写 super 就会静默失效；
+##   ② `component_ready()` 这个生命周期入口 —— 别处查「组件初始化写在哪」时它不在。
+## 代价为零：ComponentNormBase 本身就是 Node2D，14 个僵尸场景里的 `type="Node2D"` 不用动。
 ##
 ## 只负责**表现与耐久反馈**两件事，攻击行为由各自的攻击组件负责：
 ##   1. 按 ZomBotanyConfig 在僵尸头顶（Body/BodyCorrect 下）拼出那棵植物；
@@ -16,7 +23,11 @@ var plant_head: Node2D
 var zom_botany_info: ZomBotanyConfig.ZomBotanyInfo
 
 
-func _ready() -> void:
+## 组件初始化入口（**不是** `_ready()` —— 见硬约束 §1-3 与 ComponentNormBase.component_ready）
+## 时机与原来的 `_ready()` 完全一致（基类 `_ready()` 里分派），所以下面那段
+## 「owner 的 @onready 还没赋值」的处理照原样保留。
+func component_ready() -> void:
+	super()
 	if not (owner is Zombie000Base):
 		Log.error("ZombiePlantComponent 只能挂在僵尸上，当前 owner：" + str(owner))
 		return

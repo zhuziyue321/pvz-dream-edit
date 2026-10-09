@@ -66,8 +66,20 @@ func load_game_main_game():
 
 
 #region 更新全局关卡数据
+## 「本关算不算通关」的问询口：外部（模组 / 录像回放这类「结果另有人裁决」的玩法）可以占这个位。
+##
+## 用法：给 `Callable` 赋值一个 `func() -> bool`，**返回 false 就不写这一次的通关数据**
+## （植物解锁 / 道具解锁 / 钉耙消耗也一并不动 —— 它们都是从通关进度推导出来的）。
+## 没被占的说明"没人替我做主"，照旧写。本体自己**从不**给这一位赋值。
+var level_success_write_gate: Callable = Callable()
+
+
 ## 更新当前关卡数据 (完成)
 func update_level_state_data_success():
+	## 先看有没有人替这一局做主（见 `level_success_write_gate`）：说了不算就什么都不写
+	if level_success_write_gate.is_valid() and not level_success_write_gate.call():
+		Log.debug("已按外部裁决跳过本关的通关存档写入：" + str(game_para.save_game_name))
+		return
 	## 更新全局关卡数据
 	var curr_level_state_data:Dictionary = Global.global_game_state.curr_all_level_state_data.get(game_para.save_game_name, {})
 	curr_level_state_data["IsSuccess"] = true

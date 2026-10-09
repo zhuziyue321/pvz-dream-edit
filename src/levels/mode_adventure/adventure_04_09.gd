@@ -10,7 +10,7 @@ func _init() -> void:
 	scene_name = SceneSettingRegistry.SCENE_FOG
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
@@ -30,3 +30,9 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(20, zombie_list)
+	## 本关没有通关奖励（全 50 关里就这 6 关没有：x-9 / 5-10，原版也不给东西），
+	## 所以本关没写 level_complete_loot —— 掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

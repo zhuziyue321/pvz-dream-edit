@@ -53,8 +53,8 @@ var TOMBSTONE = load("res://src/items/tombstone.tscn")
 ## 舞王管理器
 var JACKSON_MANAGER = load("res://src/entities/character/components/jackson/jackson_manager.tscn")
 
-## 奖杯
-var TROPHY = load("res://src/items/trophy.tscn")
+## 奖杯不再是一个独立场景：它是一种**战利品**，按名字取贴图现生产
+## （名字 -> 贴图那张表在 LootRegistry，生产在 DropItemManager.create_loot_drop）
 
 ## 锤僵尸玩法（迷你游戏 15「打僵尸」/ 冒险 2-5「打地鼠」两关共用）：
 ## 锤子美术常驻主场景（CanvasLayerTemp 的 RealHammer，由手持物组件 HandComponentHammer 拿着），

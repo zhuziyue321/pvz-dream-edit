@@ -94,6 +94,11 @@ func change_production_interval():
 
 ## 创建阳光
 func _spawn_sun():
+	## 闸门被占住时（联机客户端）这一颗不产：向日葵什么时候吐阳光由**主机**说了算，
+	## 两端的 `CreateSunTimer` 各走各的（首产 `randf_range(3, 12.5)`），吐出来的时刻对不上。
+	## 与天降共用 `GlobalUtils.sun_spawn_gate` 那一个 —— 两个口必然有一个被忘装。
+	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
+		return
 	## 播放音效
 	SoundManager.play_character_SFX(&"Throw1")
 	for i in range(num_create_sun):
@@ -108,12 +113,17 @@ func _spawn_sun():
 		tween.tween_property(new_sun, "position:y", center_y, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tween.tween_property(new_sun, "position:y", target_y, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
+		var offset_x := randf_range(-30, 30)
+		## 记下这一趟的落点与用时（联机要带着下发；净位移 / 用时见 `Sun.mark_pop_up()`）
+		new_sun.mark_pop_up(offset_x, center_y, target_y, 0.9)
+
 		new_sun.spawn_sun_tween = get_tree().create_tween()
 		new_sun.spawn_sun_tween.set_parallel()
 		new_sun.spawn_sun_tween.tween_subtween(tween)
-		new_sun.spawn_sun_tween.tween_property(new_sun, "position:x", randf_range(-30, 30), 0.9).as_relative()
+		new_sun.spawn_sun_tween.tween_property(new_sun, "position:x", offset_x, 0.9).as_relative()
 
 		new_sun.spawn_sun_tween.finished.connect(new_sun.on_sun_tween_finished)
+		EventBus.push_event(ConstEventName.SUN_SPAWNED, [new_sun])
 
 
 ## 创建阳光全流程：身体发光、生产阳光、身体不发光

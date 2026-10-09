@@ -26,6 +26,20 @@ class_name ConstEventName
 #region 阳光 / 卡槽 / 手持物
 ## 增加阳光值。payload: [阳光增量]
 const ADD_SUN_VALUE := "add_sun_value"
+## 本局长出了一颗阳光（天降 / 植物产 / 掉落都算）。payload: [Sun]
+##
+## 与 `ADD_SUN_VALUE` 的区别：那条只说"加了多少点"，说不清**哪一颗**；
+## 这一条给的是阳光节点本身（有 `entity_id` 与 `spawn_target`），
+## 联机主机靠它把"天上多了哪一颗"下发下去（见 [联机模组](../../../docs/参考存档/联机模组.md) §4.8）。
+## ⚠️ 只在**生成点**推送（生成方已经把落点写进 `Sun.spawn_target` 之后），
+## 不要在 `Sun._ready()` 里推 —— 那一刻落点还没写，推下去的是空的。
+const SUN_SPAWNED := "sun_spawned"
+## 本局掉了一件战利品（金币 / 巧克力）。payload: [掉落物节点]
+##
+## 与 `SUN_SPAWNED` 同一套：**生成点**在把落点写完之后推，联机主机靠它下发"掉了哪一枚"。
+## ⚠️ 礼包 `Present`（解锁道具 / 战利品 / 关卡结算线）**不在**这条上 ——
+## 它的时机由关卡数据决定、拾取要写存档与触发结算，两端各自跑即可，拦了反而断流程。
+const DROP_ITEM_SPAWNED := "drop_item_spawned"
 ## 紫卡（模仿者）阳光消耗变化，卡槽需要刷新显示。payload: 无
 const UPDATE_CARD_PURPLE_SUN_COST := "update_card_purple_sun_cost"
 ## 刷新阳光飞向的收集点。payload: [Marker2D]
@@ -36,8 +50,6 @@ const CARD_SLOT_NORM_START_GAME := "card_slot_norm_start_game"
 const MAIN_GAME_CLICK_CARD := "main_game_click_card"
 ## 玩家点击了铲子。payload: 无
 const MAIN_GAME_CLICK_SHOVEL := "main_game_click_shovel"
-## 玩家点击了手套。payload: 无
-const MAIN_GAME_CLICK_GLOVE := "main_game_click_glove"
 ## 手上拿起了一张卡。payload: 见 CardManager
 const HAND_CARD_TAKE := "hand_card_take"
 ## 手上的卡被放下 / 收回。payload: 见 CardManager
@@ -89,6 +101,10 @@ const CHARACTER_BE_HYPNO := "character_be_hypno"
 const MAIN_GAME_PROGRESS_UPDATE := "main_game_progress_update"
 ## 本波僵尸打完。payload: 无
 const END_WAVE_ZOMBIE := "end_wave_zombie"
+## 本轮战斗打完（最后一波清完 / 罐子全砸开 / 僵王倒下后清场）。payload: [全局坐标]
+## ⚠️ **打完 ≠ 胜利**：胜利条件改由关卡流程决定（run_flow 跑完强制胜利，见 LevelTimelineManager）。
+##    本事件只负责「还有下一轮就切轮」（多轮关卡），最后一轮打完什么都不做
+const BATTLE_FINISHED := "battle_finished"
 ## 开始下一轮（多轮关卡）。payload: 无
 const START_NEXT_ROUND_GAME := "start_next_round_game"
 ## 通关。payload: 无
@@ -127,13 +143,14 @@ const TEST_DEATH_ALL_ZOMBIE := "test_death_all_zombie"
 const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	#region 阳光 / 卡槽 / 手持物
 	ADD_SUN_VALUE: [Variant.Type.TYPE_INT],
+	SUN_SPAWNED: [Variant.Type.TYPE_OBJECT],
+	DROP_ITEM_SPAWNED: [Variant.Type.TYPE_OBJECT],
 	UPDATE_CARD_PURPLE_SUN_COST: [],
 	## Marker2D 是对象：这里只校验「传了个对象进来」，具体节点类型由订阅方负责
 	UPDATE_MARKER_2D_SUN_TARGET: [Variant.Type.TYPE_OBJECT],
 	CARD_SLOT_NORM_START_GAME: [],
 	MAIN_GAME_CLICK_CARD: [Variant.Type.TYPE_OBJECT],
 	MAIN_GAME_CLICK_SHOVEL: [],
-	MAIN_GAME_CLICK_GLOVE: [],
 	HAND_CARD_TAKE: [Variant.Type.TYPE_OBJECT],
 	HAND_CARD_RELEASE: [Variant.Type.TYPE_OBJECT],
 	FIRST_COIN_DROP: [Variant.Type.TYPE_OBJECT],
@@ -146,28 +163,48 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	## （component_drop_item.gd）都是合法的。TYPE_NIL 同时表示该位置跳过类型校验。
 	CREATE_COIN: [Variant.Type.TYPE_ARRAY, Variant.Type.TYPE_VECTOR2, Variant.Type.TYPE_NIL],
 	CREATE_TROPHY: [Variant.Type.TYPE_VECTOR2],
+	## 巧克力 / 花园植物的 payload 都只有一个落点坐标（见 component_drop_item.gd）
+	CREATE_CHOCOLATE: [Variant.Type.TYPE_VECTOR2],
+	CREATE_GARDEN_PLANT: [Variant.Type.TYPE_VECTOR2],
 	CREATE_TOMBSTONE: [Variant.Type.TYPE_INT],
 	CREATE_UNLOCK_DROP: [Variant.Type.TYPE_VECTOR2],
+	## 通关掉落物本体（seed_packet.gd / present.gd 推的都是 self）
+	LEVEL_COMPLETE_PICKUP: [Variant.Type.TYPE_OBJECT],
+	LEVEL_COMPLETE_PICKUP_FINISHED: [],
 	#endregion
 
 	#region 战斗效果（跨系统广播）
+	## [冰冻时长, 减速时长]（见 component_bomb_ice.gd 的 time_ice / time_decelerate）
+	ICE_ALL_ZOMBIE: [Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT],
 	## 三行热烈：payload 是所在行的列索引 owner_plant.row_col.x（int）
 	JALAPENO_BOMB_EFFECT: [Variant.Type.TYPE_INT],
 	JALAPENO_BOMB_ITEM_LANE: [Variant.Type.TYPE_INT],
 	JALAPENO_BOMB_LANE_ZOMBIE: [Variant.Type.TYPE_INT],
 	BLOVER_BLOW_AWAY_IN_SKY_ZOMBIE: [],
+	## 第一个位置是 E_CanvasLayerEffectType 枚举（int）；第二个位置是时长，
+	## 订阅方 canvas_layer_effect_once 的 duration 带默认值 0.3，所以可选
+	CANVAS_LAYER_EFFECT_ONCE: [Variant.Type.TYPE_INT, Variant.Type.TYPE_NIL],
 	GOLD_MAGNET_ATTRACT_ONCE: [Variant.Type.TYPE_VECTOR2],
 	CHARACTER_BE_HYPNO: [Variant.Type.TYPE_OBJECT],
 	#endregion
 
 	#region 关卡流程
+	## MainGameManager.E_MainGameProgress 枚举（int）：阶段变化由 setter 推（main_game_manager.gd）
+	MAIN_GAME_PROGRESS_UPDATE: [Variant.Type.TYPE_INT],
 	ZOMBIE_GO_HOME: [Variant.Type.TYPE_OBJECT],
 	END_WAVE_ZOMBIE: [],
+	BATTLE_FINISHED: [Variant.Type.TYPE_VECTOR2],
 	START_NEXT_ROUND_GAME: [],
+	## ⚠️ 死事件：全仓只有订阅方（mgm_reward_manager.gd），**没有任何 push 调用点**。
+	## 保留是因为签名表只做校验、不做清理判定；真要删得先确认该分支已无人触发。
 	WIN_MAIN_GAME: [],
+	LAWN_MOVER_TRIGGERED: [Variant.Type.TYPE_INT],
+	## ⚠️ 死事件：同上，只有 gim_lawn_mover.gd 订阅，无发布方
+	REPLENISH_LAWN_MOVER: [],
 	#endregion
 
 	#region 设置 / 调试
+	ON_CONFIG_UPDATE: [],
 	## 注意：调用点传的是裸 bool（`push_event(名, true)`），
 	## push_event 内部会包装成 [bool]，所以签名是单元素
 	SET_KEEP_SYSTEM_CURSOR_VISIBLE: [Variant.Type.TYPE_BOOL],

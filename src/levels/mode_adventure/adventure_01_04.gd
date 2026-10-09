@@ -7,9 +7,11 @@ extends LevelScriptBase
 
 func _init() -> void:
 	save_key = "101_0_0004"
+	## 本关通关掉落：铁铲
+	level_complete_loot = "shovel"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
@@ -26,3 +28,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

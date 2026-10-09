@@ -84,11 +84,10 @@ enum E_PotMode {
 }
 #endregion
 
-#region 关卡时间轴
-## 关卡时间轴的事件类型（见 ResourceLevelTimelineData / LevelTimelineManager）
-## 关卡流程 = 一条时间轴：按数组顺序执行，**上一个事件结束才开下一个**。
-## 关卡资源 ResourceLevelData.timeline 留空时，按关卡现有开关生成等价默认时间轴，
-## 所以老关卡不改数据也照旧跑；要改流程就配一条自己的时间轴。
-## 关卡时间轴的「事件类型」这里不再维护：一种事件 = 一个脚本（见 ResourceLevelTimelineEvent），
-## 事件是什么、叫什么由那个脚本自己决定，调试看脚本类名 / 事件上的 note。
+#region 关卡流程
+## **关卡流程 = 关卡脚本的 run_flow()**（见 LevelScriptBase）：一段顺序结构的程序，
+## `await` 一个流程方法（`show_zombie` / `choose_card` / `start_battle` …）才走下一步。
+## 流程方法的实现是**一种步骤 = 一个脚本**（见 ResourceLevelTimelineEvent，脚本都在
+## `level/script/timeline_event/`）：脚本自己 `@export` 的字段就是这一步的参数。
+## 这里不维护「步骤类型」枚举：加一种步骤 = 新建一个脚本，参数只属于它自己。
 #endregion

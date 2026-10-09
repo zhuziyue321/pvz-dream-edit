@@ -90,6 +90,9 @@ func _shoot_bullet():
 	signal_shoot_bullet.emit()
 	for i in range(markers_2d_bullet.size()):
 		var bullet:Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
+		## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发，本地不该再造一份
+		if bullet == null:
+			return
 		var bullet_paras = get_bullet_paras(markers_2d_bullet[i].global_position, detect_component.ray_area_direction[i])
 		#Log.debug(bullet_paras)
 		bullet.init_bullet(bullet_paras)

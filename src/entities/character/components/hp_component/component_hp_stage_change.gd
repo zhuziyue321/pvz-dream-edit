@@ -1,12 +1,12 @@
-extends Node2D
+extends ComponentNormBase
 class_name HpStageChangeComponent
 ## 血量阶段变化组件（掉手 / 掉头这类按血量阈值换皮的表现）
-##
-## 为什么**不**继承 ComponentNormBase：理由同 HpComponent —— 接入组件体系会带上
-## 启用/禁用机制，曾在角色基础上引发「植物和僵尸都不攻击」的回归。保持 Node2D，
-## 初始化写在 `_ready()` 里。
 ## 血量阶段变化组件,坚果和南瓜头使用
 ## 血量到达临界值时变化
+##
+## 已接入组件体系（`ComponentNormBase`），初始化写在 `component_ready()` 里。
+## 禁用机制不会误伤本类：全仓无代码对 hp / anim 组件调 `disable_component()`，
+## 详见 HpComponent 的类注释。
 
 @onready var owner_character: Character000Base = owner
 @onready var hp_component: HpComponent = %HpComponent
@@ -51,7 +51,7 @@ var curr_hp_armor1_stage := -1
 ## 当前血量阶段
 var curr_hp_armor2_stage := -1
 
-func _ready() -> void:
+func component_ready() -> void:
 	## 初始化参数
 	if boundary_value_hp.is_empty():
 		@warning_ignore("integer_division")

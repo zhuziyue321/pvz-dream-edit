@@ -4,10 +4,10 @@ extends RefCounted
 ##   1. 首次通关 1-2：由僵尸掉一包种子（樱桃炸弹），此时不出奖杯
 ##   2. 点开种子包 -> 直接结算（不再抛奖杯），回冒险模式选关界面
 ##   3. 反例：重打 1-2 不再掉奖励，直接出奖杯
-##   4. 首次通关 1-4：掉的是铲子（ConstAdventureReward 的道具类奖励，仍走礼物盒）
-##   5. 首次通关 2-4：掉的是大图鉴（LEVEL_ITEM_REWARD 第 14 关，原版行为），
+##   4. 首次通关 1-4：掉的是铲子（adventure_01_04.gd 里写的道具类奖励，仍走礼物盒）
+##   5. 首次通关 2-4：掉的是大图鉴（adventure_02_04.gd 里写的道具类奖励，原版行为），
 ##      点开后直接打开图鉴（同 3-4 拿到车钥匙后直接进商店）
-##   6. 首次通关 5-4：掉的是禅境花园的洒水壶（LEVEL_ITEM_REWARD 第 44 关）
+##   6. 首次通关 5-4：掉的是禅境花园的洒水壶（adventure_05_04.gd 里写的道具类奖励）
 ## 机器可读汇总：最后一行 [ADVREWARD] result=PASS|FAIL failed=<n>
 
 var _failed := 0
@@ -29,7 +29,6 @@ func run(a) -> void:
 		_finish(a)
 		return
 
-	var temp_before: int = Global.main_game.canvas_layer_temp.get_child_count()
 	var new_drop = await _trigger_win_and_find_drop(a)
 	if new_drop == null:
 		_finish(a)
@@ -38,9 +37,9 @@ func run(a) -> void:
 	_check(a, "奖励提示里带新植物名（樱桃炸弹）", "樱桃炸弹" in new_drop.tip_text,
 		new_drop.tip_text)
 	_check_seed_packet(a, new_drop)
-	_check(a, "掉奖励时还没抛奖杯",
-		Global.main_game.canvas_layer_temp.get_child_count() == temp_before,
-		str(temp_before) + " -> " + str(Global.main_game.canvas_layer_temp.get_child_count()))
+	_check(a, "掉奖励时还没出别的战利品（奖杯被奖励顶掉）",
+		_count_drops(Global.main_game.drop_item_manager) == 1,
+		str(_count_drops(Global.main_game.drop_item_manager)))
 
 	# ------------------------------------------------ STEP2 点开奖励直接结算
 	a.log("STEP2 点开奖励（应直接结算，不再抛奖杯）")
@@ -57,7 +56,6 @@ func run(a) -> void:
 	if not await _enter_level(a, "adventure_01_02", 0, "0002"):
 		_finish(a)
 		return
-	var temp_before2: int = Global.main_game.canvas_layer_temp.get_child_count()
 	var parents2 := [
 		Global.main_game.drop_item_manager.dim_seed_packet.all_drop_seed_packet_parent,
 		Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent,
@@ -67,14 +65,19 @@ func run(a) -> void:
 		drop_before2 += parent2.get_child_count()
 	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
 	await a.wait(1.5)
-	var drop_after2 := 0
-	for parent2 in parents2:
-		drop_after2 += parent2.get_child_count()
-	_check(a, "重打不再掉奖励", drop_after2 == drop_before2,
-		str(drop_before2) + " -> " + str(drop_after2))
-	_check(a, "重打直接出奖杯",
-		Global.main_game.canvas_layer_temp.get_child_count() == temp_before2 + 1,
-		str(temp_before2) + " -> " + str(Global.main_game.canvas_layer_temp.get_child_count()))
+	## 奖杯现在也是一种战利品：按名字取贴图、掉在掉落容器里（见 LootRegistry / gain_loot），
+	## 与奖励同一个容器，所以「重打掉的是不是奖励」只能按类型 / 贴图分辨
+	var trophy_drop = _find_new_drop(
+		Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent)
+	_check(a, "重打不再掉奖励（掉的不是种子包）", not (trophy_drop is SeedPacket),
+		str(drop_before2) + " -> " + str(trophy_drop))
+	_check(a, "重打直接出奖杯（奖杯贴图）",
+		trophy_drop != null and trophy_drop.icon_texture != null
+			and "trophy" in trophy_drop.icon_texture.resource_path,
+		str(_icon_path(trophy_drop)))
+	if trophy_drop != null:
+		_check(a, "奖杯在本关结算线上", bool(trophy_drop.get("is_level_complete_drop")),
+			str(trophy_drop.get("is_level_complete_drop")))
 
 	# ------------------------------------------------ STEP4 道具类奖励：1-4 掉铲子
 	a.log("STEP4 首次通关 1-4（掉铲子）")
@@ -157,6 +160,8 @@ func _enter_level(a, level_file: String, page: int, level_id: String) -> bool:
 
 
 ## 触发通关掉落，返回新掉出来的奖励（种子包 / 礼包），没掉出来返回 null
+## 首次通关掉的是**本关自己声明的那个战利品**（`_init()` 里的 level_complete_loot），
+## 走的就是关卡脚本 run_flow() 末尾那句 `await gain(level_complete_loot)`
 func _trigger_win_and_find_drop(a):
 	var dim = Global.main_game.drop_item_manager
 	var parents := [
@@ -166,7 +171,8 @@ func _trigger_win_and_find_drop(a):
 	var drop_before := 0
 	for parent in parents:
 		drop_before += parent.get_child_count()
-	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
+	var loot: String = Global.main_game.game_para.level_complete_loot
+	Global.main_game.reward_manager.gain(loot, Vector2(600, 300))
 	await a.wait(1.5)
 	var new_drop: Node = null
 	for parent in parents:
@@ -250,4 +256,24 @@ func _find_new_drop(parent: Node) -> Node:
 		if (k is SeedPacket or k is Present) and not bool(k.get("is_opened")):
 			found = k
 	return found
+
+
+## 掉落物的贴图路径（种子包没有贴图时给个可读的空值）
+func _icon_path(drop: Node) -> String:
+	if drop == null or drop.get("icon_texture") == null:
+		return "null"
+	return str((drop.get("icon_texture") as Texture2D).resource_path)
+
+
+## 掉落容器里「还没被点开」的掉落物个数（种子包 + 礼物盒，含战利品）
+func _count_drops(dim) -> int:
+	if dim == null:
+		return 0
+	var num := 0
+	for parent in [dim.dim_seed_packet.all_drop_seed_packet_parent,
+			dim.dim_garden_plant.all_drop_garden_plant_parent]:
+		for k in parent.get_children():
+			if (k is SeedPacket or k is Present) and not bool(k.get("is_opened")):
+				num += 1
+	return num
 #endregion

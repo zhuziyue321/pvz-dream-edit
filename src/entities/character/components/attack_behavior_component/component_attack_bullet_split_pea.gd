@@ -17,6 +17,9 @@ func set_cancel_attack():
 ## 发射子弹（动画调用）
 func _shoot_bullet():
 	var bullet:Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet == null:
+		return
 	var ray_direction = detect_component.ray_area_direction[0]
 	## 子弹初始位置
 	var bullet_pos_ori = markers_2d_bullet[0].global_position
@@ -32,6 +35,9 @@ func _shoot_bullet():
 ## 发射子弹2（动画调用）
 func _shoot_bullet_2():
 	var bullet:Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet == null:
+		return
 	var ray_direction = detect_component.ray_area_direction[1]
 	## 子弹初始位置
 	var bullet_pos_ori = markers_2d_bullet[1].global_position

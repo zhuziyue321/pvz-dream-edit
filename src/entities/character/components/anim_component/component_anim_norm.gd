@@ -4,7 +4,7 @@ class_name AnimComponentNorm
 
 @onready var animation_tree: AnimationTree = $"../AnimationTree"
 
-func _ready() -> void:
+func component_ready() -> void:
 	animation_origin_speed = animation_tree.get("parameters/TimeScale/scale")
 	animation_tree.animation_finished.connect(_on_animation_finished)
 

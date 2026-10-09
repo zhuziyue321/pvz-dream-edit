@@ -141,7 +141,7 @@ func create_curr_wave_all_zombies(wave:int, is_big_wave:bool):
 	var wave_spawn :Array[CharacterRegistry.ZombieType] = create_curr_wave_zombie_list(wave, is_big_wave)
 	## 本波僵尸「怎么进场」交给关卡脚本：默认是走进来，一关专属的进场方式（空投这类）
 	## 由脚本自己覆写 create_wave_zombies 换掉 —— 本文件不认识任何具体玩法
-	## （见 LevelScriptBase.create_wave_zombies；老 .tres 关卡不是脚本，走通用进场）
+	## （见 LevelScriptBase.create_wave_zombies；关卡不覆写时走通用进场）
 	var level_script := zombie_manager.game_para as LevelScriptBase
 	if level_script != null:
 		return level_script.create_wave_zombies(self, wave_spawn, wave)
@@ -374,11 +374,12 @@ func spawn_sea_weed_zombies():
 	var zombie_type_sea_weed_list :Array= [CharacterRegistry.ZombieType.Z001Norm, CharacterRegistry.ZombieType.Z003Cone, CharacterRegistry.ZombieType.Z005Bucket]
 
 	for i in range(3):
-		var zombie_type:CharacterRegistry.ZombieType = zombie_type_sea_weed_list.pick_random()
-		var lane:int= zombie_row_pool_i.pick_random()
+		## 走 `GameRng`：珊瑚僵尸的种类 / 行 / 位置两端要一致
+		var zombie_type:CharacterRegistry.ZombieType = GameRng.pick_random(zombie_type_sea_weed_list)
+		var lane:int= GameRng.pick_random(zombie_row_pool_i)
 		var zombie_sea_weed:Zombie000Base = wave_create_zombie(zombie_type, lane, -1, _zombie_seaweed)
 
-		zombie_sea_weed.global_position.x = randf_range(500, 750)
+		zombie_sea_weed.global_position.x = GameRng.randf_range(500, 750)
 
 ## 珊瑚僵尸
 func _zombie_seaweed(z:Zombie001Norm):
@@ -389,11 +390,11 @@ func _zombie_seaweed(z:Zombie001Norm):
 ## 大波空投一批偷植物的蹦极僵尸（蹦极闪电战的大波也走这里）
 func spawn_bungi_zombies():
 	## 选择plant_cell
-	var num_bungi_rand:int = randi_range(range_num_bungi.x, range_num_bungi.y)
+	var num_bungi_rand:int = GameRng.randi_range(range_num_bungi.x, range_num_bungi.y)
 	var all_cell_have_plant:Array[PlantCell] = zombie_manager.main_game.plant_cell_manager.get_cell_have_plant()
 	var num_bungi_res:int = min(num_bungi_rand, all_cell_have_plant.size())
-	## 打乱顺序
-	all_cell_have_plant.shuffle()
+	## 打乱顺序（走 `GameRng`：两端要偷同一批格子）
+	GameRng.shuffle(all_cell_have_plant)
 	## 蹦极僵尸选中的plant_cell
 	var all_cell_be_bungi = all_cell_have_plant.slice(0, num_bungi_res)
 	## 生成蹦极僵尸

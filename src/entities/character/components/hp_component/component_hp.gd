@@ -1,12 +1,17 @@
-extends Node2D
+extends ComponentNormBase
 class_name HpComponent
 ## 血量组件
 ##
-## 为什么**不**继承 ComponentNormBase：血量组件确实挂在每个角色身上，看着该进组件体系，
-## 也确实曾经自己重写 _ready()。但接入基类会让它一并继承 `is_enabling` / 禁用因素
-## 那套机制，而血量是角色存活与攻击判定的基础 —— 接入后出现过
-## 「植物和僵尸都不攻击」的回归（与 AnimComponentBase 那次同类）。故保持 Node2D。
-## 初始化写在 `_ready()` 里（本类不是组件，不参与 component_ready() 分派）。
+## 已接入组件体系（`ComponentNormBase`），初始化写在 `component_ready()` 里。
+##
+## 关于「血量组件会不会被禁用机制误伤」：全仓没有任何代码对 hp_component /
+## anim_component 调 `disable_component()`，所有调用都是按名字取到特定组件（攻击、
+## 生产、受击框等）再禁用；`owner_update_speed()` 也都是针对具体组件调用，不存在
+## 「遍历所有组件批量禁用」。所以继承来的 `is_enabling` 恒为 true，不影响血量结算。
+##
+## 注：曾经接入后出现过「植物和僵尸都不攻击」的回归，但已查明元凶是攻击组件
+## `_ready()` 改名 `component_ready()` 时漏了 `super()`（见 ComponentNormBase 那条注释），
+## 与本类接入无关 —— 回退本类后症状并未消失。详见 2026-10-07 的工作记录。
 
 @onready var owner_character: Character000Base = owner
 
@@ -42,7 +47,7 @@ signal signal_hp_loss(curr_hp:int, is_drop:bool)
 ## 血量组件检测到死亡信号
 signal signal_hp_component_death
 
-func _ready() -> void:
+func component_ready() -> void:
 	curr_hp = max_hp
 	## 出战角色连接信号，显示血量
 	if owner_character.character_init_type == Character000Base.E_CharacterInitType.IsNorm:

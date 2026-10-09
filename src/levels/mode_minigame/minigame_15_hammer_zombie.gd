@@ -51,7 +51,7 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 	LevelRuleHammerZombie.install(mg)
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 准备安放植物
 	## 初始化小推车
 	await init_lawn_mover()

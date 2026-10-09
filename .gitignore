@@ -2,10 +2,6 @@
 .godot/
 /android/
 .vscode
-assets
-
-# 遗留素材目录（被引用的图已迁入 assets/）：不入库
-/images/
 
 # 调试通道产生的日志（本地排查用，不要提交）
 debug_channel_log.txt

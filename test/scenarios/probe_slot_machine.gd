@@ -181,21 +181,19 @@ func run(a) -> void:
 	_check(a, "达标后拉杆禁用", btn.disabled, str(btn.disabled))
 	a.log("  提示: " + str(ui._advice_label.text))
 
-	var trophy: Node = await _wait_trophy(a, 15.0)
+	var trophy: Node2D = await _wait_trophy(a, 15.0)
 	_check(a, "掉出了奖杯", trophy != null, "15 秒内没等到奖杯")
 	if trophy != null:
-		var tb: BaseButton = trophy.get_node_or_null("TrophyButton")
-		if tb == null:
-			_check(a, "奖杯上有可点的按钮", false, "TrophyButton 不存在")
-		else:
-			var ui_gone := await _wait_ui_gone(a, mg, ui, 5.0)
-			_check(a, "拉霸 UI 已经收走（queue_free 生效）", ui_gone,
-				"5 秒后 CanvasLayerUI 下还有它")
-			await a.press_first("TrophyButton")
-			var scene_before: Node = a.get_tree().current_scene
-			var settled := await _wait_scene_left(a, scene_before, 30.0)
-			_check(a, "点开奖杯后进通关结算（场景切走）", settled,
-				str(a.get_tree().current_scene))
+		var ui_gone := await _wait_ui_gone(a, mg, ui, 5.0)
+		_check(a, "拉霸 UI 已经收走（queue_free 生效）", ui_gone,
+			"5 秒后 CanvasLayerUI 下还有它")
+		## 奖杯现在是一种战利品（LootRegistry 按名字取贴图生产的一个掉落物），
+		## 没有 TrophyButton 了 —— 直接点它本体（见 Present.apply_icon_texture 的点击区）
+		var scene_before: Node = a.get_tree().current_scene
+		await a.click(trophy.global_position.x, trophy.global_position.y)
+		var settled := await _wait_scene_left(a, scene_before, 30.0)
+		_check(a, "点开奖杯后进通关结算（场景切走）", settled,
+			str(a.get_tree().current_scene))
 	else:
 		_failed += 1
 
@@ -265,8 +263,8 @@ func _wait_win(a, ui, timeout: float) -> bool:
 	return false
 
 
-## 等奖杯掉出来
-func _wait_trophy(a, timeout: float) -> Node:
+## 等奖杯掉出来（奖杯现在是一种战利品：掉在掉落容器里，见 LootRegistry / gain_loot）
+func _wait_trophy(a, timeout: float) -> Node2D:
 	var waited := 0.0
 	while waited < timeout:
 		var found := _find_trophy(a.get_tree().root)
@@ -277,10 +275,11 @@ func _wait_trophy(a, timeout: float) -> Node:
 	return null
 
 
-func _find_trophy(root: Node) -> Node:
+## 整棵树里「本关结算线」上的那个掉落物（is_level_complete_drop，见 mark_level_complete_drop）
+func _find_trophy(root: Node) -> Node2D:
 	for c in root.get_children():
-		if c is Trophy:
-			return c
+		if "is_level_complete_drop" in c and bool(c.get("is_level_complete_drop")):
+			return c as Node2D
 		var deeper := _find_trophy(c)
 		if deeper != null:
 			return deeper

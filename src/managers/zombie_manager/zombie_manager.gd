@@ -338,8 +338,9 @@ func _on_zombie_hypno(zombie:Zombie000Base):
 	all_zombies_be_hypno.append(zombie)
 
 	## 如果到了最后一波刷新,且最后一个僵尸被魅惑
+	## 清场只代表「本轮战斗打完」，不再判胜（胜利由关卡流程决定，见 MgmRewardManager）
 	if is_end_wave and curr_zombie_num == 0:
-		EventBus.push_event(ConstEventName.CREATE_TROPHY, [zombie.global_position])
+		EventBus.push_event(ConstEventName.BATTLE_FINISHED, [zombie.global_position])
 		if is_instance_valid(multi_round_end_wave_timer):
 			multi_round_end_wave_timer.stop()
 
@@ -353,8 +354,9 @@ func _on_zombie_dead(zombie: Zombie000Base) -> void:
 		all_zombies_2d[zombie.lane].erase(zombie)
 
 		## 如果到了最后一波刷新,且僵尸全部死亡
+		## 清场只代表「本轮战斗打完」，不再判胜（胜利由关卡流程决定，见 MgmRewardManager）
 		if is_end_wave and curr_zombie_num == 0:
-			EventBus.push_event(ConstEventName.CREATE_TROPHY, [zombie.global_position])
+			EventBus.push_event(ConstEventName.BATTLE_FINISHED, [zombie.global_position])
 			if is_instance_valid(multi_round_end_wave_timer):
 				multi_round_end_wave_timer.stop()
 #endregion
@@ -446,7 +448,8 @@ func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 		zombie_refresh_types.append(CharacterRegistry.ZombieType.Z001Norm)
 		whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z001Norm)
 		# 第二种：80% 路障 (Cone)，20% 报纸 (Paper)
-		var prob = randf()
+		## 走 `GameRng`：多轮关卡每一轮的出怪表两端要一样
+		var prob = GameRng.randf()
 		if prob < 0.8:
 			zombie_refresh_types.append(CharacterRegistry.ZombieType.Z003Cone)
 			whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z003Cone)
@@ -455,7 +458,7 @@ func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 			whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z006Paper)
 		## 第二轮之后可能刷新僵尸(min(轮次*2,8)+2)个
 		for i in range(min(curr_round * 2, 8)):
-			var zombie_type_choose = whitelist_refresh_zombie_types_copy.pick_random()
+			var zombie_type_choose = GameRng.pick_random(whitelist_refresh_zombie_types_copy)
 			zombie_refresh_types.append(zombie_type_choose)
 			whitelist_refresh_zombie_types_copy.erase(zombie_type_choose)
 
@@ -529,11 +532,12 @@ func restore_saved_bosses() -> void:
 func clear_bosses_for_next_round() -> void:
 	boss_registry.clear_bosses_for_next_round()
 #endregion
-## 僵王死亡后沿用普通清场判定：最后一波且场上已无敌人时才生成奖杯。
+## 僵王死亡后沿用普通清场判定：最后一波且场上已无敌人才算本轮战斗打完
+## （打完同样不判胜，胜利由关卡流程决定）
 func _try_finish_wave(global_pos: Vector2) -> void:
 	if not is_end_wave or curr_zombie_num != 0:
 		return
-	EventBus.push_event(ConstEventName.CREATE_TROPHY, [global_pos])
+	EventBus.push_event(ConstEventName.BATTLE_FINISHED, [global_pos])
 	if is_instance_valid(multi_round_end_wave_timer):
 		multi_round_end_wave_timer.stop()
 #endregion

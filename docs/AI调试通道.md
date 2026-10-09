@@ -401,7 +401,8 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_4_5_no_round_save.gd` —— 冒险 4-5 **不按批次存档/读档**（无头可跑）：伪造一份「第 3 批已打完」的存档后进关，轮次仍是 1、场上是第 1 批（3 列 15 罐）、旧存档被删、切到第 2 批不写新存档
 - `test/scenarios/probe_4_5_play.gd` —— 冒险 4-5 砸罐子关的**实机**（带窗口）：戴夫开场对话能点完 → 砸光第 1 批 → 戴夫说完「再给你一批」后摆上第 2 批，核对两批的罐子数 / 占列 / 绿罐、切换批次后临时卡片清零
 - `test/scenarios/probe_4_5_flow.gd` —— 冒险 4-5 砸罐子关的**完整流程**（带窗口）：按真实胜利条件连打三批（砸光 → 打光僵尸 → 戴夫说话 → 下一批），每批打印罐子数 / 占列 / 绿罐数与棕罐数，并顺带验一遍切完轮次后第 1 批的配置没被后面几批顶掉
-- `test/scenarios/probe_night.gd` —— 第二大关（夜晚 2-1 ~ 2-10）数据与流程（夜晚开关、开局墓碑、不掉阳光、墓碑种植判定、2-5 / 2-10 传送带、2-1 ~ 2-10 解锁表），报告里出 `[NIGHT] result=PASS`
+- `test/scenarios/probe_night.gd` —— 第二大关（夜晚 2-1 ~ 2-10）数据与流程（夜晚开关、开局墓碑、不掉阳光、墓碑种植判定、2-5 / 2-10 传送带、2-1 ~ 2-10 各关给哪株植物），报告里出 `[NIGHT] result=PASS`
+- `test/scenarios/probe_adventure_drop_source.gd` —— 冒险 50 关通关掉落「写在关卡脚本自己身上」的回归（逐关对照掉落植物 / 道具贴图、6 关无掉落的关卡确实查不到、解锁侧读的是同一份声明），报告里出 `[ADVDROP] result=PASS`
 - `test/scenarios/probe_bowling_redline.gd` —— 坚果保龄球红线（节点创建 / **画在背景之上** / 落在草坪范围内），报告里出 `[BOWLINGSTRIPE] result=PASS`
 - `test/scenarios/probe_first_coin_advice.gd` —— 第一次掉落钱的一次性提示（弹出「存钱来买更酷的道具吧！」+ 只弹一次 + 停留结束自动消失），报告里出 `[FIRSTCOIN] result=PASS`
 - `test/scenarios/probe_bobsled_bonanza.gd` —— 迷你游戏 13「全面冻结」的冰面机制（开局冰道的行数与覆盖列、冰面不可种植、雪橇队只落在有冰的行、融冰后改出洗冰车、洗冰车把冰铺回来），报告里出 `[BOBSLED] result=PASS`
@@ -411,6 +412,8 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_slot_machine.gd` —— 迷你游戏第 3 关「拉霸」（UI 已挪到 `src/levels/mode_minigame/minigame_03_slot_machine_ui.gd`：开局状态、真点拉杆扣 25 阳光、转轮停下、两同/三同分别给免费植物与阳光、累计收集达标后掉奖杯 → 点奖杯进结算），报告里出 `[SLOT] result=PASS`
 - `test/scenarios/probe_pogo_party.gd` —— 迷你游戏「蹦蹦舞会」（屋顶 / 30 波 3 旗帜 / 屋顶曲 / 55 秒超长开场 / 预置花盆 + 预览僵尸与第 0~29 波的构成逐波核对：非旗帜波全是蹦蹦僵尸，旗帜波以蹦蹦为主体），报告里出 `[POGOPARTY] result=PASS`
 - `test/scenarios/probe_seed_rain.gd` —— 迷你游戏「种子雨」的天降种子卡（发卡器挂在卡片前景层且定时器在跑 / 12 秒内持续出卡 / 卡片能捡起并能种到草坪 / 走通关结算切出主游戏），报告里出 `[SEEDRAIN] result=PASS`
+- `test/scenarios/probe_save_corrupt_guard.gd` —— 存档损坏的三条兜底（主档坏 → 回退 .bak 且不锁写 / 主档与 .bak 都坏 → 锁写且坏档隔离成 `.corrupt` / 重新读档后解锁能写档），报告里出 `[SAVEGUARD] result=PASS`
+- `test/scenarios/probe_level_registry_order.gd` —— 冒险模式第 n 个关卡 id 必须等于 `adventure_<大关>_<小关>`（**顺序 == 关卡序号**，是把选关页改成注册表动态生成的前提：level_id 按按钮顺序发放、save_game_name 由它拼出，错一位 = 全体玩家进度错位），报告里出 `[LVREG] result=PASS`
 
 ---
 
@@ -445,7 +448,21 @@ powershell -ExecutionPolicy Bypass -File test\run_autopilot.ps1 -Windowed -Scena
 ```powershell
 # 无头跑一个场景，只取它的 [XXX] result=PASS 标记
 powershell -ExecutionPolicy Bypass -File test/run_autopilot.ps1 -Scenario probe_plant
+
+# 批量回归：跑完所有 probe_* 并汇总（有 FAIL / ERROR 就 exit 1）
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1
+
+# 只跑一批相关的（逗号分隔多个通配符），可选落 Markdown 报告
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -Filter 'probe_zomboss_*,probe_save_*' -OutFile last.md
+
+# 先看会跑哪些，不启动引擎
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -ListOnly
 ```
+
+`run_all_scenarios.ps1` 是**跑批汇总器**，不是新的检查器：它逐个启动真实主场景、读每个探针自己的
+`[XXX] result=PASS|FAIL` 标记，然后打一张汇总表。判定只有四档：PASS / FAIL / DONE（跑完但没断言）/
+ERROR（崩溃、超时或压根没输出 result 行）。**它必须串行** —— `run_autopilot.ps1` 每次都会重建同一个
+重定向用户目录，并发会互相删档。全量 88 个探针约 30~60 分钟，日常用 `-Filter` 跑子集。
 
 不通过 `run_autopilot.ps1` 时，等价的打开游戏命令是：
 

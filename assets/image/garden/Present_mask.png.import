@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://dlhqwmsa4r4wx"
+path="res://.godot/imported/Present_mask.png-d6df943583effe674c5f1f44e54c8dff.res"
+
+[deps]
+
+source_file="res://assets/image/garden/Present_mask.png"
+dest_files=["res://.godot/imported/Present_mask.png-d6df943583effe674c5f1f44e54c8dff.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

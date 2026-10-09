@@ -127,8 +127,7 @@ func apply_scene_setting() -> void:
 ## 是否可以选择卡片,传送带不可选择
 @export var can_choosed_card: bool = true
 ## 开局是否播「准备…安放…植物」红字（砸罐子关不播：罐子摆好就能直接砸，见原版冒险 4-5）
-## 只影响默认时间轴：留空 timeline 时按本开关决定是否生成一个「准备安放植物」事件，
-## 配了自己的 timeline 就由时间轴上的那条事件决定（见 build_default_timeline）
+## 关卡脚本的默认流程（LevelScriptBase.run_flow）里是否播「准备…安放…植物」红字
 @export var is_show_ready_set_plant: bool = true
 ## 戴夫对话资源（关卡开场播放，原版：冒险模式 1-5 / 2-1）
 @export var crazy_dave_dialog: CrazyDaveDialogResource
@@ -137,11 +136,6 @@ func apply_scene_setting() -> void:
 @export var crazy_dave_dialog_next_round: Array[CrazyDaveDialogResource] = []
 ## 开场戴夫对话是否只在首次通关前播放（原版：进入夜晚场景 2-1 的这段话只说一次）
 @export var dave_dialog_only_first_playthrough: bool = false
-
-@export_subgroup("关卡时间轴")
-## 关卡时间轴:按顺序执行的关卡事件(戴夫对话 / 选卡 / 开战 / 一波…),见 ResourceLevelTimelineData
-## 留空时按上面这些开关自动生成一条等价的默认时间轴(见 build_default_timeline),老关卡不用改
-@export var timeline: ResourceLevelTimelineData
 
 @export_subgroup("关卡掉落解锁道具")
 ## 解锁道具掉落时机之一:本关结束时掉落(最后一波僵尸清完、出奖杯之前),仅在首次通关本关时掉
@@ -154,6 +148,20 @@ func apply_scene_setting() -> void:
 @export var drop_unlock_tip: String = ""
 ## 解锁道具的贴图,留空用默认的礼物盒(如 3-4 的车钥匙用 CarKeys.png)
 @export var drop_unlock_icon: Texture2D
+
+@export_subgroup("本关通关掉落")
+## 本关通关掉的那个**战利品的名字** —— **直接编码在本关脚本里**（冒险模式每关 `_init()` 各写一份）
+## 与上面的「解锁道具」是两条线:解锁道具是"掉钥匙解锁商店"这种功能解锁,
+## 本组是本关自己的通关奖励(原版戴夫给的礼物盒 / 铁铲 / 车钥匙 / 玉米卷 / 新植物种子包)。
+## 名字 -> 贴图 / 植物编号 / 提示文本那张表在 `src/items/drop/loot_registry.gd`(LootRegistry):
+##   · "shovel" / "almanac" / "car_keys" / "taco" / "watering_can" 这类 = 道具战利品(礼物盒换贴图)
+##   · "sunflower_seed_packet" 这类 = 新植物种子包(种子包是运行时拼的,没有独立贴图)
+##   · "trophy" = 奖杯:本关没有奖励的关卡(1-9 / 2-9 / … / 5-10)就写它
+##   · 留空 = 本关没有奖励,走 `win_on_level_complete()` 的奖杯兜底
+## 植物类同时是"本关解锁哪株植物"的答案源(见 LevelRegistry.get_adventure_level_reward_plant),
+## 项目里没有任何"关卡序号 -> 战利品"的表,改本关掉什么就改这里。
+## 掉落时机在关卡流程末尾:`await gain(level_complete_loot)`,见 docs/参考存档/关卡时间轴.md
+@export var level_complete_loot: String = ""
 #endregion
 
 #region 出怪参数
@@ -306,7 +314,7 @@ func has_conveyor_belt() -> bool:
 @export var pot_mode: ConstLevelData.E_PotMode = ConstLevelData.E_PotMode.Null
 @export var pot_col_range: Vector2i = Vector2i(4, 9)
 ## 结果随机罐子是否永久可观察罐内（打开后砸之前就能看到里面是什么）
-## 目前只有自定义关卡在用（data/levels/params/vase_zombie.tres），内置关卡一律 false
+## 目前只有自定义关卡在用（data/levels/params/vase_zombie.gd），内置关卡一律 false
 @export var is_can_look_random_res_pot := false
 ## 戴夫提示罐的个数：摆好罐子后有几个「装着植物的罐子」会显示成绿色植物罐，
 ## 玩家一眼就知道那几个是植物（但不知道是哪种植物）。
@@ -519,71 +527,6 @@ func get_adventure_level_index() -> int:
 	if int(parts[0]) != MainSceneRegistry.MainScenes.ChooseLevelAdventure:
 		return 0
 	return int(parts[2])
-
-
-#region 关卡时间轴
-## 默认时间轴缓存:本关没配 timeline 时只生成一次,多轮游戏每轮复用
-var _default_timeline: ResourceLevelTimelineData
-
-## 本关实际使用的时间轴:显式配了 timeline 就用它,否则按现有开关生成等价的默认时间轴
-func get_timeline() -> ResourceLevelTimelineData:
-	if timeline != null and not timeline.events.is_empty():
-		return timeline
-	return build_default_timeline()
-
-
-## 按本关现有开关生成等价的默认时间轴
-## 把原本写死在 MainGameManager 开场流程里的顺序搬进数据:
-## 戴夫推销 -> 戴夫对话 -> 开场教程 -> 保龄球红线 -> 展示僵尸 -> 选卡 -> 准备安放植物 -> 开战
-## 这样老关卡一个字段都不用改就照旧跑,要改流程就配一条自己的 timeline
-## （一种事件一个脚本，这里 new 的就是各事件脚本，参数用默认值）
-func build_default_timeline() -> ResourceLevelTimelineData:
-	if _default_timeline != null:
-		return _default_timeline
-	var data := ResourceLevelTimelineData.new()
-	## 只生成本关**真实生效**的步骤：下面几个开关不满足时，对应事件的 run() 就是直接 return
-	## （空转步骤），生成出来白占一行，还会让人误以为本关有这一步。
-	## 判据见各事件脚本的 run() 与下面 is_dave_sell_possible() 等三个辅助方法
-	if is_dave_sell_possible():
-		_append_timeline_event(data, LevelTimelineEventDaveSell.new(), "戴夫推销卡槽扩充", true)
-	## 对话内容取关卡当轮的对话(第 1 轮 crazy_dave_dialog,之后 crazy_dave_dialog_next_round)
-	if has_dave_dialog_on_any_round():
-		_append_timeline_event(data, LevelTimelineEventDaveDialog.new(), "关卡戴夫对话")
-	if is_bowling_stripe:
-		_append_timeline_event(data, LevelTimelineEventBowlingStripe.new(), "保龄球红线", true)
-	if look_show_zombie:
-		_append_timeline_event(data, LevelTimelineEventShowZombie.new(), "展示僵尸")
-		if can_choosed_card:
-			_append_timeline_event(data, LevelTimelineEventChooseCard.new(), "选卡")
-		else:
-			## 不能选卡:相机在预览位停 3 秒再归位开战(等价旧的 no_choosed_card_start_game)
-			var wait_event := LevelTimelineEventWait.new()
-			wait_event.wait_time = 3.0
-			_append_timeline_event(data, wait_event, "不选卡时相机停留")
-			_append_timeline_event(data, LevelTimelineEventCameraBack.new(), "相机归位")
-	## 小推车登场：出生在屏幕外左侧，按从下到上的顺序开到位（本关没开推车时事件自己跳过）
-	_append_timeline_event(data, LevelTimelineEventLawnMover.new(), "初始化小推车")
-	## 「准备…安放…植物」红字：砸罐子关不播（罐子摆好就能直接砸，见原版冒险 4-5）
-	if is_show_ready_set_plant:
-		_append_timeline_event(data, LevelTimelineEventReadySetPlant.new(), "准备安放植物")
-	_append_timeline_event(data, LevelTimelineEventStartBattle.new(), "开战")
-	## 开战事件自己会等到本段打完（砸罐子：罐子全开 + 僵尸清空；出怪关：最后一波刷完 + 僵尸清空），
-	## 所以默认轴末尾不再单独挂别的事件
-	_default_timeline = data
-	return data
-
-
-## 往时间轴上加一个事件：填通用参数（各事件自己的参数在外面配）
-func _append_timeline_event(
-	data: ResourceLevelTimelineData,
-	new_event: ResourceLevelTimelineEvent,
-	event_note: String,
-	is_first_round_only := false
-) -> void:
-	new_event.note = event_note
-	new_event.is_first_round_only = is_first_round_only
-	data.events.append(new_event)
-#endregion
 
 
 func _init_zombie_refresh_from_whitelist() -> void:

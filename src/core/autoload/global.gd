@@ -9,6 +9,8 @@ extends Node
 @onready var main_scene_registry: MainSceneRegistry = %MainSceneRegistry
 @onready var bullet_registry: BulletRegistry = %BulletRegistry
 @onready var item_registry: ItemRegistry = %ItemRegistry
+## 控制台条目注册表（控制台面板上的一切条目都从这里来；模组也往这里登记自己的调试开关）
+@onready var console_registry: ConsoleRegistry = %ConsoleRegistry
 ## 用户管理（已从 Global 拆分）
 @onready var user_manager: UserManager = %UserManager
 ## 存档服务
@@ -40,7 +42,17 @@ func reload_session_for_current_user() -> void:
 	save_service.load_global_game_data()
 	config_service.load_and_apply_config()
 
-var main_game:MainGameManager
+## ⚠️ **当前局上下文已迁出 Global** —— 真正的持有者是 `GameContext.curr_main_game`。
+##
+## 这里保留一个同名属性纯粹是为了存量代码：`src/` 下有 37 个文件直连 `Global.main_game`，
+## 一次性全改的改动面太大、且没有断言基线兜底（见架构总览 §12.3 的 Global 分期方案）。
+## 现在它是**转发**，读写都落到 GameContext，行为与改造前完全一致。
+##
+## 新代码请直接走 `GameContext`，或在角色 / 子弹 / 组件里用各自的 `get_main_game()`。
+var main_game:MainGameManager:
+	get: return GameContext.curr_main_game
+	set(value): GameContext.curr_main_game = value
+
 var game_para:ResourceLevelData
 
 ## 游戏倍速

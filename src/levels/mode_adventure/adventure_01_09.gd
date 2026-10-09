@@ -5,7 +5,7 @@ extends LevelScriptBase
 ## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 展示僵尸
 	await show_zombie()
 	## 选卡
@@ -16,3 +16,9 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(20)
+	## 本关没有通关奖励（全 50 关里就这 6 关没有：x-9 / 5-10，原版也不给东西），
+	## 所以本关没写 level_complete_loot —— 掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

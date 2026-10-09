@@ -50,6 +50,9 @@ func _up_bullet(curr_bullet: Bullet000Base) -> void:
 		return
 	var new_type: BulletRegistry.BulletType = bullet_upgrade_data[curr_bullet.bullet_type]
 	var bullet_up: Bullet000Base = Global.bullet_registry.create_bullet(new_type)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet_up == null:
+		return
 	bullet_up.init_bullet(curr_bullet.get_bullet_paras())
 	curr_bullet_up.append(bullet_up)
 	bullets.call_deferred("add_child", bullet_up)

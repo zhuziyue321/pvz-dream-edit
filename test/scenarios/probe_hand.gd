@@ -21,7 +21,7 @@ var _cell := Vector2i(1, 1)
 var _cell_dst := Vector2i(1, 2)
 ## 冒险模式 1-4 的关卡存档名（game_mode_level_page_level_id）
 const LEVEL_1_4_SAVE_KEY := "%d_0_0004" % MainSceneRegistry.MainScenes.ChooseLevelAdventure
-## 冒险模式 4-5 的关卡存档名：通关它之后戴夫才把手套交给玩家（ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL）
+## 冒险模式 4-5 的关卡存档名：通关它之后戴夫才把手套交给玩家（手套模组的 GloveMod.UNLOCK_ADVENTURE_LEVEL）
 const LEVEL_4_5_SAVE_KEY := "%d_0_0035" % MainSceneRegistry.MainScenes.ChooseLevelAdventure
 ## 反复点卡次数（泄漏回归用）
 const REPEAT_TIMES := 6
@@ -63,12 +63,12 @@ func run(a) -> void:
 	await _check_plant(a)
 	await _check_invalid_cell_keeps_hand(a)
 	await _check_right_click_cancel(a)
-	## 手套总开关关闭时整节跳过（ConstFeatureSwitch.GLOVE_ENABLED），否则第 7 节必挂
-	if ConstFeatureSwitch.GLOVE_ENABLED:
+	## 手套是模组：没启用时主游戏里根本没有手套节点，整节跳过（见 ModManager）
+	if ModManager.is_mod_enabled(ModIds.GLOVE):
 		await _check_glove(a)
 	else:
 		a.log("")
-		a.log("--- 7. 手套组件（GLOVE_ENABLED=false，已隐藏，跳过）---")
+		a.log("--- 7. 手套组件（手套模组未启用，主游戏里没有手套节点，跳过）---")
 	await _check_shovel(a)
 	_finish(a)
 
@@ -257,9 +257,12 @@ func _check_no_leak(a) -> void:
 	a.log("  手持美术节点: %d -> %d ; 全场景节点: %d -> %d（参考值，含同时进行的刷怪）" % [
 		base_hand, now_hand, base_all, now_all])
 	_check(a, "手持美术节点数恰好为 2", now_hand == 2, "%d -> %d" % [base_hand, now_hand])
-	## HandManager 下挂 5 个组件：Null / Character / Shovel / Glove / Hammer
+	## HandManager 下挂 4 个本体组件：Null / Character / Shovel / Hammer
 	## （锤子是锤僵尸玩法的手持物，默认禁用，由玩法规则启用，见 HandComponentHammer）
-	_check(a, "组件节点数不变", _hm().get_child_count() == 5, "count=%d" % _hm().get_child_count())
+	## 手套是模组：模组启用时由 GloveMod 现场加第 5 个（HM_Glove）
+	var expect_component_num := 5 if ModManager.is_mod_enabled(ModIds.GLOVE) else 4
+	_check(a, "组件节点数不变", _hm().get_child_count() == expect_component_num,
+		"count=%d expect=%d" % [_hm().get_child_count(), expect_component_num])
 	_check(a, "反复点卡后仍在手持", _holding())
 
 

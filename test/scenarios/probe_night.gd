@@ -60,8 +60,8 @@ const EXPECT_FIXED_CARD: Dictionary = {
 		CharacterRegistry.PlantType.P012GraveBuster,
 		CharacterRegistry.PlantType.P003CherryBomb],
 }
-## 原版第二大关解锁表：键为冒险模式关卡序号（2-x = 10 + x），值为该小关通关后拿到的植物
-## 数据来源与 ConstPlantUnlock.ADVENTURE_LEVEL_UNLOCK_PLANT 的 2-x 段一致
+## 第二大关各关通关给哪株植物的**期望值**：键为冒险模式关卡序号（2-x = 10 + x），
+## 实际值写在各关脚本上（adventure_02_0x.gd 的 `_init()`），这里是从玩家视角记的一份对照。
 const EXPECT_UNLOCK: Dictionary = {
 	11: CharacterRegistry.PlantType.P010SunShroom,		## 2-1 阳光菇
 	12: CharacterRegistry.PlantType.P011FumeShroom,		## 2-2 大喷菇
@@ -151,21 +151,24 @@ func _check_level_para(a) -> void:
 #endregion
 
 
-#region 静态：原版解锁表
-## 2-1 ~ 2-10 通关后解锁的植物，必须与 ConstPlantUnlock 的 2-x 段一致。
-## 选关界面第 2 页的「本关看点」图标就是按这张表摆的（见 docs/参考存档/选关界面与解锁.md 选关界面一节）。
+#region 静态：第二大关通关给什么植物
+## 2-1 ~ 2-10 通关后给哪株植物，由那一关的脚本自己声明（adventure_02_0x.gd 的
+## level_complete_loot，战利品名字 -> 植物编号见 LootRegistry），
+## 这里逐关对照 EXPECT_UNLOCK 这张**期望值**。
+## 选关界面第 2 页的「本关看点」图标就是按同一份声明摆的
+## （见 docs/参考存档/选关界面与解锁.md 选关界面一节）。
 func _check_unlock_table(a) -> void:
 	a.log("")
-	a.log("STEP2 2-1 ~ 2-10 解锁表")
+	a.log("STEP2 2-1 ~ 2-10 通关掉落 / 解锁植物")
 	for level in range(11, 21):
 		var level_name: String = ConstUnlockLevel.get_adventure_level_name(level)
-		var got: Array = ConstPlantUnlock.get_unlock_plant_on_adventure_level(level)
+		var got := LevelRegistry.get_adventure_level_reward_plant(level)
 		var expect: Variant = EXPECT_UNLOCK.get(level, null)
 		if expect == null:
-			_check(a, "通关 %s 没有新植物" % level_name, got.is_empty(), str(got))
+			_check(a, "通关 %s 没有新植物" % level_name,
+				got == CharacterRegistry.PlantType.Null, str(got))
 		else:
-			_check(a, "通关 %s 解锁 %s" % [level_name, _plant_name(expect)],
-				got.size() == 1 and got[0] == expect, str(got))
+			_check(a, "通关 %s 解锁 %s" % [level_name, _plant_name(expect)], got == expect, str(got))
 #endregion
 
 

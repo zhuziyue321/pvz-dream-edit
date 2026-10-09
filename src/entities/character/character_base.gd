@@ -59,6 +59,17 @@ enum E_Influence_Speed_Factor{
 	BungiCarry,		## 被蹦极僵尸吊在绳子上（下落过程中整体静止，落地才恢复）
 	LevelSpeed,		## 关卡全场加速（资源字段 ResourceLevelData.speed_factor_*，见「僵尸快跑」关）
 }
+## 网络实体 id（**稳定标识**，0 = 未分配）
+##
+## 为什么要有：`get_instance_id()` 是进程内的，换个进程就对不上，也没法写进网络包。
+## 联机 / 回放要说清"哪一只僵尸"时，必须有两端一致的编号。
+## 出战角色在 `_ready()` 里自动领一个（自增）；客户端由主机下发的创建消息指定，
+## 调用 `assign_entity_id()` 在入树前塞进去，`_ready()` 看到非 0 就不再分配。
+## 编号只是标识，**不参与任何玩法判定**，单机与联机的行为完全一致。
+var entity_id:int = 0
+## 下一个待分配的实体 id（静态：分配器全场一份，与具体角色无关）
+static var _next_entity_id:int = 1
+
 ## 是否被魅惑
 var is_hypno:bool = false
 ## 该角色是否被设定为隐形（通用外观项，由僵尸初始化参数 E_ZInitAttr.IsInvisible 下发）
@@ -121,6 +132,9 @@ enum E_CharacterInitType{
 
 #endregion
 func _ready() -> void:
+	## 出战角色领一个实体 id（展示 / 花园态不领：它们不参与联机，不消耗编号）
+	if entity_id == 0 and character_init_type == E_CharacterInitType.IsNorm:
+		entity_id = take_next_entity_id()
 	## 与初始化类型**无关**的角色初始化写在 character_ready() 里，由本处统一调用（硬约束 1-3）
 	character_ready()
 	match character_init_type:
@@ -130,6 +144,30 @@ func _ready() -> void:
 			ready_show()
 		E_CharacterInitType.IsGarden:
 			ready_garden()
+
+
+#region 网络实体 id
+## 领下一个实体 id（自增）
+static func take_next_entity_id() -> int:
+	var new_id := _next_entity_id
+	_next_entity_id += 1
+	return new_id
+
+
+## 重置分配器（新的一局 / 新的一次回放开始时调，让两端从同一个编号开始）
+static func reset_entity_id_allocator(start_id: int = 1) -> void:
+	_next_entity_id = start_id
+
+
+## 指定实体 id：客户端收到主机的创建消息后、入树之前调用（`_ready()` 会跳过自动分配）
+func assign_entity_id(new_id: int) -> void:
+	entity_id = new_id
+
+
+## 是否已分配到实体 id
+func has_entity_id() -> bool:
+	return entity_id != 0
+#endregion
 
 
 ## **角色的初始化入口之一**：与 `character_init_type` 无关的那部分初始化
@@ -373,10 +411,11 @@ func get_sibling_layer() -> Node:
 ## 而展示态（图鉴、卡片静态预览、花园）没有主场景，那些分支只能靠调用点散落的
 ## is_instance_valid() 各兜各的（历史上 seed_packet 就因此接过已释放实例）。
 ## 收进本方法之后：实体代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处。
+## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
 ##
 ## 组件请用 ComponentNormBase 提供的同名访问器（它内部转问 owner，即本角色）。
 func get_main_game() -> MainGameManager:
-	return Global.main_game
+	return GameContext.curr_main_game
 
 
 ## **组件取「宿主身上某个节点」的统一入口**（替代在组件里拼 `$"../XXX"`）

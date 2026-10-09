@@ -23,7 +23,8 @@
 
 | 文件 / 目录 | 内容 |
 |------|------|
-| `run_autopilot.ps1` | 跑批入口：`-Scenario <name> -Windowed` |
+| `run_autopilot.ps1` | 跑单个探针：`-Scenario <name> -Windowed`（无头 = CI 回归，带窗口 = 排查） |
+| `run_all_scenarios.ps1` | **批量回归**：按 `-Filter` 跑完一批探针，汇总 PASS / FAIL / DONE / ERROR，有 FAIL / ERROR 就非 0 退出（**必须串行**，见脚本头注释） |
 | `scenarios/probe_*.gd` | 各类探针场景（按主题写一个，不写大而全的） |
 | `autopilot*.gd` + `autopilot.tscn` | 自动驾驶框架（输入、时钟、状态、报告） |
 | `inject/` | 注入辅助 |

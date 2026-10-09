@@ -8,12 +8,18 @@ class_name Present
 ##      拾取后显示 drop_unlock_tip 配置的解锁提示)
 ##   3. 同上但换成自定义贴图(icon_texture),如冒险 3-4 掉落的疯狂戴夫车钥匙、1-4 的铲子
 ##      （拿到新植物掉的是种子包 SeedPacket,由 DropItemManager.dim_seed_packet 直接掉,不包礼物盒）
+##   4. 战利品（奖杯 / 玉米卷…）：同样是「自定义贴图 + 不弹提示」，贴图由 LootRegistry 按名字给
+##      （见 DropItemManager.create_loot_drop），点开后走 CanvasLayerWhiteScreen 的收尾表演
 
 ## 默认的花园植物礼包提示文本（原版见 data/strings/lawn_strings.txt）
 const TIP_NEW_GARDEN_PLANT := "你为你的花园找到一株新植物"
 
 ## 打开后的提示文本，留空时使用默认的花园植物文案
 @export var open_tip_text: String = ""
+## 打开后是否弹提示文本：纯贴图的战利品（奖杯这类）没有文案，由生产方关掉
+@export var is_show_open_tip := true
+## 打开时播放的音效名（见 SoundManager.play_other_SFX），战利品由 LootRegistry 指定
+@export var open_sfx := "prize"
 ## 掉落物贴图，留空用默认的礼物盒（车钥匙 / 铲子等解锁道具传对应贴图）
 @export var icon_texture: Texture2D
 ## 是否为花园植物礼包：false 表示解锁类礼包，不计入花园植物数量也不写存档
@@ -56,11 +62,12 @@ func _on_texture_button_pressed() -> void:
 	if is_opened:
 		return
 	is_opened = true
-	SoundManager.play_other_SFX("prize")
+	SoundManager.play_other_SFX(open_sfx)
 
-	var reminder_info :ReminderInformation =  SceneRegistry.REMINDER_INFORMATION.instantiate()
-	get_tree().current_scene.add_child(reminder_info)
-	reminder_info._init_info([get_open_tip_text()], tip_show_time)
+	if is_show_open_tip:
+		var reminder_info :ReminderInformation =  SceneRegistry.REMINDER_INFORMATION.instantiate()
+		get_tree().current_scene.add_child(reminder_info)
+		reminder_info._init_info([get_open_tip_text()], tip_show_time)
 
 	if is_garden_plant:
 		Global.global_game_state.curr_num_new_garden_plant += 1

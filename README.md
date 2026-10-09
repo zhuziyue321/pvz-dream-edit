@@ -1,5 +1,5 @@
 <!-- AGENT-DOC: human -->
-# 🌱 PVZ-Godot-Dream
+# 🌱 PVZ-Dream-Edit
 
 > **[给 AI Agent]** 本仓库的文档面向 Agent 编写：**动手前请先读 [AGENTS.md](./AGENTS.md)** —— 它是唯一入口，含「按任务路由的文档表」与「硬约束速查」。全部文档地图见 **[docs/README.md](./docs/README.md)**。
 

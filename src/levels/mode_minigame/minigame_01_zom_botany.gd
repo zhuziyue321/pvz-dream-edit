@@ -30,7 +30,7 @@ func _init() -> void:
 	## 而关卡又没有预选卡 —— 结果是一张植物都带不进去，这关直接没法打
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版口径：只出豌豆僵尸 + 坚果僵尸两只植物僵尸，不出普僵
 	## （旗帜波仍会由波次管理器补旗子僵尸 + 普僵，那是本体波次逻辑，不是本关出怪表）

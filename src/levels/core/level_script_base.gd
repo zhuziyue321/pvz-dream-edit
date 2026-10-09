@@ -19,12 +19,14 @@ class_name LevelScriptBase
 ##   LevelTimelineManager.run_timeline()  —— 注入 _mg 后 await run_flow(mg)
 ##   各 manager 读字段 —— 与读 ResourceLevelData 完全一致
 ##
-## 老 .tres 关卡（ResourceLevelData 实例）没有 run_flow，执行器仍走旧的事件数组，
-## 所以迁移可以逐关进行。
+## （老的 `.tres` 关卡走的是时间轴事件数组那条路，2026-10-08 已随 .tres 关卡一起删除。）
 
 ## 主游戏管理器：由执行器在 run_flow 之前注入（关卡脚本不要自己赋值）
 ## 流程方法（show_zombie / start_battle …）靠它拿到主游戏
 ## 名字带下划线：关卡脚本自己要存主游戏引用时不会撞名（minigame_12_column 就有一份自己的）
+##
+## **覆写 run_flow 时参数要叫 `mg`，不能叫 `_mg`** —— 那会遮蔽本字段（SHADOWED_VARIABLE_BASE_CLASS）；
+## 本基类自己的签名就是 `run_flow(mg: MainGameManager)`，照抄即可。
 var _mg: MainGameManager
 
 ## true = run_flow 整关只跑一遍（跨轮继续往下跑，比如砸罐子三批写在同一段里）
@@ -45,7 +47,8 @@ var is_one_shot_flow := false
 ## [mg] 主游戏管理器：解析格子、打限制这类要用宿主的覆写从这里取
 ## [item_root] 背景层的物品容器：本关要挂的节点 add_child 到这里，引用由脚本自己留一份
 ## 基类是空实现（两个参数都不用，故加下划线前缀），覆写时把名字改回 mg / item_root 直接用
-func init_level_items(_mg: MainGameManager, _item_root: Node2D) -> void:
+## 注意：第一个参数**不能**叫 `_mg` —— 会遮蔽本类第 27 行的 `var _mg`（GDScript 报 SHADOWED_VARIABLE）
+func init_level_items(_game_manager: MainGameManager, _item_root: Node2D) -> void:
 	pass
 
 
@@ -173,9 +176,8 @@ func _ensure_free_placeholder(battle: CardSlotBattle) -> bool:
 
 
 ## 本关流程 —— **顺序结构的程序**：上一个流程方法结束才开下一个
-## 默认实现等价于 ResourceLevelData.build_default_timeline() 生成的那条轴：
-## 戴夫推销 → 戴夫对话 → 保龄球红线 → 展示僵尸 → 选卡 → 初始化小推车 → 准备安放植物 → 开战
-## 只生成本关**真实生效**的步骤（判据与 build_default_timeline 一致）
+## 默认实现：戴夫推销 → 戴夫对话 → 保龄球红线 → 展示僵尸 → 选卡 → 初始化小推车 → 准备安放植物 → 开战
+## 只生成本关**真实生效**的步骤（开关不满足的那一步直接跳过）
 ## （教学演出不算默认步骤：那是关卡自己的流程，想教什么由关卡脚本写在 run_flow() 里）
 func run_flow(mg: MainGameManager) -> void:
 	var is_first_round: bool = mg.curr_game_round == 1
@@ -186,8 +188,8 @@ func run_flow(mg: MainGameManager) -> void:
 	if is_bowling_stripe and is_first_round:
 		await bowling_stripe()
 	if look_show_zombie:
-		## 老 .tres 关卡的出怪表还在关卡数据上，这里把它带过去给预览僵尸用
-		## （脚本关的出怪表写在自己的 show_zombie / start_battle 调用上，本字段是空的）
+		## 没自己写 show_zombie 调用的关卡，出怪表还在关卡数据上，这里把它带过去给预览僵尸用
+		## （多数脚本关的出怪表写在自己的 show_zombie / start_battle 调用上，本字段是空的）
 		await show_zombie(zombie_refresh_types)
 		if can_choosed_card:
 			await choose_card()
@@ -203,6 +205,122 @@ func run_flow(mg: MainGameManager) -> void:
 		await ready_set_plant()
 	## 开战自己会等到本段打完，所以末尾不再挂别的流程步骤
 	await start_battle()
+
+
+#region 快捷工具：关卡判胜（胜利条件 = 关卡流程，run_flow 跑完强制判胜）
+## **胜利条件在关卡流程手里**：战斗打完（最后一波清完 / 罐子全砸开）只是「本轮打完」，
+## 不再判胜；run_flow() 跑完由 LevelTimelineManager 强制胜利并给奖杯 ——
+## 所以**默认不用写判胜**，流程跑完就赢。
+##
+## 下面几条给「流程内就要判胜」的关用（比如达标那一刻就发奖，而不是等流程跑完）：
+##   win_on_level_complete()        ## **关卡收尾**：掉通关解锁道具，然后掉奖杯（本关没有战利品时走这条）
+##   win_with_trophy_only()         ## 关卡收尾（**已经通关过** / 不想给奖励）：只掉奖杯
+##   await win_with_trophy()        ## 胜利并给奖杯（玩家点开奖杯再结算，与原版一致）
+##   await win_with_item()          ## 胜利并给物品（掉通关解锁道具，发完直接结算，不出奖杯）
+##   await gain("taco")             ## **掉一个战利品**（名字 -> 贴图，见 LootRegistry），
+##                                  ## 点开播收尾表演后直接结算切场景 —— 想掉什么就写什么
+## 几条都**一关只生效一次**：先调的那条说了算，之后流程跑完不会再重复结算。
+## glo_pos 留空 = 掉在本轮战斗打完的位置，没打过仗就掉屏幕中心。
+##
+## **冒险模式每关末尾的写法**（「给不给奖励」由关卡脚本自己判，一眼看得见）：
+##   if is_curr_level_success():    ## 已经通关过：奖励早给过了，重打只出奖杯
+##       win_with_trophy_only()
+##   else:                          ## 首次通关：掉本关 _init() 里编码的战利品，掉完直接结算
+##       await gain(level_complete_loot)
+
+## **本关收尾：写在 run_flow() 的最后一句** —— 本关没有战利品时走这一条
+##
+## 语义 = 「掉本关的通关解锁道具，然后**掉奖杯兜底**」：
+##   1. 本关配了 `drop_unlock_on_level_complete`（掉钥匙解锁商店那种）→ 先掉那个道具，点开再掉奖杯；
+##   2. 否则直接掉奖杯，玩家点开奖杯再结算。
+## **本关的战利品不在这条线上**：冒险模式「首次通关掉本关奖励」改由关卡脚本自己收尾
+## （run_flow() 末尾 `await gain(level_complete_loot)`，本关掉什么写在 `_init()` 的
+##  `level_complete_loot` 上，名字 -> 贴图那张表见 LootRegistry）。
+## 与「流程跑完强制判胜」（LevelTimelineManager）是同一条线，先到的说了算，不会重复结算。
+##
+## **不要 await**：胜利线要等玩家点开奖励 / 奖杯，最后还会切场景；挂在 run_flow() 的协程上会把
+## 主游戏卡在 _ready()，切场景时协程还会醒在已释放的对象上。
+func win_on_level_complete(glo_pos: Vector2 = Vector2.ZERO) -> void:
+	var mg := _get_win_main_game()
+	if mg == null:
+		return
+	## 多轮关卡：还有下一轮就先切轮，不在这里判胜（切轮由「本轮战斗打完」负责）
+	if mg.game_para != null and mg.curr_game_round != mg.game_para.game_round:
+		return
+	mg.reward_manager.start_win_on_level_complete(_resolve_glo_pos(mg, glo_pos))
+
+
+## **关卡收尾：只掉奖杯** —— 与 win_on_level_complete() 配对，给「已经通关过」那条分支用
+## （重打时本关奖励早就给过了，不再掉第二次，见本 region 开头的冒险每关写法）
+##
+## **不要 await**：理由同 win_on_level_complete()（胜利线最后会切场景，会拖死 run_flow() 的协程）
+func win_with_trophy_only(glo_pos: Vector2 = Vector2.ZERO) -> void:
+	var mg := _get_win_main_game()
+	if mg == null:
+		return
+	## 多轮关卡：还有下一轮就先切轮，不在这里判胜（切轮由「本轮战斗打完」负责）
+	if mg.game_para != null and mg.curr_game_round != mg.game_para.game_round:
+		return
+	mg.reward_manager.start_trophy_only(_resolve_glo_pos(mg, glo_pos))
+
+
+## 胜利并给奖杯（冒险模式首次通关仍按原版口径改掉本关奖励，玩家点开直接结算）
+func win_with_trophy(glo_pos: Vector2 = Vector2.ZERO) -> void:
+	var mg := _get_win_main_game()
+	if mg == null:
+		return
+	await mg.reward_manager.win_with_trophy(_resolve_glo_pos(mg, glo_pos))
+
+
+## 胜利并给物品：掉本关奖励 / 解锁道具，**不出奖杯**，发完直接结算
+func win_with_item(glo_pos: Vector2 = Vector2.ZERO) -> void:
+	var mg := _get_win_main_game()
+	if mg == null:
+		return
+	await mg.reward_manager.win_with_item(_resolve_glo_pos(mg, glo_pos))
+
+
+## **掉一个战利品给玩家，等它点开结算** —— 关卡脚本里就一句 `await gain("taco")`
+##
+## [param loot_name] **战利品名字**：贴图的来源，名字 -> 贴图那张表在 [LootRegistry]
+##   （"trophy" 奖杯 / "peashooter_seed_packet" 豌豆射手种子包 / "taco" 玉米卷），
+##   加一种战利品 = 注册表里加一行，本体不认识任何具体战利品名（硬约束 §1-8）。
+##   贴图类掉的是换上这张贴图的礼物盒，种子包类掉的是运行时拼出来的种子包
+##   （见 DropItemManager.create_loot_drop）。
+## [param glo_pos] 掉落位置，留空 = 本轮战斗打完的位置（没打过仗就掉屏幕中心）。
+##
+## 一整条线都挂在这一个调用上：**掉出来 -> 玩家点开 -> 播「移向屏幕中央 -> 发光 -> 白屏」
+## -> 屏幕全白了写通关存档 + 切场景**（跳商店 / 跳图鉴 / 回选关界面，见 MgmRewardManager.win_main_game）。
+## 战利品 20 秒没被点开也会自动结算，不会把玩家一直卡在场上。
+##
+## **要 await，而且要写在 run_flow() 的最后一句**：返回时本关已经结算完、场景已经切走，
+## 后面再写流程就是在已释放的对象上跑（与 win_with_trophy() 那条同一个坑）。
+## 一关只生效一次：调过 gain() 之后，流程跑完不会再重复结算。
+## 多轮关卡（流程按轮重跑）在「还有下一轮」时直接返回，切轮由「本轮打完」负责。
+func gain(loot_name: String, glo_pos: Vector2 = Vector2.ZERO) -> void:
+	var mg := _get_win_main_game()
+	if mg == null:
+		return
+	if mg.game_para != null and mg.curr_game_round != mg.game_para.game_round:
+		return
+	await mg.reward_manager.gain(loot_name, _resolve_glo_pos(mg, glo_pos))
+
+
+## 判胜用的主游戏：优先用流程注入的那个，没有再退回全局（与 _get_battle_card_slot 同一套兜底）
+func _get_win_main_game() -> MainGameManager:
+	var mg: MainGameManager = _mg if is_instance_valid(_mg) else Global.main_game
+	if mg == null or not is_instance_valid(mg) or mg.reward_manager == null:
+		Log.error("关卡脚本：主游戏 / 通关结算子管理器不存在，判胜已跳过")
+		return null
+	return mg
+
+
+## 判胜位置：没给就用结算子管理器的默认落点
+func _resolve_glo_pos(mg: MainGameManager, glo_pos: Vector2) -> Vector2:
+	if glo_pos != Vector2.ZERO:
+		return glo_pos
+	return mg.reward_manager.get_default_glo_pos()
+#endregion
 
 
 #region 快捷工具：通关记录查询
@@ -284,11 +402,12 @@ func bowling_stripe() -> void:
 
 
 ## 展示僵尸（相机拉到预览位，僵尸走两步）
-## zombie_refresh_types —— 本关出怪表，预览僵尸按它生成；留空 = 沿用关卡数据
+## [refresh_types] 本关出怪表，预览僵尸按它生成；留空 = 沿用关卡数据的 zombie_refresh_types
 ## （预览跑在开战之前，本关出怪表要在这里一起给，见 LevelTimelineEventShowZombie）
-func show_zombie(zombie_refresh_types: Array[CharacterRegistry.ZombieType] = []) -> void:
+## 参数名**不能**叫 `zombie_refresh_types` —— 会遮蔽基类 ResourceLevelData 的同名字段
+func show_zombie(refresh_types: Array[CharacterRegistry.ZombieType] = []) -> void:
 	var event := LevelTimelineEventShowZombie.new()
-	event.zombie_refresh_types = zombie_refresh_types
+	event.zombie_refresh_types = refresh_types
 	await _run_event(event, "展示僵尸")
 
 
@@ -328,15 +447,16 @@ func wait_battle_start() -> void:
 
 ## 开战：跑到本段打完为止（出怪关 = 最后一波刷完 + 僵尸清空；砸罐子 = 罐子全开 + 僵尸清空）
 ## 本段的出怪参数可以在这里给（关卡脚本里一眼看出「这一仗怎么打」），留默认 = 沿用关卡数据上的值：
-##   max_wave —— 本段波数（> 0 生效）
-##   zombie_refresh_types —— 本段出怪表（非空生效）
+##   wave_num —— 本段波数（> 0 生效）
+##   refresh_types —— 本段出怪表（非空生效）
 ## timeout > 0 时最多等这么多秒
-func start_battle(max_wave: int = -1,
-		zombie_refresh_types: Array[CharacterRegistry.ZombieType] = [],
+## 前两个参数**不能**叫 `max_wave` / `zombie_refresh_types` —— 会遮蔽基类 ResourceLevelData 的同名字段
+func start_battle(wave_num: int = -1,
+		refresh_types: Array[CharacterRegistry.ZombieType] = [],
 		timeout: float = 0.0) -> void:
 	var event := LevelTimelineEventStartBattle.new()
-	event.max_wave = max_wave
-	event.zombie_refresh_types = zombie_refresh_types
+	event.max_wave = wave_num
+	event.zombie_refresh_types = refresh_types
 	event.timeout = timeout
 	await _run_event(event, "开战")
 

@@ -7,6 +7,24 @@ class_name Bullet000Base
 @onready var body: Node2D = $Body
 ## 子弹类型
 @export var bullet_type:BulletRegistry.BulletType
+
+## 实体编号（与角色 / 阳光 / 金币共用同一个分配器，全场唯一）
+##
+## 为什么要有：联机要说清"飞的是哪一颗" —— 客户端不自己造子弹（那一颗由主机随快照下发），
+## 两端必须对得上同一颗，否则会按编号重复造一遍。单机不涉及，行为不变。
+##
+## ⚠️ 领号在 `BulletRegistry.create_bullet()` 里做，**不要**挪到 `_ready()`：
+## 本类有 **7 个子类重写 `_ready()`**（bowling / cactus / cob_cannon / norm_base /
+## parabola_base / pea_fire / track_base / winter_melon），基类 `_ready()` 里的自动领号
+## 对没调 `super()` 的那一批会**静默失效** —— 它们拿不到编号、进不了快照，**且没有任何报错**。
+## 这与"闸门装了但没人读"是同一种坑（见 `GlobalUtils.sun_spawn_gate` 的注释），
+## 放在唯一的创建口上就没有这个隐患。
+var entity_id:int = 0
+
+## 指定实体编号：客户端收到主机的快照后、入树**之前**调用（覆盖自动领到的那个号）
+func assign_entity_id(new_id: int) -> void:
+	entity_id = new_id
+
 ## 子弹阵营
 ## 场景里的值只是默认值，**发射方**通过 init_bullet 的 E_InitParasAttr.BulletCamp 覆盖它：
 ## 植物发射时是植物方子弹（打僵尸），植物僵尸 / 投石车僵尸发射时是僵尸方子弹（打植物），
@@ -40,8 +58,9 @@ func apply_bullet_camp() -> void:
 ## 为什么：直接取全局单例等于让子弹隐式依赖「当前一定有一局主游戏」。收进本方法之后，
 ## 子弹代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处
 ## （角色侧对应 Character000Base.get_main_game，组件侧见 ComponentNormBase）。
+## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
 func get_main_game() -> MainGameManager:
-	return Global.main_game
+	return GameContext.curr_main_game
 
 
 ## **子弹组件取「子弹身上某个节点」的统一入口**（替代在组件里拼 `$"../XXX"`）

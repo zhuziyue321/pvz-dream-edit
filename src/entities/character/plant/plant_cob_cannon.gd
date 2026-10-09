@@ -90,6 +90,9 @@ func shoot_bullet():
 	var bullet_cob_cannon :Bullet016CobCannon = Global.bullet_registry.create_bullet(
 		BulletRegistry.BulletType.Bullet016CobCannon
 	)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet_cob_cannon == null:
+		return
 	bullet_cob_cannon.init_cannon(attack_target_global_pos)
 	get_main_game().bullets.add_child(bullet_cob_cannon)
 	bullet_cob_cannon.global_position = marker_2d_bullet.global_position

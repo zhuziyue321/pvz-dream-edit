@@ -68,9 +68,10 @@ signal signal_armor2_death
 ## 僵尸掉血信号（只有僵尸使用）,参数为损失的血量值
 signal signal_zombie_hp_loss(all_loss_hp:int)
 
-func _ready() -> void:
-	## 必须调 super：HpComponent._ready() 负责把 curr_hp 初始化成 max_hp，
-	## 并接上血条显示的配置信号。基类 ComponentNormBase._ready() 会调用到本方法。
+func component_ready() -> void:
+	## 必须调 super：HpComponent.component_ready() 负责把 curr_hp 初始化成 max_hp，
+	## 并接上血条显示的配置信号。基类 ComponentNormBase._ready() **只分派一次**
+	## component_ready()（落在最派生的重写版本），不调 super 父类的整段初始化就丢了。
 	super()
 	self.curr_hp_armor1 = max_hp_armor1
 	self.curr_hp_armor2 = max_hp_armor2

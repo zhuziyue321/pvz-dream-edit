@@ -74,9 +74,11 @@ func _run_level(a) -> void:
 
 	_check_light_layer(a, white_layer, parent)
 
-	## 走真正的结算线：这一条会掉出本关奖励并一直等到玩家点开后才切场景
-	a.log("  触发本关结算线 drop_adventure_reward_on_level_complete(%s)" % str(DROP_POS))
-	Global.main_game.reward_manager.drop_adventure_reward_on_level_complete(DROP_POS)
+	## 走真正的结算线：掉出本关战利品并一直等到玩家点开后才切场景
+	## （关卡脚本 run_flow() 末尾那句 `await gain(level_complete_loot)` 就走这里）
+	var loot: String = Global.main_game.game_para.level_complete_loot
+	a.log("  触发本关结算线 gain(%s) @ %s" % [loot, str(DROP_POS)])
+	Global.main_game.reward_manager.gain(loot, DROP_POS)
 
 	var drop := await _wait_drop(a, parent, MAX_WAIT)
 	_check(a, "结算线掉出了本关奖励", drop != null, str(drop))

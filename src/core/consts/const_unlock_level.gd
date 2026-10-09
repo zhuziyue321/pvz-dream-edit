@@ -37,13 +37,6 @@ const SHOVEL_UNLOCK_ADVENTURE_LEVEL := 4
 ## 原版口径: 通关 2-4 后戴夫掉落 Suburban Almanac,在此之前主菜单与暂停菜单的图鉴入口不可用
 const ALMANAC_UNLOCK_ADVENTURE_LEVEL := 14
 
-## 手套解锁: 通关冒险模式 4-5(关卡序号 35)后疯狂戴夫把手套交给玩家,4-6 起卡槽才出现手套。
-## 与铲子同一套口径(由通关记录推导,不落库存档),选点理由:
-##   4-6 是矿工僵尸(Z018Digger)首次登场的关卡,矿工从后排钻出,玩家第一次需要挪动已种下的植物,
-##   手套的战术价值在该关才成立,赠送即教学;更早给会削弱"种下即定"的布局压力、且让铲子显得多余。
-## 原版口径: 手套是禅境花园工具,随花园(4-5 之后)出现,时间点与之对齐
-const GLOVE_UNLOCK_ADVENTURE_LEVEL := 35
-
 ## 花园解锁: 通关冒险模式 5-5(关卡序号 45)后疯狂戴夫把禅境花园交给玩家。
 ## 与铲子 / 手套同一套口径(由通关记录推导,不落库存档),判定入口 is_garden_unlocked()。
 ## 解锁前: 僵尸不掉落花园植物礼包(见 DropItemComponent.drop_garden_plant)、商店不卖花园植物礼包,
@@ -87,14 +80,6 @@ static func is_shovel_unlocked(max_success_adventure_level: int) -> bool:
 ## 图鉴是否已解锁(已通关的最大冒险关卡序号 >= 2-4,见 ALMANAC_UNLOCK_ADVENTURE_LEVEL)
 static func is_almanac_unlocked(max_success_adventure_level: int) -> bool:
 	return max_success_adventure_level >= ALMANAC_UNLOCK_ADVENTURE_LEVEL
-
-
-## 手套是否已解锁(已通关的最大冒险关卡序号 >= 4-5,见 GLOVE_UNLOCK_ADVENTURE_LEVEL)
-## 总开关关闭时恒为 false(见 ConstFeatureSwitch.GLOVE_ENABLED),整个手套功能隐藏
-static func is_glove_unlocked(max_success_adventure_level: int) -> bool:
-	if not ConstFeatureSwitch.GLOVE_ENABLED:
-		return false
-	return max_success_adventure_level >= GLOVE_UNLOCK_ADVENTURE_LEVEL
 
 
 ## 花园是否已解锁(已通关的最大冒险关卡序号 >= 5-5,见 GARDEN_UNLOCK_ADVENTURE_LEVEL)

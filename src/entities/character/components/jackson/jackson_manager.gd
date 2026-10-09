@@ -39,8 +39,9 @@ var is_hypnotized := false
 
 ## 主场景访问器：本类不继承 ComponentNormBase（它是 Node），故自行转问 owner（宿主舞王）。
 ## 目的与 ComponentNormBase.get_main_game() 一致 —— 业务代码里不直接写 Global.main_game。
+## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
 func get_main_game() -> MainGameManager:
-	return Global.main_game
+	return GameContext.curr_main_game
 
 func _ready() -> void:
 	animation_player.set_blend_time('armraise', 'walk', 0.2)

@@ -37,7 +37,7 @@ func _init() -> void:
 	})
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 开战
 	await start_battle(-1, [
 		CharacterRegistry.ZombieType.Z001Norm,

@@ -4,7 +4,7 @@ class_name LevelTimelineEventStartBattle
 ##
 ## 「打完」的判定按玩法写在本脚本的 _is_battle_finished() 里，不在事件上配参数：
 ##   砸罐子：罐子全砸开 + 场上僵尸清空
-##   出怪关：最后一波刷完 + 场上僵尸清空（清场那一刻原流程会推 create_trophy）
+##   出怪关：最后一波刷完 + 场上僵尸清空（清场那一刻推 battle_finished，只切下一轮、**不判胜**）
 ##
 ## 参数：
 ##   timeout —— 兜底秒数，超过就不管打没打完直接进下一个事件；0 = 一直等
@@ -25,7 +25,7 @@ func run(main_game: MainGameManager) -> void:
 	if not is_instance_valid(main_game):
 		return
 	## 一批打完还有下一批时，等轮次切换完再走下一个事件：
-	## 切换由 create_trophy -> start_next_round_game 触发（轮次 +1，中间等 3 秒），
+	## 切换由 battle_finished -> start_next_round_game 触发（轮次 +1，中间等 3 秒），
 	## 下一个戴夫对话要取的是新一轮的对话，不能抢在切轮之前播
 	if main_game.curr_game_round < main_game.game_para.game_round:
 		var from_round: int = main_game.curr_game_round

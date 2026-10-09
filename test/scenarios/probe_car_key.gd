@@ -40,28 +40,30 @@ func run(a) -> void:
 
 	var para = Global.main_game.game_para
 	_check(a, "关卡 id=0024(3-4)", para.level_id == "0024", para.level_id)
-	_check(a, "配的是通关时掉落", para.drop_unlock_on_level_complete)
+	## 本关掉什么：写在本关脚本 `_init()` 的 level_complete_loot 上（战利品名字）
+	_check(a, "本关声明的战利品是车钥匙", para.level_complete_loot == LootRegistry.CAR_KEYS,
+		para.level_complete_loot)
+	var car_keys_icon := LootRegistry.get_texture(para.level_complete_loot)
+	_check(a, "车钥匙战利品登记了贴图", car_keys_icon != null
+		and "CarKeys" in car_keys_icon.resource_path,
+		str(car_keys_icon.resource_path if car_keys_icon != null else "null"))
 	_check(a, "不再由波次携带", para.drop_unlock_wave < 0, str(para.drop_unlock_wave))
-	_check(a, "掉落提示提到车钥匙", "车钥匙" in para.drop_unlock_tip, para.drop_unlock_tip)
-	_check(a, "掉落贴图是车钥匙", para.drop_unlock_icon != null
-		and "CarKeys" in para.drop_unlock_icon.resource_path,
-		str(para.drop_unlock_icon.resource_path if para.drop_unlock_icon != null else "null"))
 
 	# ------------------------------------------------ STEP2 通关掉落：掉钥匙代替奖杯
-	a.log("STEP2 触发通关掉落（create_trophy）")
+	a.log("STEP2 触发通关掉落（gain 本关战利品）")
 	var dim = Global.main_game.drop_item_manager.dim_garden_plant
 	var parent = dim.all_drop_garden_plant_parent
-	var temp_layer = Global.main_game.canvas_layer_temp
 	var drop_before: int = parent.get_child_count()
-	var temp_before: int = temp_layer.get_child_count()
-	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
+	Global.main_game.reward_manager.gain(para.level_complete_loot, Vector2(600, 300))
 	await a.wait(1.5)
 
 	var new_drop = _find_new_present(parent)
 	_check(a, "通关掉出了车钥匙礼包", new_drop != null,
 		str(drop_before) + " -> " + str(parent.get_child_count()))
-	_check(a, "掉落时还没抛奖杯", temp_layer.get_child_count() == temp_before,
-		str(temp_before) + " -> " + str(temp_layer.get_child_count()))
+	## 奖杯现在也掉在掉落容器里（战利品，见 LootRegistry），所以「有没有多掉一个」看的是容器
+	_check(a, "掉落时只掉了车钥匙，没再出奖杯",
+		parent.get_child_count() == drop_before + 1,
+		str(drop_before) + " -> " + str(parent.get_child_count()))
 	if new_drop == null:
 		_finish(a)
 		return
@@ -74,9 +76,11 @@ func run(a) -> void:
 	a.log("STEP3 点开车钥匙（应直接结算，不再抛奖杯）")
 	new_drop._on_texture_button_pressed()
 	await a.wait(2.0)
-	_check(a, "礼包已被拾取", not is_instance_valid(new_drop) or new_drop.is_queued_for_deletion())
-	_check(a, "拾取后不再抛奖杯", temp_layer.get_child_count() == temp_before,
-		str(temp_before) + " -> " + str(temp_layer.get_child_count()))
+	## 「已被拾取」看 is_opened：点开后要走「居中 -> 发光 -> 白屏」那段表演才轮到释放，
+	## 2 秒不到节点还在树上（见 CanvasLayerWhiteScreen）
+	_check(a, "礼包已被拾取", bool(new_drop.get("is_opened")))
+	_check(a, "拾取后不再出奖杯", parent.get_child_count() <= drop_before + 1,
+		str(drop_before) + " -> " + str(parent.get_child_count()))
 
 	# ------------------------------------------------ STEP4 结算：首次通关 3-4 直接进商店
 	a.log("STEP4 结算 3-4（应直接进商店）")
@@ -102,15 +106,19 @@ func run(a) -> void:
 	await a.wait(5.0)
 	var dim2 = Global.main_game.drop_item_manager.dim_garden_plant
 	var parent2 = dim2.all_drop_garden_plant_parent
-	var temp2 = Global.main_game.canvas_layer_temp
 	var drop_before2: int = parent2.get_child_count()
-	var temp_before2: int = temp2.get_child_count()
 	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
 	await a.wait(1.5)
-	_check(a, "重打不再掉钥匙", parent2.get_child_count() == drop_before2,
+	## 重打 3-4：车钥匙那一步已经掉过（存档里已通关，不再掉第二次），
+	## 这里掉的是兜底战利品「奖杯」—— 与车钥匙掉在同一个容器里，只能按贴图分辨
+	var trophy_drop = _find_new_present(parent2)
+	_check(a, "重打不再掉钥匙",
+		trophy_drop == null or trophy_drop.icon_texture == null
+			or not ("CarKeys" in trophy_drop.icon_texture.resource_path),
+		str(_icon_path(trophy_drop)))
+	_check(a, "重打直接出奖杯（奖杯贴图）",
+		trophy_drop != null and "trophy" in _icon_path(trophy_drop),
 		str(drop_before2) + " -> " + str(parent2.get_child_count()))
-	_check(a, "重打直接出奖杯", temp2.get_child_count() == temp_before2 + 1,
-		str(temp_before2) + " -> " + str(temp2.get_child_count()))
 
 	_finish(a)
 
@@ -136,11 +144,18 @@ func _mark_cleared(state, upto: int) -> void:
 		state.curr_all_level_state_data["101_0_%04d" % i] = {"IsSuccess": true}
 
 
-## 掉落容器里新出现的礼包（解锁道具）
+## 掉落容器里新出现的礼包（解锁道具 / 战利品）
 func _find_new_present(parent: Node) -> Node:
 	var found: Node = null
 	for k in parent.get_children():
 		if k is Present and not k.is_opened:
 			found = k
 	return found
+
+
+## 礼包的贴图路径（没有贴图时给个可读的空值）
+func _icon_path(drop: Node) -> String:
+	if drop == null or drop.get("icon_texture") == null:
+		return "null"
+	return str((drop.get("icon_texture") as Texture2D).resource_path)
 #endregion

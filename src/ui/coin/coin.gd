@@ -29,10 +29,25 @@ var tween: Tween = null
 ## 是否被获取
 var is_get:bool = false
 
+## 实体编号：与角色共用 `Character000Base` 那份自增分配器（只要两端唯一即可，不参与玩法判定）。
+## 联机时"掉的是哪一枚"要说清楚 —— 点一枚金币跟点一颗阳光一样，上行的是**编号**而不是数值。
+var entity_id:int = 0
+## 抛物线落点（生成方写入）：联机下发时带着，两端才落在同一处
+var spawn_target := Vector2.ZERO
+## 这一枚是**哪一种**（`DropItemManager.E_DropKind`）：生成方写入，
+## 联机下发要说清"掉了哪一件" —— 光说"掉了个金币"分不出银币还是钻石
+var drop_kind:int = -1
+
 func setup(coin_target_pos:Vector2):
 	coin_target_position = coin_target_pos
 
+## 指定实体编号：客户端收到主机的下发后、入树**之前**调用（`_ready()` 会跳过自动分配）
+func assign_entity_id(new_id: int) -> void:
+	entity_id = new_id
+
 func _ready():
+	if entity_id == 0:
+		entity_id = Character000Base.take_next_entity_id()
 	## 信号连接
 	button.pressed.connect(_on_button_pressed)
 	## 自定义光标模式下系统鼠标平时是藏起来的（器皿级别的道具自己跟着鼠标走），
@@ -66,6 +81,10 @@ func _on_interrupt_triggered():
 
 ## 点击金币
 func _on_button_pressed() -> void:
+	## 闸门被占住时（联机客户端）这一下只是**请求**：主机在自己那一局上收成了才算数，
+	## 两端才会一起入账（与点阳光同一条链路，见 `GlobalUtils.drop_click_gate`）
+	if GlobalUtils.drop_click_gate.is_valid() and bool(GlobalUtils.drop_click_gate.call(self)):
+		return
 	collect()
 
 

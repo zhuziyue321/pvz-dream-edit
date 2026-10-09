@@ -262,7 +262,7 @@ func _get_cell(row: int, col: int) -> PlantCell:
 #endregion
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 屋顶是裸地：先沿整列铺出左侧 8 列的种植位（原版本关 9 列里只有最右一列没有花盆）
 	await plant_flower_pot_columns(8)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写

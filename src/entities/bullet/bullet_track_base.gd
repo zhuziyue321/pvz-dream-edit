@@ -3,10 +3,23 @@ class_name Bullet000TrackBase
 
 @onready var movement_component: BulletMovementTrack = $MovementComponent
 
+## 重新索敌的节流间隔（秒）
+##
+## 为什么需要：无目标时的索敌是 `get_all_enemy_can_be_attacked()`，**会对每个射线区
+## 跑一遍 get_overlapping_areas() 的全量扫描**。追踪子弹（香蒲的刺）常在场且僵尸稀疏，
+## 于是这份全量扫描就变成了每物理帧一次的空转。
+## 而**有没有可打的敌人这件事，10 Hz 就已经足够跟得上**（僵尸不会在 16 ms 内凭空出现），
+## 所以这里按时间节流：代价是最多延迟 RETARGET_INTERVAL 才锁定新目标，看不出来。
+##
+## 有目标时不累积计时（见 _physics_process），因此「目标刚死、要换下一个」是零延迟的。
+const RETARGET_INTERVAL := 0.1
+
 ## 敌人
 var target_enemy:Character000Base = null
 ## 全局检测组件
 var detect_component_global:DetectComponent
+## 距离下次允许全量索敌还剩多少秒
+var _retarget_timer := 0.0
 
 func _ready() -> void:
 	super()
@@ -27,21 +40,17 @@ func _physics_process(delta: float) -> void:
 	## 如果敌人存在并且没有死亡
 	if is_instance_valid(target_enemy) and not target_enemy.is_death:
 		movement_component.reset_track_movement(true, false, target_enemy.hurt_box_component.global_position)
+		## 计时器清零：目标死掉的下一帧立刻重新索敌，换目标不引入额外延迟
+		_retarget_timer = 0.0
 	## 敌人不存在 全局寻找敌人
 	else:
-		if is_instance_valid(detect_component_global.enemy_can_be_attacked) and not detect_component_global.enemy_can_be_attacked.is_death:
-			target_enemy = detect_component_global.enemy_can_be_attacked
-		else:
-			## 按子弹阵营索敌：植物方打僵尸，僵尸方（植物僵尸）打植物
-			target_enemy = detect_component_global.update_enemy_track_bullet(bullet_camp)
-		## 如果找到敌人
-		if is_instance_valid(target_enemy):
-			movement_component.reset_track_movement(true, true, target_enemy.hurt_box_component.global_position)
-			## 已在目标受击盒内时不会再次触发 area_entered（例如刚切换目标时子弹已在箱内），用重叠补判
-			_try_attack_target_if_already_overlapping()
-
-		## 如果没找到敌人
-		else:
+		## 全量索敌按时间节流（见 RETARGET_INTERVAL），没到点就沿用上一帧的结果
+		_retarget_timer -= delta
+		if _retarget_timer <= 0.0:
+			_retarget_timer = RETARGET_INTERVAL
+			_acquire_target()
+		## 这一帧仍然没有目标：保持无目标的移动参数
+		if not is_instance_valid(target_enemy):
 			movement_component.reset_track_movement(false)
 
 	movement_component.physics_process_bullet_move(delta)
@@ -49,6 +58,24 @@ func _physics_process(delta: float) -> void:
 	## 移动超过最大距离后销毁，部分子弹有限制,大部分子弹超过默认2000后删除
 	if global_position.distance_to(start_pos) > max_distance:
 		queue_free()
+
+## 重新索敌一次（**调用方负责节流**，见 RETARGET_INTERVAL）
+##
+## 顺序：先用全局检测组件缓存的敌人（它在自己的脏标记里维护，几乎免费），
+## 缓存不可用时才走 update_enemy_track_bullet() 的全量扫描。
+func _acquire_target() -> void:
+	if is_instance_valid(detect_component_global.enemy_can_be_attacked) \
+			and not detect_component_global.enemy_can_be_attacked.is_death:
+		target_enemy = detect_component_global.enemy_can_be_attacked
+	else:
+		## 按子弹阵营索敌：植物方打僵尸，僵尸方（植物僵尸）打植物
+		target_enemy = detect_component_global.update_enemy_track_bullet(bullet_camp)
+	if not is_instance_valid(target_enemy):
+		return
+	movement_component.reset_track_movement(true, true, target_enemy.hurt_box_component.global_position)
+	## 已在目标受击盒内时不会再次触发 area_entered（例如刚切换目标时子弹已在箱内），用重叠补判
+	_try_attack_target_if_already_overlapping()
+
 
 ## 切换目标时，尝试攻击是否已经碰撞
 func _try_attack_target_if_already_overlapping() -> void:

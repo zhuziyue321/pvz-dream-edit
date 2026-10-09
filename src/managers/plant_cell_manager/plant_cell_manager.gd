@@ -272,11 +272,12 @@ func plant_cell_creat_pot(plant_cell:PlantCell, pot_para:Dictionary):
 func pot_open_update(is_zombie:bool, glo_pos:Vector2):
 	curr_pot_num -= 1
 	if curr_pot_num == 0:
-		## 如果最后一个罐子是僵尸，并且场上有僵尸,让僵尸管理器管理最终胜利
+		## 如果最后一个罐子是僵尸，并且场上有僵尸,让僵尸管理器管理本轮战斗的收尾
 		if is_zombie or Global.main_game.zombie_manager.curr_zombie_num != 0:
 			EventBus.push_event(ConstEventName.END_WAVE_ZOMBIE)
 		else:
-			EventBus.push_event(ConstEventName.CREATE_TROPHY, glo_pos)
+			## 罐子全砸开 + 场上没僵尸 = 本轮战斗打完，不判胜（胜利由关卡流程决定）
+			EventBus.push_event(ConstEventName.BATTLE_FINISHED, glo_pos)
 
 #endregion
 

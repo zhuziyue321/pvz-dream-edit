@@ -9,8 +9,8 @@ class_name BeghouledManager
 ##
 ## 与常规玩法的关系：
 ##   · 棋盘 = 植物格子去掉最右一列（原版：僵尸入场那一列留空），见 ConstBeghouled.EMPTY_COL_NUM_ON_RIGHT
-##   · 一株植物 = 一个格子上的普通植物实例，交换 / 下落复用 PlantCell 的手套搬运 API
-##     （glove_take_plant / glove_put_plant：不销毁实例，血量等状态跟着走）
+##   · 一株植物 = 一个格子上的普通植物实例，交换 / 下落复用 PlantCell 的搬运 API
+##     （move_take_plant / move_put_plant：不销毁实例，血量等状态跟着走）
 ##   · 植物被僵尸啃掉 → 本管理器在格子上留一个**永久弹坑**（原版口径：不花阳光填就一直在）
 ##   · 通关不走「打完最后一波」：达标后自己推 create_trophy（见 _win）
 ##
@@ -310,12 +310,12 @@ func _swap_plants(cell_a: PlantCell, cell_b: PlantCell) -> void:
 	var plant_b := get_cell_plant(cell_b)
 	if plant_a == null or plant_b == null:
 		return
-	var place_a_in_b := cell_b.glove_get_put_place(plant_a)
-	var place_b_in_a := cell_a.glove_get_put_place(plant_b)
-	cell_a.glove_take_plant(plant_a)
-	cell_b.glove_take_plant(plant_b)
-	cell_b.glove_put_plant(plant_a, place_a_in_b)
-	cell_a.glove_put_plant(plant_b, place_b_in_a)
+	var place_a_in_b := cell_b.move_get_put_place(plant_a)
+	var place_b_in_a := cell_a.move_get_put_place(plant_b)
+	cell_a.move_take_plant(plant_a)
+	cell_b.move_take_plant(plant_b)
+	cell_b.move_put_plant(plant_a, place_a_in_b)
+	cell_a.move_put_plant(plant_b, place_b_in_a)
 
 
 ## 取消这一次拖动（松手 / 拖到一半盘面不能操作了 / 交换已经受理）：
@@ -469,9 +469,9 @@ func _move_plant(from_cell: PlantCell, to_cell: PlantCell) -> void:
 	var plant := get_cell_plant(from_cell)
 	if plant == null:
 		return
-	var place := to_cell.glove_get_put_place(plant)
-	from_cell.glove_take_plant(plant)
-	to_cell.glove_put_plant(plant, place)
+	var place := to_cell.move_get_put_place(plant)
+	from_cell.move_take_plant(plant)
+	to_cell.move_put_plant(plant, place)
 #endregion
 
 
@@ -596,10 +596,10 @@ func _shuffle_plants() -> void:
 		for plant in plants:
 			var from_cell: PlantCell = plant.plant_cell
 			if from_cell != null:
-				from_cell.glove_take_plant(plant)
+				from_cell.move_take_plant(plant)
 		for i in range(plants.size()):
 			var target: PlantCell = cells[i]
-			target.glove_put_plant(plants[i], target.glove_get_put_place(plants[i]))
+			target.move_put_plant(plants[i], target.move_get_put_place(plants[i]))
 		if _find_match_groups(_build_type_grid()).is_empty() and _has_possible_move():
 			return
 #endregion
@@ -702,13 +702,17 @@ func _drop_one_sun(cell: PlantCell, sun_value: int) -> void:
 	var sun: Sun = SceneRegistry.SUN.instantiate()
 	sun.init_sun(sun_value, main_game.suns.to_local(cell.global_position))
 	main_game.suns.add_child(sun)
+	var offset_x := randf_range(-30.0, 30.0)
+	## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）
+	sun.mark_pop_up(offset_x)
+	EventBus.push_event(ConstEventName.SUN_SPAWNED, [sun])
 	var tween := sun.create_tween()
 	tween.tween_property(sun, "position:y", -15.0, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(sun, "position:y", 45.0, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	sun.spawn_sun_tween = get_tree().create_tween()
 	sun.spawn_sun_tween.set_parallel()
 	sun.spawn_sun_tween.tween_subtween(tween)
-	sun.spawn_sun_tween.tween_property(sun, "position:x", randf_range(-30.0, 30.0), 0.9).as_relative()
+	sun.spawn_sun_tween.tween_property(sun, "position:x", offset_x, 0.9).as_relative()
 	sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
 
 

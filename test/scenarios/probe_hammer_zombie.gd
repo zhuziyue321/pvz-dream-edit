@@ -137,7 +137,7 @@ func _check_level(
 		var source_timer: Timer = zm.wave_source.get_node_or_null("HammerZombieTimer") as Timer
 		if source_timer != null:
 			source_timer.stop()
-	var trophy: Trophy = null
+	var trophy: Node2D = null
 	for round_i in range(4):
 		for z: Zombie000Base in zm.all_zombies_1d.duplicate():
 			if is_instance_valid(z) and not z.is_death:
@@ -241,13 +241,21 @@ func _mark_cleared() -> void:
 	state.curr_all_level_state_data["%d_%d_%s" % [ADV, PAGE_02, ID_02_05]] = {"IsSuccess": true}
 
 
-## 草坪上的奖杯（挂在 canvas_layer_temp 下，见 MgmRewardManager.create_trophy）
-func _find_trophy(mg) -> Trophy:
-	if mg == null:
+## 草坪上的奖杯：现在是一种**战利品** —— 按名字取贴图生产，掉在掉落容器里
+## （见 LootRegistry / MgmRewardManager.gain_loot，不再是 canvas_layer_temp 下的 trophy.tscn）
+func _find_trophy(mg) -> Node2D:
+	if mg == null or mg.drop_item_manager == null:
 		return null
-	for node in mg.canvas_layer_temp.get_children():
-		if node is Trophy:
-			return node as Trophy
+	return _find_loot(mg.drop_item_manager)
+
+
+## 掉落容器里「本关结算线」上的那个掉落物（is_level_complete_drop，见 mark_level_complete_drop）
+func _find_loot(dim) -> Node2D:
+	for parent in [dim.dim_garden_plant.all_drop_garden_plant_parent,
+			dim.dim_seed_packet.all_drop_seed_packet_parent]:
+		for node in parent.get_children():
+			if bool(node.get("is_level_complete_drop")):
+				return node as Node2D
 	return null
 
 

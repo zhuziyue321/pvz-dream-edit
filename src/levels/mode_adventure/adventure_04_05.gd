@@ -77,9 +77,11 @@ func _init() -> void:
 	16: 2
 	}
 	}])
+	## 本关通关掉落：裂荚射手（种子包）
+	level_complete_loot = "split_pea_seed_packet"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
@@ -105,5 +107,10 @@ func run_flow(_mg: MainGameManager) -> void:
 	await dave_dialog(DAVE_LAST_VASES)
 	## 第 3 批清场：清掉上批残留，再按第 3 轮配置摆出新一批（5 列）
 	await clear_field()
-	## 第 3 批开战：最后一轮，打完由砸罐子玩法自己推 create_trophy 结算
+	## 第 3 批开战：最后一轮，打完由砸罐子玩法自己推 battle_finished 收尾（不判胜，见下一行）
 	await start_battle(10, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

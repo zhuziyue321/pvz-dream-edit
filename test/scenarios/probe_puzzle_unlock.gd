@@ -74,15 +74,14 @@ func _check_level_resource(a) -> void:
 		and p_0406.drop_unlock_wave < p_0406.max_wave,
 		"wave=%d max_wave=%d" % [p_0406.drop_unlock_wave, p_0406.max_wave])
 
-	## 走通关掉落会被 create_adventure_reward_drop 抢先用掉，本关的杨桃种子包就没了
+	## 走通关掉落会落到 create_adventure_reward_drop 上，本关的杨桃种子包就没了
+	## （本关给哪一株写在 adventure_04_06.gd 自己身上，关卡序号只用来查那份声明）
 	var lvl := Global.global_game_state.get_adventure_level_on_save_game_name("101_0_0036")
-	var reward: Dictionary = ConstAdventureReward.get_reward(lvl)
+	var reward_plant := LevelRegistry.get_adventure_level_reward_plant(lvl)
 	_check(a, "（前置）4-6 的首次通关奖励仍是植物（序号 %d）" % lvl,
-		not reward.is_empty() and int(reward.get(ConstAdventureReward.KEY_TYPE, -1)) == ConstAdventureReward.E_RewardType.Plant,
-		str(reward))
-	_check(a, "4-6 的通关奖励是杨桃", int(reward.get(ConstAdventureReward.KEY_PLANT_TYPE, -1))
-		== CharacterRegistry.PlantType.P030StarFruit,
-		str(reward.get(ConstAdventureReward.KEY_PLANT_TYPE, -1)))
+		reward_plant != CharacterRegistry.PlantType.Null, str(reward_plant))
+	_check(a, "4-6 的通关奖励是杨桃", reward_plant == CharacterRegistry.PlantType.P030StarFruit,
+		str(reward_plant))
 
 	var p_0302: ResourceLevelData = (load(LEVEL_03_02) as GDScript).new()
 	if p_0302 == null:

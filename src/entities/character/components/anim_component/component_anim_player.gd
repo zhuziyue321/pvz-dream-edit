@@ -4,7 +4,7 @@ class_name AnimComponentPlayer
 
 @onready var animation_player: AnimationPlayer = $"../AnimationPlayer"
 
-func _ready() -> void:
+func component_ready() -> void:
 	animation_origin_speed = animation_player.speed_scale
 	animation_player.animation_finished.connect(_on_animation_finished)
 

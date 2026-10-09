@@ -47,7 +47,7 @@ func _init() -> void:
 	})
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 夜屋顶要花盆才能种：先给左侧 4 列铺上（与 adventure_05_10 同一套写法）
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关的僵尸全部由僵王投放，这里列出的是它手里的牌
@@ -74,8 +74,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 僵王战：传送带出卡间隔减半（出卡速度翻倍），与冒险 5-10 同一套 boss 战口径
-	_mg.card_manager.set_conveyor_card_interval_scale(0.5)
+	mg.card_manager.set_conveyor_card_interval_scale(0.5)
 	## 僵王战传送带权重：场上空花盆少了就少给花盆，带上花盆堆到 4 个就把位置让给寒冰菇 / 辣椒
-	_mg.card_manager.add_conveyor_weight_rule(ZombossConveyorWeightRule.new())
+	mg.card_manager.add_conveyor_weight_rule(ZombossConveyorWeightRule.new())
 	## 开战
 	await start_battle(-1, zombie_list)

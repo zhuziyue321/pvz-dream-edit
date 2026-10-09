@@ -38,6 +38,19 @@ var _ordered_connections_cache: Dictionary = {}
 @export var validate_payload: bool = true
 ## 调试模式
 @export var debug_mode: bool = false
+## 被 push 过的事件名集合（**仅在 debug_mode 下记录**）
+##
+## 用途：发现「有订阅方但从头到尾没被 push 过」的**死事件**（见 get_never_pushed_subscribed_events）。
+## 只在 debug 时记录是因为正常游玩不需要这份信息，别为每个事件多付一次字典写入。
+var _pushed_event_names: Dictionary = {}
+## 事件拦截器列表（见 `add_interceptor`）：派发给订阅方之前先过一遍，
+## 拦截器返回 true 表示「这条我接管了」，本体不再本地派发。
+##
+## 为什么留这个口子（而不是让需求方自己去改订阅方）：玩家操作（点卡 / 铲子 / 捡阳光）
+## 天然就是 `EventBus` 上的几条事件，把它们变成"可转发的命令"只需要在**这一个点**上挂钩，
+## 不碰任何 UI 与管理器。名字叫"拦截器"不叫"联机钩子"，是因为将来单机回放 / 录像
+## 也能用同一个口子 —— 本体不认识任何具体玩法（硬约束 §1-8 的同款理由）。
+var _interceptors: Array[Callable] = []
 
 ## 信号：事件被推送时触发
 signal event_pushed(event_name: String, payload: Array)
@@ -57,14 +70,29 @@ func push_event(event_name: String, payload : Variant = [], immediate: bool = tr
 
 	if debug_mode:
 		Log.debug("[EventBus] Pushing event: %s with payload: %s" % [event_name, payload])
+		_pushed_event_names[event_name] = true
 
 	if enable_history:
 		_record_event(event_name, payload)
 
 	event_pushed.emit(event_name, payload)
 
+	# 拦截器：返回 true = 已被接管（例如联机客户端把这条操作转成命令上行，等主机回状态）
+	#
+	# 放在 event_pushed 之后：观测方照样看得到事件，只是不再本地派发给订阅方。
+	# 没有拦截器时这一段是一次 is_empty() 判断，热路径上可忽略。
+	if not _interceptors.is_empty() and _run_interceptors(event_name, payload):
+		return
+
 	# 如果没有这个信号（从未被订阅过），直接返回
+	#
+	# 这个分支同时是「事件名拼错」和「订阅方还没挂上」的共同表现：
+	# 两者都是**整条链路静默什么都不发生**，排查时毫无痕迹。
+	# 拼错的名字在外面找不到（EventBus 是动态信号，拼错不报编译错），
+	# 所以 debug 模式下必须在这里留一句话，否则只能靠肉眼看常量表。
 	if not has_signal(event_name):
+		if debug_mode:
+			Log.debug("[EventBus] 事件 %s 从未被订阅过（事件名拼错，或订阅方此时还没挂上），已丢弃" % event_name)
 		return
 
 	# 按优先级排好序的连接快照（订阅关系没变过时直接复用缓存）
@@ -222,6 +250,29 @@ func subscribe_once(
 	filter: Callable = func(_p): return true
 ) -> void:
 	subscribe(event_name, callback, priority, true, filter)
+
+## 加一个事件拦截器
+## [param callback] 签名 `func(event_name: String, payload: Array) -> bool`，返回 true 表示已接管
+func add_interceptor(callback: Callable) -> void:
+	if not callback.is_valid() or _interceptors.has(callback):
+		return
+	_interceptors.append(callback)
+
+
+## 移除事件拦截器
+func remove_interceptor(callback: Callable) -> void:
+	_interceptors.erase(callback)
+
+
+## 跑一遍拦截器：任意一个返回 true 就算被接管
+func _run_interceptors(event_name: String, payload: Array) -> bool:
+	for callback in _interceptors:
+		if not callback.is_valid():
+			continue
+		if callback.call(event_name, payload):
+			return true
+	return false
+
 
 ## 取消订阅所有事件
 ## [param callback] 回调函数
@@ -411,4 +462,19 @@ func get_subscription_counts() -> Dictionary:
 	var result = {}
 	for event_name in _get_all_signals():
 		result[event_name] = get_signal_connection_list(event_name).size()
+	return result
+
+## 诊断：列出「有人订阅、但从未被 push 过」的事件名（死事件候选）
+##
+## 为什么要有：死事件靠人肉搜 `ConstEventName.XXX` 的调用点才能发现，而事件一多就没人再查。
+## 这里让运行期自己把答案说出来 —— 跑一关（或多跑几个模式）后取一次，
+## 列出来的就是「订阅方等着、发布方根本没写」的事件，可以据此决定删订阅还是补发布。
+##
+## **只在 debug_mode 下有效**：没开 debug 时 `_pushed_event_names` 是空的，
+## 此时本函数会把**所有**有订阅的事件都列出来（等于没信息），所以调用前请先开 debug_mode。
+func get_never_pushed_subscribed_events() -> Array[String]:
+	var result: Array[String] = []
+	for event_name in _get_all_signals():
+		if not _pushed_event_names.has(event_name) and get_subscriber_count(event_name) > 0:
+			result.append(event_name)
 	return result

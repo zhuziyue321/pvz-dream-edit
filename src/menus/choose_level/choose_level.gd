@@ -40,19 +40,56 @@ func _ready() -> void:
 
 	Log.debug(str("当前模式关卡数量:") + str(next_level_number - 1))
 
+	_check_against_registry()
+
 	_ready_update_page()
+
+## 拿 LevelRegistry 对一遍：有没有「已经登记的关卡、却没挂到选关页上」
+##
+## 为什么需要这道护栏：关卡是**硬挂在选关 .tscn 的节点 @export 上**的，
+## 于是「新增一个关卡脚本」和「把它加进选关页」是两件独立的事 ——
+## 只做前者，这一关就**存在但玩不到**，而且全程没有任何报错（选关页只是少个按钮）。
+## LevelRegistry 是扫目录自动登记的，所以它手里的清单才是「一共有哪几关」的真相源；
+## 拿它跟场景里实际挂上的按钮对一遍，漏挂的当场在日志里点名。
+##
+## 只报「已登记但没挂上」，不报反向（挂上了但没登记）：后者意味着那个脚本不是
+## LevelScriptBase 子类，多半是有意挂的别的脚本，报了就是噪音。
+func _check_against_registry() -> void:
+	var registered := LevelRegistry.ids_by_mode(game_mode)
+	if registered.is_empty():
+		return
+	var mounted: Dictionary = {}
+	for page in all_pages_array:
+		for node in page.get_children():
+			if not (node is ChooseLevelButton):
+				continue
+			var level_script: Script = node.level_script
+			if level_script == null:
+				continue
+			mounted[level_script.resource_path.get_file().get_basename()] = true
+
+	var missing: Array[String] = []
+	for level_id in registered:
+		## 测试关（*_day_test / *_pool_test / *_roof_test）是 LevelScriptBase 子类，
+		## 会被注册表扫进来，但它们**故意不挂按钮**（靠调试入口进），跳过免得天天误报
+		if level_id.ends_with("_test"):
+			continue
+		if not mounted.has(level_id):
+			missing.append(level_id)
+	if missing.is_empty():
+		return
+	Log.warn("选关页 %s 有 %d 个已登记关卡没挂上按钮（这些关玩不到）：%s"
+		% [MainSceneRegistry.MainScenes.keys()[game_mode], missing.size(), ", ".join(missing)])
 
 ## 本模式初始开放的关卡数量: -1 = 全部开放, 0 = 模式未解锁(全部锁住)
 ## 冒险模式只开放 1 关; 迷你游戏与解谜模式按冒险模式进度解锁(3-2 / 4-6),首批各开放 3 关;
 ## 首次通关冒险模式(5-10)后, 迷你游戏与解谜模式的剩余关卡、生存模式全部开放;
-## 自定义关卡不做限制; 控制台打开"开放所有关卡"时一律全开放
+## 控制台打开"开放所有关卡"时一律全开放
 func calc_open_level_num() -> int:
 	if Global.config_service.open_all_level:
 		return -1
 	if game_mode == MainSceneRegistry.MainScenes.ChooseLevelAdventure:
 		return 1
-	if game_mode == MainSceneRegistry.MainScenes.ChooseLevelCustom:
-		return -1
 	if not Global.global_game_state.is_mode_unlocked(game_mode):
 		return 0
 	if Global.global_game_state.is_mode_all_level_open(game_mode):
@@ -106,6 +143,9 @@ func generate_level_id() -> String:
 	return id_str
 
 func _on_choose_level_button(choose_level_button:ChooseLevelButton):
+	## 进关闸门：被占住时（联机客户端的关卡由房主开）这一次直接不进
+	if GlobalUtils.enter_level_gate.is_valid() and not bool(GlobalUtils.enter_level_gate.call()):
+		return
 	Global.game_para = choose_level_button.curr_level_data_game_para
 	choose_level_start_game(choose_level_button.curr_level_data_game_para.game_sences)
 

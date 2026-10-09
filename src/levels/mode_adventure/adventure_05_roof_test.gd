@@ -32,7 +32,7 @@ func _init() -> void:
 	create_new_card_speed = 1.5
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 本关是屋顶测试关：第 1 列走模仿者材质（灰花盆），顺手验「系统种植」的模仿者分支
 	var pots := SystemPlantResource.create_flower_pot_columns(2)
 	pots[0].is_imitater_plant = true
@@ -61,3 +61,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, zombie_list)
+	## 通关掉落：测试关没有奖励，掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

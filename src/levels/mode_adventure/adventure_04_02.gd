@@ -8,9 +8,11 @@ extends LevelScriptBase
 func _init() -> void:
 	## 场景：泳池·浓雾 —— 槽位 / 底图 / BGM / 雾 / 昼夜 / 天降阳光全由场景脚本给出
 	scene_name = SceneSettingRegistry.SCENE_FOG
+	## 本关通关掉落：仙人掌（种子包）
+	level_complete_loot = "cactus_seed_packet"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
@@ -29,3 +31,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(20, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

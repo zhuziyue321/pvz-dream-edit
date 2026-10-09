@@ -120,11 +120,26 @@ func get_bullet_scenes(bullet_type:BulletType) -> PackedScene:
 ## `Global.bullet_registry.get_bullet_scenes(t).instantiate()`，
 ## 每个调用方都得先知道「有注册表」「要调 get_bullet_scenes」「还得自己 instantiate」三步。
 ## 收口之后调用方只说「我要一颗 X 型子弹」；将来要加预热 / 统计 / 复用，只改这一处。
-func create_bullet(bullet_type:BulletType) -> Bullet000Base:
+## [is_ignore_gate] 为 true 时**不看闸门** —— 专给联机客户端"照主机数据重建一颗"用。
+## ⚠️ 这个口是必需的：客户端自己占着闸门，重建路径若也走闸门，
+## 客户端就**一颗子弹都造不出来**（场上会完全没有豌豆）。只有 `NetplayStateSync` 该传 true。
+func create_bullet(bullet_type:BulletType, is_ignore_gate: bool = false) -> Bullet000Base:
+	## 闸门被占住时（联机客户端）这一颗不造：场上飞着什么由**主机**随快照下发，
+	## 客户端再自己造一份就是"一发豌豆两颗"。⚠️ 调用方必须判 null（9 处调用点都已判）。
+	if not is_ignore_gate and GlobalUtils.bullet_spawn_gate.is_valid() \
+			and bool(GlobalUtils.bullet_spawn_gate.call()):
+		return null
 	var scene := get_bullet_scenes(bullet_type)
 	if scene == null:
 		return null
-	return scene.instantiate() as Bullet000Base
+	var bullet := scene.instantiate() as Bullet000Base
+	if bullet == null:
+		return null
+	## 领号放在**这里**（唯一的创建口），不去 `_ready()`：
+	## 7 个子类重写了 `_ready()`，基类里的自动领号对没调 `super()` 的那批会静默失效
+	## （详见 `Bullet000Base.entity_id` 的注释）。客户端随后可用 `assign_entity_id()` 改成主机的号。
+	bullet.entity_id = Character000Base.take_next_entity_id()
+	return bullet
 
 
 ## 预热：提前把一批子弹场景加载进缓存

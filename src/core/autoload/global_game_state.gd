@@ -91,8 +91,14 @@ func unlock_plants(plant_types:Array) -> Array[CharacterRegistry.PlantType]:
 
 ## 通关冒险模式某关后解锁该关对应的植物,返回本次新解锁的植物
 ## adventure_level: 冒险模式关卡序号(1-1 = 1 …… 5-10 = 50)
+## 该关给哪一株**由那一关的脚本**说了算(level_complete_loot 那个战利品名字,见 LootRegistry):
+## 既向本关掉的那包种子,也决定这里解锁的植物 —— 同一件事只在一处写,没有另外一张「关卡序号 -> 植物」表。
 func unlock_plant_on_adventure_level(adventure_level:int) -> Array[CharacterRegistry.PlantType]:
-	return unlock_plants(ConstPlantUnlock.get_unlock_plant_on_adventure_level(adventure_level))
+	var plants: Array[CharacterRegistry.PlantType] = []
+	var reward_plant := LevelRegistry.get_adventure_level_reward_plant(adventure_level)
+	if reward_plant != CharacterRegistry.PlantType.Null:
+		plants.append(reward_plant)
+	return unlock_plants(plants)
 
 ## 已通关的最大冒险模式关卡序号,没有通关过冒险关卡时返回 0
 func get_max_success_adventure_level() -> int:
@@ -192,11 +198,6 @@ func is_shovel_unlocked() -> bool:
 ## 图鉴是否已解锁(通关 2-4 后戴夫掉落大图鉴,在此之前主菜单与暂停菜单的图鉴入口不可用)
 func is_almanac_unlocked() -> bool:
 	return ConstUnlockLevel.is_almanac_unlocked(get_max_success_adventure_level())
-
-## 手套是否已解锁(通关 4-5 后获得,在此之前卡槽不出现手套)
-## 总开关关闭时恒为 false,手套功能整体隐藏(见 ConstFeatureSwitch.GLOVE_ENABLED)
-func is_glove_unlocked() -> bool:
-	return ConstUnlockLevel.is_glove_unlocked(get_max_success_adventure_level())
 
 ## 花园是否已解锁(通关 5-5 后戴夫把禅境花园交给玩家,在此之前拿不到任何花园植物)
 func is_garden_unlocked() -> bool:

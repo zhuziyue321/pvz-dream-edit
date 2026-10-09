@@ -14,6 +14,9 @@ func _shoot_bullet() -> void:
 	var bullet: Bullet016CobCannon = Global.bullet_registry.create_bullet(
 		BulletRegistry.BulletType.Bullet016CobCannon
 	)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet == null:
+		return
 	bullet.init_cannon(target.global_position)
 	## 阵营：僵尸方玉米炮，炸弹炸的是玩家的植物（见 bullet_cob_cannon.gd）
 	bullet.bullet_camp = get_bullet_camp()

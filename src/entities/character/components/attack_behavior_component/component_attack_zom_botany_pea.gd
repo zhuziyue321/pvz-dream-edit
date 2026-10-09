@@ -107,6 +107,9 @@ func _shoot_bullet() -> void:
 		if not is_instance_valid(marker):
 			continue
 		var bullet: Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
+		## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+		if bullet == null:
+			return
 		bullet.init_bullet(_get_bullet_paras(marker.global_position))
 		bullets.add_child(bullet)
 	_play_head_shoot_anim()

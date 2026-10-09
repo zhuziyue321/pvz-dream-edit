@@ -66,6 +66,23 @@ var track_bullet_mouse := false:
 		track_bullet_mouse = value
 		signal_track_bullet_mouse.emit()
 
+## 控制台扩展项的通用键值区（控制台条目的 `ConsoleEntry.bind_config()` 落在这里）
+##
+## 为什么要有这一块：控制台现在是可扩展的（见 ConsoleRegistry），新增一项不该要求
+## 回来给本服务加字段 + 加 load 一行 + 加 save 一行。整包读写之后，加一个持久化开关
+## 只需要一句 `.bind_config("模组前缀.键名", 默认值)`，键名自己带前缀避免撞车。
+var console_values: Dictionary = {}
+
+
+## 读一个控制台扩展值（没存过就返回 [param default_value]）
+func get_console_value(key: String, default_value: Variant = null) -> Variant:
+	return console_values.get(key, default_value)
+
+
+## 写一个控制台扩展值（只改内存，存盘发生在 `save_config()`）
+func set_console_value(key: String, value: Variant) -> void:
+	console_values[key] = value
+
 
 func _get_config_path() -> String:
 	if user_manager == null or user_manager.curr_user_name.is_empty():
@@ -98,6 +115,7 @@ func load_and_apply_config() -> void:
 	plant_be_shovel_front = config.get_value("user_control", "plant_be_shovel_front", true)
 	open_all_level = config.get_value("user_control", "open_all_level", false)
 	track_bullet_mouse = config.get_value("user_control", "track_bullet_mouse", false)
+	console_values = config.get_value("console", "values", {})
 
 	EventBus.push_event(ConstEventName.ON_CONFIG_UPDATE)
 
@@ -124,5 +142,6 @@ func save_config() -> void:
 	config.set_value("user_control", "plant_be_shovel_front", plant_be_shovel_front)
 	config.set_value("user_control", "open_all_level", open_all_level)
 	config.set_value("user_control", "track_bullet_mouse", track_bullet_mouse)
+	config.set_value("console", "values", console_values)
 
 	config.save(path)

@@ -94,7 +94,8 @@ func update_wave_health_data(curr_wave_total_health:int, new_curr_wave_type:Zomb
 			self.wave_total_health = curr_wave_total_health
 			self.wave_current_health = self.wave_total_health
 			## 残半刷新血量倍率
-			var refresh_threshold = randf_range(refresh_threshold_range.x, refresh_threshold_range.y)
+			## 走 `GameRng`：两端要在同一波上算出同一个阈值（联机时种子由主机下发）
+			var refresh_threshold = GameRng.randf_range(refresh_threshold_range.x, refresh_threshold_range.y)
 			refresh_health = int(refresh_threshold * self.wave_total_health)
 			## 旗前波 僵尸全部死亡触发提前刷新
 		ZombieWaveManager.E_WaveType.FlagFront:
@@ -111,10 +112,10 @@ func _update_timer():
 	var wave_norm_refresh_time := 0.0
 	match curr_can_refresh_type:
 		E_RefreshType.HalfRefresh:
-			wave_norm_refresh_time = randf_range(norm_refresh_time_range_in_half_refresh.x, norm_refresh_time_range_in_half_refresh.y)
+			wave_norm_refresh_time = GameRng.randf_range(norm_refresh_time_range_in_half_refresh.x, norm_refresh_time_range_in_half_refresh.y)
 
 		E_RefreshType.TotalRefresh:
-			wave_norm_refresh_time = randf_range(norm_refresh_time_range_in_total_refresh.x, norm_refresh_time_range_in_total_refresh.y)
+			wave_norm_refresh_time = GameRng.randf_range(norm_refresh_time_range_in_total_refresh.x, norm_refresh_time_range_in_total_refresh.y)
 
 	## 不可以刷新
 	if curr_can_refresh_type == E_RefreshType.Null:

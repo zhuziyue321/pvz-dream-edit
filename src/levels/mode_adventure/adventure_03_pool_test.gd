@@ -14,7 +14,7 @@ func _init() -> void:
 	start_sun = 6460
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z012Snorkle]
 
@@ -28,3 +28,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10, zombie_list)
+	## 通关掉落：测试关没有奖励，掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

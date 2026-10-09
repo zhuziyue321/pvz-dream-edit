@@ -9,9 +9,11 @@ func _init() -> void:
 	save_key = "101_0_0003"
 	## 本关专用地图：5 行草坪里只有中间 3 行铺了草皮（1-2 / 1-3 共用这一张）
 	map_data = preload("res://data/map/map_front_5row.tres") as ResourceMapData
+	## 本关通关掉落：坚果墙（种子包）
+	level_complete_loot = "wall_nut_seed_packet"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
@@ -28,3 +30,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

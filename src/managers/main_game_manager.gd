@@ -289,7 +289,8 @@ func _enter_tree() -> void:
 
 ## 进入树时更新游戏参数，子管理器赋值对应的游戏参数
 func set_game_para() -> void:
-	Global.main_game = self
+	## 「当前这一局」登记到 GameContext（Global.main_game 只是它的转发，见 global.gd 注释）
+	GameContext.curr_main_game = self
 	## 先获取当前关卡参数
 	if Global.game_para != null:
 		game_para = Global.game_para
@@ -305,9 +306,10 @@ func set_game_para() -> void:
 	game_para.resolve_map_data()
 
 func _exit_tree() -> void:
-	## 避免切场景后主游戏节点已释放，Global 仍持有野指针
-	if Global.main_game == self:
-		Global.main_game = null
+	## 避免切场景后主游戏节点已释放，上下文仍持有野指针
+	## （判 `== self` 而不是无脑置空：退回旧场景 / 重开一局时，新的主游戏可能已经登记上来了）
+	if GameContext.curr_main_game == self:
+		GameContext.curr_main_game = null
 
 func _ready() -> void:
 	## set_game_para() 里已 queue_free() 时会话缺失关卡数据，queue_free 是延迟释放，
@@ -315,6 +317,9 @@ func _ready() -> void:
 	if game_para == null:
 		return
 	game_para.init_para()
+	## 关卡数据已经算完（含系统预选卡 / 锁定卡槽），子管理器**还没**建：
+	## 这是模组改关卡数据的唯一时机（晚了卡槽已照预选卡建好，见 `ModBase.on_level_para_ready()`）
+	ModManager.notify_level_para_ready(self)
 	## 结算 / 存档 / 失败流程三个子管理器要在 re_main_game() 之前建好
 	init_main_game_sub_managers()
 	## 不支持续玩的多轮关卡（砸罐子：罐子不进存档）：清掉历史存档文件和
@@ -387,6 +392,9 @@ func init_manager():
 	card_manager.init_manager()
 	plant_cell_manager.init_manager()
 	game_item_manager.init_manager()
+	## 模组：把已启用模组的东西装进本局（手持物组件要排在 HandManager 注册之前，
+	## 否则它登记不到本局新建的组件）。本体只认 ModManager，不认任何具体模组。
+	ModManager.install_mods_to_main_game(self)
 	hand_manager.init_manager()
 	zombie_manager.init_manager()
 	## 进度条排在波次管理器之后：波数这时候才定下来，进度条上画几面旗要读它
@@ -501,10 +509,18 @@ func skip_choose_card_start_game() -> void:
 		card_manager.card_slot_norm.save_choosed_cards()
 	await _on_card_slot_norm_start_game()
 
+## 「点了『开始摇滚吧』之后要不要真的收工」的问询口：外部占住后返回 false **就不推进**
+## （例如联机时要等屋里所有人都点准备）。没人接管时恒 true —— 本体自己从不给这一位赋值。
+var choose_card_start_gate: Callable = Callable()
+
+
 ## 玩家点了「开始游戏」/ 跳过选卡后的去向
 ## 时间轴接管关卡流程时只收面板（开战由时间轴的「开战」事件触发），
 ## 否则按旧流程一步到位直接开战（调试通道 / 自动测试的入口，见 docs/AI调试通道.md）
 func _on_card_slot_norm_start_game() -> void:
+	## 有没有人替这一局做主（见 `choose_card_start_gate`）：说了不许收工就停在这里
+	if choose_card_start_gate.is_valid() and not bool(choose_card_start_gate.call()):
+		return
 	if is_timeline_waiting_choose_card:
 		is_timeline_waiting_choose_card = false
 		await choose_card_finish()
@@ -552,9 +568,9 @@ func start_curr_round_game():
 	coin_bank_label.visible = false
 	## 更新僵尸管理器
 	zombie_manager.start_next_game_zombie_mananger_update()
-	## 整关只跑一遍的时间轴（ResourceLevelTimelineData.is_one_shot）：
-	## 摆下一批（清场）和跑流程都写在时间轴上（ClearField 事件），而且轴现在还在跑，
-	## 这里再摆一次场 / 再跑一次轴就重复了 —— 砸罐子关会多摆一批罐子
+	## 整关只跑一遍的流程（关卡脚本 is_one_shot_flow）：
+	## 摆下一批（清场）和跑流程都写在 run_flow() 里（`await clear_field()`），而且流程现在还在跑，
+	## 这里再摆一次场 / 再跑一次流程就重复了 —— 砸罐子关会多摆一批罐子
 	if level_timeline_manager.is_one_shot_timeline():
 		return
 	## 更新植物格子数据，（创建罐子） 清除植物数据需要等待两帧
@@ -601,9 +617,9 @@ func choosed_card_start_game():
 	await choose_card_finish()
 	main_game_start()
 
-## 播「准备…安放…植物」红字（时间轴的「准备安放植物」事件，见 LevelTimelineManager）
-## 这段红字原本写在 main_game_start() 里，现已提成时间轴上的一个事件：
-## 关卡可以自己决定红字在流程里的位置（默认排在「开战」之前，见 build_default_timeline）。
+## 播「准备…安放…植物」红字（关卡流程里的一个步骤，见 LevelScriptBase.ready_set_plant）
+## 这段红字原本写在 main_game_start() 里，现已提成流程里的一个步骤：
+## 关卡可以自己决定红字在流程里的位置（默认排在「开战」之前，见 LevelScriptBase.run_flow）。
 ## 砸罐子关不播（is_show_ready_set_plant = false）：罐子摆好就能直接砸，见原版冒险 4-5
 func ready_set_plant() -> void:
 	main_game_progress = E_MainGameProgress.PREPARE

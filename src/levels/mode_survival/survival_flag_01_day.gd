@@ -6,7 +6,7 @@ extends LevelScriptBase
 ## 本关全部参数都在流程里给（见 run_flow 的 start_battle），没有需要预置的属性。
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,

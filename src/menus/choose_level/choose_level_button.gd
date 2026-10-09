@@ -15,7 +15,6 @@ class_name ChooseLevelButton
 ## 关卡脚本（.gd）：一个关卡 = 一个脚本（属性 + 流程），见 LevelScriptBase
 @export var level_script: Script
 ## 当前关卡游戏参数：由 level_script.new() 得到（_ready 里做）
-## 老的 .tres 关卡仍可直接挂在这里，两条路并存到迁移结束
 var curr_level_data_game_para :ResourceLevelData
 
 

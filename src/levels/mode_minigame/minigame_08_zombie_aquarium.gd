@@ -61,16 +61,16 @@ func create_progress_provider() -> LevelProgressProvider:
 	return progress_provider
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 推进到 MAIN_GAME 阶段：本关不出怪（monster_mode = Null），波次管理器不会刷僵尸，
 	## 这一步只是把阶段切过去、相机归位、BGM 起来、出战卡槽进场（卡槽位这时候才建好）
-	await _mg.main_game_start()
+	await mg.main_game_start()
 
 	## 挂上水族馆：实例化的是入口场景（壳），它内部就是玩法本体 ZombiquariumManager
 	## （见 src/zombiquarium/zombiquarium.gd）—— 阳光仍走出战卡槽、胜负仍回本关流程
 	var aquarium: ZombiquariumScene = SceneRegistry.ZOMBIQUARIUM_SCENE.instantiate()
-	_mg.add_child(aquarium)
-	aquarium.init_zombiquarium(_mg)
+	mg.add_child(aquarium)
+	aquarium.init_zombiquarium(mg)
 
 	## 进度条这时才拿得到水族馆：之后每帧向它问一次阳光，算出「阳光 / 1000」
 	progress_provider.bind_manager(aquarium.get_manager())

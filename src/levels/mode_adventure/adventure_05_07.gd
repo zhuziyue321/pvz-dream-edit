@@ -10,9 +10,11 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Roof
 	game_BGM = ConstLevelData.GameBGM.Roof
 	is_bungi = true
+	## 本关通关掉落：金盏花（种子包）
+	level_complete_loot = "mari_gold_seed_packet"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
@@ -32,3 +34,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)

@@ -84,6 +84,11 @@ func spawn_sun(create_global_position:Vector2):
 		new_sun.init_sun(sun_value, Global.main_game.suns.to_local(create_global_position))
 		Global.main_game.suns.add_child(new_sun)
 
+		var offset_x := randf_range(-30, 30)
+		## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）
+		new_sun.mark_pop_up(offset_x)
+		EventBus.push_event(ConstEventName.SUN_SPAWNED, [new_sun])
+
 		## 控制阳光下落
 		var tween = create_tween()
 
@@ -93,7 +98,7 @@ func spawn_sun(create_global_position:Vector2):
 		tween.tween_property(new_sun, "position:y", target_y, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 		var tween2 = create_tween()
-		tween2.tween_property(new_sun, "position:x", randf_range(-30, 30), 0.9).as_relative()
+		tween2.tween_property(new_sun, "position:x", offset_x, 0.9).as_relative()
 
 		tween2.finished.connect(new_sun.on_sun_tween_finished)
 

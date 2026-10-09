@@ -24,6 +24,10 @@ var curr_hand_component: HandComponentBase = null
 ## （见 LevelRuleHammerZombie.set_idle_hand_type）；本体只认一个类型，
 ## 不认识锤子这类具体手持物，也不为此留任何分支（硬约束 §1-8）
 var idle_hand_type: HandComponentBase.E_HandComponentType = HandComponentBase.E_HandComponentType.Null
+## 「点了哪个格子」要不要真的落下去的问询口：外部占住后返回 true **本地就不处理**
+## （例如联机时客户端把这一次点击上行给主机，等主机回话再落）
+## 没人接管时恒 false —— 本体自己从不给这一位赋值。
+var cell_click_gate: Callable = Callable()
 
 
 func _ready() -> void:
@@ -204,6 +208,9 @@ func _process(_delta: float) -> void:
 ## 鼠标点击格子
 func _on_click_cell(plant_cell: PlantCell) -> void:
 	if curr_hand_component == null:
+		return
+	## 有人接管了这一次点击（返回 true = 已接管，本地不处理）
+	if cell_click_gate.is_valid() and bool(cell_click_gate.call(plant_cell)):
 		return
 	## 组件返回 true 表示这次点击用完了手持物
 	if curr_hand_component.click_cell(plant_cell):

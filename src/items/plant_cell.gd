@@ -385,13 +385,17 @@ func down_plant_change_condition(is_water:bool):
 		_flower_pot_change_condition()
 #endregion
 
-#region 手套搬运
-## 手套把场上的植物搬到另一个格子：不铲除、不重种，植物实例与全部状态（血量 / 成长 / 攻击 / 产阳光）都保留，
+#region 搬运植物
+## 把场上的植物搬到另一个格子：不铲除、不重种，植物实例与全部状态（血量 / 成长 / 攻击 / 产阳光）都保留，
 ## 只换格子。搬运期间植物**不摘出场景树**（只开 top_level 做视觉位移），否则 Timer / _process 会中断。
-## 本区只提供「格子侧」的取放 API，搬运状态机在 HandComponentGlove 里（见 docs/参考存档/手持物实现.md）。
+##
+## 本区是**通用 API**，两个使用方：
+##   · 手套模组（src/mods/glove/）：玩家拎起植物换个地方放下
+##   · 僵尸迷阵三消（beghouled_manager）：交换与下落
+## 名字不带手套 —— 手套是模组，本体的格子 API 不该叫它的名字。
 
-## 手套：本格子中可以被搬走的植物（按鼠标位置优先，与铲子的选取规则一致）
-func glove_get_carry_plant() -> Plant000Base:
+## 本格子中可以被搬走的植物（按鼠标位置优先，与铲子的选取规则一致）
+func move_get_carry_plant() -> Plant000Base:
 	if get_curr_plant_num() <= 0:
 		return null
 	return return_plant_null_res(get_plant_place_from_mouse_pos())
@@ -399,7 +403,7 @@ func glove_get_carry_plant() -> Plant000Base:
 
 ## 手套：查找植物在本格子中占的槽位；不在本格子返回 -1
 ## （PlacePlantInCell 没有「空」成员，只能用 -1 表示没找到）
-func glove_get_plant_place(plant: Plant000Base) -> int:
+func move_get_plant_place(plant: Plant000Base) -> int:
 	for place in plant_in_cell:
 		if get_plant(place) == plant:
 			return int(place)
@@ -407,8 +411,8 @@ func glove_get_plant_place(plant: Plant000Base) -> int:
 
 
 ## 手套：把植物从本格子取出（不杀死植物，只断开本格子的关联）
-func glove_take_plant(plant: Plant000Base) -> bool:
-	var place_int := glove_get_plant_place(plant)
+func move_take_plant(plant: Plant000Base) -> bool:
+	var place_int := move_get_plant_place(plant)
 	if place_int == -1:
 		return false
 	var place: CharacterRegistry.PlacePlantInCell = place_int as CharacterRegistry.PlacePlantInCell
@@ -428,7 +432,7 @@ func glove_take_plant(plant: Plant000Base) -> bool:
 
 
 ## 手套：该植物放进本格子时应占的槽位
-func glove_get_put_place(plant: Plant000Base) -> CharacterRegistry.PlacePlantInCell:
+func move_get_put_place(plant: Plant000Base) -> CharacterRegistry.PlacePlantInCell:
 	if plant is Plant999Imitater:
 		return CharacterRegistry.PlacePlantInCell.Imitater
 	var condition: ResourcePlantCondition = Global.character_registry.get_plant_info(
@@ -441,12 +445,12 @@ func glove_get_put_place(plant: Plant000Base) -> CharacterRegistry.PlacePlantInC
 
 ## 手套：判断植物能否放进本格子（与种植条件同源：格子无特殊状态 + 地形符合 + 槽位为空）
 ## 不发 signal_plant_create / signal_plant_free：搬运不改变场上植物总数
-func glove_judge_can_put(plant: Plant000Base) -> bool:
+func move_judge_can_put(plant: Plant000Base) -> bool:
 	if not is_instance_valid(plant):
 		return false
 	if not can_common_plant:
 		return false
-	if is_instance_valid(get_plant(glove_get_put_place(plant))):
+	if is_instance_valid(get_plant(move_get_put_place(plant))):
 		return false
 	var condition: ResourcePlantCondition = Global.character_registry.get_plant_info(
 		plant.plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource
@@ -460,7 +464,7 @@ func glove_judge_can_put(plant: Plant000Base) -> bool:
 
 
 ## 手套：把植物放进本格子的指定槽位
-func glove_put_plant(plant: Plant000Base, place: CharacterRegistry.PlacePlantInCell) -> bool:
+func move_put_plant(plant: Plant000Base, place: CharacterRegistry.PlacePlantInCell) -> bool:
 	if not is_instance_valid(plant):
 		return false
 	if is_instance_valid(get_plant(place)):

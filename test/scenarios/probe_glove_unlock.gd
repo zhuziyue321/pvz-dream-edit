@@ -1,7 +1,7 @@
 extends RefCounted
 ## 探针 PROBE12：手套解锁进度 + 冒险 4-6 戴夫赠礼对话
 ## 覆盖：
-##   1. 静态：ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL = 35（通关 4-5），34 未解锁 / 35 已解锁
+##   1. 静态：手套模组 GloveMod.UNLOCK_ADVENTURE_LEVEL = 35（通关 4-5），34 未解锁 / 35 已解锁
 ##   2. 静态：adventure_04_06.tres 挂着赠送对话（8 句、第 5/6/7 句举手套、末句发疯、只播一次、
 ##      手持手套场景能实例化）—— 手写的 .tres 只有真加载才知道对不对，这一段专治它
 ##   3. 实机（模拟只通关到 4-4 = 34）：4-6 手套组件禁用、卡槽不出现手套，戴夫对话照播
@@ -44,11 +44,11 @@ var _last_talk_crazy := false
 func run(a) -> void:
 	a.log("")
 	a.log("========== PROBE12 手套解锁进度 + 4-6 戴夫赠礼 ==========")
-	## 手套功能总开关关闭时整支探针无意义：直接跳过（改回 true 后自动恢复全部检查）
-	if not ConstFeatureSwitch.GLOVE_ENABLED:
-		a.log("  !! GLOVE_ENABLED=false，手套功能已隐藏，跳过本探针")
-		_finish(a)
-		return
+	## 手套是模组，默认关闭（本体 = 原版体验）：主游戏里不会装手套节点，
+	## 所以探针自己打开模组再跑（关着跑整支必挂 —— 这是模组机制最容易漏的一步）
+	if not ModManager.is_mod_enabled(ModIds.GLOVE):
+		ModManager.set_mod_enabled(ModIds.GLOVE, true)
+		a.log("  已启用手套模组（ModIds.GLOVE）：本探针跑在模组开启状态下")
 	_check_const(a)
 	_check_dialog_resource(a)
 	## 34 = 只通关到 4-4：手套还没拿到
@@ -77,16 +77,17 @@ func _finish(a) -> void:
 
 #region 静态
 ## 解锁常量：与铲子同一套口径，通关 4-5（关卡序号 35）后才拿到手套
+## （口径归手套模组自己，本体的 ConstUnlockLevel 里没有"手套解锁"这一项）
 func _check_const(a) -> void:
 	a.log("")
-	a.log("--- 1. 手套解锁常量 ---")
-	a.log("  GLOVE_UNLOCK_ADVENTURE_LEVEL=%d（%s）" % [
-		ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL,
-		ConstUnlockLevel.get_adventure_level_name(ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL)])
-	_check(a, "解锁关卡 = 4-5（序号 35）", ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL == 35,
-		str(ConstUnlockLevel.GLOVE_UNLOCK_ADVENTURE_LEVEL))
-	_check(a, "34（通关到 4-4）未解锁", not ConstUnlockLevel.is_glove_unlocked(34))
-	_check(a, "35（通关 4-5）已解锁", ConstUnlockLevel.is_glove_unlocked(35))
+	a.log("--- 1. 手套解锁常量（GloveMod）---")
+	a.log("  UNLOCK_ADVENTURE_LEVEL=%d（%s）" % [
+		GloveMod.UNLOCK_ADVENTURE_LEVEL,
+		ConstUnlockLevel.get_adventure_level_name(GloveMod.UNLOCK_ADVENTURE_LEVEL)])
+	_check(a, "解锁关卡 = 4-5（序号 35）", GloveMod.UNLOCK_ADVENTURE_LEVEL == 35,
+		str(GloveMod.UNLOCK_ADVENTURE_LEVEL))
+	_check(a, "34（通关到 4-4）未解锁", not GloveMod.is_unlocked(34))
+	_check(a, "35（通关 4-5）已解锁", GloveMod.is_unlocked(35))
 
 
 ## 关卡资源上挂的赠礼对话资源（手写的 .tres 只有真加载才验证得了）

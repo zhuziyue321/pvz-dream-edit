@@ -12,7 +12,7 @@ func _init() -> void:
 	prechosen_cards = ResourceCardReference.create_plant_list([1001, 1002, 1003])
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 展示僵尸
 	await show_zombie()
 	## 选卡
@@ -23,3 +23,8 @@ func run_flow(_mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10)
+	## 通关掉落：测试关没有奖励，掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

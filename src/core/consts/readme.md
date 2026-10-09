@@ -13,7 +13,7 @@
 | 文件 | `class_name` | 内容概要 |
 |------|----------------|----------|
 | `const_level_data.gd` | `ConstLevelData` | 关卡数据配套：背景 `GameBg`、BGM `GameBGM` 与路径表、出怪/卡槽/罐子模式枚举及纹理、音频等常量映射。被 `ResourceLevelData`（`level_data.gd`）等引用。 |
-| `const_plant_unlock.gd` | `ConstPlantUnlock` | 植物解锁进度：初始植物、冒险模式每关通关后解锁的植物（白卡）、紫卡与模仿者的开放购买关卡。被 `GlobalGameState`、`SaveService` 引用。 |
+| `const_plant_unlock.gd` | `ConstPlantUnlock` | 植物解锁进度：初始植物、紫卡与模仿者的开放购买关卡与售价。被 `GlobalGameState`、`SaveService`、`StoreManager` 引用。**不含**「冒险第 N 关给哪株植物」 —— 那句话写在那一关的关卡脚本上（`LevelRegistry.get_adventure_level_reward_plant()`）。 |
 | `const_shop.gd` | `ConstShop` | 疯狂戴夫商店的卡槽扩充商品常量：出战卡槽基准数 / 上限、单价、可购买次数。被 `GlobalGameState`、`ResourceLevelData`、`GoodsCardSlot` 引用。 |
 | `const_unlock_level.gd` | `ConstUnlockLevel` | 冒险模式进度解锁：模式 / 铲子 / 图鉴 / 手套 / 花园 / 金钱 / 商店的解锁关卡序号与判定函数。 |
 | `const_feature_switch.gd` | `ConstFeatureSwitch` | **玩法功能总开关**：临时下线已实现的玩法时改这里（`false` = 隐藏，`true` = 恢复）。当前含 `GLOVE_ENABLED`（关卡内手套）、`ZOMBIE_CARD_ENABLED`（选卡界面的僵尸卡片）。新增开关**只放这里**，不要散到别的常量文件。 |

@@ -11,7 +11,7 @@ class_name CanvasLayerWhiteScreen
 ##   - 本层 layer = 100：只负责最后那张全屏白矩形，盖住所有 UI，UI 才不会被画面切走前漏出来
 ##   - 发光组 %PickupAwardLight 挂在 CanvasLayerDropItem（layer 6，跟掉落物同一层）里，
 ##     排在所有掉落容器之前：同层同级靠树序定先后，掉落物本体就画在光之上，本体才不会被光糊掉
-##     （参照 trophy.tscn：PickUpGlow / AllRays 排在 TrophyButton 之前，奖杯本主体在光之上）
+##     （参照 present.tscn：PickUpGlow 排在 TextureButton 之前，掉落物本主体在光之上）
 ##   - 也因此它跟掉落物处在同一个世界坐标系（follow_viewport），位置按世界坐标摆
 ##   - 白的层级最高，发光在自己层里亮完整段，最后才被白吃掉
 ##
@@ -30,7 +30,7 @@ const MOVE_SCALE := 1.25
 const GLOW_TIME := 1.6
 ## 辉光的最大不透明度
 const GLOW_MAX_ALPHA := 0.85
-## 辉光的起始 / 结束缩放（AwardGlow 只有 32x32，撑满屏幕靠倍率，参考 trophy.tscn 的 Glow）
+## 辉光的起始 / 结束缩放（AwardGlow 只有 32x32，撑满屏幕靠倍率，参考本层 %PickupAwardLight/Glow）
 const GLOW_START_SCALE := 20.0
 const GLOW_END_SCALE := 120.0
 ## 光芒展开后的缩放倍率

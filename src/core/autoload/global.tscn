@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://c50o87181155y"]
+[gd_scene load_steps=12 format=3 uid="uid://c50o87181155y"]
 
 [ext_resource type="Script" uid="uid://bgwxsr7olomf7" path="res://src/core/autoload/global.gd" id="1_3e7rl"]
 [ext_resource type="Script" uid="uid://bct64figeu6iv" path="res://src/core/autoload/character_registry.gd" id="2_gxwvw"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://6u4ym4pc0pid" path="res://src/core/autoload/save_service.gd" id="7_dvwfn"]
 [ext_resource type="Script" uid="uid://bfp02l7lpb1hc" path="res://src/core/autoload/global_game_state.gd" id="8_t0h6q"]
 [ext_resource type="Script" uid="uid://bylmo3te1r3qj" path="res://src/core/autoload/global_read_data.gd" id="10_vrmlj"]
+[ext_resource type="Script" path="res://src/core/autoload/console_registry.gd" id="11_cr"]
 
 [node name="Global" type="Node"]
 script = ExtResource("1_3e7rl")
@@ -31,6 +32,10 @@ script = ExtResource("4_ccgnt")
 [node name="BulletRegistry" type="Node" parent="Registry"]
 unique_name_in_owner = true
 script = ExtResource("5_8byp4")
+
+[node name="ConsoleRegistry" type="Node" parent="Registry"]
+unique_name_in_owner = true
+script = ExtResource("11_cr")
 
 [node name="UserManager" type="Node" parent="."]
 unique_name_in_owner = true

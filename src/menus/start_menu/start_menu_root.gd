@@ -159,11 +159,6 @@ func _on_button_4_pressed() -> void:
 	Global.game_para = null
 	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelSurvival])
 
-## 自定义关卡
-func _on_custom_button_pressed() -> void:
-	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelCustom])
-
 #region 选项
 func _on_option_button_1_pressed() -> void:
 	$StartMenuOptionDialog.appear_menu()

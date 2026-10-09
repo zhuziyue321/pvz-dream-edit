@@ -1,10 +1,11 @@
 extends Resource
 class_name ResourceLevelTimelineEvent
-## 关卡时间轴上的一个事件（时间轴见 ResourceLevelTimelineData）
+## 关卡流程里的**一个步骤**（流程 = 关卡脚本的 run_flow()，见 LevelScriptBase）
 ##
-## **一种事件 = 一个脚本**：本类是基类，每种事件继承它 ——
-## 脚本自己 `@export` 出来的字段就是本事件的参数，脚本自己实现的 `run()` 就是本事件的行为。
-## LevelTimelineManager 只管按数组顺序 `await` 每个事件的 run()，不认识任何具体事件类型。
+## **一种步骤 = 一个脚本**：本类是基类，每种步骤继承它 ——
+## 脚本自己 `@export` 出来的字段就是本步骤的参数，脚本自己实现的 `run()` 就是本步骤的行为。
+## LevelScriptBase 上的流程方法（`show_zombie` / `start_battle` …）各自 new 一个本类子类并
+## `await` 它的 run()，不认识任何具体步骤类型。
 ##
 ## 为什么不是「通用事件 + 事件类型枚举 + 执行器里 match 分发」：
 ##   那样加一种事件要同时动执行器 / 枚举 / 事件资源三处，而且所有事件的参数都堆在同一个
@@ -19,8 +20,8 @@ class_name ResourceLevelTimelineEvent
 ## 是否启用：关掉就等于把这一步从时间轴上摘掉
 @export var is_enabled: bool = true
 
-## 是否只在第一轮执行：多轮关卡每轮都会重跑一遍时间轴，勾上后第 2 轮起跳过
-## （整关只跑一遍的轴见 ResourceLevelTimelineData.is_one_shot，那种轴本字段没意义）
+## 是否只在第一轮执行：多轮关卡每轮都会重跑一遍流程，勾上后第 2 轮起跳过
+## （整关只跑一遍的流程见 LevelScriptBase.is_one_shot_flow，那种流程本字段没意义）
 @export var is_first_round_only: bool = false
 
 ## 轮询等待条件的间隔秒数

@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="GodotPVZ-Dream_me"
+config/name="PVZ-Dream-Edit"
 run/main_scene="uid://dc1xvxus2co66"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="uid://dxvlqvahfmjaa"
@@ -26,6 +26,7 @@ AllCards="*res://src/core/autoload/all_cards.tscn"
 GlobalUtils="*res://src/core/autoload/global_utils.gd"
 EventBus="*res://src/core/autoload/event_bus.gd"
 TreePauseManager="*res://src/core/autoload/tree_pause_manager.gd"
+ModManager="*res://src/mods/mod_manager.gd"
 DebugChannel="*res://src/core/autoload/debug_channel.gd"
 
 [debug]

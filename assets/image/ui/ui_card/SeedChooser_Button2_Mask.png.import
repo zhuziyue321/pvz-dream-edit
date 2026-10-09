@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://bxyj17qxinwq6"
+path="res://.godot/imported/SeedChooser_Button2_Mask.png-5cfd359dbbdb789221bf107b61286da6.res"
+
+[deps]
+
+source_file="res://assets/image/ui/ui_card/SeedChooser_Button2_Mask.png"
+dest_files=["res://.godot/imported/SeedChooser_Button2_Mask.png-5cfd359dbbdb789221bf107b61286da6.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

@@ -31,6 +31,7 @@ enum E_IsEnableFactor{
 	Garlic,		## 大蒜禁用攻击组件
 	GameMode,	## 游戏模式，我是僵尸禁用生产组件
 	HandItem,	## 手持物组件：关卡参数或游戏阶段不允许持有该手持物（如关卡没有铲子）
+	Netplay,	## 联机：客户端的僵尸只渲染，判定交给主机（见 NetplayStateSync）
 }
 
 var is_enable_factors:Dictionary[E_IsEnableFactor, bool] = {}
@@ -98,5 +99,6 @@ func owner_update_speed(_speed_product:float):
 ## **不要在本方法里转问 owner**：曾经写成 `owner as Character000Base` 再取宿主的访问器，
 ## 结果组件的 owner 一旦不是角色基类就静默返回 null —— 攻击组件因此拿不到 bullets 父节点，
 ## 表现为「植物不发射子弹」，且没有任何报错。主场景本来就是全局单例，直接取即可。
+## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
 func get_main_game() -> MainGameManager:
-	return Global.main_game
+	return GameContext.curr_main_game

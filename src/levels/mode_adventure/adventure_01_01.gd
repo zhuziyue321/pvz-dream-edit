@@ -20,9 +20,11 @@ func _init() -> void:
 	## 地图由关卡自己指定，不再靠「为 1-1 单开一个场景枚举」来区分（见 docs/参考存档/地图实现.md）
 	map_data = preload("res://data/map/map_front_1row.tres") as ResourceMapData
 	start_sun = 150
+	## 本关通关掉落：向日葵（种子包）
+	level_complete_loot = "sunflower_seed_packet"
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z001Norm]
 
@@ -44,6 +46,11 @@ func run_flow(_mg: MainGameManager) -> void:
 		await ready_set_plant()
 	## 战斗：10 波，出怪表里只有普通僵尸（1-1 只放最基础的那一只）
 	await start_battle(10, zombie_list)
+	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(level_complete_loot)
 
 
 ## 新手教程：一句话一个 await，顺序照搬原版 1-1 的教学节奏

@@ -229,11 +229,12 @@ func select_spawn_row(zombie_row_type: CharacterRegistry.ZombieRowType, special_
 			if fallback_rows.is_empty():
 				for i in range(row_num):
 					fallback_rows.append(i)
-		var fallback_row: int = fallback_rows.pick_random()
+		var fallback_row: int = GameRng.pick_random(fallback_rows)
 		on_zombie_spawned(fallback_row)
 		return fallback_row
 
-	var rand_num = randf_range(0.0, total_smooth_weight)
+	## 走 GameRng：出怪行必须两端一致（未播种时行为与原来相同，见 GameRng）
+	var rand_num = GameRng.randf_range(0.0, total_smooth_weight)
 	var cumulative_weight = 0.0
 
 	for i in range(smooth_weights.size()):

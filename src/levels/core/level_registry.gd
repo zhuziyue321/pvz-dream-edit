@@ -2,18 +2,19 @@ extends RefCounted
 class_name LevelRegistry
 ## 关卡注册表：关卡 id ↔ 关卡资源路径
 ##
-## **id = 关卡 .tres 的文件名 basename**（`adventure_01_01` / `puzzle_pot_10` / `survival_flag_06_day` …）
+## **id = 关卡脚本的文件名 basename**（`adventure_01_01` / `puzzle_pot_10` / `survival_flag_06_day` …）
 ## 选这个规则是因为它跟**自制关卡的现有约定已经一致**：
-## `src/menus/choose_level/custom_choose_level.gd` 扫目录时用的 level_id 就是文件名 basename，
-## 内置关与自制关因此共用一套 id 规则，不用为自制关再发明一套。
+## 自制关卡模组（`src/mods/custom_level/custom_choose_level.gd`）扫目录时用的 level_id
+## 也是文件名 basename，内置关与自制关因此共用一套 id 规则，不用为自制关再发明一套。
 ##
 ## 为什么要有注册表：
 ##   以前关卡是**硬挂在 4 个选关 .tscn 的节点 @export 上**的 —— 一个关卡「存在」与否取决于
 ##   有没有被某个场景引用，业务代码拿不到「一共有哪几关」，只能去遍历场景节点。
 ##   注册表把这件事收成一处，业务代码不再散落 `res://` 关卡路径（硬约束 §1-4）。
 ##
-## 内置关卡**扫目录自动登记**（约定 > 配置，不维护一张 95 行的大表，加一个脚本就自动进表）；
-## 玩家自制关卡走 register_custom() 动态登记。
+## 内置关卡**扫目录自动登记**（约定 > 配置，不维护一张 95 行的大表，加一个脚本就自动进表）。
+## 玩家自制关卡**不进本表**：它们由自制关卡模组扫 `data/levels/params` 目录直接加载，
+## 本体不认识自制关卡（那是原版没有的功能，见 docs/参考存档/模组机制.md）。
 ##
 ## ⚠️ **「是不是关卡」只认继承链**（白名单，见 LEVEL_BASE_CLASS_NAMES / is_level_script）：
 ## 模式目录里除了关卡脚本，还混着「只服务某一关的场景脚本 / UI / 进度条数据源」
@@ -23,7 +24,7 @@ class_name LevelRegistry
 ##
 ## ⚠️ 关卡资源是**有状态**的：init_para() / set_choose_level() 会在运行时改它的字段。
 ## get_level() 对**脚本关卡**是 new() 出一个实例（关卡数据有状态：init_para() 会改字段，
-## 每次 new 一份反而更安全），对老 .tres 关卡仍是 load() 拿引擎缓存的共享实例。
+## 每次 new 一份反而更安全）。
 
 ## 内置关卡根目录
 const LEVEL_DIR := "res://src/levels"
@@ -86,7 +87,7 @@ static func _scan_dir(dir_path: String, mode: MainSceneRegistry.MainScenes) -> v
 	dir.list_dir_end()
 
 
-## [res_path] 待判定的 .gd 的 res:// 绝对路径
+## [res_path] 待判定的 .gd 的路径（内置关卡是 `res://` 路径；玩家自制关卡是外部绝对路径，同样适用）
 ##
 ## 白名单判据：沿 `get_base_script()` 往上走，继承链上出现 LEVEL_BASE_CLASS_NAMES 里的
 ## class_name 才算关卡；走到底都没命中就不是（load 失败 / 不是脚本同样返回 false）。
@@ -103,15 +104,6 @@ static func is_level_script(res_path: String) -> bool:
 			return true
 		s = s.get_base_script()
 	return false
-
-
-## 登记一个玩家自制关卡（id 由调用方给，通常是文件名 basename）
-static func register_custom(level_id: String, res_path: String) -> void:
-	if level_id == "" or res_path == "":
-		return
-	_path_by_id[level_id] = res_path
-	_mode_by_id[level_id] = MainSceneRegistry.MainScenes.ChooseLevelCustom
-	Log.debug("LevelRegistry: 登记自制关卡 %s -> %s" % [level_id, res_path])
 
 
 static func _ensure_scanned() -> void:
@@ -136,7 +128,7 @@ static func all_ids() -> Array[String]:
 	return ids
 
 
-## 某模式下的关卡 id（内置关按目录认模式，自制关是 ChooseLevelCustom）
+## 某模式下的关卡 id（内置关按目录认模式）
 static func ids_by_mode(mode: MainSceneRegistry.MainScenes) -> Array[String]:
 	_ensure_scanned()
 	var ids: Array[String] = []
@@ -177,4 +169,71 @@ static func get_level(level_id: String) -> ResourceLevelData:
 		Log.error("LevelRegistry: 不是 ResourceLevelData " + res_path)
 		return null
 	return res
+#endregion
+
+
+#region 冒险关卡序号 -> 本关关卡脚本
+## **「冒险第 N 关掉什么」由那一关的脚本自己说了算**（写在 `_init()` 的 `level_complete_loot` 上，
+## 那是战利品名字，见 ResourceLevelData 的「本关通关掉落」+ LootRegistry）——
+## 全项目**没有**「关卡序号 -> 奖励」的常量表。
+##
+## 本 region 只补一个缺：存档重建解锁列表 / 通关解锁植物这类地方手里只有**关卡序号**
+## （"101_0_0002" 反算出来的那个数），拿不到关卡脚本，需要一个「序号 -> 本关脚本」的查法。
+## 序号 ↔ 关卡 id 的对应关系就是文件名本身（`adventure_<大关>_<小关>`，10 关一页，
+## 与 GlobalGameState.get_adventure_save_game_name() 那条反推式子同一套口径）。
+
+static var _data_by_adventure_level: Dictionary = {}
+static var _is_adventure_level_scanned := false
+
+
+## 冒险关卡序号(1-1 = 1 …… 5-10 = 50) -> 本关关卡实例；没有这一关返回 null
+##
+## ⚠️ 返回值**只用来读本关 `_init()` 里声明的字段**（通关掉落那几个）：它是这里 `new()` 出来的
+## 一份专门给「查声明」用的副本，不要拿来当 game_para —— 真正的 game_para 由
+## set_choose_level() 现场拼 save_game_name 那条路生成（见 ResourceLevelData.set_choose_level）。
+static func get_adventure_level_data(adventure_level: int) -> ResourceLevelData:
+	_ensure_adventure_level_scanned()
+	return _data_by_adventure_level.get(adventure_level, null) as ResourceLevelData
+
+
+## 本关 `_init()` 里声明的通关奖励植物（本关不给植物返回 Null）
+## 这是「冒险第 N 关给哪株植物」的**唯一答案源**：改某一关给什么就改那一关的脚本
+## （那一关写的是战利品名字 `level_complete_loot`，名字 -> 植物编号那张表在 LootRegistry）。
+static func get_adventure_level_reward_plant(adventure_level: int) -> CharacterRegistry.PlantType:
+	var data := get_adventure_level_data(adventure_level)
+	if data == null:
+		return CharacterRegistry.PlantType.Null
+	return LootRegistry.get_plant_type(data.level_complete_loot) as CharacterRegistry.PlantType
+
+
+## 首次取用时扫一遍冒险模式目录，之后只查缓存（关卡有状态，缓存的是专供查声明的副本）
+static func _ensure_adventure_level_scanned() -> void:
+	if _is_adventure_level_scanned:
+		return
+	_is_adventure_level_scanned = true
+	_ensure_scanned()
+	for level_id in ids_by_mode(MainSceneRegistry.MainScenes.ChooseLevelAdventure):
+		var adventure_level := _parse_adventure_level(level_id)
+		if adventure_level <= 0:
+			continue
+		var data := get_level(level_id)
+		if data == null:
+			continue
+		_data_by_adventure_level[adventure_level] = data
+	Log.debug("LevelRegistry: 读到 %d 关的冒险通关掉落声明" % _data_by_adventure_level.size())
+
+
+## 关卡 id -> 冒险关卡序号：id 形如 `adventure_<大关>_<小关>`；不合这一套的一律返回 0
+## （ *_day_test / *_pool_test 这种测试关、别的模式的关卡都落在这里，不会被误登记）
+static func _parse_adventure_level(level_id: String) -> int:
+	var parts := level_id.split("_")
+	if parts.size() != 3 or parts[0] != "adventure":
+		return 0
+	if not parts[1].is_valid_int() or not parts[2].is_valid_int():
+		return 0
+	var area := int(parts[1])
+	var small := int(parts[2])
+	if area <= 0 or small <= 0 or small > GlobalGameState.ADVENTURE_LEVEL_PER_PAGE:
+		return 0
+	return (area - 1) * GlobalGameState.ADVENTURE_LEVEL_PER_PAGE + small
 #endregion

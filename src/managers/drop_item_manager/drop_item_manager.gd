@@ -3,10 +3,24 @@ class_name DropItemManager
 ## 掉落道具管理器, 管理掉落金币、花盆、关卡中途掉落的解锁道具
 ## 主游戏场景和花园场景使用
 
+## 战利品的**种类**（联机下发要说清"掉了哪一件"，见 `create_drop_of_kind`）
+enum E_DropKind{
+	Silver,		## 银币
+	Gold,		## 金币
+	Diamond,	## 钻石
+	Chocolate,	## 巧克力
+}
+
 ## 解锁道具未被点击时的存在秒数（提示文本比花园植物长，给足阅读时间）
 const UNLOCK_DROP_EXIST_TIME := 15.0
 ## 解锁提示文本的停留秒数
 const UNLOCK_DROP_TIP_TIME := 4.0
+## 战利品未被点击时的存在秒数（比解锁道具再长一点：它是本关的收尾，玩家可能在看别处）
+const LOOT_EXIST_TIME := 20.0
+## 战利品提示文本的停留秒数
+const LOOT_TIP_TIME := 4.0
+## 植物类通关奖励的提示文本模板（%s = 植物中文名，原版 lawn_strings [NEW_PLANT]）
+const TIP_NEW_PLANT := "你得到一株新植物：%s！"
 
 @onready var dim_garden_plant: DIM_GardenPlant = $DIM_GardenPlant
 @onready var dim_coin: DIM_Coin = $DIM_Coin
@@ -51,6 +65,49 @@ func create_chocolate(drop_global_position: Vector2) -> Node2D:
 	return new_drop
 
 
+## 按**给定的种类 / 编号 / 起点 / 落点**掉一件战利品（通用口，不带联机字样）
+##
+## 与 `create_chocolate()` 那条普通入口的区别：**一个随机数都不摇** ——
+## 种类、编号、起点、落点全由调用方给定，原样长出同一件。
+## 单机没人调（照旧走随机那条）；联机客户端照主机下发的数据重建掉落物时用它
+## （"掉不掉、掉哪一种"是战斗逻辑，客户端不该自己判，见 `GlobalUtils.drop_gate`）。
+func create_drop_of_kind(kind: int, drop_entity_id: int, from_pos: Vector2, to_pos: Vector2) -> Node2D:
+	var relative_target := to_pos - from_pos
+	match kind:
+		E_DropKind.Silver, E_DropKind.Gold, E_DropKind.Diamond:
+			if dim_coin == null or dim_coin.all_drop_coin_parent == null:
+				return null
+			if not is_instance_valid(dim_coin.coin_bank_label):
+				return null
+			var scene: PackedScene = SceneRegistry.COIN_SILVER
+			if kind == E_DropKind.Gold:
+				scene = SceneRegistry.COIN_GOLD
+			elif kind == E_DropKind.Diamond:
+				scene = SceneRegistry.COIN_DIAMOND
+			var coin: Coin = scene.instantiate()
+			## 编号在入树**之前**塞进去：`_ready()` 看到非 0 就不再自己分配，两端才是同一枚
+			coin.assign_entity_id(drop_entity_id)
+			coin.drop_kind = kind
+			dim_coin.all_drop_coin_parent.add_child(coin)
+			coin.setup(dim_coin.coin_bank_label.marker_2d_coin_target.global_position)
+			coin.global_position = from_pos
+			coin.spawn_target = to_pos
+			coin.launch(relative_target)
+			return coin
+		E_DropKind.Chocolate:
+			if dim_chocolate == null or dim_chocolate.all_drop_chocolate_parent == null:
+				return null
+			var chocolate: ChocolateDrop = SceneRegistry.CHOCOLATE_DROP.instantiate()
+			chocolate.assign_entity_id(drop_entity_id)
+			chocolate.drop_kind = kind
+			dim_chocolate.all_drop_chocolate_parent.add_child(chocolate)
+			chocolate.global_position = from_pos
+			chocolate.spawn_target = to_pos
+			chocolate.launch(relative_target)
+			return chocolate
+	return null
+
+
 ## 掉落关卡结束时的解锁道具（原版：冒险 3-4 通关掉车钥匙解锁商店）
 ## 与中途掉落共用一套实例化逻辑，区别只在掉落的时机与位置来源（最后一只僵尸死亡处）
 ## 返回实例化出来的道具，调用方可以等它被拾取 / 自动消失后再继续出奖杯
@@ -88,40 +145,67 @@ func create_unlock_drop_present(drop_global_position:Vector2, tip_text := "", ic
 	return new_drop
 
 
-## 掉落冒险模式本关的「首次通关奖励」（原版：通关后戴夫给的礼物盒 / 铲子 / 车钥匙 / 玉米卷）
-## 奖励内容优先取关卡资源的 drop_unlock_on_level_complete（3-4 车钥匙 / 4-4 玉米卷），
-## 没配的关卡再查 ConstAdventureReward（与选关界面「本关看点」同一套表）
-## 道具类奖励（铲子等）走礼物盒 Present，植物类奖励走僵尸掉的种子包 SeedPacket
-## 返回 null 表示本关没有奖励
-func create_adventure_reward_drop(drop_global_position:Vector2) -> Node2D:
-	if game_para == null:
+## **按名字生产一个战利品掉落物** —— 「名字 -> 贴图 / 植物编号」那张表在 LootRegistry
+##
+## [param loot_name] 战利品名字（"trophy" / "peashooter_seed_packet" / "taco"）：
+##   贴图类（有现成贴图的）掉的是换上这张贴图的礼物盒 Present；
+##   种子包类（没有独立贴图的，如豌豆射手种子包）掉的是运行时拼出来的 SeedPacket。
+## [param tip_text] 点开时弹的那句提示，留空时按战利品自己取：
+##   种子包类 = 「你得到一株新植物：X！」，贴图类 = LootRegistry.get_tip()（都没有就不弹）。
+## 点开音效取 LootRegistry.get_sfx()，没配就用掉落物自带的那个。
+##
+## 返回实例化出来的掉落物；**名字没登记 / 掉落容器没配时返回 null** ——
+## 调用方必须兜住（直接结算），不能把玩家一直卡在场上（见 MgmRewardManager.gain_loot）。
+## 掉出来之后由调用方决定它是不是「本关结算线」上的掉落物（mark_level_complete_drop）。
+func create_loot_drop(loot_name: String, drop_global_position: Vector2, tip_text := "") -> Node2D:
+	var plant_type := LootRegistry.get_plant_type(loot_name)
+	if plant_type != CharacterRegistry.PlantType.Null:
+		## 种子包类：提示文本模板里的 %s 换成植物中文名
+		var seed_tip := tip_text if not tip_text.is_empty() \
+			else TIP_NEW_PLANT % get_plant_show_name(plant_type)
+		return _create_loot_seed_packet(plant_type, seed_tip, drop_global_position)
+	var icon := LootRegistry.get_texture(loot_name)
+	if icon == null:
+		Log.error("掉落战利品但没有登记这个战利品名：" + loot_name)
 		return null
-	## 关卡资源显式配了通关掉落：以关卡资源的贴图与提示为准
-	if game_para.drop_unlock_on_level_complete and not game_para.drop_unlock_tip.is_empty():
-		return mark_level_complete_drop(create_unlock_drop_on_level_complete(drop_global_position))
-	var adventure_level: int = Global.global_game_state.get_adventure_level_on_save_game_name(
-		game_para.save_game_name)
-	var reward: Dictionary = ConstAdventureReward.get_reward(adventure_level)
-	if reward.is_empty():
+	var item_tip := tip_text if not tip_text.is_empty() else LootRegistry.get_tip(loot_name)
+	return _create_loot_present(loot_name, icon, item_tip, drop_global_position)
+
+
+## 掉一包战利品种子包（豌豆射手种子包这类：本体是卡片底图 + 植物形象，见 SeedPacket）
+func _create_loot_seed_packet(plant_type: int, tip_text: String, drop_global_position: Vector2) -> Node2D:
+	if dim_seed_packet == null:
 		return null
-	var tip_text := String(reward.get(ConstAdventureReward.KEY_TIP, ""))
-	var icon_texture: Texture2D = reward.get(ConstAdventureReward.KEY_ICON, null)
-	## 植物奖励：由僵尸掉一包种子（视觉同出战卡片，逻辑同金币），不走礼物盒
-	if int(reward.get(ConstAdventureReward.KEY_TYPE, -1)) == ConstAdventureReward.E_RewardType.Plant:
-		var plant_type := int(reward.get(ConstAdventureReward.KEY_PLANT_TYPE, 0))
-		tip_text = tip_text % get_plant_show_name(plant_type)
-		if dim_seed_packet == null:
-			return null
-		var new_packet := dim_seed_packet.create_seed_packet(plant_type, tip_text,
-			get_clamp_drop_position(drop_global_position, SeedPacket.PACKET_SIZE.x / 2.0),
-			UNLOCK_DROP_EXIST_TIME, UNLOCK_DROP_TIP_TIME)
-		if new_packet != null:
-			Log.debug("掉落本关首次通关奖励：" + tip_text)
-		return mark_level_complete_drop(new_packet)
-	var new_drop := create_unlock_drop_present(drop_global_position, tip_text, icon_texture)
-	if new_drop != null:
-		Log.debug("掉落本关首次通关奖励：" + tip_text)
-	return mark_level_complete_drop(new_drop)
+	return dim_seed_packet.create_seed_packet(plant_type, tip_text,
+		get_clamp_drop_position(drop_global_position, SeedPacket.PACKET_SIZE.x / 2.0),
+		LOOT_EXIST_TIME, LOOT_TIP_TIME)
+
+
+## 掉一个战利品礼物盒：礼物盒本体换成战利品贴图（与冒险 4-4 的玉米卷同一套表现）
+## 点击区按贴图大小重算（见 Present.apply_icon_texture），所以留的边距也按贴图算
+func _create_loot_present(
+	loot_name: String,
+	icon: Texture2D,
+	tip_text: String,
+	drop_global_position: Vector2
+) -> Node2D:
+	if dim_garden_plant == null or dim_garden_plant.all_drop_garden_plant_parent == null:
+		return null
+	var new_drop: Present = SceneRegistry.PRESENT.instantiate()
+	new_drop.is_garden_plant = false
+	new_drop.auto_free_time = LOOT_EXIST_TIME
+	new_drop.tip_show_time = LOOT_TIP_TIME
+	new_drop.open_tip_text = tip_text
+	new_drop.is_show_open_tip = not tip_text.is_empty()
+	new_drop.icon_texture = icon
+	var sfx := LootRegistry.get_sfx(loot_name)
+	if not sfx.is_empty():
+		new_drop.open_sfx = sfx
+
+	dim_garden_plant.all_drop_garden_plant_parent.add_child(new_drop)
+	new_drop.global_position = get_clamp_drop_position(drop_global_position, icon.get_size().x / 2.0)
+	SoundManager.play_other_SFX("chime")
+	return new_drop
 
 
 ## 标记成「本关结算线」上的掉落物：点开它之后本关就结束了（见 Present / SeedPacket 的

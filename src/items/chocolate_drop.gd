@@ -27,13 +27,27 @@ const TIP_FOUND_CHOCOLATE := "你找到了巧克力！把它喂给蜗牛吃，�
 ## 是否已经拾取,避免自动收集与手动点击重复触发
 var is_opened := false
 
+## 实体编号：与金币同一套（见 `Coin.entity_id`）—— 联机要能说清"掉的是哪一块"
+var entity_id:int = 0
+## 抛物线落点（生成方写入）：联机下发时带着，两端才落在同一处
+var spawn_target := Vector2.ZERO
+## 这一件是**哪一种**（`DropItemManager.E_DropKind`）：生成方写入，联机下发要说清"掉了哪一件"
+var drop_kind:int = -1
+
 var _tween: Tween = null
 
 @onready var pick_up_glow: Sprite2D = $PickUpGlow
 @onready var texture_button: TextureButton = $TextureButton
 
 
+## 指定实体编号：客户端收到主机的下发后、入树**之前**调用
+func assign_entity_id(new_id: int) -> void:
+	entity_id = new_id
+
+
 func _ready() -> void:
+	if entity_id == 0:
+		entity_id = Character000Base.take_next_entity_id()
 	texture_button.pressed.connect(_on_texture_button_pressed)
 	## 拾取光晕呼吸,提示玩家可以点
 	TweenUtil.breath_scale_loop(pick_up_glow)
@@ -57,6 +71,9 @@ func launch(relative_target: Vector2) -> void:
 ## 点开拾取:加一块巧克力库存 -> 弹提示 -> 淡出
 func _on_texture_button_pressed() -> void:
 	if is_opened:
+		return
+	## 闸门被占住时（联机客户端）这一下只是**请求**：主机收成了两端才一起入账
+	if GlobalUtils.drop_click_gate.is_valid() and bool(GlobalUtils.drop_click_gate.call(self)):
 		return
 	is_opened = true
 	SoundManager.play_other_SFX("prize")

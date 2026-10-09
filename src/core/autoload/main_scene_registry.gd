@@ -15,6 +15,8 @@ enum MainScenes{
 	ChooseLevelMiniGame,
 	ChooseLevelPuzzle,
 	ChooseLevelSurvival,
+	## 槽位留给自制关卡模组：场景路径由该模组在 install() 时注入 MainScenesMap
+	## （本体不许出现模组里的路径，见 docs/参考存档/模组机制.md）
 	ChooseLevelCustom,
 
 	Garden = 200,
@@ -35,7 +37,6 @@ enum MainScenes{
 	MainScenes.ChooseLevelMiniGame: "res://src/menus/choose_level/mini_game_choose_level.tscn",
 	MainScenes.ChooseLevelPuzzle: "res://src/menus/choose_level/puzzle_choose_level.tscn",
 	MainScenes.ChooseLevelSurvival: "res://src/menus/choose_level/survival_choose_level.tscn",
-	MainScenes.ChooseLevelCustom: "res://src/menus/choose_level/custom_choose_level.tscn",
 
 	MainScenes.Garden: "res://src/garden/garden.tscn",
 	MainScenes.Almanac: "res://src/almanac/almanac.tscn",

@@ -214,13 +214,17 @@ func _on_pet_produce_sun(_pet: ZombiquariumPet, sun_global_pos: Vector2) -> void
 	var sun: Sun = SceneRegistry.SUN.instantiate()
 	sun.init_sun(ConstZombiquarium.PET_SUN_VALUE, _mg.suns.to_local(sun_global_pos))
 	_mg.suns.add_child(sun)
+	var offset_x := randf_range(-30.0, 30.0)
+	## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）
+	sun.mark_pop_up(offset_x)
+	EventBus.push_event(ConstEventName.SUN_SPAWNED, [sun])
 	var tween := sun.create_tween()
 	tween.tween_property(sun, "position:y", -15.0, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(sun, "position:y", 45.0, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	sun.spawn_sun_tween = get_tree().create_tween()
 	sun.spawn_sun_tween.set_parallel()
 	sun.spawn_sun_tween.tween_subtween(tween)
-	sun.spawn_sun_tween.tween_property(sun, "position:x", randf_range(-30.0, 30.0), 0.9).as_relative()
+	sun.spawn_sun_tween.tween_property(sun, "position:x", offset_x, 0.9).as_relative()
 	sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
 
 

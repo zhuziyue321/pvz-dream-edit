@@ -41,7 +41,7 @@ func _init() -> void:
 	})
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关的僵尸全部由僵王投放，开战时要带上这一份
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
@@ -68,8 +68,14 @@ func run_flow(_mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 僵王战：传送带出卡间隔减半（出卡速度翻倍），植物按 boss 战的密度供给
-	_mg.card_manager.set_conveyor_card_interval_scale(0.5)
+	mg.card_manager.set_conveyor_card_interval_scale(0.5)
 	## 僵王战传送带权重：场上空花盆少了就少给花盆，带上花盆堆到 4 个就把位置让给寒冰菇 / 辣椒
-	_mg.card_manager.add_conveyor_weight_rule(ZombossConveyorWeightRule.new())
+	mg.card_manager.add_conveyor_weight_rule(ZombossConveyorWeightRule.new())
 	## 开战
 	await start_battle(-1, zombie_list)
+	## 本关没有通关奖励（全 50 关里就这 6 关没有：x-9 / 5-10，原版也不给东西），
+	## 所以本关没写 level_complete_loot —— 掉奖杯兜底
+	if is_curr_level_success():
+		win_with_trophy_only()
+	else:
+		await gain(LootRegistry.TROPHY)

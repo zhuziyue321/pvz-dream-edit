@@ -1,16 +1,21 @@
 @abstract
-extends Node2D
+extends ComponentNormBase
 class_name AnimComponentBase
 ## 动画组件基类
 ## 由于部分僵尸可能没有AnimationTree或者AnimationPlayer
 ## 使用该组件统一进行一些动画速度的控制
 ## 子类实现具体方法
 ##
-## 为什么**不**继承 ComponentNormBase：本类确实自己声明了 `owner_update_speed()`，
-## 与组件基类同名，看着像「漏了 extends」。但接进组件体系会让它一并继承
-## `is_enabling` / 禁用因素那套机制，而动画是攻击帧的驱动者 —— 一旦被某个因素禁用，
-## 表现就是「植物和僵尸都不攻击」且不报错。曾经这么改过并引发该回归，故保持 Node2D。
-## 动画组件的初始化就写在子类的 `_ready()` 里（本类不是组件，不参与 component_ready() 分派）。
+## 已接入组件体系（`ComponentNormBase`），子类初始化写在 `component_ready()` 里。
+##
+## 本类的 `owner_update_speed()` 与组件基类同名 —— 那不是「漏了 extends」的痕迹，
+## 而是组件体系本来就约定了这个速度钩子，接入后正好对上。
+##
+## 关于禁用机制：动画是攻击帧的驱动者（`_shoot_bullet()` 由动画轨调用），一旦被禁用
+## 就表现为「全体不攻击」且不报错。但全仓无任何代码对 `anim_component` 调
+## `disable_component()`，所以继承来的 `is_enabling` 恒为 true。
+## （曾经接入后出现过该回归，但元凶是攻击组件改名漏了 `super()`，与本类无关 ——
+##   回退本类后症状并未消失。见 2026-10-07 的工作记录。）
 
 ## 动画结束信号
 signal signal_animation_finished(anim_name:StringName)

@@ -33,7 +33,7 @@ func _init() -> void:
 	first_wave_delay = 55.0
 
 
-func run_flow(_mg: MainGameManager) -> void:
+func run_flow(mg: MainGameManager) -> void:
 	## 屋顶要花盆才能种：先给左侧 4 列铺上（与 survival_flag_05_roof 同一套写法）
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写

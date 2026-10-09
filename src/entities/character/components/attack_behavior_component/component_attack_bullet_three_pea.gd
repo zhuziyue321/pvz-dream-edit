@@ -40,6 +40,9 @@ func _create_bullte(await_time:float, i:int=1, change_y_target:bool=false):
 	if await_time:
 		await get_tree().create_timer(await_time).timeout
 	var bullet: Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
+	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
+	if bullet == null:
+		return
 	var bullet_paras: Dictionary = _build_three_pea_bullet_paras(i, change_y_target)
 	bullet.init_bullet(bullet_paras)
 	bullets.add_child(bullet)

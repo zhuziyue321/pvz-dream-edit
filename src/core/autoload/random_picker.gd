@@ -145,8 +145,9 @@ func get_random_item(should_remove: bool = false) -> Variant:
 		return null
 
 	var n := _item_pool.size()
-	var index := randi() % n
-	var r := randf()
+	## 走 GameRng 而不是全局随机：抽怪类型必须两端一致（未播种时行为与原来相同，见 GameRng）
+	var index := GameRng.randi() % n
+	var r := GameRng.randf()
 
 	if r >= _prob[index]:
 		index = _alias[index]

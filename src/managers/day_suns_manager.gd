@@ -17,6 +17,14 @@ class_name DaySunsManagner
 
 @export var sun_y_speed : float = 200
 
+## ⚠️ 天降的"不掉"闸门在 `GlobalUtils.sun_spawn_gate`（**全局**那一个），不在这上面
+##
+## 为什么不在本管理器上开一个：植物产阳光（`CreateSunComponent`）也要能被同一个闸门挡住，
+## 两个同名的口必然有一个被忘装 —— 上一版就因为这个**天降根本没被拦住**（模组只装了全局那个）。
+## 放在**生成点**而不是 `Sun` 自己身上：这一处盖住了定时器与关卡时间轴两条入口
+## （`LevelTimelineEventSpawnSun` 也是调 `spawn_sun()`），挂到 `Sun` 里反而要在
+## 已经 `add_child` 之后才拦得下来。
+
 
 func _ready():
 	production_timer.timeout.connect(_on_production_timer_timeout)
@@ -38,6 +46,9 @@ func pause_day_sun():
 
 
 func _on_production_timer_timeout():
+	## 闸门被占住时（联机客户端）这一次不掉：天上那颗由主机下发，本地的定时器只管继续走
+	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
+		return
 	spawn_sun()
 	change_production_interval()
 
@@ -51,11 +62,16 @@ func spawn_sun():
 		new_sun.spawn_sun_tween = get_tree().create_tween()
 		new_sun.position = Vector2(randf_range(sun_x_min, sun_x_max), sun_y_ori)
 		var target_y = randf_range(sun_y_min, sun_y_max)
+		## 记下落点：联机要把"从哪儿掉到哪儿"一起下发，两端才落在同一处
+		new_sun.spawn_target = Vector2(new_sun.position.x, target_y)
 		var distance = float(abs(target_y - sun_y_ori))
 		var duration = distance / sun_y_speed
+		new_sun.spawn_fall = duration
 		new_sun.spawn_sun_tween.tween_property(new_sun, "position:y", target_y, duration)
 
 		new_sun.spawn_sun_tween.finished.connect(new_sun.on_sun_tween_finished)
+		## 落点已经写进去了，这时候才广播"多了这一颗"（联机主机靠它下发；单机没人连，发了也无事）
+		EventBus.push_event(ConstEventName.SUN_SPAWNED, [new_sun])
 
 
 

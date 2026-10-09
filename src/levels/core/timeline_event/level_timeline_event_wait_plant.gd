@@ -34,9 +34,10 @@ func run(main_game: MainGameManager) -> void:
 
 
 ## 限时等一个条件：成立返回 true，到点 / 关卡没了返回 false
-func _wait_timeout(main_game: MainGameManager, condition: Callable, timeout: float) -> bool:
+## 参数名**不能**叫 `timeout` —— 会遮蔽本类同名的 @export 字段（SHADOWED_VARIABLE）
+func _wait_timeout(main_game: MainGameManager, condition: Callable, limit_seconds: float) -> bool:
 	var waited := 0.0
-	while waited < timeout:
+	while waited < limit_seconds:
 		if condition.call():
 			return true
 		await wait_seconds(main_game, POLL_STEP)

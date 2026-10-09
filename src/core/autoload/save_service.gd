@@ -12,8 +12,28 @@ const SaveGameVersion := "20251130"
 const SaveGameFileName := "GlobalSaveGame.json"
 ## 主游戏关卡等存档子目录名（单点定义）。其它脚本请用 `SaveService.MAIN_GAME_SAVE_DIR_NAME` 或 `Global.save_service.MAIN_GAME_SAVE_DIR_NAME`，勿复制字符串。
 const MAIN_GAME_SAVE_DIR_NAME := "main_game_saves_data"
+## 损坏存档的隔离后缀（原档改名保留，改名后不会被后续写档覆盖）
+const CORRUPT_SUFFIX := ".corrupt"
+
+## 读一个 JSON 文件的三种结果（见 _read_json_file）
+const ReadOk := "ok"
+const ReadMissing := "missing"
+const ReadBroken := "broken"
+
+## 存档保护开关：本局一旦判定「损坏且无法恢复」就锁死写入，直到下次读档重新判定。
+##
+## 为什么必须锁：读档失败时 state 仍是默认值，而自动存档每 60 s 跑一次 ——
+## 不锁的话，60 s 后 save_now() 就把这份空档写回去，原档被挪成 .bak 后
+## 再被下一次写档顶掉，**一次损坏变成永久丢档**。
+## 锁住之后本局照常能玩，只是不再落盘；原档已隔离成 .corrupt，可人工恢复。
+var _save_locked := false
 
 var _auto_save_timer: Timer
+
+## 本局是否处于「存档损坏保护中」（true = 不再写档，原档已隔离）。
+## UI 想提示玩家时读这个，不要在别处自己判。
+func is_save_locked() -> bool:
+	return _save_locked
 
 func _get_save_game_path() -> String:
 	if user_manager == null or user_manager.curr_user_name.is_empty():
@@ -55,6 +75,12 @@ func save_now() -> void:
 		Log.error("❌ 全局存档失败：GlobalGameState 未就绪")
 		return
 
+	## 存档损坏保护：读档失败后 state 全是默认值，此时写入等于把空档固化。
+	## 宁可本局不落盘，也不能让玩家丢档（见 _save_locked 的注释）。
+	if _save_locked:
+		Log.error("❌ 全局存档拒绝写入：本局存档已判定损坏（原档已隔离为 %s，可人工恢复）" % CORRUPT_SUFFIX)
+		return
+
 	var data: Dictionary = {
 		"version": SaveGameVersion,
 		"coin_value": global_game_state.coin_value,
@@ -84,7 +110,16 @@ func load_global_game_data() -> void:
 	if global_game_state == null:
 		return
 
-	var data := _load_json(path) as Dictionary
+	## 每读一次档就重新判定一次：上一个用户的档坏了，不代表这个用户的档也坏，
+	## 所以读取前先把保护开关清掉，由 _load_json 按本次结果重新置位。
+	_save_locked = false
+
+	var loaded: Variant = _load_json(path)
+	## null = 没有可用档：新用户保持默认值即可；损坏档同样保持默认值，
+	## 但已由 _load_json 隔离原档并锁住写入，这里直接返回，不动 state。
+	if loaded == null:
+		return
+	var data := loaded as Dictionary
 
 	var state := global_game_state
 	state.coin_value = data.get("coin_value", state.DEFAULT_COIN_VALUE)
@@ -166,9 +201,10 @@ func _build_curr_plant(data: Dictionary, state: GlobalGameState) -> Array[Charac
 		var adventure_level: int = state.get_adventure_level_on_save_game_name(str(save_game_name))
 		if adventure_level <= 0:
 			continue
-		for plant_type in ConstPlantUnlock.get_unlock_plant_on_adventure_level(adventure_level):
-			if not result.has(plant_type):
-				result.append(plant_type)
+		## 本关给哪一株写在那一关的脚本上（level_complete_loot 那个战利品名字），不查表
+		var reward_plant := LevelRegistry.get_adventure_level_reward_plant(adventure_level)
+		if reward_plant != CharacterRegistry.PlantType.Null and not result.has(reward_plant):
+			result.append(reward_plant)
 
 	## 存档中已记录的植物(购买类解锁)
 	for plant_type in data.get("curr_plant", []):
@@ -181,9 +217,9 @@ func _build_curr_plant(data: Dictionary, state: GlobalGameState) -> Array[Charac
 ## 保存上次选卡结果
 ##
 ## 为什么不走「读档 → 改 selected_cards 一个键 → 写回」：
-## `_load_json` 在文件损坏 / JSON 解析失败时返回 `{}`，那样写回的字典**只剩 selected_cards 一个键**，
-## 金币 / 关卡进度 / 花园 / 已解锁植物会被整体抹掉（一次损坏 → 整档丢失）。
-## 直接写全量：`save_now()` 的字段表里已经包含 selected_cards。
+## 那样写回的字典**只剩 selected_cards 一个键**，金币 / 关卡进度 / 花园 / 已解锁植物
+## 会被整体抹掉（一次损坏 → 整档丢失）。直接写全量：`save_now()` 的字段表里已经包含
+## selected_cards。损坏档现在由 `_load_json` 隔离 + `_save_locked` 挡住写入（见那两处注释）。
 func save_selected_cards() -> void:
 	save_now()
 
@@ -196,14 +232,17 @@ func load_selected_cards() -> void:
 		return
 	if global_game_state == null:
 		return
-	var data := _load_json(path)
-	global_game_state.selected_cards = _normalize_selected_cards(data.get("selected_cards", []))
+	var loaded: Variant = _load_json(path)
+	## null = 没有可用档（新用户，或已损坏并被 _load_json 隔离）：保持当前值，不落空数组
+	if loaded == null:
+		return
+	global_game_state.selected_cards = _normalize_selected_cards((loaded as Dictionary).get("selected_cards", []))
 
 ## 写存档：先写 .tmp，再原子替换，全程留一份 .bak 兜底
 ##
 ## 为什么不直接 `FileAccess.open(path, WRITE)` 覆盖：
-## 写入中途崩溃 / 断电会留下**截断的坏档**，下次 `_load_json` 解析失败返回 `{}`，
-## 任何「读档 → 改键 → 写回」的调用都会把残档固化 —— 这是丢档链的第一环。
+## 写入中途崩溃 / 断电会留下**截断的坏档**；也正因为这里每次都把旧档留成 .bak，
+## 读档侧才有一条「主档坏了就回退 .bak」的退路（见 _load_json）。
 func _save_json(data: Dictionary, path: String) -> bool:
 	var tmp_path := path + ".tmp"
 	var file := FileAccess.open(tmp_path, FileAccess.WRITE)
@@ -234,18 +273,100 @@ func _save_json(data: Dictionary, path: String) -> bool:
 		return false
 	return true
 
-func _load_json(path: String) -> Dictionary:
+## 读单个 JSON 文件，返回 `{"state": ReadOk|ReadMissing|ReadBroken, "data": Dictionary}`。
+##
+## 为什么要把「不存在」和「读不出来」分开：前者是「这个用户还没存过」，正常；
+## 后者是「存过但坏了」，异常。混成一个空字典，调用方就只能一律按空档处理，
+## 而自动存档会立刻把这份空档写回去 —— 那才是一档丢失的真正起点。
+func _read_json_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
-		return {}
+		return {"state": ReadMissing, "data": {}}
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		Log.error("❌ 存档读取失败：无法打开文件 %s" % path)
-		return {}
+		return {"state": ReadBroken, "data": {}}
 	var json_text := file.get_as_text()
 	file.close()
-	var result: Dictionary = JSON.parse_string(json_text) as Dictionary
-	if result == null:
-		## 解析失败必须出声：静默返回 {} 会让调用方把整档写成残档
-		Log.error("❌ 存档已损坏：JSON 解析失败 %s（本次按空档处理，不会覆写原文件）" % path)
-		return {}
-	return result
+	var parsed: Variant = JSON.parse_string(json_text)
+	if parsed == null or not parsed is Dictionary:
+		Log.error("❌ 存档已损坏：JSON 解析失败 %s" % path)
+		return {"state": ReadBroken, "data": {}}
+	return {"state": ReadOk, "data": parsed}
+
+
+## 把损坏的存档**改名**隔离（不删除），返回隔离后的系统路径，失败返回 ""。
+##
+## 保留现场而不是删掉：坏档里往往还有能救回来的字段，玩家也可能想自己看一眼。
+## 改名（而不是留在原位）是为了让后续写档不会把它当旧档挪进 .bak 里顶掉。
+func _quarantine_corrupt_file(path: String, reason: String) -> String:
+	if not FileAccess.file_exists(path):
+		return ""
+	var abs_path := ProjectSettings.globalize_path(path)
+	## 用毫秒而不是秒：同一秒内连续隔离两次（主档坏 + 备份也坏就会走到）时，
+	## 秒级时间戳会算出同一个名字，后一次把前一次的现场顶掉 —— 隔离就白做了。
+	## 再叠一层顺延，彻底排除同一毫秒内重名的可能。
+	var stamp := Time.get_ticks_msec()
+	var target := "%s%s_%d" % [abs_path, CORRUPT_SUFFIX, stamp]
+	var seq := 0
+	while FileAccess.file_exists(target):
+		seq += 1
+		target = "%s%s_%d_%d" % [abs_path, CORRUPT_SUFFIX, stamp, seq]
+	if DirAccess.rename_absolute(abs_path, target) != OK:
+		Log.error("❌ 损坏存档隔离失败：无法把 %s 改名为 %s" % [path, target])
+		return ""
+	Log.error("❌ 存档已损坏（%s）：原文件已隔离为 %s，本局不会自动覆写，可人工恢复" % [reason, target])
+	return target
+
+
+## 存档版本迁移链。当前只有一档、链是空的，但形状先立起来：
+## 以后每次改存档结构，就在下面加一级 `if v == "<旧版本号>": ...`，
+## 而不是在各处散落 `data.get(k, default)` 的兼容补丁 —— 后者会越积越多且看不出版本历史。
+##
+## 无版本号（v == ""）= 本功能上线前的老档，字段级兜底已经覆盖，不额外处理。
+func _migrate_save_data(data: Dictionary) -> Dictionary:
+	var v := str(data.get("version", ""))
+	if v == SaveGameVersion:
+		return data
+	if v == "":
+		Log.warn("⚠️ 存档无版本号（本功能上线前的老档），按字段级兜底读取")
+		return data
+	## 比当前版本更新的档（玩家用新版本存过、又退回旧版）同样走字段级兜底，但不静默
+	Log.warn("⚠️ 存档版本 %s 与当前 %s 不一致，按字段级兜底读取（未知字段将被忽略）" % [v, SaveGameVersion])
+	return data
+
+
+## 读取全局存档，返回可用字典；**没有可用档时返回 null**（不是空字典）。
+##
+## 返回 null 有两种情况，调用方不必区分，但内部处理不同：
+##   ① 文件不存在 —— 新用户，正常：state 保持默认值，允许写入；
+##   ② 主档与 .bak 都损坏 —— 异常：原档已隔离为 .corrupt，并置 `_save_locked`
+##      锁死本局写入，避免自动存档把空档固化成永久丢档。
+##
+## **不要改回「损坏就返回 {}」**：那样调用方会把 state 全量设成默认值，
+## 60 s 后 save_now() 写回的就是一份空档，而原档已经变成 .bak 再被顶掉。
+func _load_json(path: String) -> Variant:
+	var read := _read_json_file(path)
+	if read["state"] == ReadOk:
+		return _migrate_save_data(read["data"])
+
+	if read["state"] == ReadMissing:
+		return null
+
+	## 主档坏了：先试上一份好档（_save_json 每次写档都会把旧档留成 .bak）
+	var bak_path := path + ".bak"
+	if FileAccess.file_exists(bak_path):
+		var bak_read := _read_json_file(bak_path)
+		if bak_read["state"] == ReadOk:
+			Log.warn("⚠️ 主存档损坏，已回退到上一份备份 %s" % bak_path)
+			_quarantine_corrupt_file(path, "JSON 解析失败")
+			## 把备份复制回主档位置，下次写档就有干净的底子（复制而非改名：备份继续保留）
+			if DirAccess.copy_absolute(
+				ProjectSettings.globalize_path(bak_path), ProjectSettings.globalize_path(path)
+			) != OK:
+				Log.warn("⚠️ 备份回写主档失败，不影响本次读取（下次写档会重新生成）")
+			return _migrate_save_data(bak_read["data"])
+
+	## 主档和备份都不可用：隔离现场 + 锁写，绝不按空档继续
+	_save_locked = true
+	_quarantine_corrupt_file(path, "JSON 解析失败且 .bak 不可用")
+	return null
