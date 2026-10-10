@@ -19,6 +19,18 @@ class_name NetplayStateSync
 ##   **只有金币 / 花园植物 / 巧克力，没有阳光**，阳光的 5 个生成点全都过
 ##   `GlobalUtils.sun_spawn_gate` 且都推 `SUN_SPAWNED` ⇒ 客户端的每一颗都有主机编号。
 ##
+## ★ **玩家阳光总量也进快照**（第二包的 `sv`）：钱包里那个数不是"场上飘着的那一颗"，
+##   一颗阳光谁捡到都是**各自那份钱包各加一次**（`Sun.collect()` 在两端各跑一遍），
+##   所以两端的钱包本该始终相等；可它是靠一条条 `pick_sun` 命令堆出来的，丢一条就**永久分叉**。
+##
+## ★ **僵王单独一类**：它**不在** `all_zombies_1d` 里 —— 挂在独立的 `%ZombieBossRoot` 下
+##   （`ZombieManager` 明确"僵王不加入普通僵尸列表"），照僵尸那套遍历**一只都采不到**。
+##   少这一类，僵王关（5-10 / 迷你 20）就等于完全没同步。
+##
+## ⚠️ **卡片冷却刻意不同步**（那是**本地域**）：两端各有自己的出战卡槽、各点各的卡 ——
+##   没有任何一个事件会同时影响两端的冷却，把它拉平反而会把玩家自己的节奏打乱。
+##   （同一个判据下，阳光总量属于**战斗域**：一颗阳光两端都加钱，所以它必须一致。）
+##
 ## ★ **对齐靠 `entity_id`**，而编号不是各端自增就能对上的（谁先多生一颗阳光就整体错位），
 ##   所以波次那一批僵尸的编号由 `NetplayWaveSync` 随下发**指定**（见它的 `z_ids`）。
 ##
@@ -40,6 +52,7 @@ const MAX_ZOMBIES := 40
 const MAX_PLANTS := 64
 const MAX_SUNS := 24
 const MAX_BULLETS := 32
+const MAX_BOSSES := 2
 ## 字节预算：ENet 的不可靠包超过 MTU（约 1400B）会**整包丢弃**（见文件头）。
 ##
 ## ⚠️ 为什么非要算字节：光靠上面那三个"条数上限"**算不出真实体积** ——
@@ -55,8 +68,17 @@ const BYTES_PER_BULLET := 16	## id / type / x / y
 ## ⚠️ `place`（槽位）**不用发**：它由植物自己的种植条件决定，`create_plant(type)` 会放对
 const BYTES_PER_PLANT := 16		## id / type / cell / hp
 const BYTES_PER_SUN := 16		## id / value / x / y
+## 僵王：id / 类型 / 位置 / 血量 / 死亡
+## ⚠️ 类型**必须**发：`ZB000Base` 上没有任何类型字段（实测 `z_b_000_base.gd` 里没有），
+## 客户端补种时无从知道"该造哪一种"，只能由主机随快照告诉它。
+const BYTES_PER_BOSS := 24
 const RESERVE_BULLETS := 320	## 20 颗
 const RESERVE_SUNS := 160		## 10 颗
+const RESERVE_BOSSES := 48		## 2 只
+## 战斗进度条的预留（一条 float + 一条 bool，见 `collect_snapshot_extra` 的 `pr` / `ws`）
+const RESERVE_PROGRESS := 8
+## 玩家阳光总量的预留（一条 int，见 `collect_snapshot_extra` 的 `sv`）
+const RESERVE_SUN_VALUE := 8
 ## 位置对齐的平滑系数：1.0 = 直接吸附，越小越平滑但越滞后
 const POS_LERP := 0.5
 ## 本地有、主机没有的实体要**连续缺席**这么多帧才删 ——
@@ -103,9 +125,12 @@ var _session: NetplaySession = null
 var _main_game: MainGameManager = null
 var _notice: Callable = Callable()
 var _frame := 0
+## 僵尸采集的**轮转游标**：快照截断时下一帧从这一帧没采到的那一只接着采 ——
+## 理由见 `collect_snapshot`（不轮转的话，排在后面那批僵尸会**永远收不到位置**）
+var _z_cursor := 0
 ## 本地有而快照里没有的实体（entity_id → 连续缺席帧数）
 var _missing: Dictionary = {}
-## 动画变体属性的探测缓存：类 → {属性名: 有没有}（见 `_has_anim_prop`）
+## 动画变体属性的探测缓存：类 → {属性名: 有没有}（见 `_has_prop`）
 var _anim_prop_cache: Dictionary = {}
 
 
@@ -171,7 +196,8 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 	snap[&"f"] = _frame
 
 	## 按字节预算排上限：第一包只有僵尸 ▶ 子弹（植物与阳光在第二包，见 `collect_snapshot_extra`）
-	var z_cap := _cap_for(BYTES_PER_ZOMBIE, MAX_ZOMBIES, BYTE_BUDGET - RESERVE_BULLETS)
+	var z_cap := _cap_for(BYTES_PER_ZOMBIE, MAX_ZOMBIES,
+		BYTE_BUDGET - RESERVE_BULLETS - RESERVE_BOSSES)
 	var left := BYTE_BUDGET
 
 	## 僵尸：id / 类型 / 行 / **动画状态** / 位置 / 血量
@@ -184,12 +210,21 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 	var z_hp := PackedFloat32Array()
 	if mg.zombie_manager != null:
 		## 一边遍历一边可能被删（`character_death_disappear()`），先复制一份
+		var zombies: Array[Zombie000Base] = []
 		for z in mg.zombie_manager.all_zombies_1d.duplicate():
-			if not is_instance_valid(z) or z.entity_id == 0:
-				continue
-			if z_id.size() >= z_cap:
-				snap[&"z_cut"] = true
-				break
+			if is_instance_valid(z) and z.entity_id != 0:
+				zombies.append(z)
+		## ★ **轮转**：这一帧装不下的那些，**下一帧从它们接着采**（游标停在断点上）。
+		## 不轮转的话每帧都从头采、被截断的永远是排在后面那同一批 —— 那几只在客户端
+		## **永远收不到位置**。而客户端的僵尸现在连移动都关掉了（见 `_make_zombie_render_only`），
+		## 收不到位置 = 彻底僵在原地，再没有"自己走一点"能把破绽盖住。
+		## 轮转之后，每只最多隔 `ceil(总数 / z_cap)` 帧必被采到一次。
+		var total := zombies.size()
+		var take := mini(total, z_cap)
+		if total > take:
+			snap[&"z_cut"] = true
+		for i in range(take):
+			var z: Zombie000Base = zombies[(_z_cursor + i) % total]
 			z_id.append(z.entity_id)
 			z_type.append(int(z.zombie_type))
 			z_lane.append(z.lane)
@@ -197,6 +232,8 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 			z_x.append(z.global_position.x)
 			z_y.append(z.global_position.y)
 			z_hp.append(_hp_of(z))
+		if total > 0:
+			_z_cursor = (_z_cursor + take) % total
 	snap[&"z_id"] = z_id
 	snap[&"z_type"] = z_type
 	snap[&"z_lane"] = z_lane
@@ -230,7 +267,65 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 	snap[&"b_y"] = b_y
 	left -= b_id.size() * BYTES_PER_BULLET
 
+	## 僵王：**不在** `all_zombies_1d` 里 —— 它挂在独立的 `%ZombieBossRoot` 下
+	## （`ZombieManager` 明确"僵王不加入普通僵尸列表"），所以上面那一轮遍历**采不到它**，
+	## 必须单开一类。少这一类，僵王关（5-10 / 迷你 20）就等于完全没同步。
+	##
+	## ⚠️ 为什么走 `_boss_list()`（遍历根节点）而不是 `get_living_bosses()`：
+	## 后者会把**已经死了的**过滤掉，于是主机那只正在演死亡动画的僵王一条都发不出来 ——
+	## 客户端永远收不到"它死了"，只能等缺席 90 帧把它凭空删掉，死亡演出整个丢掉。
+	var zb_cap := _cap_for(BYTES_PER_BOSS, MAX_BOSSES, left)
+	var zb_id := PackedInt32Array()
+	var zb_type := PackedInt32Array()
+	var zb_x := PackedFloat32Array()
+	var zb_y := PackedFloat32Array()
+	var zb_hp := PackedFloat32Array()
+	var zb_death := PackedInt32Array()
+	for boss in _boss_list(mg):
+		if zb_id.size() >= zb_cap:
+			snap[&"zb_cut"] = true
+			break
+		zb_id.append(boss.entity_id)
+		zb_type.append(int(_boss_type_of(mg)))
+		zb_x.append(boss.global_position.x)
+		zb_y.append(boss.global_position.y)
+		zb_hp.append(_hp_of(boss))
+		zb_death.append(1 if boss.is_death else 0)
+	snap[&"zb_id"] = zb_id
+	snap[&"zb_type"] = zb_type
+	snap[&"zb_x"] = zb_x
+	snap[&"zb_y"] = zb_y
+	snap[&"zb_hp"] = zb_hp
+	snap[&"zb_death"] = zb_death
+
 	return snap
+
+
+## 本关的僵王类型（补种时要告诉客户端"造哪一种"）
+##
+## ⚠️ 已知限制：取的是**关卡参数** `game_para.boss_type`（自动出场那一只的类型），
+## 而僵王实例上没有任何类型字段可反查。由**僵王卡牌**召唤出来的那一只，本关若没配
+## 自动出场（`boss_type == Null`），这里就拿不到它的类型 ⇒ 客户端补种不了。
+## 宁可造不出来（这只僵王在客户端不显示），也不能造错一种 —— 见 `_spawn_boss()`。
+static func _boss_type_of(mg: MainGameManager) -> int:
+	if mg == null or mg.game_para == null:
+		return 0
+	return int(mg.game_para.boss_type)
+
+
+## 场上所有僵王（含**正在演死亡动画**的，理由见 `collect_snapshot` 里那一处）
+static func _boss_list(mg: MainGameManager) -> Array[ZB000Base]:
+	var out: Array[ZB000Base] = []
+	if mg == null or mg.zombie_manager == null:
+		return out
+	var root := mg.zombie_manager.zombie_boss_root
+	if root == null:
+		return out
+	for child in root.get_children():
+		var boss := child as ZB000Base
+		if boss != null and is_instance_valid(boss) and boss.entity_id != 0:
+			out.append(boss)
+	return out
 
 
 ## 第二包：植物名册 + 场上阳光（为什么要单独一包，见 `NetplaySession` 那个信号的注释）
@@ -239,8 +334,26 @@ func collect_snapshot_extra(mg: MainGameManager) -> Dictionary:
 	if mg == null:
 		return snap
 	snap[&"f"] = _frame
+	## ★ **战斗进度条**为什么在这里发，而不是跟着 `wave_next` 命令：
+	## 进度条是**连续量** —— 开波跳一次之后，波次之间还按秒慢慢爬（见
+	## `ZombieWaveManager.battle_progress` 每秒 `+= progress_bar_segment_mini_every_sec`），
+	## 命令只在开波那一刻发一次，爬升那一段永远差着。快照每帧都发，跳变与爬升一并覆盖。
+	## ⚠️ 采的是 `ZombieManager.get_battle_progress()`（**通用口径**）而不是直接读波次管理器的
+	## 字段：进度条的口径可以被关卡脚本换掉（外部出怪器 / 僵王血量），走通用入口才不会采错。
+	snap[&"pr"] = mg.zombie_manager.get_battle_progress() if mg.zombie_manager != null else 0.0
+	## 第一波是否已开打（开打前进度条不显示）—— 它是**状态**而不是事件，同样归快照
+	var wave_manager: ZombieWaveManager = mg.zombie_manager.zombie_wave_manager if mg.zombie_manager != null else null
+	snap[&"ws"] = wave_manager != null and wave_manager.is_wave_started
+	## ★ **玩家阳光总量**（钱包里那个数，不是场上飘着的那一颗）为什么也进快照：
+	## 一颗阳光谁捡到都是**屋里每个人各自的钱包各加一次**（`Sun.collect()` 在各自那份里跑），
+	## 所以两端的钱包本来就该始终相等；可这个数是靠一条条 `pick_sun` 命令堆出来的，
+	## 丢一条就**永久分叉** —— 命令只管事件，不管"现在到底有多少钱"。快照每帧报一遍，分叉自愈。
+	## ⚠️ 只有本关真有出战卡槽时才有钱包（没有卡槽就不发，免得客户端被 0 清零）
+	var battle_slot: CardSlotBattle = mg.card_manager.card_slot_battle if mg.card_manager != null else null
+	if battle_slot != null:
+		snap[&"sv"] = int(battle_slot.sun_value)
 
-	var left := BYTE_BUDGET
+	var left := BYTE_BUDGET - RESERVE_PROGRESS - RESERVE_SUN_VALUE
 
 	## 植物：id / 类型 / 格子 / 血量
 	##
@@ -341,6 +454,7 @@ func _on_state_snapshot_received(snap: Dictionary) -> void:
 func _apply_snapshot(mg: MainGameManager, snap: Dictionary) -> void:
 	_align_zombies(mg, snap)
 	_align_bullets(mg, snap)
+	_align_bosses(mg, snap)
 
 
 func _on_state_snapshot_extra_received(snap: Dictionary) -> void:
@@ -352,10 +466,112 @@ func _on_state_snapshot_extra_received(snap: Dictionary) -> void:
 	_apply_snapshot_extra(mg, snap)
 
 
-## 第二包：植物名册 + 场上阳光（两包独立，丢了谁都不影响另一类，见 `NetplaySession`）
+## 第二包：植物名册 + 场上阳光 + 战斗进度条（两包独立，丢了谁都不影响另一类）
 func _apply_snapshot_extra(mg: MainGameManager, snap: Dictionary) -> void:
 	_align_plants(mg, snap)
 	_align_suns(mg, snap)
+	_apply_progress(mg, snap)
+	_apply_sun_value(mg, snap)
+
+
+## 战斗进度条：主机说几成就是几成，客户端**不自己算**
+##
+## 为什么不自己算：进度是从 `curr_wave` 推出来的，而客户端已经不维护波次了
+## （波次归主机、出怪归快照，见 `NetplayWaveSync`）；而且关卡脚本可以换掉进度口径，
+## 自己照波次算出来的那份未必是本关真正在用的那份。
+func _apply_progress(mg: MainGameManager, snap: Dictionary) -> void:
+	if mg.zombie_manager == null:
+		return
+	var wave_manager: ZombieWaveManager = mg.zombie_manager.zombie_wave_manager
+	if wave_manager == null:
+		return
+	wave_manager.battle_progress = float(snap.get(&"pr", 0.0))
+	wave_manager.is_wave_started = bool(snap.get(&"ws", false))
+
+
+## 玩家阳光总量：主机说有多少就是多少，客户端**不自己记账**
+##
+## ⚠️ 只在**不一样**时才写回去：`sun_value` 的 setter 会遍历每一张卡重判"阳光够不够"
+## （`judge_sun_enough`），每帧白跑一遍不值当。
+func _apply_sun_value(mg: MainGameManager, snap: Dictionary) -> void:
+	## ⚠️ 必须判 `has`：主机这一关没有出战卡槽时压根不发这一条，照默认 `0` 取值会把钱包清零
+	if not snap.has(&"sv"):
+		return
+	if mg.card_manager == null:
+		return
+	var battle_slot: CardSlotBattle = mg.card_manager.card_slot_battle
+	if battle_slot == null:
+		return
+	var value := int(snap[&"sv"])
+	if int(battle_slot.sun_value) != value:
+		battle_slot.sun_value = value
+
+
+## 僵王：位置 / 血量覆盖；主机有本地没有的补一只；主机没有的连续缺席够了才删
+##
+## ★ 为什么必须能补种：客户端**不出怪**，僵王也就不自己出场（它是主机那边按波次
+## `try_auto_spawn_boss()` 触发的），所以客户端那一侧压根没有僵王 —— 不补就是
+## "主机在打僵王、客户端看不见"。这与僵尸同一条道理（僵尸也全靠快照补种）。
+func _align_bosses(mg: MainGameManager, snap: Dictionary) -> void:
+	if mg.zombie_manager == null:
+		return
+	var zb_id: PackedInt32Array = snap.get(&"zb_id", PackedInt32Array())
+	var zb_type: PackedInt32Array = snap.get(&"zb_type", PackedInt32Array())
+	var zb_x: PackedFloat32Array = snap.get(&"zb_x", PackedFloat32Array())
+	var zb_y: PackedFloat32Array = snap.get(&"zb_y", PackedFloat32Array())
+	var zb_hp: PackedFloat32Array = snap.get(&"zb_hp", PackedFloat32Array())
+	var zb_death: PackedInt32Array = snap.get(&"zb_death", PackedInt32Array())
+
+	var local := {}
+	for boss in _boss_list(mg):
+		local[boss.entity_id] = boss
+
+	var seen := {}
+	for i in range(zb_id.size()):
+		var id := zb_id[i]
+		seen[id] = true
+		var target := Vector2(zb_x[i], zb_y[i])
+		var boss_type := zb_type[i] if i < zb_type.size() else 0
+		if local.has(id):
+			var boss: ZB000Base = local[id]
+			if not is_instance_valid(boss):
+				continue
+			boss.global_position = boss.global_position.lerp(target, POS_LERP)
+			if boss.hp_component != null:
+				boss.hp_component.curr_hp = int(zb_hp[i])
+			## 主机说它死了而本地还没死 ⇒ 补一次死亡表现。
+			## 为什么必须补，见 `_apply_zombie_anim()` 里同一段理由：客户端自己不再结算伤害，
+			## 就永远走不到本地的死亡流程，僵王会 0 血站着，直到缺席 90 帧被凭空删掉。
+			var is_death := i < zb_death.size() and zb_death[i] != 0
+			if is_death and not boss.is_death and boss.hp_component != null:
+				boss.hp_component.Hp_loss_death(false)
+		else:
+			_spawn_boss(mg, id, boss_type, target)
+
+	if not _is_cut(snap, &"zb_cut"):
+		_reap_missing(mg, local, seen, _delete_boss)
+
+
+## 照主机的编号补一只僵王
+func _spawn_boss(mg: MainGameManager, id: int, boss_type: int, pos: Vector2) -> void:
+	if mg.zombie_manager == null:
+		return
+	## 拿不到类型就不造 —— 宁可这一只在客户端不显示，也不能造错一种
+	## （僵王卡牌召唤出来的那一只，见 `_boss_type_of` 的已知限制）
+	if boss_type == 0:
+		return
+	## ⚠️ 走**卡牌召唤**入口而不是自动入口 `create_boss()`：后者每关只成功一次
+	## （registry 里 `_auto_boss_spawned` 挡着），客户端补种时那一次早被主机用掉了。
+	var boss := mg.zombie_manager.try_create_boss_from_card(boss_type)
+	if boss == null:
+		return
+	boss.assign_entity_id(id)
+	boss.global_position = pos
+
+
+func _delete_boss(boss) -> void:
+	if is_instance_valid(boss):
+		boss.queue_free()
 
 
 ## 子弹：位置覆盖；主机有本地没有的照类型造一颗；主机没有的缺席几帧就删
@@ -463,7 +679,7 @@ func _pack_anim(z: Zombie000Base) -> int:
 
 ## 取一个动画变体值（1..3）；这个属性在这类僵尸上不存在就当 1 号
 func _anim_status_of(z: Zombie000Base, prop: StringName) -> int:
-	if not _has_anim_prop(z, prop):
+	if not _has_prop(z, prop):
 		return 1
 	return clampi(int(z.get(prop)), 1, ANIM_STATUS_MASK)
 
@@ -490,7 +706,7 @@ func _apply_zombie_anim(z: Zombie000Base, packed: int) -> void:
 
 func _apply_anim_status(z: Zombie000Base, prop: StringName, value: int) -> void:
 	## ⚠️ `set()` 到不存在的属性会**报错**，所以先探一下（与读取同一条兜底）
-	if value <= 0 or not _has_anim_prop(z, prop):
+	if value <= 0 or not _has_prop(z, prop):
 		return
 	z.set(prop, value)
 
@@ -500,7 +716,7 @@ func _apply_anim_status(z: Zombie000Base, prop: StringName, value: int) -> void:
 ## ⚠️ 缓存键必须按**脚本**算，不能用 `get_class()`：它返回的是**引擎基类**
 ## （普僵和僵尸基类都是同一个），结果两只僵尸共用一个键 —— 先查的那只把结果污染给另一只，
 ## 于是普僵被判成"没有走路变体"，变体永远同步不过去。
-func _has_anim_prop(z: Zombie000Base, prop: StringName) -> bool:
+func _has_prop(z: Zombie000Base, prop: StringName) -> bool:
 	var key := _anim_prop_cache_key(z)
 	var props: Dictionary = _anim_prop_cache.get(key, {})
 	if props.has(prop):
@@ -529,37 +745,80 @@ func _anim_prop_cache_key(z: Zombie000Base) -> StringName:
 
 #region 客户端僵尸转"只渲染"
 ##
-## 客户端的僵尸**只负责演**：不索敌、不啃、不被打，判定全交给主机。
+## 客户端的僵尸**只负责演**：不索敌、不移动、不啃、不被打、不跳、不爆炸 ——
+## 一切**行为逻辑**全部关掉，判定全交给主机。
 ## 动画由 `z_anim` 下发（见 `_apply_zombie_anim`），所以关掉判定**不会**让动画停 ——
-## 这正是上一轮必须先把动画状态同步下来的原因：顺序反了就是"僵尸 0 血站着走"。
+## 这正是当初必须先把动画状态同步下来的原因：顺序反了就是"僵尸 0 血站着走"。
 ##
-## ★ **为什么不动 `move_component`**：位置每帧都被快照拉齐（`POS_LERP`），
-## 本地多走的那点立刻被拉回来（60fps 下是半像素级），收益很小；而停掉它的代价很具体 ——
-## 快照**截断**时（场上僵尸太多装不下，见 `BYTE_BUDGET`）那几只既收不到位置、又不会被回收，
-## 会**僵在原地**。移动组件还管着地面 / 斜坡那部分表现，一并停掉画面还会缺一块。
+## ★ **为什么连 `move_component` 也要关**（早先这里写着"不动它"）：
+## 移动本身就是**行为逻辑** —— 客户端一旦自己走，走的就是它自己那份模拟
+## （减速、冰冻、啃食停顿、被吸住…这些状态客户端只收到**结果**，并不推演过程），
+## 必然与主机不同步。位置一律由快照拉齐（每帧 `POS_LERP`），本地那份位移纯属多余且有害。
+##
+## ★ **关掉移动的前提：截断时不能让谁永远收不到位置**（配套改动见 `_z_cursor`）：
+## 早先不动它的理由很具体 —— 快照**截断**时（场上僵尸太多装不下）那几只既收不到位置、
+## 又不会被回收，会**僵在原地**；那时移动组件还能让它们继续走，把破绽盖住。
+## 现在移动也关了，这个破绽必须由**采集侧**补上 ⇒ 截断时下一帧从没采到的那一只接着采（轮转）。
+##
+## ⚠️ **关掉移动会丢的表现**（这条原则的已知代价）：移动组件顺带管着屋顶斜面 / 爬梯
+## 那部分 y 修正（`move_y_correct_slope` / 爬梯）。客户端的僵尸因此**不走斜面修正** ——
+## 位置本身（含 y）仍然是主机下发下来的，缺的只是那一点贴合斜面的偏移。
 ##
 ## ★ **为什么不动植物**：植物的开火动画长在攻击组件里，停掉它植物就只剩静止贴图；
 ## 而"客户端不自己造子弹"已经由 `GlobalUtils.bullet_spawn_gate` 兜住了。
 const RENDER_ONLY_META := &"netplay_render_only"
 
+## 只渲染时要**关掉**的组件（行为逻辑）
+##
+## ⚠️ 前三个在 `Zombie000Base` 上一定有；后面那些是**可选**的，只有特定僵尸才有
+## （撑杆 / 跳跳 / 海豚有 `jump_component`，小丑有 `bomb_component_jackbox`），
+## 所以统一走 `_optional_component()` 探测 —— 没有就跳过。
+const BEHAVIOR_COMPONENT_PROPS: Array[StringName] = [
+	&"attack_component", &"hurt_box_component", &"move_component",
+	&"detect_component", &"detect_component_pogo",
+	&"jump_component", &"bomb_component_jackbox",
+]
 
-## 把这只僵尸的判定关掉，只留下渲染
+## 只渲染时**保留**的组件（纯表现，不产生任何判定）：
+## `hp_stage_change_component`（血量阶段换外观）、`charred_component`（焦黑）、
+## `critical_value_component`（临界掉手 / 掉头）—— 它们由**血量**驱动，而血量是主机下发的 ⇒ 结果一致。
+## ⚠️ `drop_item_component`（掉落）**不必**禁：它已被掉落闸门拦住（客户端不掉东西）。
+
+
+## 把这只僵尸的行为逻辑关掉，只留下渲染
 func _make_zombie_render_only(z: Zombie000Base) -> void:
 	if bool(z.get_meta(RENDER_ONLY_META, false)):
-		return
-	## ⚠️ 组件是 `@onready`，刚生出来那一帧可能还是 null —— 那就下一帧再来（meta 先不落，
-	## 免得"这一次没关成"被记成"已经关过了"）
-	if not is_instance_valid(z.attack_component) or not is_instance_valid(z.hurt_box_component):
 		return
 	## ⚠️ `disable_component` 是**粘的**：它把 Netplay 这个因素置成 false，之后任何人
 	## `enable_component(别的因素)` 都拉不回来（`is_enabling` 是所有因素的**与**）。
 	## 死亡 / 魅惑 / 睡眠这些正常流程里的启用不会把这道闸门顶开。
-	## ⚠️ 攻击组件内部会连带禁用它自己的检测组件（见 `AttackComponentBase.disable_component`），
-	## 所以**不必**再单独关一次检测组件。
+	## ⚠️ 攻击组件内部会连带禁用它自己的检测组件（见 `AttackComponentBase.disable_component`）。
 	var factor := ComponentNormBase.E_IsEnableFactor.Netplay
-	z.attack_component.disable_component(factor)
-	z.hurt_box_component.disable_component(factor)
+	var all_ready := true
+	for prop in BEHAVIOR_COMPONENT_PROPS:
+		var c := _optional_component(z, prop)
+		if c == null:
+			## 基类上该有的那几个若为 null，说明组件还是 `@onready` 未就位 —— 下一帧再来
+			if prop == &"attack_component" or prop == &"hurt_box_component" \
+					or prop == &"move_component":
+				all_ready = false
+			continue
+		c.disable_component(factor)
+	if not all_ready:
+		## ⚠️ meta **先不落**：免得"这一次没关成"被记成"已经关过了"
+		return
 	z.set_meta(RENDER_ONLY_META, true)
+
+
+## 取一个**可选**组件（不是每类僵尸都有） —— 没有就返回 null
+##
+## ⚠️ 走属性探测而不是直接 `z.get()`：后者取不存在的属性会**报错**
+## （撑杆僵尸有 `jump_component`，普僵没有）。探测结果按**脚本**缓存，见 `_has_prop`。
+func _optional_component(z: Zombie000Base, prop: StringName) -> ComponentNormBase:
+	if not _has_prop(z, prop):
+		return null
+	var c := z.get(prop) as ComponentNormBase
+	return c if is_instance_valid(c) else null
 #endregion
 
 

@@ -184,6 +184,13 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 		drop_sync.name = NetplayDropSync.SELF_NODE_NAME
 		main_game.add_child(drop_sync)
 		drop_sync.setup(_session, main_game, _set_last_log)
+	## ★ 出卡同步：传送带上流过来的是哪一张由主机说了算（那是随机池抽的，两端抽的
+	##   不是同一张；客户端手里那张主机没有，点下去这一下操作就凭空消失了）
+	if _session.is_linked():
+		var card_spawn_sync := NetplayCardSpawnSync.new()
+		card_spawn_sync.name = NetplayCardSpawnSync.SELF_NODE_NAME
+		main_game.add_child(card_spawn_sync)
+		card_spawn_sync.setup(_session, main_game, _set_last_log)
 #endregion
 
 

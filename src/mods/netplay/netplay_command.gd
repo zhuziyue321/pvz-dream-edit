@@ -30,9 +30,23 @@ const OP_SUN_SPAWN := &"sun_spawn"
 const OP_DROP_ITEM := &"drop_item"
 ## 捡起一件掉落物（参数：实体编号）—— 与 `OP_PICK_SUN` 同一条链路，说清"哪一枚"
 const OP_PICK_DROP := &"pick_drop"
-## 主机开了新的一波（参数：波次号）—— 只有主机喊得动，客户端照着开同一波
+## 主机开了新的一波（参数：波次号 + 是不是大波 / 最终波 + 要升哪面旗）—— 只有主机喊得动
+##
+## ★ 这一条下发的是"**演什么**"，**不是"出什么怪"**：客户端收到后只把旗帜与
+##   「一大波僵尸正在接近」那一段演出播出来，**不自己开波、也不自己出怪** ——
+##   场上的僵尸一律由状态广播（`NetplayStateSync`）按主机编号补出来。
+##   （为什么连"出什么怪"都不下发：出怪是**连续状态**，"场上现在有哪几只"快照每帧都在报，
+##   再走一条命令只会多一个"两边谁先到"的竞态；演出是**一次性事件**，只能走可靠命令。）
 ## （不是"玩家操作"，走的是 `battle_op` 那条下行通道，见 `NetplayWaveSync`）
 const OP_WAVE_NEXT := &"wave_next"
+## 主机出了一张卡（参数：卡的身份 + 从哪个卡槽出 + 落点）—— 只有主机喊得动
+##
+## 与 `OP_SUN_SPAWN` 同一条道理：传送带是从**随机池**里抽的（`CardRandomPool` 走全局
+## `randi_range`），种子雨（天降卡）连落点都是 `randf_range` —— 两端各跑各的，抽出来的
+## **不是同一张卡**。客户端手里那一张主机没有，点下去主机重放时认不出它，
+## 这一下操作就凭空消失了。所以"出哪一张、掉在哪儿"归主机，客户端照着重建同一张。
+## （不是"玩家操作"，走的是 `battle_op` 那条下行通道，见 `NetplayCardSpawnSync`）
+const OP_CARD_SPAWN := &"card_spawn"
 ## 连通性测试（参数：空）
 const OP_PING := &"ping"
 
@@ -55,12 +69,20 @@ const ARG_FALL := "fall"
 const ARG_DROP_KIND := "drop_kind"
 ## 波次号（`OP_WAVE_NEXT` 用）
 const ARG_WAVE := "wave"
-## 这一波每只僵尸的实体编号（`OP_WAVE_NEXT` 用，与 `ARG_WAVE` 一组）
+## 这一波要升起的旗帜下标（`OP_WAVE_NEXT` 用，-1 = 不升）
 ##
-## 为什么连编号一起下发：两端各自自增分配出来的编号会错位（谁先多生一颗阳光就整体错开），
-## 状态广播（`NetplayStateSync`）是按 `entity_id` 认人的，编号对不上就会把整波的僵尸当成
-## "主机有、本地没有"而**再生成一遍** —— 场上僵尸直接翻倍。
-const ARG_ZOMBIE_IDS := "z_ids"
+## 只有旗帜波与最终波升旗，序号跟本体同一个口径：`int(curr_wave % max_wave_one_round / 10.0)`
+## （见 `ZombieWaveManager.start_next_wave()` 里调 `set_progress_bar()` 的那两处）。
+## ⚠️ 主机**不要**去读 `ZombieWaveManager._flag_to_raise`：那是**一次性**的
+##   （`take_flag_raise_index()` 读走即清），主机抢读了，主机自己的旗就升不起来了。
+const ARG_FLAG := "flag"
+## 是不是最终波（`OP_WAVE_NEXT` 用）—— 决定那一段演出播的是"最终"那一版
+const ARG_FINAL := "final"
+## 是不是大波（`OP_WAVE_NEXT` 用：旗帜波 / 最终波）—— 只有大波才有那一段演出
+const ARG_BIG := "big"
+## 一张卡的身份（`OP_CARD_SPAWN` 用）—— 就是 `ResourceCardReference.to_dict()` 那三个标量
+## （`card_type` / `content_id` / `is_imitater`），能直接进 RPC；客户端用 `from_dict()` 还原
+const ARG_CARD_REF := "card_ref"
 
 ## 字典键名（写出来是为了不让字符串散在收发两端）
 const KEY_OP := "op"

@@ -43,6 +43,7 @@ func run(a) -> void:
 	_check_ready_flow(a)
 	_check_battle_sync(a)
 	_check_wave_sync(a)
+	_check_card_spawn_sync(a)
 	## ⚠️ 这一段里有 `await`（要等阳光节点进树），必须 await 调用 ——
 	## 不 await 的话 `run()` 会一路走到 `_finish()` 提前收尾，后半段的断言根本没跑
 	await 	_check_sun_sync(a)
@@ -473,9 +474,22 @@ func _check_wave_sync(a) -> void:
 	_check(a, "开波闸门默认是空的（单机照旧开波）", not wm.start_next_wave_gate.is_valid())
 	_check(a, "波次管理器有「开了一波」这个观测口", wm.has_signal("wave_started"))
 
-	## 闸门语义：只有「正在按主机的下发开波」那一下才放行
+	## 开波命令带的是"演什么"，不是"出什么怪"（出怪彻底归主机，僵尸由快照补种）
+	var cmd_show := NetplayCommand.build(NetplayCommand.OP_WAVE_NEXT, {
+		NetplayCommand.ARG_WAVE: 9,
+		NetplayCommand.ARG_FLAG: 0,
+		NetplayCommand.ARG_FINAL: false,
+		NetplayCommand.ARG_BIG: true,
+	})
+	var show_args := NetplayCommand.args_of(cmd_show)
+	_check(a, "开波命令带得回「升哪面旗」", int(show_args.get(NetplayCommand.ARG_FLAG, -1)) == 0)
+	_check(a, "开波命令带得回「是不是大波」", bool(show_args.get(NetplayCommand.ARG_BIG, false)))
+	_check(a, "开波命令带得回「是不是最终波」", not bool(show_args.get(NetplayCommand.ARG_FINAL, true)))
+	_check(a, "开波命令**不带**出怪清单（不出怪就是不出怪）", not show_args.has("z_ids"), str(show_args))
+
+	## 闸门语义：客户端**永远不开波**（波次时机归 `wave_next`，僵尸归快照补种）
 	var sync := NetplayWaveSync.new()
-	_check(a, "没按主机下发时闸门不放行", not sync._host_wave_gate())
+	_check(a, "客户端一次波都不自己开", not sync._client_wave_gate())
 	var session := a.get_node_or_null(SESSION_PATH) as NetplaySession
 	if session == null:
 		_check(a, "（前置）拿到会话", false)
@@ -502,6 +516,42 @@ func _check_wave_sync(a) -> void:
 #endregion
 
 
+#region 15. 出卡同步：传送带出哪一张由主机下发，客户端不自己抽
+func _check_card_spawn_sync(a) -> void:
+	a.log("")
+	a.log("--- 15. 出卡同步：传送带出哪一张由主机下发（两端抽的不是同一张，点了会消失）---")
+
+	## 命令带的是"卡的身份"，不是"你随便抽一张"
+	var ref := ResourceCardReference.new()
+	ref.card_type = ResourceCardReference.CardType.Plant
+	ref.content_id = 1
+	var cmd := NetplayCommand.build(NetplayCommand.OP_CARD_SPAWN, {
+		NetplayCommand.ARG_CARD_REF: ref.to_dict(),
+	})
+	_check(a, "出卡命令认得出自己的操作名", NetplayCommand.op_of(cmd) == NetplayCommand.OP_CARD_SPAWN)
+	## 身份过一趟网络要能原样还原（三个标量字段）
+	var back := ResourceCardReference.from_dict(
+		NetplayCommand.args_of(cmd).get(NetplayCommand.ARG_CARD_REF, {}))
+	_check(a, "卡的身份过一趟网络还认得回来",
+		back != null and back.card_type == ResourceCardReference.CardType.Plant and back.content_id == 1)
+
+	## 本体默认不接管：单机 / 模组没开时闸门必须是空的
+	var belt := CardSlotConveyorBelt.new()
+	_check(a, "传送带出卡闸门默认是空的（单机照旧抽）", not belt.create_card_gate.is_valid())
+	_check(a, "传送带有「出了一张卡」这个观测口", belt.has_signal("card_created"))
+	_check(a, "传送带有「按指定身份出一张」这个口", belt.has_method("spawn_card_by_reference"))
+	belt.free()
+
+	## 闸门语义：客户端**永远不自己出卡**（出哪一张归主机，客户端照着重建）
+	var sync := NetplayCardSpawnSync.new()
+	_check(a, "客户端一张卡都不自己出", not sync._client_card_gate())
+	## 没本局时不能崩（关卡没配传送带的情况）
+	sync.setup(null, null, Callable())
+	_check(a, "没本局时取不到传送带也不崩", sync._conveyor() == null)
+	sync.free()
+#endregion
+
+
 #region 13. 状态广播：主机每帧广播场上战斗状态，客户端照着对齐
 func _check_state_sync(a) -> void:
 	a.log("")
@@ -512,6 +562,11 @@ func _check_state_sync(a) -> void:
 	sync.setup(null, null, Callable())
 	_check(a, "没会话时不广播（物理帧没开）", not sync.is_physics_processing())
 	_check(a, "没本局时采集不崩（给回空快照）", sync.collect_snapshot(null).is_empty())
+	## 僵王 + 玩家阳光总量（**卡片冷却刻意不同步** —— 那是本地域，两端各有各的卡槽）
+	_check(a, "没本局时僵王列表为空（补种路径不崩）", NetplayStateSync._boss_list(null).is_empty())
+	_check(a, "没本局时取不到僵王类型", NetplayStateSync._boss_type_of(null) == 0)
+	_check(a, "没出战卡槽时不发阳光总量（照默认值取会把钱包清零）",
+		not sync.collect_snapshot_extra(null).has(&"sv"))
 
 	var session := a.get_node_or_null(SESSION_PATH) as NetplaySession
 	if session == null:
@@ -566,9 +621,9 @@ func _check_state_sync(a) -> void:
 	## 共用键会让先查的那只污染另一只（这正是一开始 FAIL 的原因）
 	_check(a, "缓存键按脚本算（不能退回引擎基类，否则两类僵尸串味）",
 		sync._anim_prop_cache_key(zn) != sync._anim_prop_cache_key(zz))
-	_check(a, "（前置）普僵确实有走路变体这个属性", sync._has_anim_prop(zn, &"walk_status"))
+	_check(a, "（前置）普僵确实有走路变体这个属性", sync._has_prop(zn, &"walk_status"))
 	_check(a, "没有这个属性的僵尸类不算有（不能被 set 崩掉）",
-		not sync._has_anim_prop(zz, &"walk_status"))
+		not sync._has_prop(zz, &"walk_status"))
 	var zn_packed := sync._pack_anim(zn)
 	var zn2 := Zombie001Norm.new()
 	zn2.walk_status = 2
@@ -601,6 +656,17 @@ func _check_state_sync(a) -> void:
 	_check(a, "组件还没就绪时不落标记（下一帧再补）",
 		not bool(zr.get_meta(NetplayStateSync.RENDER_ONLY_META, false)))
 	zr.free()
+	## ★ 客户端僵尸**完全不该有行为逻辑**：移动 / 索敌 / 跳跃 / 爆炸统统在关掉的名单里
+	var behavior := NetplayStateSync.BEHAVIOR_COMPONENT_PROPS
+	_check(a, "★ 移动组件也在「关掉」名单里（客户端的僵尸不该自己走）",
+		behavior.has(&"move_component"))
+	_check(a, "★ 索敌 / 跳跃 / 小丑爆炸也一并关掉（都会改判定的东西）",
+		behavior.has(&"detect_component") and behavior.has(&"jump_component")
+		and behavior.has(&"bomb_component_jackbox"))
+	_check(a, "★ 纯表现的组件**不在**关掉名单里（血量阶段 / 焦黑 / 临界）",
+		not behavior.has(&"hp_stage_change_component")
+		and not behavior.has(&"charred_component")
+		and not behavior.has(&"critical_value_component"))
 
 	## ★ 子弹也要进快照：客户端不自己开火，场上的子弹全靠主机下发。
 	## 没有它，客户端要么"没有豌豆"（停火），要么"豌豆穿过僵尸"（照旧开火而受击框被禁）。

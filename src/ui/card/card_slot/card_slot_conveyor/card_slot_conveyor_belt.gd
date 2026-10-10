@@ -42,6 +42,15 @@ signal signal_card_end
 ## 每次生成卡片前发出（参数为本次的生成序号）：
 ## 传送带控制器借此按场上情况重算权重，**本节点不认识任何权重规则**
 signal signal_before_create_card(index:int)
+## 本机出了一张卡（参数：这一张的身份 + 生成序号）—— 通用观测口，
+## 谁想"知道刚出了哪一张"就连它（联机的主机据此把这一张下发下去）
+signal card_created(reference:ResourceCardReference, index:int)
+
+## 出卡闸门（通用问询口，不带联机字样）：返回 false = 这一次不许本地出卡
+##
+## 默认恒为空 Callable（照旧出）。联机客户端由模组占住：出哪一张由主机下发，
+## 不能按自己本地的随机池抽（两端抽出来的不是同一张，客户端这一张就点不动了）。
+var create_card_gate: Callable = Callable()
 
 ## 出现时停在的 y / 收起时滑到的 y
 ## 同时有常规卡槽时由控制器把出现位置下移一个卡槽的高度（卡槽在上、传送带在下）
@@ -141,34 +150,46 @@ func set_card_weights(weights: Array[ResourceCardWeight]) -> void:
 
 ## 生成一张新卡片
 func _create_new_card():
+	## 闸门：被占住时（联机客户端等主机下发）这一次直接不出
+	if create_card_gate.is_valid() and not bool(create_card_gate.call()):
+		return
 	if curr_cards.size() >= num_card_max:
 		create_new_card_timer.stop()
 		await signal_card_end
 		create_new_card_timer.start()
 	## 出卡前先让控制器把权重按场上情况重算一遍（僵王战会按空花盆 / 带上花盆数调权重）
 	signal_before_create_card.emit(all_num_card)
-	var new_card_prefabs:Card
-	if conveyor_order.has(all_num_card):
-		new_card_prefabs = AllCards.get_template(conveyor_order[all_num_card])
-	else:
-		var random_reference := card_random_pool.get_random_reference()
-		new_card_prefabs = AllCards.get_template(random_reference) if random_reference != null else null
+	## 关卡指定了这一张就照关卡的来（固定顺序），否则走随机池
+	var card_reference := conveyor_order.get(all_num_card, null) as ResourceCardReference
+	if card_reference == null:
+		card_reference = card_random_pool.get_random_reference()
+	spawn_card_by_reference(card_reference)
+
+
+## 按指定身份出一张卡（通用槽位）：**不经过闸门**、也不走随机池
+## —— 给"已经知道该出哪一张"的调用方（联机客户端照主机下发的那一张重建，见 NetplayCardSpawnSync）
+func spawn_card_by_reference(card_reference: ResourceCardReference) -> Card:
+	if card_reference == null:
+		Log.error("传送带卡槽：第 %d 张卡片没有可用身份，本次生成已跳过" % all_num_card)
+		return null
+	var new_card_prefabs: Card = AllCards.get_template(card_reference)
 	if new_card_prefabs == null:
 		Log.error("传送带卡槽：第 %d 张卡片没有可用模板，本次生成已跳过" % all_num_card)
-		return
-	var new_card = new_card_prefabs.duplicate()
+		return null
+	var new_card := new_card_prefabs.duplicate() as Card
 	## 副本默认与源卡共享身份资源,先换成独立引用
 	new_card.make_reference_unique()
 	new_card_area.add_child(new_card)
 	new_card.card_init_conveyor_belt()
 	new_card.position = Vector2(new_card_area.size.x, 0)
-	#Log.debug(new_card_area.size)
 	curr_cards.append(new_card)
 	new_card.signal_card_use_end.connect(card_use_end.bind(new_card))
-	var card_bg:TextureRect = new_card.get_node("CardBg")
+	var card_bg: TextureRect = new_card.get_node("CardBg")
 	card_bg.clip_children = CanvasItem.CLIP_CHILDREN_DISABLED
 
+	card_created.emit(card_reference, all_num_card)
 	all_num_card += 1
+	return new_card
 
 #endregion
 
