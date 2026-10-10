@@ -28,6 +28,7 @@
 | `run_netplay_pair.ps1` | **双进程联机实测**：起两个 headless 实例连 localhost（主机 + 客户端），约 4 分钟。联机类改动**只有它验得到**「主机推事件 ⇒ 发命令 ⇒ 客户端重建」这一段（单进程里 `rpc()` 无对端时**不本地回调**） |
 | `scenarios/probe_*.gd` | 各类探针场景（按主题写一个，不写大而全的） |
 | `scenarios/tool_compile_scenarios.gd` | 把 `test/scenarios/*.gd` 逐个 `load()` 一遍 —— **补编译门禁的洞**：`check_scripts.ps1` 走 `--import`，覆盖不到运行期按路径加载的探针 |
+| `scenarios/tool_semantic_scan.gd` | 语义扫描：沿继承链核对每个「裸调用」是否真存在 —— **补编译门禁的第二类洞**（`--import` 不做方法调用解析，`portal_manager.gd` 曾用这招溜过去）。用法：`godot --headless --path . --script res://test/scenarios/tool_semantic_scan.gd`，结果写到 `test/_semantic_scan_result.txt`（已 gitignore）。**⚠️ 已知会误报**：内置函数名单是手写的，漏一个就会把好代码报成问题 —— 报出来先自己确认一眼 |
 | `autopilot*.gd` + `autopilot.tscn` | 自动驾驶框架（输入、时钟、状态、报告） |
 | `inject/` | 注入辅助 |
 | `debug_channel.bat` / `debug_channel_auto.bat` | 调试通道启动脚本 |
