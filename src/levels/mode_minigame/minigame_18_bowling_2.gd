@@ -5,12 +5,15 @@ extends LevelScriptBase
 ## 文件名里的编号 = 选关界面上的原版顺序（01~20），与 `src/menus/choose_level/mini_game_choose_level.tscn` 的按钮顺序一致。
 ##
 ## 玩法与「坚果保龄球」(minigame_02_bowling) 同源：传送带送坚果，砸过去打僵尸。
-## 相对第 2 关，原版加了纱门僵尸 / 舞王僵尸 / 伴舞僵尸，以及会压扁一路僵尸的**巨型坚果墙**
-## （P1003WallNutBowlingBig，已登记在 CharacterRegistry）。
 ##
-## ⚠️ 空实现：骨架与出怪表按原版摆好了，但加强版特有的部分还没验：
-##   TODO(坚果保龄球 2) 巨型坚果墙压扁整行僵尸的行为确认已实现，并把它接进传送带权重
-##   TODO(坚果保龄球 2) 原版第 2 关只有普通 / 摇旗 / 路障 / 铁桶 / 撑杆，本关换成下面这批，逐个验一遍
+## 相对第 2 关的加强点（原版 wiki 原文：「The zombies added in this more challenging version are
+## Dancing Zombie, Backup Dancers, and Screen Door Zombie」+ 新增植物 Giant Wall-nut）：
+##   · 新增三种僵尸：舞王 (Z009Jackson) / 伴舞 (Z010Dancer) / 纱门 (Z007ScreenDoor)
+##   · 传送带新增巨型坚果墙 (P1003WallNutBowlingBig)：种下瞬间清掉整行僵尸
+## 出怪表按 wiki 的 9 种逐条对齐（见 run_flow 的 zombie_list）。
+## 雪人僵尸 (Z020Yeti) 是原版「玩家此前已遇见过才会随机出现」的彩蛋，走独立机制，不在出怪表里。
+##
+## 数据来源: Plants vs. Zombies Wiki(https://plantsvszombies.wiki.gg/wiki/Wall-nut_Bowling_2)（一代原版口径）
 
 
 func _init() -> void:
@@ -27,10 +30,12 @@ func _init() -> void:
 	zombie_multy = 3
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	## 传送带送的三种「保龄球」：坚果 / 爆炸坚果 / 巨型坚果墙
+	## 出卡概率照原版 wiki 的百分比直接当权重（create_plant_weights 内部归一化）：
+	## 坚果 74% / 爆炸坚果 13% / 巨型坚果墙 13%
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1001: 2,
-	1002: 1,
-	1003: 1
+	1001: 74,
+	1002: 13,
+	1003: 13
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
 	0: 1001,
@@ -48,11 +53,15 @@ func _init() -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 顺序照原版 wiki「Zombies」一节：普通 / 摇旗 / 路障 / 撑杆 / 铁桶 / 读报 / 纱门 / 舞王 / 伴舞
+	## （伴舞由舞王自己召唤出场，原版仍把它列进名单，这里跟着登记）
 	var zombie_list: Array[CharacterRegistry.ZombieType] = [
 		CharacterRegistry.ZombieType.Z001Norm,
 		CharacterRegistry.ZombieType.Z002Flag,
 		CharacterRegistry.ZombieType.Z003Cone,
+		CharacterRegistry.ZombieType.Z004PoleVaulter,
 		CharacterRegistry.ZombieType.Z005Bucket,
+		CharacterRegistry.ZombieType.Z006Paper,
 		CharacterRegistry.ZombieType.Z007ScreenDoor,
 		CharacterRegistry.ZombieType.Z009Jackson,
 		CharacterRegistry.ZombieType.Z010Dancer,

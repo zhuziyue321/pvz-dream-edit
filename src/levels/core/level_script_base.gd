@@ -69,6 +69,29 @@ func create_progress_provider() -> LevelProgressProvider:
 ##
 ## 波次管理器每波都会来问这里一次：僵尸清单（wave_spawn）是通用波次按战力算出来的，
 ## **关卡脚本只改进场方式，不改出什么怪** —— 想改出什么怪就改 zombie_refresh_types。
+## 本波**随机挑僵尸之前**的钩子 —— **关卡脚本可覆写**（基类空实现）
+##
+## 调用时机：每一波开打时，`ZombieWaveCreateManager` 拿权重随机挑僵尸**之前**
+## （排在该步之前是必须的：清单挑完再改权重就只影响下一波了）。
+##
+## 想按当前局势改出怪密度就覆写这里，用 [param create_manager] 的
+## `set_zombie_density(僵尸类型, 倍率)` / `clear_zombie_density()`：
+## 倍率 > 1 = 这类僵尸出得更多，1.0 = 回到原版权重。它只改「随机挑到谁」，
+## 不碰战力上限 / 波数 / 出怪节奏。
+##
+## [create_manager] 波次生成管理器：通用能力都从这个参数取
+## [wave] 当前波次（从 0 开始）
+## [is_big_wave] 本波是不是大波（旗帜波）
+func before_wave_spawn(
+	_create_manager: ZombieWaveCreateManager,
+	_wave: int,
+	_is_big_wave: bool
+) -> void:
+	pass
+
+
+## 本波僵尸**怎么进场** —— **关卡脚本可覆写**
+##
 ## 默认实现 = 通用进场（僵尸从场地边缘走进来，见 ZombieWaveCreateManager）。
 ##
 ## 有了这个钩子，「本关僵尸改由蹦极僵尸空投进场」这类一关专属玩法就不必在

@@ -9,6 +9,8 @@ extends RefCounted
 ##   3. 雪橇队只在有冰的行出（ZombieWaveCreateManager.select_bobsled_spawn_row）
 ##   4. 融冰 —— 火爆辣椒融掉一行后该行不再出雪橇队，全图没冰时一律改出洗冰车
 ##   5. 复冰 —— 洗冰车往前开会把这一行的冰铺回来
+##   6. 出怪密度 —— 全图无冰时普通僵尸密度提高（3.0 倍），冰铺回来后退回原版 1.0
+##      （关卡脚本的 before_wave_spawn 按当前有没有冰切，跟着局势来回变）
 ## 机器可读汇总：最后一行 [BOBSLED] result=PASS|FAIL failed=<n>
 
 const LEVEL := "res://src/levels/mode_minigame/minigame_13_bobsled_bonanza.gd"
@@ -141,6 +143,23 @@ func run(a) -> void:
 		EventBus.push_event("jalapeno_bomb_item_lane", [lane])
 	await a.wait(0.3)
 	_check(a, "全图无冰时 select_bobsled_spawn_row 返回 -1", wcm.select_bobsled_spawn_row() == -1)
+
+	# ------------------------------------------------ STEP6.5 融冰后的出怪密度
+	## 原版 Trivia：预置冰面被全部融掉后，普通僵尸的出现密度明显提高。
+	## **必须赶在下面生成洗冰车之前验** —— 洗冰车一落地就开始铺冰，
+	## 等它铺上再验，读到的就是「已复冰」，密度自然是 1.0（这个坑踩过一次）。
+	## 这里把出怪表临时改成只有普僵：这一波生成普僵，不会再有东西去铺冰。
+	a.log("STEP6.5 全图无冰 → 普通僵尸的出怪密度提高")
+	zm.zombie_refresh_types = [CharacterRegistry.ZombieType.Z001Norm]
+	wcm.update_zombie_refresh_types()
+	## 走一次完整的波次生成：会先经过关卡脚本的 before_wave_spawn（它按有没有冰调密度）
+	wcm.create_curr_wave_all_zombies(1, false)
+	var norm_density: float = wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm)
+	_check(a, "全图无冰时普僵密度倍率被调高（> 1.0）", norm_density > 1.0, "实际=%s" % str(norm_density))
+	_check(a, "密度倍率 = 关卡脚本写的 3.0", is_equal_approx(norm_density, 3.0), "实际=%s" % str(norm_density))
+	var norm_weight: int = wcm.get_zombie_weight(CharacterRegistry.ZombieType.Z001Norm)
+	_check(a, "普僵权重按倍率放大：4000 → 12000", norm_weight == 12000, "实际=%d" % norm_weight)
+
 	var zamboni_wave: Array = _spawn_a_wave(a, zm, wcm)
 	_check(a, "全图无冰时刷出来的是洗冰车（不是雪橇队）",
 		_all_of_type(zamboni_wave, Zombie013Zamboni), "实际=%s" % _type_names(zamboni_wave))
@@ -167,6 +186,13 @@ func run(a) -> void:
 		_check(a, "洗冰车把冰面往左推进（left_x 变小）", zamboni.ice_road.left_x < ice_left_x,
 			"%.1f -> %.1f" % [ice_left_x, zamboni.ice_road.left_x])
 		_check(a, "复冰后雪橇队又能在这一行出", wcm.select_bobsled_spawn_row() == melt_lane)
+
+	# ------------------------------------------------ STEP7.5 冰铺回来后密度要退回原版
+	a.log("STEP7.5 冰面铺回来 → 普僵密度退回原版（密度是跟着局势来回切的，不是一次性的）")
+	wcm.create_curr_wave_all_zombies(1, false)
+	_check(a, "又有冰之后普僵密度回到 1.0",
+		is_equal_approx(wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm), 1.0),
+		"实际=%s" % str(wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm)))
 
 	# ------------------------------------------------ STEP8 波数：四面旗帜 40 波
 	## max_wave 是「开战」事件写到关卡数据上的（此时流程还没跑到那里的话读到的还是默认值），

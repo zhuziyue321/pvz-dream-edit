@@ -17,8 +17,8 @@ extends SceneTree
 ## 结果：写到 test/_semantic_scan_result.txt（已 gitignore），控制台也打印摘要。
 ##
 ## ⚠️ 已知不准：`_global_scope_names()` 里那份手写名单漏了谁，谁就会被误报。
-## 实测在 sin/cos 上报过 4 条假阳性 —— 三角函数没进名单，代码本身没问题。
-## 报出来的东西先自己确认一眼，别当成编译错误直接改。
+## （三角函数漏过一次、报了 4 条假阳性，已补进名单 —— 名单见本文件末尾。）
+## 所以报出来的东西先自己确认一眼，别当成编译错误直接改。
 
 ## 既是关键字 / 内置构造器 / 常见误命中，统一忽略
 const KEYWORDS := [
@@ -231,7 +231,8 @@ func _global_scope_names() -> Dictionary:
 		"minf", "maxf", "mini", "maxi", "typeof", "printerr", "printraw", "prints",
 		"printt", "print_rich", "push_error", "push_warning", "push_warning", "hash",
 		"error_string", "inst_to_dict", "dict_to_inst", "is_instance_of", "to_json",
-		"str_to_var", "var_to_str", "Callable", "assert"]:
+		"str_to_var", "var_to_str", "Callable", "assert",
+		"sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh"]:
 		d[n] = true
 	return d
 

@@ -127,22 +127,78 @@ func get_zombie_power(zombie_type:CharacterRegistry.ZombieType) -> int:
 
 
 ## 僵尸初始权重：植物僵尸走 ZomBotanyConfig，其余走 zombie_weights
+## **已乘上出怪密度倍率**（见 set_zombie_density）—— 随机池与权重上限一律按
+## 「密度生效后」这个值算，所以密度倍率对建池 / 后期普僵衰减 / 权重上限都一致生效
 func get_zombie_weight(zombie_type:CharacterRegistry.ZombieType) -> int:
+	var base_weight: int
 	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
 	if zom_botany_info != null:
-		return zom_botany_info.weight
-	return zombie_weights.get(zombie_type, 9999)
+		base_weight = zom_botany_info.weight
+	else:
+		base_weight = zombie_weights.get(zombie_type, 9999)
+	return maxi(1, int(base_weight * get_zombie_density(zombie_type)))
+
+
+#region 出怪密度（通用旋钮）
+## 出怪密度倍率表：按僵尸类型缩放它在随机池里的权重（1.0 = 用原版权重）
+## 只影响「这一波随机挑到什么僵尸」—— 不碰战力上限 / 波数 / 出怪节奏
+## 「谁在什么时候调到多少」是关卡自己的事（硬约束 §1-8），本体只给这个通用旋钮
+var zombie_density_scale: Dictionary = {}
+
+
+## 设置某类僵尸的出怪密度倍率（> 1 = 出得更多，1.0 = 回到原版权重）
+## 只在倍率真的变了时才动随机池，避免每波无谓重建别名表
+func set_zombie_density(zombie_type:CharacterRegistry.ZombieType, density:float) -> void:
+	if density <= 0.0:
+		Log.error("出怪密度倍率必须为正数: " + str(zombie_type) + " -> " + str(density))
+		return
+	if is_equal_approx(density, get_zombie_density(zombie_type)):
+		return
+	zombie_density_scale[zombie_type] = density
+	_sync_density_to_pool(zombie_type)
+
+
+## 取某类僵尸当前的出怪密度倍率（没设过 = 1.0）
+func get_zombie_density(zombie_type:CharacterRegistry.ZombieType) -> float:
+	return float(zombie_density_scale.get(zombie_type, 1.0))
+
+
+## 所有僵尸回到原版权重（清掉全部密度倍率）
+func clear_zombie_density() -> void:
+	if zombie_density_scale.is_empty():
+		return
+	var changed_types: Array = zombie_density_scale.keys()
+	zombie_density_scale.clear()
+	for zombie_type in changed_types:
+		_sync_density_to_pool(zombie_type)
+
+
+## 把某类僵尸「密度生效后的权重」写回随机池，并重建别名表、重算权重上限
+func _sync_density_to_pool(zombie_type:CharacterRegistry.ZombieType) -> void:
+	if zombie_choose_random_pool == null or zombie_manager == null:
+		return
+	if not zombie_type in zombie_manager.zombie_refresh_types:
+		return
+	zombie_choose_random_pool.update_item_weight(zombie_type, get_zombie_weight(zombie_type), false)
+	zombie_choose_random_pool.rebuild_alias_table()
+	curr_zombie_weight_upper_limit = calculate_all_zombie_weight()
+#endregion
 
 
 #region 创建当前波次僵尸
 ## 创建当前波僵尸
 func create_curr_wave_all_zombies(wave:int, is_big_wave:bool):
+	var level_script := zombie_manager.game_para as LevelScriptBase
+	## **先**让关卡脚本按当前局势调本波的出怪密度（比如「冰面全被融掉 → 普僵变多」）。
+	## 必须排在 create_curr_wave_zombie_list 之前：那一步才按权重随机挑僵尸，
+	## 等清单出来了再改权重，本波已经挑完，只能影响下一波。
+	if level_script != null:
+		level_script.before_wave_spawn(self, wave, is_big_wave)
 	## 获取当前波僵尸生成列表
 	var wave_spawn :Array[CharacterRegistry.ZombieType] = create_curr_wave_zombie_list(wave, is_big_wave)
 	## 本波僵尸「怎么进场」交给关卡脚本：默认是走进来，一关专属的进场方式（空投这类）
 	## 由脚本自己覆写 create_wave_zombies 换掉 —— 本文件不认识任何具体玩法
 	## （见 LevelScriptBase.create_wave_zombies；关卡不覆写时走通用进场）
-	var level_script := zombie_manager.game_para as LevelScriptBase
 	if level_script != null:
 		return level_script.create_wave_zombies(self, wave_spawn, wave)
 	return create_norm_wave_zombies(wave_spawn, wave)
@@ -280,11 +336,12 @@ func _update_weights(wave: int):
 		var norm_weight = 4000 - (wave - 5) * 180
 		zombie_weights[CharacterRegistry.ZombieType.Z001Norm] = norm_weight
 		if CharacterRegistry.ZombieType.Z001Norm in zombie_manager.zombie_refresh_types:
-			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z001Norm, norm_weight, false)
+			## 写进池子的是「衰减后 × 密度倍率」：后期的普僵衰减和本关的密度加成要叠加，不能互相覆盖
+			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z001Norm, get_zombie_weight(CharacterRegistry.ZombieType.Z001Norm), false)
 		var cone_weight = 4000 - (wave - 5) * 150
 		zombie_weights[CharacterRegistry.ZombieType.Z003Cone] = cone_weight
 		if CharacterRegistry.ZombieType.Z003Cone in zombie_manager.zombie_refresh_types:
-			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z003Cone, cone_weight, false)
+			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z003Cone, get_zombie_weight(CharacterRegistry.ZombieType.Z003Cone), false)
 
 		zombie_choose_random_pool.rebuild_alias_table()
 

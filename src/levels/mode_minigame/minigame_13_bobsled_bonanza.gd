@@ -27,13 +27,20 @@ extends LevelScriptBase
 ##   · "45-second wait time" —— 摆完植物到第一波僵尸要等 45 秒（第一波延迟），仅次于「蹦蹦舞会」的 55 秒
 ##   · Four flags = 40 波 → start_battle(40, ...)
 ##
-## 还没做的原版细节：
-##   TODO(全面冻结) 冰面上给融掉的玩家补 governed：原版把预置冰面全融掉后，普通僵尸的出现密度会明显提高
-##                 （wiki Trivia: regular zombies will appear in a much higher density），目前只做了「改出洗冰车」
+## 融冰后的**出怪密度**（原版 Trivia，已实现，见下面 before_wave_spawn）：
+##   预置冰面被全部融掉后，普通僵尸的出现密度明显提高 —— 洗冰车把冰铺回来就自动恢复原密度
 
 
 ## 开局每条地面行从最右列往左铺几格冰（铺到的格子不能种植物，剩下的留给玩家）
 const PRESET_ICE_ROAD_CELL_NUM := 4
+
+## 预置冰面被**全部**融掉之后，普通僵尸的出怪密度倍率
+## 原版口径（wiki Trivia）：「If the player manages to clear out all of the pre-existent ice trails,
+## regular zombies will appear in a much higher density.」（同页 Gallery 图注更绝对：
+## "When all the ice is melted, only regular Zombies will appear."）
+## wiki 只给了「明显提高」这个定性描述，**没有解包数值** —— 3.0 是按「占比翻倍」倒推的保守值
+## （普僵权重 4000 → 12000，在同池占比约 27% → 52%），**待核实**
+const NORM_DENSITY_WHEN_ICE_MELTED := 3.0
 
 
 func _init() -> void:
@@ -59,6 +66,28 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 
 func _create_preset_ice_roads(mg: MainGameManager) -> void:
 	mg.zombie_manager.create_preset_ice_roads(PRESET_ICE_ROAD_CELL_NUM)
+#endregion
+
+
+#region 融冰后的出怪密度（本关专属，硬约束 §1-8：不进游戏本体）
+## 每一波「随机挑僵尸之前」按当前还有没有冰，调普僵的出怪密度
+##
+## 冰面还在 → 普僵回到原版密度（雪橇队能出，本来就占着出怪大头）
+## 冰全融了 → 普僵明显变多（洗冰车会把冰铺回来，铺回来就自动恢复原密度）
+##
+## 只改「随机挑到谁」，不碰战力上限 / 波数 / 出怪节奏
+func before_wave_spawn(create_manager: ZombieWaveCreateManager, _wave: int, _is_big_wave: bool) -> void:
+	if _mg == null:
+		return
+	var has_ice := false
+	for row_ice_roads: Array[IceRoad] in _mg.zombie_manager.all_ice_roads:
+		if not row_ice_roads.is_empty():
+			has_ice = true
+			break
+	if has_ice:
+		create_manager.set_zombie_density(CharacterRegistry.ZombieType.Z001Norm, 1.0)
+	else:
+		create_manager.set_zombie_density(CharacterRegistry.ZombieType.Z001Norm, NORM_DENSITY_WHEN_ICE_MELTED)
 #endregion
 
 

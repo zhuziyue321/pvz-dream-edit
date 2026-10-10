@@ -7,9 +7,11 @@ extends LevelScriptBase
 ## 打法与冒险 5-10 一致：僵王自己投放僵尸（monster_mode = Null，不自然出怪），
 ## 胜利条件从「打完最后一波」变成「打死僵王」。
 ##
-## ⚠️ 空实现：骨架照抄 adventure_05_10，僵王的「复仇版」参数还没接：
-##   TODO(僵尸博士的复仇) 原版僵王血量是 5-10 的**两倍**，且放僵尸更频繁；
-##                     血量在僵王场景的 HpComponent 上；要调就改 CharacterRegistry.ZombieBossInfo / 僵王场景
+## 本关相对冒险 5-10 的**唯一**差异就是僵王血量（原版 wiki 原文：
+## 「Dr. Zomboss has 1.5x health than in his first encounter」），已实现：`40000 × 1.5 = 60000`。
+## 传送带配置刻意与 5-10 保持一致 —— 原版两关用的是同一份传送带清单与概率，没有「复仇版专有配置」。
+##
+## 数据来源: Plants vs. Zombies Wiki(https://plantsvszombies.wiki.gg/wiki/Dr._Zomboss%27s_Revenge)（一代原版口径）
 
 
 func _init() -> void:
@@ -28,7 +30,9 @@ func _init() -> void:
 	## 僵王博士：与冒险 5-10 同口径，开战时自动出场，胜利条件为「打死僵王」
 	boss_type = CharacterRegistry.ZombieBossType.ZB001Doctor
 	boss_spawn_wave = 0
-	## 原版「僵尸博士的复仇」僵王血量 60000；破损阈值按上限比例缩放为 30000 / 15000
+	## 原版复仇版僵王血量 = 冒险 5-10 的 1.5 倍：40000 × 1.5 = 60000
+	## （**不是** 2 倍 —— wiki 原文写的是 1.5x，不要照“翻倍”的直觉改成 80000）
+	## 机甲破损阈值由 ZB000Base.set_boss_hp() 按「新上限 / 场景原上限」等比缩放：20000/10000 → 30000/15000
 	boss_hp = 60000
 	## 出生点固定：由 ZB000Base.FIXED_SPAWN_POSITION 硬编码，关卡不再配置。
 	win_on_boss_death = true

@@ -627,10 +627,11 @@ func delete_prepare_show_zombies():
 #endregion
 
 #region 植物调用相关，寒冰菇\火爆辣椒\三叶草
-## 冰冻所有僵尸和所有存活僵王；各僵王自行检查受击窗口。[br]
+## 对所有僵尸和所有存活僵王结算一次伤害并附加冰冻；各僵王自行检查受击窗口。[br]
 ## [param time_ice] 完全冻结时长，单位为游戏秒。[br]
-## [param time_decelerate] 解冻后的减速时长，单位为游戏秒。
-func ice_all_zombie(time_ice:float, time_decelerate: float):
+## [param time_decelerate] 解冻后的减速时长，单位为游戏秒。[br]
+## [param damage] 本次伤害（寒冰菇炸弹组件的 `bomb_value`），冰冻只是它的附加控制效果。
+func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int = 20):
 	## 冰消珊瑚
 	is_ice = true
 	start_ice_timer(time_ice)
@@ -640,10 +641,10 @@ func ice_all_zombie(time_ice:float, time_decelerate: float):
 		for zombie:Zombie000Base in zombie_row:
 			if not is_instance_valid(zombie):
 				continue
-			zombie.be_ice_freeze(time_ice, time_decelerate)
+			zombie.be_ice_freeze(time_ice, time_decelerate, damage)
 	# 僵王不加入普通僵尸列表，单独遍历登记集合，每只存活僵王只接收一次本次全场冻结。
 	for boss: ZB000Base in get_living_bosses():
-		boss.be_ice_freeze(time_ice, time_decelerate)
+		boss.be_ice_freeze(time_ice, time_decelerate, damage)
 
 func start_ice_timer(wait_time:float):
 	if not is_instance_valid(ice_timer):
