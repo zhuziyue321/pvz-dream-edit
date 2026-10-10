@@ -21,9 +21,14 @@ class_name DaySunsManagner
 ##
 ## 为什么不在本管理器上开一个：植物产阳光（`CreateSunComponent`）也要能被同一个闸门挡住，
 ## 两个同名的口必然有一个被忘装 —— 上一版就因为这个**天降根本没被拦住**（模组只装了全局那个）。
-## 放在**生成点**而不是 `Sun` 自己身上：这一处盖住了定时器与关卡时间轴两条入口
-## （`LevelTimelineEventSpawnSun` 也是调 `spawn_sun()`），挂到 `Sun` 里反而要在
-## 已经 `add_child` 之后才拦得下来。
+## 放在**生成点**而不是 `Sun` 自己身上：挂到 `Sun` 里要在已经 `add_child` 之后才拦得下来。
+##
+## ★ 判在 `spawn_sun()` **里面**，不是判在定时器回调里：本方法有**两条入口** ——
+## 定时器（天降）与关卡时间轴（`LevelTimelineEventSpawnSun` 教学掉的那颗直接调 `spawn_sun()`）。
+## 只守定时器那一条，客户端的教学阳光就会照旧本地长出来：它领走本地自增的 `entity_id`
+## （与角色共用同一个分配器），后面客户端生成的植物编号整体错位 —— 正是
+## [联机模组](../../docs/参考存档/联机模组.md) §4.9 警告的"编号错位"，只是落在植物上。
+## 判在一个被两条入口共用的方法里，加第三条入口也不会漏。
 
 
 func _ready():
@@ -46,14 +51,17 @@ func pause_day_sun():
 
 
 func _on_production_timer_timeout():
-	## 闸门被占住时（联机客户端）这一次不掉：天上那颗由主机下发，本地的定时器只管继续走
-	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
-		return
+	## ⚠️ 闸门不在这里判 —— 在 `spawn_sun()` 里（见文件头）：关卡时间轴那条入口
+	## 直接调 `spawn_sun()`，只守定时器这一条会漏掉教学掉的那颗。
+	## 被拦住时定时器照旧继续摇间隔（`change_production_interval()` 照跑）。
 	spawn_sun()
 	change_production_interval()
 
 ## 创建阳光
 func spawn_sun():
+	## 闸门被占住时（联机客户端）这一颗不长：天上掉哪一颗由**主机**下发，本地只管继续摇定时器
+	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
+		return
 	var new_sun = SceneRegistry.SUN.instantiate()
 	if new_sun is Sun:
 		Global.main_game.suns.add_child(new_sun)
