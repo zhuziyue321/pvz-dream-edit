@@ -407,11 +407,11 @@ func _check_battle_sync(a) -> void:
 	_check(a, "命令认得出自己的操作名", NetplayCommand.op_of(cmd) == NetplayCommand.OP_CLICK_CELL, str(cmd))
 	_check(a, "命令参数原样取回", int(NetplayCommand.args_of(cmd).get(NetplayCommand.ARG_COL, -1)) == 3)
 	_check(a, "空字典不是一条命令", not NetplayCommand.is_valid({}))
-	_check(a, "不在出战卡槽里的下标 → 取不到卡", NetplayCommand.card_index_of(null) == -1)
+	_check(a, "手上没拿卡时取不到「手上那一张」", NetplayCommand.held_card() == null)
 	## ★ 本体那几种玩家操作（统一上报口的口径）都要认得出对应的命令，
 	##   认不出的那一种网关就不会接管 —— 新增操作时先在这里加一行
-	_check(a, "点卡 → 点卡命令",
-		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickCard) == NetplayCommand.OP_CLICK_CARD)
+	_check(a, "★ 点卡**不在**命令表里（客户端自己拿起，不上行）",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickCard) == &"")
 	_check(a, "点铲子 → 点铲子命令",
 		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickShovel) == NetplayCommand.OP_CLICK_SHOVEL)
 	_check(a, "点格子 → 点格子命令",
@@ -420,8 +420,12 @@ func _check_battle_sync(a) -> void:
 		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.PickSun) == NetplayCommand.OP_PICK_SUN)
 	_check(a, "捡掉落物 → 捡掉落物命令",
 		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.PickDrop) == NetplayCommand.OP_PICK_DROP)
-	_check(a, "payload 里没有那张卡时不崩（返回空参数 ⇒ 网关不接管）",
-		NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.ClickCard, []).is_empty())
+	_check(a, "payload 里没有那一格时不崩（返回空参数 ⇒ 网关不接管）",
+		NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.ClickCell, []).is_empty())
+	var cell_args := NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.ClickCell, [_fake_plant_cell()])
+	_check(a, "点格子带上 row / col", int(cell_args.get(NetplayCommand.ARG_ROW, -1)) == 2)
+	_check(a, "手上没卡时点格子的参数里不带卡的身份（铲子那一类照旧只带格子）",
+		not cell_args.has(NetplayCommand.ARG_CARD_REF))
 	_check(a, "payload 里没有编号的实体不产出参数（网关不接管）",
 		NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.PickSun, []).is_empty())
 
@@ -478,8 +482,9 @@ func _check_battle_sync(a) -> void:
 	_check(a, "网关占住了本体的玩家操作上报口", GlobalUtils.player_action_gate.is_valid())
 	_check(a, "客户端点那一格草地被网关接管（只上行，本地不落）",
 		gateway.handle_action(GlobalUtils.E_PlayerAction.ClickCell, [fake_cell]))
-	## payload 里没有那张卡 ⇒ 拿不出参数 ⇒ **不接管**（让本体照单机那样本地跑）
-	_check(a, "拿不出参数的操作不接管（不让玩家点了个没反应）",
+	## ★ 点卡**不接管**：拿起植物是本地的（卡是自己卡槽里那一张，主机那一局上没有它），
+	##   种不种得下去才交给主机 —— 点格子那一步带上卡的身份上行（见 `NetplayBattleSync`）
+	_check(a, "点卡不被接管（客户端本地拿起，本地校验）",
 		not gateway.handle_action(GlobalUtils.E_PlayerAction.ClickCard, [null]))
 	fake_cell.free()
 	## 网关未入树，`free()` 不会走 `_exit_tree` —— 手动把上报口还回去，别污染后面的用例

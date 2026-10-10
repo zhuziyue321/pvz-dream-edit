@@ -138,9 +138,12 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 		Log.warn("联机模组：会话未建好，本局不接命令上行")
 		return
 	_session.attach_main_game(main_game)
+	## ★ 「我是从哪个模式进来的」**进关这一刻就记**，不看有没有连线 ——
+	##   房主完全可能先自己进关、之后才开房间（那时 `is_linked()` 还是 false），
+	##   等他点「退出房间」要退回选关页时，没记就只能"留在原地"（只能强退游戏）。
+	_last_level_key = _level_key_of(main_game.game_para)
 	## 房主进关 ⇒ 全屋跟进（客户端走不到这条：`request_enter_level()` 里就被挡掉了）
 	if _session.is_host() and _session.is_linked():
-		_last_level_key = _level_key_of(main_game.game_para)
 		_session.request_enter_level(_last_level_key)
 	## ★ 盯住本局节点的退场（`tree_exited` 只在真正离开这一局时响）：
 	##   房主据此喊"全屋退"；客户端据此上报"我自己退了"（见 `_on_main_game_exited()`）
@@ -601,11 +604,27 @@ func _on_room_closed() -> void:
 
 ## 退出关卡 ⇒ 退回**进关时那个模式的选关页**（`_last_level_key` 是进关时记下的那份）
 func _exit_level_to_choose_page() -> void:
-	var scene_path := choose_level_scene_of_mode(int(_last_level_key.get("mode", 0)))
+	var mode := _remembered_mode()
+	var scene_path := choose_level_scene_of_mode(mode)
 	if scene_path.is_empty():
-		Log.info("联机模组: 想退出关卡，但记不住进关时是哪个模式，已留在原地")
+		Log.info("联机模组: 想退出关卡，但认不出进关时是哪个模式（mode=%d），已留在原地" % mode)
 		return
 	GlobalUtils.change_scene(scene_path)
+
+
+## 退关该退回哪个模式：**进关时那一关的 mode**
+##
+## ★ 为什么还要问 `Global.game_para` 兜底：`_last_level_key` 是进关那一刻记的，总有记不到的时候
+##   （房主先自己进关、之后才开房间；或模组是中途打开的）。而**要退关的这一刻人还站在关卡里** ——
+##   那一关自己就知道自己属于哪个模式（`ResourceLevelData.game_mode`），拿它兜底比"留在原地"强得多
+##   （留在原地 = 玩家只能强退进程）。两条都认不出才真的留在原地。
+func _remembered_mode() -> int:
+	var mode := int(_last_level_key.get("mode", 0))
+	if mode > 0:
+		return mode
+	if Global.game_para != null:
+		return int(Global.game_para.game_mode)
+	return 0
 
 
 ## 这一局的 mode 值**就是**它所属选关页的场景 id（`ResourceLevelData.game_mode` 存的是

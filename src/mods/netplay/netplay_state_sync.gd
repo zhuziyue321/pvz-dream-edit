@@ -35,6 +35,12 @@ class_name NetplayStateSync
 ##   所以客户端**一个实体都不自己造**：僵尸 / 子弹 / 阳光 / 掉落物全是照主机下发的编号补出来的
 ##   （客户端不出怪、不掉阳光、不掉战利品、不造子弹 —— 见 `NetplayWaveSync` 与各生成闸门）。
 ##
+## ★ **渲染所需要的信息也进快照**（`z_render` / `p_render`，见文件里「渲染状态」那一节）：
+##   客户端的僵尸已经是"只渲染"了（判定组件整体禁用），而**渲染**这件事本身还差几样 ——
+##   断手 / 掉头、受击变亮、动画播到第几帧、向日葵准备产出那一下发光。
+##   这几样都**不能**靠客户端自己推：血量是直接赋值拉齐的（setter 不发掉血信号），
+##   发光是瞬时脉冲（读不出"又闪了一下"），两端的动画相位与产阳光间隔各走各的。
+##
 ## ★ **只有主机喊得动**：客户端自己发的快照一律丢掉（与 `enter_level` / `battle_op` 同一条纪律）。
 ## ★ **用 unreliable**：快照是"最新真相"，丢一帧下一帧就补上，不值得为它重传（重传只会带来旧数据）。
 ##
@@ -74,12 +80,13 @@ const MAX_BOSSES := 2
 ## （植物发不出去 ⇒ 客户端的植物永远死不了）。
 ## ⚠️ 这是**每一包**的预算，两包各自独立（见 `NetplaySession` 的 `state_snapshot_extra`）
 const BYTE_BUDGET := 1300
-const BYTES_PER_ZOMBIE := 28	## id / type / lane / anim / x / y / hp
+## ★ 各加了 4B 的**渲染状态**（`z_render` / `p_render`，位布局见「渲染状态」那一节）
+const BYTES_PER_ZOMBIE := 32	## id / type / lane / anim / render / x / y / hp
 const BYTES_PER_BULLET := 16	## id / type / x / y
 ## 植物补了类型与格子（16B）：只发血量时客户端**没法补种** —— 命令丢了 / 晚到就永远少一株，
 ## 而快照这一层的价值恰恰就是"能把少的补回来"。
 ## ⚠️ `place`（槽位）**不用发**：它由植物自己的种植条件决定，`create_plant(type)` 会放对
-const BYTES_PER_PLANT := 16		## id / type / cell / hp
+const BYTES_PER_PLANT := 20		## id / type / cell / hp / render
 const BYTES_PER_SUN := 16		## id / value / x / y
 ## 僵王：id / 类型 / 位置 / 血量 / 死亡
 ## ⚠️ 类型**必须**发：`ZB000Base` 上没有任何类型字段（实测 `z_b_000_base.gd` 里没有），
@@ -132,6 +139,70 @@ const ANIM_WALK_STATUS_SHIFT := 4
 const ANIM_IDLE_STATUS_SHIFT := 6
 const ANIM_DEATH_STATUS_SHIFT := 8
 const ANIM_STATUS_MASK := 0b11
+#endregion
+
+#region 渲染状态（★ 由主机下发，客户端照着演）
+##
+## 与上面那段 `z_anim`（动画**状态**：走 / 啃 / 死）互补 —— 这一段管"**画面上长什么样**"：
+##
+## | 项 | 主机侧读 | 客户端侧写回 |
+## |---|---|---|
+## | 断手 / 掉头 / 防具破损 | `HpStageChangeComponent.curr_hp_stage`（+ 两个防具阶段） | 把目标阶段的临界值喂回 `judge_body_change()` |
+## | 受击变亮 | `BodyCharacter.body_light_count`（每闪一次 +1） | 值变了 ⇒ 补一次 `body_light()` |
+## | 动画播到第几帧 | `AnimationPlayer.current_animation_position` | 偏得多了才 `seek()` 一次 |
+## | 向日葵准备产出 | `CreateSunComponent.create_sun_timer.time_left` | 把计时器对到主机的剩余时间 |
+##
+## ★ **为什么"断手"不能让客户端照血量自己推**：`HpComponent.curr_hp` 的 setter **不**发
+## `signal_hp_loss`（只有 `Hp_loss()` 才发），而客户端是**直接赋值**把血量拉齐的
+## （`_align_zombies()`）⇒ 客户端永远走不到 `judge_body_change()`，掉手 / 掉头一次都不演。
+## 再加一层：关卡会改临界值（小僵尸大麻烦把它砍半），两端的阈值未必一样 —— 发阶段号最稳。
+##
+## ★ **为什么受击变亮要发"计数"而不是"当前亮度"**：发光是一次**瞬时脉冲**
+## （立刻调到 2 倍亮，再 0.5 秒 tween 回白），读 `modulate` 只能读到 tween 途中的某个值，
+## 读不出"此刻又闪了一下"。计数是**可比较的整数**：值变了就说明又挨了一下。
+##
+## ★ **为什么向日葵发的是"还剩多久"而不是"正在发光"**：那一下发光是 `CreateSunTimer`
+## 到点后 `create_sun()` 自己 tween 出来的，两端各自 `randf_range(3, 12.5)` 抽的间隔
+## **必然不同** ⇒ 客户端会在错误的时间点自己亮一次（产阳光本身已被 `sun_spawn_gate`
+## 拦掉，只剩发光对不上）。把计时器对到主机的剩余时间，发光就落在同一刻，
+## 不必另发明一条"发光命令"。
+##
+## 每类实体挤成**一个 int**（各一条 4 字节数组），理由同 `z_anim`：快照贴着 ENet 的 MTU。
+##
+## ⚠️ 已知还没进快照的：**僵王**的技能状态机与动画、`Zombie001Norm._random_sprit_appear()`
+## 的随机贴图、冰冻 / 魅惑染色、隐形。前两样在 §4.9 的待办里单列。
+
+## 僵尸 `z_render` 的位布局
+const RENDER_Z_STAGE_SHIFT := 0		## 本体血量阶段（掉手 / 掉头）
+const RENDER_Z_ARMOR1_SHIFT := 3	## 一类防具阶段（报纸 / 铁桶）
+const RENDER_Z_ARMOR2_SHIFT := 6	## 二类防具阶段
+const RENDER_Z_LIGHT_SHIFT := 9		## 受击变亮计数（mod 8）
+const RENDER_Z_PHASE_SHIFT := 12	## 动画播放进度
+## 植物 `p_render` 的位布局
+const RENDER_P_STAGE_SHIFT := 0		## 本体血量阶段（坚果裂纹 / 南瓜头）
+const RENDER_P_LIGHT_SHIFT := 3		## 受击变亮计数（mod 8）
+const RENDER_P_SUN_TIME_SHIFT := 7	## 产阳光剩余时间
+const RENDER_P_SUN_RUNNING := 1 << 6	## 产阳光计时器是否在跑
+
+## 血量阶段的位宽（3 位）：-1（未受损）编码成 0，实际阶段 n 编码成 n+1
+## ⇒ 0 同时表示"这个角色没有血量阶段组件"，够编到 6 个阶段
+const RENDER_STAGE_MASK := 0b111
+const RENDER_LIGHT_MASK := 0b111
+const RENDER_Z_PHASE_MASK := 0b11_1111_1111
+const RENDER_P_SUN_TIME_MASK := 0b111_1111_1111
+
+## 动画进度的量化步长（秒）：1/64 ≈ 15.6ms，约等于一帧；10 位可表示到 15.98 秒
+## （走路 / 啃食 / 倒地都在 2 秒以内，量程绰绰有余）
+const PHASE_STEP := 1.0 / 64.0
+## 产阳光剩余时间的量化步长（秒）：1/16 = 62.5ms；11 位可表示到 127.9 秒
+## （生产间隔 23.5~25 秒，量程绰绰有余；62.5ms 远小于 0.5 秒的发光时长）
+const SUN_TIME_STEP := 1.0 / 16.0
+## 偏差超过这么多秒才把动画播放头拉回主机的位置（见 `_apply_anim_phase`）
+const PHASE_RESYNC_EPS := 0.15
+## 偏差超过这么多秒才把产阳光计时器对到主机的剩余时间（见 `_apply_create_sun`）
+const SUN_TIME_RESYNC_EPS := 0.3
+## 客户端记住"主机上一次报的发光计数"用的 meta 键（按角色存，随节点一起没）
+const LIGHT_COUNT_META := &"netplay_light_count"
 #endregion
 
 var _session: NetplaySession = null

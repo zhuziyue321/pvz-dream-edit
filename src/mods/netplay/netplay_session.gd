@@ -593,6 +593,9 @@ func _on_peer_connected(peer_id: int) -> void:
 	_set_state(E_State.Connected)
 	_emit_log("玩家 %d 已加入" % peer_id)
 	## 后加入的人：房主已经在关里了就一把把他拉进来（不然他只能自己在菜单里猜是哪一关）
+	## ⚠️ **关卡中途加入整体是未定义行为**（见 [联机模组规范](../../docs/参考存档/联机模组规范.md) §1.5）：
+	## 这里补的只是"房主**连线状态下**进的那一关" —— 房主先进关、后开房时 `_room_level_key` 是空的，
+	## 新来的人什么都收不到（那不是 bug 要修，是 v1 明确不给承诺的那条路）。
 	if is_host() and not _room_level_key.is_empty():
 		enter_level.rpc_id(peer_id, _room_level_key)
 		_emit_log("已把新玩家拉进 [%s]" % room_level_id)

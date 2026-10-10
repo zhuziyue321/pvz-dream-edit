@@ -14,12 +14,14 @@ class_name NetplayCommand
 ## 关联：本机采集在 [NetplayActionGateway](netplay_action_gateway.gd) ｜
 ## 本体的操作种类见 `GlobalUtils.E_PlayerAction`
 
-## 点了一张卡（参数：卡槽下标 + 植物类型）
-const OP_CLICK_CARD := &"click_card"
 ## 点了铲子（参数：空）
 const OP_CLICK_SHOVEL := &"click_shovel"
-## 点了某一格草地（参数：row / col）—— 种植物 / 铲植物是同一枚入口，
+## 点了某一格草地（参数：row / col + **手里那张卡的身份与花费**）—— 种植物 / 铲植物是同一枚入口，
 ## 手里拿着什么就做什么，主机重放时不替调用方猜意图
+##
+## ★ 为什么点格子要带上"是哪一张卡"：**拿起植物是本地的**（客户端自己校验，手感不等主机回话），
+##   主机那一局里根本没有客户端手里这一张 —— 不带卡的话主机重放这一步等于什么都没发生。
+##   带上身份，主机照着它拿起**同一张**，再跑一遍本体的种植校验（见 [联机模组规范] §3.2）。
 const OP_CLICK_CELL := &"click_cell"
 ## 捡起一颗阳光（参数：实体编号）—— 说清"哪一颗"而不是"多少点"，
 ## 主机才能在自己这一局上摘掉**同一颗**（只带数值的话，两端会各自记一笔不一样的账）
@@ -53,8 +55,6 @@ const OP_CARD_SPAWN := &"card_spawn"
 const OP_PING := &"ping"
 
 ## 命令参数里的字段名（写出来是为了不让字符串散在收发两端）
-const ARG_CARD_INDEX := "card_index"
-const ARG_PLANT_TYPE := "plant_type"
 const ARG_ROW := "row"
 const ARG_COL := "col"
 ## 阳光值（`OP_SUN_SPAWN` 用：掉下来的这一颗值多少）
@@ -82,9 +82,13 @@ const ARG_FLAG := "flag"
 const ARG_FINAL := "final"
 ## 是不是大波（`OP_WAVE_NEXT` 用：旗帜波 / 最终波）—— 只有大波才有那一段演出
 const ARG_BIG := "big"
-## 一张卡的身份（`OP_CARD_SPAWN` 用）—— 就是 `ResourceCardReference.to_dict()` 那三个标量
-## （`card_type` / `content_id` / `is_imitater`），能直接进 RPC；客户端用 `from_dict()` 还原
+## 一张卡的身份（`OP_CARD_SPAWN` / `OP_CLICK_CELL` 用）—— 就是 `ResourceCardReference.to_dict()`
+## 那三个标量（`card_type` / `content_id` / `is_imitater`），能直接进 RPC；对端用 `from_dict()` 还原
 const ARG_CARD_REF := "card_ref"
+## 这一张卡此刻的阳光花费（`OP_CLICK_CELL` 用）：卡**只在那个人自己的卡槽里**，
+## 主机那一局上没有它 —— 花多少由"手里拿着这一张的人"报，主机照着扣同样的数
+## （紫卡会随场上株数加价，主机自己算不出来，只能照报的数扣）
+const ARG_SUN_COST := "sun_cost"
 
 ## 字典键名（写出来是为了不让字符串散在收发两端）
 const KEY_OP := "op"
@@ -125,10 +129,11 @@ static func is_valid(data: Dictionary) -> bool:
 ##
 ## ⚠️ 这里**没有**"加了多少阳光"这种按**数值**上报的操作：说不清"点的是哪一颗"。
 ##   拾取上行的是**实体编号**（见 `OP_PICK_SUN`），主机才能在自己这一局上摘掉同一颗。
+## ⚠️ 这里**没有**点卡（`ClickCard`）：拿起植物是**本地**的（客户端自己校验阳光 / 冷却），
+##   不在命令表里 —— 主机那一局里没有这一张卡，上行了它也拿不起来（见 §3.2）。
+##   "种不种得下去"由点格子那一步带上卡的身份交给主机校验。
 static func op_from_action(action: int) -> StringName:
 	match action:
-		GlobalUtils.E_PlayerAction.ClickCard:
-			return OP_CLICK_CARD
 		GlobalUtils.E_PlayerAction.ClickShovel:
 			return OP_CLICK_SHOVEL
 		GlobalUtils.E_PlayerAction.ClickCell:
@@ -140,13 +145,11 @@ static func op_from_action(action: int) -> StringName:
 	return &""
 
 
-## 本体的玩家操作 + payload → 命令参数（只留可序列化的标量，对象一律换成下标 / 类型）
+## 本体的玩家操作 + payload → 命令参数（只留可序列化的标量，对象一律换成身份 / 编号 / 下标）
 ##
 ## 拿不出参数的返回空字典 —— 调用方据此**不接管**（让本体照单机那样本地跑）。
 static func args_from_action(action: int, payload: Array) -> Dictionary:
 	match action:
-		GlobalUtils.E_PlayerAction.ClickCard:
-			return _args_of_click_card(payload)
 		GlobalUtils.E_PlayerAction.ClickShovel:
 			return {}
 		GlobalUtils.E_PlayerAction.ClickCell:
@@ -158,26 +161,23 @@ static func args_from_action(action: int, payload: Array) -> Dictionary:
 	return {}
 
 
-## 点一张卡：卡槽下标 + 植物类型（下标错位时主机那一侧会对不上，宁可不动）
-static func _args_of_click_card(payload: Array) -> Dictionary:
-	var card: Card = payload[0] if payload.size() > 0 and payload[0] is Card else null
-	if card == null:
-		return {}
-	return {
-		ARG_CARD_INDEX: card_index_of(card),
-		ARG_PLANT_TYPE: card.card_plant_type,
-	}
-
-
-## 点某一格：只按 row / col（种植物与铲植物是同一枚入口，手里拿着什么就做什么）
+## 点某一格：row / col，外加**手里那一张卡的身份与花费**（手上没卡就只有格子）
+##
+## ★ 为什么要带卡：两端是各挑各的卡（选卡协商只保证**不重复**），客户端拿起的那一株
+##   主机手上没有 —— 主机只能照着身份自己拿起一张同样的，才知道要种什么、扣多少阳光。
 static func _args_of_click_cell(payload: Array) -> Dictionary:
 	var cell: PlantCell = payload[0] if payload.size() > 0 and payload[0] is PlantCell else null
 	if cell == null or not is_instance_valid(cell):
 		return {}
-	return {
+	var args := {
 		ARG_ROW: cell.row_col.x,
 		ARG_COL: cell.row_col.y,
 	}
+	var card := held_card()
+	if card != null and card.card_reference != null:
+		args[ARG_CARD_REF] = card.card_reference.to_dict()
+		args[ARG_SUN_COST] = card.sun_cost
+	return args
 
 
 ## 捡一个场上实体（阳光 / 掉落物）：上行的是**编号**，不是数值（理由见 `OP_PICK_SUN`）
@@ -201,26 +201,19 @@ static func _has_prop(target, prop: StringName) -> bool:
 	return false
 
 
-## 一张出战卡在自己卡槽里的下标（没有卡槽 / 不在其中时返回 -1）
+## 当前**拿在手上**的那一张卡（手上没东西 / 拿的不是卡时返回 null）
 ##
-## ⚠️ 不能拿 `card.get_index()`：那是 **Node 的兄弟下标**（卡挂在容器里，兄弟下标会被
-##   纹理 / 分隔节点顶开），跟"第几张出战卡"对不上 —— 卡槽自己也是用 `find()` 反查的
-##   （见 `card_slot_norm.gd` 里那一处），这里照抄它的口径。
-static func card_index_of(card: Card) -> int:
-	if card == null or not is_instance_valid(card):
-		return -1
-	var cards := battle_cards()
-	if cards.is_empty():
-		return -1
-	return cards.find(card)
-
-
-## 本机出战卡槽里现有的卡（`main_game.card_manager.card_slot_battle.curr_cards`）
-static func battle_cards() -> Array[Card]:
+## 为什么问的是"手上"而不是"卡槽第几张"：两端各挑各的卡，**下标对不上**（同样第 0 张，
+## 两个人挑的往往不是同一株）。而"我现在拿着哪一张"才是主机重放时真正需要的那一条信息 ——
+## 拿 `card_reference` 说身份，主机照着它自己取 / 造一张同样的。
+static func held_card() -> Card:
 	var mg := Global.main_game
-	if mg == null or not is_instance_valid(mg) or mg.card_manager == null:
-		return []
-	var slot: CardSlotBattle = mg.card_manager.card_slot_battle
-	if not is_instance_valid(slot):
-		return []
-	return slot.curr_cards
+	if mg == null or not is_instance_valid(mg) or mg.hand_manager == null:
+		return null
+	var hand := mg.hand_manager.curr_hand_component as HandComponentCharacter
+	if hand == null:
+		return null
+	var card: Card = hand.curr_card
+	if card == null or not is_instance_valid(card):
+		return null
+	return card

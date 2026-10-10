@@ -16,6 +16,8 @@ class_name NetplayActionGateway
 ##
 ## ★ 为什么有的操作这里**不接管**（返回 false 让本体照单机跑）：
 ##   · 没连线 —— 单机必须完全照旧
+##   · **拿起植物**（点卡）—— 纯本地：卡是自己卡槽里那一张，主机那一局上没有它；
+##     摘不摘得动由本体自己判，种不种得下去才归主机（点格子那一步带上卡的身份上行）
 ##   · 主机自己捡阳光 / 掉落物 —— 主机就是事实来源，它自己的拾取不用绕一圈
 ##   · 客户端捡的那一个**不是主机下发过的**（没有主机编号）—— 主机那一局上没有它，
 ##     接管只会得到"点不动"，放它回本机的老路：宁可不同步，也不能让玩家点着没反应
@@ -73,6 +75,12 @@ func handle_action(action: int, payload: Array) -> bool:
 ## 这一类操作现在该不该被接管（不接管的几种情况见文件头）
 func _may_take(action: int, payload: Array) -> bool:
 	match action:
+		## ★ **拿起植物一律本地**：卡是自己卡槽里那一张，能不能拿（阳光 / 冷却 / 紫卡前置）
+		##   本体在点下去那一刻就判过了，主机那一局里也**没有这一张卡**（两端各挑各的），
+		##   上行一趟只换来半个 RTT 的空手等待 —— 而"拿起来"本身不改变场上任何东西。
+		##   真正的战斗校验在**种下**那一步（点格子）由主机做，见 `NetplayBattleSync`。
+		GlobalUtils.E_PlayerAction.ClickCard:
+			return false
 		GlobalUtils.E_PlayerAction.PickSun:
 			return _session.is_client() and _is_host_spawned(payload, NetplaySunSync.SELF_NODE_NAME)
 		GlobalUtils.E_PlayerAction.PickDrop:

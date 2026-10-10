@@ -2,9 +2,13 @@ extends Node
 class_name NetplayBattleSync
 ## 联机的战斗同步：**主机权威** —— 大家不做两份局面，只做主机那一份
 ##
-## 规则只有一句：**客户端按下的一次操作不在本地生效**，上行给主机；主机在自己这里
+## 规则只有一句：**会改变场面的那一次操作不在本地生效**，上行给主机；主机在自己这里
 ## 跑一遍，跑成的那一遍再下行给全屋，客户端（包括发起的那一个）照着做同样的动作。
 ## 所以两端看到的是**同一串**操作序列，而不是各自跑各自的。
+##
+## ★ 唯一留在本地的那一步是**拿起植物**（点卡）：卡是自己卡槽里那一张，主机那一局上没有它，
+##   而"拿起来"本身不改变场上任何东西 —— 交给主机只会白等半个 RTT。
+##   种不种得下去（点格子）才归主机判：那一步带上卡的身份上行，主机照着拿起同一张再校验。
 ##
 ##   client 按键 ──上行请求──▶ host 执行 ──下行事实──▶ 屋里的每一个人（含发起者）重放
 ##   host  按键 ────────────▶ host 执行 ──下行事实──▶ 客户端重放
@@ -93,8 +97,6 @@ func execute(op: StringName, args: Dictionary) -> bool:
 
 func _execute_inner(op: StringName, args: Dictionary) -> bool:
 	match op:
-		NetplayCommand.OP_CLICK_CARD:
-			return _replay_click_card(args)
 		NetplayCommand.OP_CLICK_SHOVEL:
 			return _replay_click_shovel()
 		NetplayCommand.OP_CLICK_CELL:
@@ -106,21 +108,20 @@ func _execute_inner(op: StringName, args: Dictionary) -> bool:
 	return false
 
 
-## 点一张卡：卡槽下标是"第几张出战卡"，重放时还要对一下植物类型（下标错位就宁可不动）
-func _replay_click_card(args: Dictionary) -> bool:
-	var card := _card_of(args)
-	if card == null:
-		return false
-	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_CARD, [card])
-	return true
-
-
 func _replay_click_shovel() -> bool:
 	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_SHOVEL)
 	return true
 
 
-## 点某一格：种植物 / 铲植物是同一个入口（手里拿着什么就做什么），所以只按 row_col 走
+## 点某一格：种植物 / 铲植物是同一个入口（手里拿着什么就做什么）
+##
+## ★ **种植的校验在这一侧（主机）做**，分三步：
+##   1. 客户端是**自己**拿起植物的（本地校验），主机这一局里没有那一张卡
+##      ⇒ 照着身份拿起**同一张**（自己没有就临时造一张，见 `_take_card_of()`）；
+##   2. 主机并没有把鼠标放到那一格上 —— 虚影 / 能不能种（`is_shadow_in_cell`）原本是
+##      hover 算出来的，不补一次 hover，主机判的就是"自己鼠标底下那一格"（种错地方）；
+##   3. 走本体的那一枚入口 `HandManager._on_click_cell()` —— 地形 / 占用 / 紫卡前置 /
+##      坚果包扎术 / 音效 / 扣阳光全都不用模组再抄一遍。
 func _replay_click_cell(args: Dictionary) -> bool:
 	var mg := _resolve_main_game()
 	if mg == null or mg.hand_manager == null or mg.plant_cell_manager == null:
@@ -128,9 +129,22 @@ func _replay_click_cell(args: Dictionary) -> bool:
 	var cell := _plant_cell_of(args)
 	if cell == null:
 		return false
-	## 走的就是鼠标点格子那一条入口，所以地形 / 冷却 / 阳光够不够都还是本体说了算
+	## 手里拿的不是这一张 ⇒ 主机这一侧也要先拿起同一张（返回的不是 null 时是**临时造的**那一张）
+	var temp_card: Card = null
+	if args.has(NetplayCommand.ARG_CARD_REF) and not _is_holding_card(mg, args):
+		temp_card = _take_card_of(mg, args)
+		if temp_card == null:
+			return false
+	## ★ 补一次 hover：主机没有把鼠标放到这一格上，不补的话判的是"自己鼠标底下那一格"
+	mg.hand_manager._on_cell_mouse_enter(cell)
 	mg.hand_manager._on_click_cell(cell)
-	return true
+	## 手上已经没有这一张 = 种成了（`click_cell()` 返回 true 才会 `drop_hand()`）
+	var ok := not _is_holding_card(mg, args) if args.has(NetplayCommand.ARG_CARD_REF) else true
+	if temp_card != null:
+		## 临时那一张只是"替客户端拿一下卡"的壳，用完就扔 —— 别把它留在主机的场上
+		mg.hand_manager.drop_hand()
+		temp_card.queue_free()
+	return ok
 
 
 ## 捡一颗阳光：按**实体编号**找到自己这一局上的同一颗，再走本体的拾取入口
@@ -179,17 +193,86 @@ func _on_battle_seed_received(seed_value: int) -> void:
 
 
 #region 小工具
-## 出战卡槽里的那张卡（下标 + 植物类型双重对照，任一不符就当没有）
-func _card_of(args: Dictionary) -> Card:
-	var index := int(args.get(NetplayCommand.ARG_CARD_INDEX, -1))
-	var plant_type := int(args.get(NetplayCommand.ARG_PLANT_TYPE, -1))
-	var cards := NetplayCommand.battle_cards()
-	if cards.is_empty() or index < 0 or index >= cards.size():
+## 主机这一侧"替客户端拿起同一张卡"：命令里那一张卡的身份（没有 / 认不出时返回 null）
+func _card_ref_of(args: Dictionary) -> ResourceCardReference:
+	var data: Variant = args.get(NetplayCommand.ARG_CARD_REF, {})
+	if not data is Dictionary:
 		return null
-	var card: Card = cards[index]
-	if plant_type >= 0 and card.card_plant_type != plant_type:
+	return ResourceCardReference.from_dict(data)
+
+
+## 本机现在手上拿的是不是**这一张**（拿卡与点格子之间可能隔了一段时间，每次都要重判）
+func _is_holding_card(mg: MainGameManager, args: Dictionary) -> bool:
+	var reference := _card_ref_of(args)
+	if reference == null:
+		return false
+	var hand := mg.hand_manager.curr_hand_component as HandComponentCharacter
+	if hand == null:
+		return false
+	var card: Card = hand.curr_card
+	if card == null or not is_instance_valid(card) or card.card_reference == null:
+		return false
+	return card.card_reference.to_dict() == reference.to_dict()
+
+
+## 主机这一局里没有这一张（那是客户端自己卡槽里的卡）⇒ 照着身份造一张**临时的**并拿到手上
+##
+## [return] 临时造出来的那一张（调用方用完要 `queue_free()`）；造不出来 / 拿不起来返回 null
+##
+## ★ 为什么必须造一张：两端是**各挑各的卡**（选卡协商只保证不重复），客户端那一株主机手上
+##   根本没有 —— 不造的话主机重放"点格子"时手里是空的，这一下操作就凭空消失了。
+## ★ 造出来之后走的还是本体那一整套（`MAIN_GAME_CLICK_CARD` → 手持组件 → `click_cell()`），
+##   所以地形 / 占用 / 阳光 / 音效 / 种植特效都不用模组再抄一遍。
+func _take_card_of(mg: MainGameManager, args: Dictionary) -> Card:
+	var card := _make_temp_card(mg, args)
+	if card == null:
 		return null
+	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_CARD, [card])
+	if _is_holding_card(mg, args):
+		return card
+	Log.warn("联机模组：主机这一侧拿不起这一张卡 %s" % str(args.get(NetplayCommand.ARG_CARD_REF, {})))
+	card.queue_free()
+	return null
+
+
+## 照着身份造一张**不在任何卡槽上**的卡（只为让主机"替客户端拿一下"）
+##
+## 造法照抄传送带那一份（`CardSlotConveyorBelt.spawn_card_by_reference()`）：
+##   取模板 → 复制 → 换独立引用 → 入树。
+## ⚠️ 必须入树：手持组件要复制卡里的静态形象（`character_static` 是 `@onready`，不入树取不到）
+## ⚠️ 挂在本局节点下而不是卡槽下：卡槽是容器，塞进去会把主机自己的卡槽撑出一格
+func _make_temp_card(mg: MainGameManager, args: Dictionary) -> Card:
+	var reference := _card_ref_of(args)
+	if reference == null:
+		return null
+	var template := AllCards.get_template(reference)
+	if template == null:
+		Log.error("联机模组：没有这一张卡的模板 %s" % str(reference.to_dict()))
+		return null
+	var card := template.duplicate() as Card
+	if card == null:
+		return null
+	## ⚠️ 身份用**命令里那一份**（而不是模板自带的）：模板不区分"是不是模仿者"
+	##   （`get_template_key()` 只认类别 + 角色编号），照模板走会把模仿者种成原版那一张
+	card.card_reference = reference
+	## 此刻值多少是**持卡那一端**在管（紫卡会随场上株数加价，主机算不出来），照它报的数扣
+	if args.has(NetplayCommand.ARG_SUN_COST):
+		card.sun_cost = int(args[NetplayCommand.ARG_SUN_COST])
+	card.visible = false
+	mg.add_child(card)
+	## 扣阳光走本体那一份（出战卡槽自己就是这么接的）；没有出战卡槽的关（传送带）本来就 0 花费
+	var slot := _battle_slot(mg)
+	if slot != null:
+		card.signal_card_use_end.connect(slot.card_use_end.bind(card))
 	return card
+
+
+## 本局的出战卡槽（这一关没有常规卡槽时为 null）
+func _battle_slot(mg: MainGameManager) -> CardSlotBattle:
+	if mg.card_manager == null:
+		return null
+	var slot: CardSlotBattle = mg.card_manager.card_slot_battle
+	return slot if is_instance_valid(slot) else null
 
 
 func _plant_cell_of(args: Dictionary) -> PlantCell:
