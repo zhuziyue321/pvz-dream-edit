@@ -9,7 +9,8 @@ extends RefCounted
 ##   6~9. 房里谁说了算：房主进关 ⇒ 全屋跟进 / 选卡协商 / 房主退关 ⇒ 全屋退 + 通关以房主为准 /
 ##        客户端先报准备，准备好了房主才按得动「开始」
 ##   10~13. 主机权威：操作上行 + 种子同源；**每一波由主机下发**（编号一起下发）；
-##          阳光由主机下发 + 拾取走主机权威；**主机每帧广播全份战斗快照**，客户端按 entity_id 对齐
+##          阳光由主机下发 + 拾取走主机权威；**主机按「快照频率」（默认每秒 60 次，控制台可调）
+##          广播全份战斗快照**，客户端按 entity_id 对齐
 ##          （客户端的刷新定时器不再自己推进波次，闸门默认为空 = 单机零影响）
 ##   12. 阳光同步：天降由主机下发（客户端本地不掉）+ 拾取按**实体编号**走主机权威
 ##      （只接管主机下发过的那些；客户端自己长的阳光照单机那样本地生效）
@@ -49,6 +50,7 @@ func run(a) -> void:
 	await 	_check_sun_sync(a)
 	_check_state_sync(a)
 	_check_drop_sync(a)
+	_check_leave_room(a)
 	_finish(a)
 
 
@@ -406,8 +408,22 @@ func _check_battle_sync(a) -> void:
 	_check(a, "命令参数原样取回", int(NetplayCommand.args_of(cmd).get(NetplayCommand.ARG_COL, -1)) == 3)
 	_check(a, "空字典不是一条命令", not NetplayCommand.is_valid({}))
 	_check(a, "不在出战卡槽里的下标 → 取不到卡", NetplayCommand.card_index_of(null) == -1)
-	_check(a, "本体事件的 payload 没有卡时不崩（返回空参数）",
-		NetplayCommand.args_from_event(ConstEventName.MAIN_GAME_CLICK_CARD, []).is_empty())
+	## ★ 本体那几种玩家操作（统一上报口的口径）都要认得出对应的命令，
+	##   认不出的那一种网关就不会接管 —— 新增操作时先在这里加一行
+	_check(a, "点卡 → 点卡命令",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickCard) == NetplayCommand.OP_CLICK_CARD)
+	_check(a, "点铲子 → 点铲子命令",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickShovel) == NetplayCommand.OP_CLICK_SHOVEL)
+	_check(a, "点格子 → 点格子命令",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.ClickCell) == NetplayCommand.OP_CLICK_CELL)
+	_check(a, "捡阳光 → 捡阳光命令",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.PickSun) == NetplayCommand.OP_PICK_SUN)
+	_check(a, "捡掉落物 → 捡掉落物命令",
+		NetplayCommand.op_from_action(GlobalUtils.E_PlayerAction.PickDrop) == NetplayCommand.OP_PICK_DROP)
+	_check(a, "payload 里没有那张卡时不崩（返回空参数 ⇒ 网关不接管）",
+		NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.ClickCard, []).is_empty())
+	_check(a, "payload 里没有编号的实体不产出参数（网关不接管）",
+		NetplayCommand.args_from_action(GlobalUtils.E_PlayerAction.PickSun, []).is_empty())
 
 	## 路由：**没连线就一律不接管**（单机必须完全照旧）
 	var sync := NetplayBattleSync.new()
@@ -432,19 +448,45 @@ func _check_battle_sync(a) -> void:
 		return
 	session.request_battle_seed(seed_value)
 	_check(a, "主机记下了这一局的种子", session.room_seed == seed_value, str(session.room_seed))
+
 	_check(a, "本机 `GameRng` 已按同一颗种子播种", GameRng.is_seeded() and GameRng.get_seed() == seed_value)
 	## 同源 = 同结果：这正是"两端抽出同一只僵尸"的根据
 	var first_draw := GameRng.randi()
 	GameRng.set_seed(seed_value)
 	_check(a, "同一颗种子两次开局抽到同一串随机数", GameRng.randi() == first_draw, str(first_draw))
 
+	## ★ 有人**自己**退了关：房主不能再等他点准备（不然「开始」永远按不动）
+	session.ready_peers[99] = true
+	session._apply_level_left(99)
+	_check(a, "有人自己退了关 ⇒ 不再等他准备", not session.ready_peers.has(99))
+	_check(a, "退出关卡的人被记进名单（等待名单据此剔掉他）",
+		bool(session._level_left_peers.has(99)) and not session.waiting_peer_ids().has(99))
+	## 房主开新一关 ⇒ 上一局退过关的人重新算进来（他这次会被一起拉进这一关）
+	session.request_enter_level({&"id": &"probe"})
+	_check(a, "房主开新一关 ⇒ 退过关的人重新算进名单", session._level_left_peers.is_empty())
+	## 换关不该把这一局的种子冲掉（种子是"两端抽出同一只僵尸"的根据）
+	_check(a, "房主开新一关之后种子还在", GameRng.is_seeded())
+
 	## 客户端：**本地不生效**，只把请求上行
 	var fake_cell := _fake_plant_cell()
 	session.role = NetplaySession.E_Role.Client
 	session.state = NetplaySession.E_State.Connected
 	_check(a, "客户端的一次操作会被接管（本体不再本地派发）", sync.handle_local_command(cmd))
-	_check(a, "客户端点那一格草地也被接管", sync.handle_cell_click(fake_cell))
+	## ★ 本体的**统一上报口**：网关占住它之后，玩家在本局里的每一个操作都从这一处上行
+	var gateway := NetplayActionGateway.new()
+	gateway.setup(session, null, Callable())
+	_check(a, "网关占住了本体的玩家操作上报口", GlobalUtils.player_action_gate.is_valid())
+	_check(a, "客户端点那一格草地被网关接管（只上行，本地不落）",
+		gateway.handle_action(GlobalUtils.E_PlayerAction.ClickCell, [fake_cell]))
+	## payload 里没有那张卡 ⇒ 拿不出参数 ⇒ **不接管**（让本体照单机那样本地跑）
+	_check(a, "拿不出参数的操作不接管（不让玩家点了个没反应）",
+		not gateway.handle_action(GlobalUtils.E_PlayerAction.ClickCard, [null]))
 	fake_cell.free()
+	## 网关未入树，`free()` 不会走 `_exit_tree` —— 手动把上报口还回去，别污染后面的用例
+	GlobalUtils.player_action_gate = Callable()
+	_check(a, "网关交还上报口之后，本体操作恢复本地执行",
+		not GlobalUtils.player_action_gate.is_valid())
+	gateway.free()
 
 	## 主机：先在自己这一局上跑一遍，**跑得成才当成事实发下去**。
 	## 探针里没有真草坪（`all_plant_cells` 空表），所以这一条必然跑不动 ——
@@ -555,7 +597,7 @@ func _check_card_spawn_sync(a) -> void:
 #region 13. 状态广播：主机每帧广播场上战斗状态，客户端照着对齐
 func _check_state_sync(a) -> void:
 	a.log("")
-	a.log("--- 13. 状态广播：主机每帧广播全份战斗快照，客户端按 entity_id 对齐 ---")
+	a.log("--- 13. 状态广播：主机每秒广播 60 次全份战斗快照，客户端按 entity_id 对齐 ---")
 
 	var sync := NetplayStateSync.new()
 	## 没连线（单机）时不开物理帧 —— 与前面几层同一条纪律：模组没连上就完全不介入
@@ -584,6 +626,20 @@ func _check_state_sync(a) -> void:
 	## 主机 ⇒ 客户端：只有主机喊得动；没连线时连发都不发
 	session.send_state_snapshot({})
 	_check(a, "房主发快照不崩", true)
+
+	## ★ 广播频率是**每秒多少次**（不是"每几帧"）—— 按时间攒，物理帧率变了频率不变
+	_check(a, "默认每秒 60 次", NetplayStateSync.SEND_RATE_DEFAULT == 60.0)
+	sync.set_send_rate(60.0)
+	_check(a, "60 次/秒 ⇒ 每个物理帧都发", sync._tick_send(1.0 / 60.0))
+	sync.set_send_rate(30.0)
+	_check(a, "30 次/秒 ⇒ 第一个 1/60 秒还不够（隔帧才发）", not sync._tick_send(1.0 / 60.0))
+	_check(a, "30 次/秒 ⇒ 攒满 1/30 秒就发", sync._tick_send(1.0 / 60.0))
+	sync.set_send_rate(999.0)
+	_check(a, "频率有上限（一帧最多发一次，调再高也不会更快）",
+		sync.send_rate == NetplayStateSync.SEND_RATE_MAX)
+	sync.set_send_rate(0.0)
+	_check(a, "频率有下限（不能调到 0）", sync.send_rate == NetplayStateSync.SEND_RATE_MIN)
+	sync.set_send_rate(NetplayStateSync.SEND_RATE_DEFAULT)
 
 	## ★ 缺席够久才删：主机刚采到之前不能把客户端刚出生的僵尸删掉（否则会闪一下）
 	var dummy := Node.new()
@@ -740,9 +796,9 @@ func _check_drop_sync(a) -> void:
 	a.log("")
 	a.log("--- 14. 掉落物同步：掉不掉 / 掉哪一种由主机下发；拾取按编号走主机权威 ---")
 
-	## 本体默认不接管：单机 / 模组没开时两个闸门都必须是空的
+	## 本体默认不接管：单机 / 模组没开时闸门必须是空的
 	_check(a, "掉落闸门默认是空的（单机照旧掉）", not GlobalUtils.drop_gate.is_valid())
-	_check(a, "掉落拾取闸门默认是空的（单机照旧捡）", not GlobalUtils.drop_click_gate.is_valid())
+	_check(a, "玩家操作上报口默认是空的（单机照旧捡）", not GlobalUtils.player_action_gate.is_valid())
 	_check(a, "「本局掉了一件」这个观测口已登记",
 		ConstEventName.EVENT_PAYLOAD_SIGNATURES.has(ConstEventName.DROP_ITEM_SPAWNED))
 	## 掉落物也要有编号，否则点一枚金币说不清"点的是哪一枚"
@@ -777,7 +833,7 @@ func _check_drop_sync(a) -> void:
 		return
 	sync.setup(session, null, Callable())
 	_check(a, "没连线时不接管掉落（闸门没装到本体上）",
-		not GlobalUtils.drop_gate.is_valid() and not GlobalUtils.drop_click_gate.is_valid())
+		not GlobalUtils.drop_gate.is_valid() and not GlobalUtils.player_action_gate.is_valid())
 	if not session.create_host(18918):
 		_check(a, "（前置）起得到房主", false)
 		sync.free()
@@ -785,27 +841,24 @@ func _check_drop_sync(a) -> void:
 	## 主机：自己照旧掉，闸门不装
 	sync._install()
 	_check(a, "主机自己掉战利品（不占掉落闸门）", not GlobalUtils.drop_gate.is_valid())
-	## 客户端：本地一件都不掉，点掉落物只是「请求」
+	## 客户端：本地一件都不掉
+	## （点掉落物那一下不在这里 —— 统一网关会先问本节点一句 `is_host_spawned()`）
 	session.role = NetplaySession.E_Role.Client
 	session.state = NetplaySession.E_State.Connected
 	sync._install()
 	_check(a, "客户端占住掉落闸门（本地不掉）",
 		GlobalUtils.drop_gate.is_valid() and bool(GlobalUtils.drop_gate.call()))
-	_check(a, "客户端占住掉落拾取闸门", GlobalUtils.drop_click_gate.is_valid())
 	## 只接管「主机下发过的」：客户端自己长的没有主机编号，照单机那样本地捡
 	var stray := Coin.new()
-	_check(a, "没身份的掉落物不接管（照单机那样本地捡）",
-		not bool(GlobalUtils.drop_click_gate.call(stray)))
+	_check(a, "没身份的掉落物不接管（照单机那样本地捡）", not sync.is_host_spawned(stray))
 	stray.assign_entity_id(77)
 	sync._known_drop_ids[77] = true
-	_check(a, "主机下发过的掉落物才接管（上行一次请求）",
-		bool(GlobalUtils.drop_click_gate.call(stray)))
+	_check(a, "主机下发过的掉落物才接管", sync.is_host_spawned(stray))
 	stray.free()
 
 	sync.queue_free()
 	await a.frames(1)
-	_check(a, "同步节点退场后闸门还原", not GlobalUtils.drop_gate.is_valid()
-		and not GlobalUtils.drop_click_gate.is_valid())
+	_check(a, "同步节点退场后闸门还原", not GlobalUtils.drop_gate.is_valid())
 	session.role = NetplaySession.E_Role.Host
 	session.close()
 #endregion
@@ -823,7 +876,8 @@ func _check_sun_sync(a) -> void:
 	_check(a, "生成闸门默认是空的（单机照旧掉）", not GlobalUtils.sun_spawn_gate.is_valid())
 	_check(a, "★ 生成闸门只有全局那一个（天降不再另开一个口，免得漏装）",
 		dsm.get("spawn_sun_gate") == null)
-	_check(a, "拾取闸门默认是空的（单机照旧拾取）", not GlobalUtils.sun_click_gate.is_valid())
+	_check(a, "玩家操作上报口默认是空的（单机照旧拾取）",
+		not GlobalUtils.player_action_gate.is_valid())
 	dsm.free()
 	_check(a, "「本局长了一颗阳光」这个观测口已登记",
 		ConstEventName.EVENT_PAYLOAD_SIGNATURES.has(ConstEventName.SUN_SPAWNED))
@@ -856,8 +910,16 @@ func _check_sun_sync(a) -> void:
 	var pick_cmd := NetplayCommand.build(NetplayCommand.OP_PICK_SUN, {NetplayCommand.ARG_SUN_ID: 7})
 	_check(a, "拾取命令带的是实体编号",
 		int(NetplayCommand.args_of(pick_cmd).get(NetplayCommand.ARG_SUN_ID, 0)) == 7)
-	_check(a, "「加了多少阳光」不再被采成命令（说不清点了哪一颗）",
-		NetplayCommand.op_from_event(ConstEventName.ADD_SUN_VALUE) == &"")
+	## 上行的是**编号**而不是数值 —— "加了多少点"说不清点的是哪一颗，
+	## 所以本体那条 `ADD_SUN_VALUE` 事件不再对应任何操作（采集一律按 `E_PlayerAction` 走）
+	var sun_probe := Sun.new()
+	sun_probe.assign_entity_id(7)
+	var pick_action_args := NetplayCommand.args_from_action(
+		GlobalUtils.E_PlayerAction.PickSun, [sun_probe])
+	_check(a, "捡阳光这条命令只有编号、没有数值",
+		pick_action_args.size() == 1 and int(pick_action_args.get(NetplayCommand.ARG_SUN_ID, 0)) == 7,
+		str(pick_action_args))
+	sun_probe.free()
 
 	## 真的造一颗阳光：指定了编号就不再自动分配
 	var root: Node = a.get_node_or_null("/root")
@@ -880,7 +942,7 @@ func _check_sun_sync(a) -> void:
 		return
 	sync.setup(session, null, Callable())
 	_check(a, "没连线时不接管阳光（闸门没装到本体上）",
-		not GlobalUtils.sun_spawn_gate.is_valid() and not GlobalUtils.sun_click_gate.is_valid())
+		not GlobalUtils.sun_spawn_gate.is_valid() and not GlobalUtils.player_action_gate.is_valid())
 
 	if not session.create_host(18917):
 		_check(a, "（前置）起得到房主", false)
@@ -898,36 +960,63 @@ func _check_sun_sync(a) -> void:
 	EventBus.push_event(ConstEventName.SUN_SPAWNED, [sun])
 	_check(a, "收到「长了一颗」时主机不崩（下发那条路要开双进程才验得到）", true)
 
-	## 客户端：本地一条都不长，点阳光只是「请求」
+	## 客户端：本地一条都不长
+	## （点阳光那一下不在这里 —— 统一网关会先问本节点一句 `is_host_spawned()`）
 	session.role = NetplaySession.E_Role.Client
 	session.state = NetplaySession.E_State.Connected
 	sync._install()
 	_check(a, "客户端占住生成闸门（天降 + 向日葵都不自己长）",
 		GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()))
-	_check(a, "客户端占住拾取闸门", GlobalUtils.sun_click_gate.is_valid())
-	## 只接管「主机下发过的」：僵尸**掉落**的阳光还没收归主机，主机那局上没有它，
+	## 只接管「主机下发过的」：客户端自己长的那一颗主机那局上没有它，
 	## 接管只会得到"点不动" —— 放它回本机的老路
-	_check(a, "没身份的阳光不接管（照单机那样本地拾取）", not bool(GlobalUtils.sun_click_gate.call(sun)))
+	_check(a, "没身份的阳光不接管（照单机那样本地拾取）", not sync.is_host_spawned(sun))
 	sync._known_sun_ids[sun.entity_id] = true
-	_check(a, "主机下发过的阳光才接管（上行一次请求）", bool(GlobalUtils.sun_click_gate.call(sun)))
+	_check(a, "主机下发过的阳光才接管", sync.is_host_spawned(sun))
 
 	## 换关 / 断线：闸门要还回去，别把下一局的阳光也锁住
 	sync.queue_free()
 	await a.frames(1)
-	_check(a, "同步节点退场后闸门还原", not GlobalUtils.sun_spawn_gate.is_valid()
-		and not GlobalUtils.sun_click_gate.is_valid())
+	_check(a, "同步节点退场后闸门还原", not GlobalUtils.sun_spawn_gate.is_valid())
 	session.role = NetplaySession.E_Role.Host
 	session.close()
 	sun.queue_free()
 #endregion
 
 
-## 一颗"只用它的 row_col"的植物格子：`handle_cell_click()` 只按 row_col 上行
-## （真的种植链条要真草坪，探针里验不到；这里验的是"这一下被接管了吗"）
+## 一颗"只用它的 row_col"的植物格子：点格子这条命令只按 row_col 上行
+## （真的种植链条要真草坪，探针里验不到；这里验的是"这一下被网关接管了吗"）
 func _fake_plant_cell(row: int = 2, col: int = 3) -> PlantCell:
 	var cell := PlantCell.new()
 	cell.row_col = Vector2i(row, col)
 	return cell
+
+
+#region 15. 退出房间
+## 客户端**没有**单独的「退出关卡」：要离开就是退出房间（断开连接），关卡一并退掉
+func _check_leave_room(a) -> void:
+	a.log("")
+	a.log("--- 15. 退出房间：客户端没有单独的「退出关卡」，断开即退关 ---")
+	var session := a.get_node_or_null(SESSION_PATH) as NetplaySession
+	if session == null:
+		_check(a, "（前置）拿到会话", false)
+		return
+	## 房主关房间（不只是退关）⇒ 还站在关卡里的人得退回去
+	var closed := [0]
+	var on_closed := func() -> void: closed[0] += 1
+	session.room_closed.connect(on_closed)
+	session.ready_peers[99] = true
+	session._on_server_disconnected()
+	_check(a, "主机断开 ⇒ 发出「房间已关闭」（在关里的人据此退回选关页）", closed[0] == 1)
+	_check(a, "房间都没了 ⇒ 不再等任何人准备", session.waiting_peer_ids().is_empty())
+	session.room_closed.disconnect(on_closed)
+	## 退关那条路（还连着、只是不打这一关了）与它分开：那种由 `_level_left_peers` 记账
+	session.role = NetplaySession.E_Role.Host
+	session._apply_level_left(99)
+	_check(a, "只退关（还连着）也要从等待名单里剔掉",
+		bool(session._level_left_peers.has(99)) and not session.waiting_peer_ids().has(99))
+	session.close()
+	_check(a, "断开之后「退过关」的账也清了", session._level_left_peers.is_empty())
+#endregion
 
 
 #region 4. 实体 id

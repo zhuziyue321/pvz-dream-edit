@@ -78,7 +78,9 @@ func start_gate() -> bool:
 	if _session == null or not _session.is_linked():
 		return true
 	if _session.is_host():
-		var others := _session.other_peer_ids()
+		## ★ 等的是**还在局里**的那几个人（`waiting_peer_ids()`）：自己退了关的人
+		## 不会再按准备，把他算进名单 ⇒ 房主的「开始」永远按不动
+		var others := _session.waiting_peer_ids()
 		if all_ready(_session.ready_peers, others):
 			_session.request_choose_card_start()
 			return true
@@ -118,7 +120,7 @@ func _maybe_retry_start() -> void:
 	if not _in_choose_phase():
 		_pending_start = false
 		return
-	if not all_ready(_session.ready_peers, _session.other_peer_ids()):
+	if not all_ready(_session.ready_peers, _session.waiting_peer_ids()):
 		return
 	_pending_start = false
 	_notify("大家都准备好了，补按开始")
@@ -200,7 +202,7 @@ func _remove_button() -> void:
 func _refresh() -> void:
 	if _session == null or _label == null:
 		return
-	var others := _session.other_peer_ids()
+	var others := _session.waiting_peer_ids()
 	var local_is_host := _session.is_host()
 	var others_all_ready := all_ready(_session.ready_peers, others)
 	var count_text := ready_count_text(_session.ready_peers, others)

@@ -9,6 +9,9 @@ class_name UIShovel
 
 ## 鼠标点击铲子：交给手持物组件处理（拿到手上）
 func _on_button_pressed() -> void:
+	## 统一先过玩家操作上报口：被接管时（联机客户端）这一次只是**请求**，本地不派发
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.ClickShovel):
+		return
 	EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_SHOVEL)
 
 

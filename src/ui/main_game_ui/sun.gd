@@ -56,8 +56,9 @@ func assign_entity_id(new_id: int) -> void:
 
 
 func _on_button_pressed() -> void:
-	## 拾取闸门被占住时（联机客户端：点阳光是一次**请求**），本地不动，交给接管方
-	if GlobalUtils.sun_click_gate.is_valid() and bool(GlobalUtils.sun_click_gate.call(self)):
+	## 统一先过玩家操作上报口：被接管时（联机客户端）这一下只是**请求**，本地不动
+	## （见 `GlobalUtils.submit_player_action`）
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.PickSun, [self]):
 		return
 	collect()
 

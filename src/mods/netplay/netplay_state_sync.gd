@@ -32,21 +32,34 @@ class_name NetplayStateSync
 ##   （同一个判据下，阳光总量属于**战斗域**：一颗阳光两端都加钱，所以它必须一致。）
 ##
 ## ★ **对齐靠 `entity_id`**，而编号不是各端自增就能对上的（谁先多生一颗阳光就整体错位），
-##   所以波次那一批僵尸的编号由 `NetplayWaveSync` 随下发**指定**（见它的 `z_ids`）。
+##   所以客户端**一个实体都不自己造**：僵尸 / 子弹 / 阳光 / 掉落物全是照主机下发的编号补出来的
+##   （客户端不出怪、不掉阳光、不掉战利品、不造子弹 —— 见 `NetplayWaveSync` 与各生成闸门）。
 ##
 ## ★ **只有主机喊得动**：客户端自己发的快照一律丢掉（与 `enter_level` / `battle_op` 同一条纪律）。
 ## ★ **用 unreliable**：快照是"最新真相"，丢一帧下一帧就补上，不值得为它重传（重传只会带来旧数据）。
 ##
 ## ⚠️ **包体与 MTU**：ENet 的不可靠包不分片，超 MTU（约 1400 字节）会**整包丢弃**。
 ## 所以快照用 `Packed*Array` 紧凑编码（不用字典数组），并给每类实体设了上限；
-## 场上实体特别多时按上限截断（先保僵尸）。真遇到丢包就调大 `send_interval_frames`。
+## 场上实体特别多时按上限截断（先保僵尸）。真遇到丢包就把控制台的「快照频率」调小。
 ##
 ## 关联：[联机模组](../../docs/参考存档/联机模组.md) ｜ [联机模组规范](../../docs/参考存档/联机模组规范.md)
 
 const SELF_NODE_NAME := "NetplayStateSync"
 
-## 每几帧广播一次：1 = 每帧
-var send_interval_frames := 1
+## ★ 广播频率：**每秒多少次**（控制台「快照频率」那一栏可调，见 `NetplayMod`）
+##
+## 为什么按"次 / 秒"而不是"每几帧"：物理帧率是可改的（`physics_ticks_per_second`），
+## 按帧算的话同一个数字在不同机器上意味着完全不同的频率 —— 60 帧的机器上"每 2 帧"
+## 是 30 次/秒，30 帧的机器上就成了 15 次/秒。
+const SEND_RATE_DEFAULT := 60.0
+const SEND_RATE_MIN := 1.0
+## ⚠️ 上限就是**物理帧率**：`_physics_process` 一帧最多发一次，调到 120 也还是 60
+const SEND_RATE_MAX := 60.0
+
+## 当前广播频率（次/秒）
+var send_rate := SEND_RATE_DEFAULT
+## 距离下一次广播还攒着多少秒（按时间而不是按帧数，见 `SEND_RATE_DEFAULT` 那段）
+var _send_accum := 0.0
 ## 单帧快照的实体上限（MTU 保护，见文件头）
 const MAX_ZOMBIES := 40
 const MAX_PLANTS := 64
@@ -154,18 +167,30 @@ func setup(session: NetplaySession, main_game: MainGameManager, notice: Callable
 		GlobalUtils.bullet_spawn_gate = _on_local_bullet_spawn
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _session == null or not _session.is_linked() or not _session.is_host():
 		return
 	var mg := _resolve_main_game()
 	if mg == null:
 		return
 	_frame += 1
-	if _frame % max(1, send_interval_frames) != 0:
+	if not _tick_send(delta):
 		return
 	## 两包各装一类，各自都在 MTU 以内（见 `NetplaySession` 的 `state_snapshot_extra`）
 	_session.send_state_snapshot(collect_snapshot(mg))
 	_session.send_state_snapshot_extra(collect_snapshot_extra(mg))
+
+
+## 攒够一个间隔没有（**按时间**，不是按帧数取模 —— 那样"次 / 秒"名不副实）
+##
+## ⚠️ 归零而不是减掉一个间隔：快照是"现在长什么样"，卡顿攒下的那几次**补发没有意义**
+## —— 补发只会把已经过时的真相送过去，还可能在一帧里连发好几包顶爆带宽。
+func _tick_send(delta: float) -> bool:
+	_send_accum += delta
+	if _send_accum < 1.0 / max(SEND_RATE_MIN, send_rate):
+		return false
+	_send_accum = 0.0
+	return true
 
 
 func _exit_tree() -> void:
@@ -176,6 +201,12 @@ func _exit_tree() -> void:
 		_session.state_snapshot_received.disconnect(_on_state_snapshot_received)
 	if _session != null and _session.state_snapshot_extra_received.is_connected(_on_state_snapshot_extra_received):
 		_session.state_snapshot_extra_received.disconnect(_on_state_snapshot_extra_received)
+
+
+## 改广播频率（控制台滑条那一头调它；新开一局由 `NetplayMod` 带上）
+func set_send_rate(value: float) -> void:
+	send_rate = clampf(value, SEND_RATE_MIN, SEND_RATE_MAX)
+	_send_accum = 0.0
 
 
 ## 生成闸门：客户端一颗子弹都不自己造（都由快照下发）
@@ -959,6 +990,11 @@ func _spawn_zombie(mg: MainGameManager, id: int, zombie_type: int, lane: int, po
 		return
 	## `create_norm_zombie()` 里已经入树领过号了，这里改成主机的编号，两端才认得同一只
 	z.assign_entity_id(id)
+	## ★ **当场**就转"只渲染"，不能等下一帧：`_align_zombies()` 只对**上一帧已经在场**的
+	## 那几只转，新补出来的这一只要等到下一帧才轮到 —— 那整整一帧它在跑本地逻辑
+	## （索敌 / 移动 / 啃植物），啃出来的伤害主机那一局上根本没有，两端立刻分叉。
+	## 组件若还没 `@onready` 就位，这一句会自己放弃（meta 不落），下一帧照旧重试。
+	_make_zombie_render_only(z)
 
 
 func _spawn_sun(mg: MainGameManager, id: int, sun_value: int, pos: Vector2) -> void:

@@ -1,12 +1,15 @@
 extends Node
 class_name NetplaySession
-## 联机会话：ENet 主机 / 客户端连接 + 命令收发（**骨架**：只通通道，不做状态同步）
+## 联机会话：ENet 主机 / 客户端连接 + 命令收发
 ##
-## 现在能做的：创建主机 / 加入主机 / 断线 / 收发命令字典 / 把本局的操作采集成命令上行。
-## 现在**不做**的（下一阶段，见 [联机模组](../../docs/参考存档/联机模组.md) §5）：
-##   · 主机侧"按命令重放"—— 收到命令目前只记日志，不落到本体
-##   · 状态下行（快照 / 插值）—— 客户端现在跑的是自己的一份局面
-## 所以骨架阶段的拦截器 `return false`（本地照旧执行），只为把命令采集链路跑通。
+## 管的三件事：
+##   1. 连接状态机（创建主机 / 加入主机 / 断线）
+##   2. 命令收发（`receive_command` 上行、`battle_op` / 快照下行）
+##   3. 房间方位（进关 / 退关 / 通关裁决 / 准备状态 / 随机种子）
+##
+## ★ **不**管玩家操作怎么采集：那是 `NetplayActionGateway` 的事 ——
+##   它占住本体的统一上报口 `GlobalUtils.player_action_gate`，把操作翻成命令后交给
+##   `NetplayBattleSync`（由 `attach_battle_sync()` 登记在这里，`get_battle_sync()` 取回）。
 ##
 ## 为什么会话挂在 root 而不是挂在 `MainGameManager` 下：连线要跨场景存活 ——
 ## 双方得先在主菜单连上、再一起进关卡；挂在主游戏下会跟着关卡一起被销毁。
@@ -38,6 +41,10 @@ signal command_received(from_peer_id: int, command: Dictionary)
 signal level_enter_requested(level_key: Dictionary)
 ## 房主退出了关卡：**客户端也跟着退出**（同进同出）
 signal level_leave_requested()
+## 有一个人**自己**退出了这一关（房主据此不再等他准备，见 `waiting_peer_ids()`）
+signal peer_level_left(peer_id: int)
+## 房间没了：房主关了房间 / 本机（客户端）与主机断开 —— 在关里的人该退回选关页
+signal room_closed()
 ## 房主对本关结果的裁决（通关与否以房主为准）：key 是 `ResourceLevelData.save_game_name`
 signal level_result_received(save_game_name: String, success: bool)
 ## 对端的选卡结果变了（元素是 `ResourceCardReference.to_dict()`）
@@ -73,7 +80,6 @@ var room_level_id: String = ""
 ## 房里的随机种子（主机开一关时换一个；两端种同一个种子才会在同一时刻抽到同一只僵尸）
 var room_seed: int = 0
 
-var _interceptor: Callable = Callable()
 ## 每局的战斗同步节点（由它自己登记进来，见 `attach_battle_sync()`）
 var _battle_sync: NetplayBattleSync = null
 ## 房主当前这一关的完整键值（用于给后加入的人补发，见 `request_enter_level()`）
@@ -132,6 +138,7 @@ func close() -> void:
 	room_level_id = ""
 	_room_level_key.clear()
 	ready_peers.clear()
+	_level_left_peers.clear()
 	_emit_log("已断开")
 #endregion
 
@@ -185,6 +192,8 @@ func request_enter_level(level_key: Dictionary) -> void:
 		return
 	_room_level_key = level_key
 	room_level_id = str(level_key.get("id", ""))
+	## 新的一局：上一局"自己退了关"的那几个人重新算进来（他这次会被一起拉进这一关）
+	_level_left_peers.clear()
 	## 房间关卡那一行要跟着变（`state_changed` 是面板刷新的钩子）
 	state_changed.emit(state)
 	## 开一关换一颗随机种子：两端 `GameRng` 同源，"抽奖型"的随机才会抽到同一份结果
@@ -291,6 +300,13 @@ func card_selection(selections: Array) -> void:
 ## 房里每个人在本次选卡阶段的准备状态：{peer_id = true}
 ## 房主拿着这一份判定"可不可以开始"；每局开始时会清一次
 var ready_peers: Dictionary = {}
+## 这一局里**已经自己退了关**的人（客户端退出关卡时上行一句，见 `report_leave_level()`）
+##
+## ★ 为什么非记不可：只把他的准备状态擦掉是不够的 —— 房主的「开始」按的是
+##   "名单里的每个人都准备好了"，一个已经不在局里的人永远也不会再按准备，
+##   房主就会**永远等下去**（与双进程实测抓到的那个死局同一类）。
+##   记下他之后，判定名单改走 `waiting_peer_ids()`，把他排除掉。
+var _level_left_peers: Dictionary = {}
 ## 有人点了（或取消了）准备
 signal ready_state_changed(peer_id: int, ready: bool)
 ## 房主喊「收工」：**客户端据此把自己的选卡结算下去**（不然房主打起来了客户端还站在选卡界面）
@@ -344,6 +360,35 @@ func clear_ready() -> void:
 	ready_peers.clear()
 
 
+## 客户端：**我自己退出了这一关**（不是被房主拉去下一关）时喊一句
+##
+## 为什么非喊不可：房主那边还记着"这个人在局里"，于是「开始」按钮永远等他点准备 ——
+## 而他已经不在局里，永远点不到 ⇒ 房主被永久卡住（见 `_level_left_peers` 那段注释）。
+## 判据由 `NetplayMod` 那边给：被房主拉去换关时旧的本局节点**同样**会退场，那种不算。
+func declare_level_left() -> void:
+	if not is_client() or not is_linked():
+		return
+	report_leave_level.rpc()
+
+
+## 收一句「我退了」：房主记账（客户端之间不会互发，`rpc()` 在星型拓扑里只到主机）
+@rpc("any_peer", "reliable")
+func report_leave_level() -> void:
+	var sender_id := multiplayer.get_remote_sender_id()
+	if sender_id == SERVER_PEER_ID or not is_host():
+		return
+	_apply_level_left(sender_id)
+
+
+func _apply_level_left(peer_id: int) -> void:
+	_level_left_peers[peer_id] = true
+	## 他的准备状态一并擦掉：面板上不该还挂着"已准备"的那一行
+	ready_peers.erase(peer_id)
+	ready_state_changed.emit(peer_id, false)
+	peer_level_left.emit(peer_id)
+	_emit_log("玩家 %d 已退出这一关（不再等他准备）" % peer_id)
+
+
 func _apply_ready(peer_id: int, ready: bool) -> void:
 	if bool(ready_peers.get(peer_id, false)) == ready:
 		return
@@ -351,13 +396,26 @@ func _apply_ready(peer_id: int, ready: bool) -> void:
 	ready_state_changed.emit(peer_id, ready)
 
 
-## 屋里除了自己以外的 peer id（一个人都没有就是空表）—— 判定"可以开始了吗"就按这份名单
+## 屋里除了自己以外的 peer id（一个人都没有就是空表）
 func other_peer_ids() -> Array:
 	var out: Array = []
 	if not is_linked():
 		return out
 	for peer_id in multiplayer.get_peers():
 		out.append(peer_id)
+	return out
+
+
+## 判定"可以开始了吗"用的名单：`other_peer_ids()` 里**已经退出这一局**的不算
+##
+## ★ 为什么不能直接用 `other_peer_ids()`：退出关卡的人连接还在（他只是不打这一关了），
+##   仍在那份名单里；可他永远也不会再点准备 ⇒ 房主的「开始」永远按不动。
+##   判定名单把 `_level_left_peers` 里那几个剔掉，房主才不会被一个不在局里的人卡住。
+func waiting_peer_ids() -> Array:
+	var out: Array = []
+	for peer_id in other_peer_ids():
+		if not _level_left_peers.has(peer_id):
+			out.append(peer_id)
 	return out
 #endregion
 
@@ -447,9 +505,17 @@ func _apply_battle_seed(seed_value: int) -> void:
 	battle_seed_received.emit(seed_value)
 
 
-## 每局的战斗同步节点：登记进来，好让拦截器知道"这一次是一次重放，别再上行"
+## 每局的战斗同步节点：登记进来
+##
+## 谁会来问它：玩家操作的统一网关（`NetplayActionGateway`）把操作翻译完，
+## 就是交给这一位去发（客户端上行请求 / 主机跑成后下行），见 `get_battle_sync()`。
 func attach_battle_sync(node: NetplayBattleSync) -> void:
 	_battle_sync = node
+
+
+## 当前这一局的战斗同步（还没登记就是 null）
+func get_battle_sync() -> NetplayBattleSync:
+	return _battle_sync
 
 
 ## 摘掉登记（由每一局的节点在 `_exit_tree()` 里喊，见 `NetplayBattleSync`）
@@ -463,47 +529,27 @@ func detach_battle_sync(node: NetplayBattleSync = null) -> void:
 
 
 #region 本局钩子
-## 把这一局接进联机：装 `EventBus` 拦截器做命令采集 + 上行
-## 由 `NetplayMod.install_to_main_game()` 调用（每局一次）
+## 把这一局接进联机（由 `NetplayMod.install_to_main_game()` 调用，每局一次）
+##
+## ★ 玩家操作的采集**不在这里**：本体那一个统一上报口（`GlobalUtils.player_action_gate`）
+##   由 `NetplayActionGateway` 占住，本局里的每一个操作都从它那一处上行。
+##   （早年这里装的是 `EventBus` 拦截器 —— 它只能采到"有事件的"那两种操作，
+##   点格子 / 捡阳光 / 捡掉落物各要另开一个闸门；现在一律走统一口，拦截器交还给本体。）
 func attach_main_game(mg: MainGameManager) -> void:
 	if mg == null:
 		return
 	detach_main_game()
 	main_game = mg
-	_interceptor = _on_event_intercept
-	EventBus.add_interceptor(_interceptor)
 	_emit_log("已接入本局，玩家操作开始上行")
 
 
-## 摘掉拦截器（断线 / 换局时）
+## 摘掉本局（断线 / 换局时）
 func detach_main_game() -> void:
-	if _interceptor.is_valid():
-		EventBus.remove_interceptor(_interceptor)
-	_interceptor = Callable()
 	main_game = null
 #endregion
 
 
 #region 内部
-## 拦截器：认出玩家操作就打包上行
-## [return] true = 已接管（本体不再本地派发）
-##
-## · 正在重放（ `_battle_sync.is_executing()` ）→ false：这一条是重放自己推的，照旧本地派发
-## · 没装战斗同步（单机 / 没连）→ false：本体照旧，只把命令记一路
-## · 装了且已连线 → 交给战斗同步定夺（客户端上行 + 本地不生效；主机自己确认后下行）
-func _on_event_intercept(event_name: String, payload: Array) -> bool:
-	if _battle_sync != null and _battle_sync.is_executing():
-		return false
-	var op := NetplayCommand.op_from_event(event_name)
-	if op == &"":
-		return false
-	var command := NetplayCommand.build(op, NetplayCommand.args_from_event(event_name, payload))
-	if _battle_sync == null:
-		send_command(command)
-		return false
-	return _battle_sync.handle_local_command(command)
-
-
 func _set_state(new_state: E_State) -> void:
 	state = new_state
 	state_changed.emit(state)
@@ -574,4 +620,6 @@ func _on_connection_failed() -> void:
 func _on_server_disconnected() -> void:
 	_set_state(E_State.Idle)
 	_emit_log("主机已断开")
+	## 房主把房间关了（不只是退关）：客户端还站在关卡里的话得退回去
+	room_closed.emit()
 #endregion

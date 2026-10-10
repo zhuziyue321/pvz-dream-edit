@@ -15,13 +15,6 @@ var enter_level_gate: Callable = Callable()
 ## 客户端不再自己摇 —— 两端的定时器各跑各的，摇出来的落点与时刻必然对不上。
 var sun_spawn_gate: Callable = Callable()
 
-## 点阳光的**拾取闸门**（通用问询口，不带联机字样）：返回 true = 已接管，本地不拾取
-##
-## 默认恒为空 Callable（照旧拾取）。联机客户端由模组占住：点阳光是一次**请求**，
-## 得主机在自己那一局上跑成了才算数（见 [联机模组规范](../../../docs/参考存档/联机模组规范.md) §三）。
-## 回调签名 `func(sun: Sun) -> bool`，拿得到"点的是哪一颗"。
-var sun_click_gate: Callable = Callable()
-
 ## **掉落物**的生成闸门（通用问询口，不带联机字样）：返回 true = 已接管，本地不掉
 ##
 ## 默认恒为空 Callable（照旧掉）。联机客户端由模组占住：金币 / 巧克力掉不掉、掉哪一种、
@@ -31,13 +24,6 @@ var sun_click_gate: Callable = Callable()
 ## 那是解锁道具 / 战利品 / 关卡结算线，时机由关卡数据决定，拦了会断关卡流程。
 var drop_gate: Callable = Callable()
 
-## 点掉落物的**拾取闸门**（通用问询口，不带联机字样）：返回 true = 已接管，本地不拾取
-##
-## 默认恒为空 Callable（照旧拾取）。与 `sun_click_gate` 同一条链路：点一下是**请求**，
-## 主机在自己那一局上收成了，两端才一起入账。
-## 回调签名 `func(drop: Node) -> bool`，拿得到"点的是哪一枚"。
-var drop_click_gate: Callable = Callable()
-
 ## **子弹**的生成闸门（通用问询口，不带联机字样）：返回 true = 已接管，本地不造子弹
 ##
 ## 默认恒为空 Callable（照旧造）。联机客户端由模组占住：场上飞着哪一颗由**主机**随快照下发，
@@ -46,7 +32,54 @@ var drop_click_gate: Callable = Callable()
 ## （停掉攻击组件会连发射动画一起没了，见 [联机模组](../../docs/参考存档/联机模组.md) §4.11）。
 var bullet_spawn_gate: Callable = Callable()
 
+## ★ **玩家操作的统一上报口**（通用问询口，不带联机字样）：返回 true = 已接管，本地不执行
+##
+## 玩家在草坪上能做的每一个操作（点卡 / 铲子 / 点格子 / 捡阳光 / 捡掉落物），
+## 在真的落下去之前**都先问这一位** —— 它是本体留给"外部替玩家做主"的**唯一**入口。
+##
+## 默认恒为空 Callable（照旧本地执行）。本体自己**从不**给这一位赋值。
+## 联机客户端由模组占住：这一次操作只是**请求**，上行给主机，主机在自己那一局上跑成了
+## 才下行回来重放（见 [联机模组规范](../../../docs/参考存档/联机模组规范.md) §三 / §3.5）。
+##
+## 回调签名 `func(action: E_PlayerAction, payload: Array) -> bool`。
+## payload 里是**本体对象**（Card / PlantCell / Sun / Coin…）—— 本体这一侧不必知道
+## 对面要什么数据，"对象怎么压成能过网络的东西"是接管方的事。
+##
+## ★ 为什么收成一个口，而不是每种操作各开一个闸门
+##   （原先是 `cell_click_gate` / `sun_click_gate` / `drop_click_gate` 三个 + 事件拦截器）：
+##   每加一种操作就要新开一个口，还得记得去**装**它 —— 漏装的那一个正是
+##   "闸门装了没人读"的同款坑（装上 ≠ 生效，探针只验"装上了"照样报 PASS）。
+##   收成一个口之后，新增一种操作 = 多一个枚举值 + 本体侧一行 `submit_player_action()`，
+##   **没有第二处需要改**，也就不存在漏装。
+var player_action_gate: Callable = Callable()
+
+## 玩家操作的种类（本体的口径，不带联机字样；payload 见各自的注释）
+enum E_PlayerAction {
+	ClickCard,		## 点了卡槽里的一张卡（payload: `[Card]`）
+	ClickShovel,	## 点了铲子（payload: 空）
+	ClickCell,		## 点了某一格草地（payload: `[PlantCell]`）—— 种植物与铲植物是同一枚入口
+	PickSun,		## 捡起一颗阳光（payload: `[Sun]`）
+	PickDrop,		## 捡起一件掉落物（payload: `[Coin]` 或 `[ChocolateDrop]`）
+}
+
 #const RandomPicker = preload("random_picker.gd")
+
+#region 玩家操作上报口
+## 玩家做了一次操作：先问 `player_action_gate` 要不要接管
+##
+## [return] true = 已被接管，调用方**不要**再走本地那一条路；false = 没人接管，照旧本地执行
+##
+## 本体每一个玩家操作入口都调这一句（不要直接去读 `player_action_gate`）：
+##   点卡 `card.gd` / 铲子 `shovel_in_ui.gd` / 点格子 `HandManager._on_click_cell()`
+##   / 捡阳光 `Sun._on_button_pressed()` / 捡掉落物 `Coin` 与 `ChocolateDrop`
+## 判空与转型都收在这一处，调用方一行就够；单机关掉模组时这里恒 false，零影响。
+func submit_player_action(action: E_PlayerAction, payload: Array = []) -> bool:
+	if not player_action_gate.is_valid():
+		return false
+	return bool(player_action_gate.call(action, payload))
+#endregion
+
+
 #region 工具方法
 ## plantcell对应的斜面位置与监测位置的差值更新
 func update_plant_cell_slope_y(plant_cell:PlantCell, node_2d:Node2D):

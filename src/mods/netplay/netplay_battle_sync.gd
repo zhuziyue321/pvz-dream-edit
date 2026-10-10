@@ -20,7 +20,7 @@ const SELF_NODE_NAME := "NetplayBattleSync"
 var _session: NetplaySession = null
 var _main_game: MainGameManager = null
 var _notice: Callable = Callable()
-## 重放中：`EventBus` 拦截器据此判断"这一条是自己推的，不要又上行一圈"
+## 重放中：防止 `execute()` 里推的那条本体事件再被当成一次新的玩家操作
 var _executing := false
 
 
@@ -51,7 +51,10 @@ func is_executing() -> bool:
 
 
 #region 本机的一次操作：要不要接管
-## 本机刚发生的一次玩家操作（本体事件采出来的命令）
+## 本机刚发生的一次玩家操作（由 `NetplayActionGateway` 翻译成的命令）
+##
+## ★ 这是模组**唯一**把操作发出去的那一句：网关把本体的"操作 + 对象"翻译成纯数据命令，
+##   剩下的"客户端上行 / 主机跑成后下行"全在这里定夺，不再有第二条发送路径。
 ##
 ## [return] true = 接管了，本体那一条不再本地派发（false = 照旧本地跑）
 ##
@@ -72,17 +75,6 @@ func handle_local_command(command: Dictionary) -> bool:
 	_session.send_command(command)
 	return true
 #endregion
-
-
-## 点了某一格草地（挂在 `HandManager.cell_click_gate` 上的那个口）
-func handle_cell_click(plant_cell: PlantCell) -> bool:
-	if plant_cell == null or not is_instance_valid(plant_cell):
-		return false
-	var row_col := plant_cell.row_col
-	return handle_local_command(NetplayCommand.build(NetplayCommand.OP_CLICK_CELL, {
-		NetplayCommand.ARG_ROW: row_col.x,
-		NetplayCommand.ARG_COL: row_col.y,
-	}))
 
 
 #region 重放：唯一的"纯数据 → 本体动作"表

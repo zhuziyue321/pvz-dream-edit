@@ -72,8 +72,9 @@ func launch(relative_target: Vector2) -> void:
 func _on_texture_button_pressed() -> void:
 	if is_opened:
 		return
-	## 闸门被占住时（联机客户端）这一下只是**请求**：主机收成了两端才一起入账
-	if GlobalUtils.drop_click_gate.is_valid() and bool(GlobalUtils.drop_click_gate.call(self)):
+	## 统一先过玩家操作上报口：被接管时（联机客户端）这一下只是**请求**：
+	## 主机收成了两端才一起入账（见 `GlobalUtils.submit_player_action`）
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.PickDrop, [self]):
 		return
 	is_opened = true
 	SoundManager.play_other_SFX("prize")

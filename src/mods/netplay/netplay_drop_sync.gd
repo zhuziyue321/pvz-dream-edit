@@ -48,8 +48,6 @@ func _exit_tree() -> void:
 	EventBus.unsubscribe(ConstEventName.DROP_ITEM_SPAWNED, _on_host_drop_spawned)
 	if GlobalUtils.drop_gate == _on_local_drop:
 		GlobalUtils.drop_gate = Callable()
-	if GlobalUtils.drop_click_gate == _on_local_drop_click:
-		GlobalUtils.drop_click_gate = Callable()
 
 
 ## 真正接线（帧末执行一次）
@@ -62,9 +60,10 @@ func _install() -> void:
 		## 主机：自己照旧掉，掉一件就把这一件发下去（金币与巧克力都在这一条事件上）
 		EventBus.subscribe(ConstEventName.DROP_ITEM_SPAWNED, _on_host_drop_spawned)
 		return
-	## 客户端：本地一件都不掉，点掉落物只是「请求」
+	## 客户端：本地一件都不掉
+	## （点掉落物那一下的上行不在这里 —— 所有玩家操作统一由 `NetplayActionGateway` 发出去，
+	##  它只问本节点一句"这一枚是主机下发过的吗"，见 `is_host_spawned()`）
 	GlobalUtils.drop_gate = _on_local_drop
-	GlobalUtils.drop_click_gate = _on_local_drop_click
 
 
 #region 主机：掉一件就发一件
@@ -114,24 +113,19 @@ static func _spawn_target_of(drop: Node) -> Vector2:
 #endregion
 
 
-#region 客户端：本地不掉 + 点一下只是请求
+#region 客户端：本地不掉
 func _on_local_drop() -> bool:
 	return _session != null and _session.is_linked() and _session.is_client()
 
 
-## 拾取闸门：**只接管主机下发过的那些**
-func _on_local_drop_click(drop: Node) -> bool:
-	if _session == null or not _session.is_linked() or not _session.is_client():
-		return false
+## 这一枚是不是**主机下发过的**（`NetplayActionGateway` 点掉落物时先问这一句）
+##
+## 只有这些走主机权威（主机那一局上有同一枚，才能"两端收同一枚"）；
+## 客户端自己长的那一枚没有主机编号，接管只会得到"点不动"，放它回本机的老路。
+func is_host_spawned(drop: Node) -> bool:
 	if drop == null or not is_instance_valid(drop):
 		return false
-	var drop_id := _id_of(drop)
-	if drop_id == 0 or not _known_drop_ids.has(drop_id):
-		return false
-	_session.send_command(NetplayCommand.build(NetplayCommand.OP_PICK_DROP, {
-		NetplayCommand.ARG_SUN_ID: drop_id,
-	}))
-	return true
+	return _known_drop_ids.has(_id_of(drop))
 #endregion
 
 

@@ -2,15 +2,17 @@ extends RefCounted
 class_name NetplayCommand
 ## 联机命令：玩家操作的可序列化表示
 ##
-## 为什么要有这一层：本体的玩家操作是 `EventBus` 事件，有的 payload 直接是 `Card` 对象 ——
-## 对象引用过不了网络。命令把它压成**纯数据字典**：
+## 为什么要有这一层：本体的玩家操作（`GlobalUtils.player_action_gate` 上报的那几种）
+## 带的 payload 直接是对象（`Card` / `PlantCell` / `Sun`…），对象引用过不了网络。
+## 命令把它压成**纯数据字典**：
 ##   { "op": 操作名, "args": { 只有 int / float / String / Vector2i } }
 ## 主机收到后按 op 在本机重放（重放逻辑属于下一阶段，本文件只定义"怎么打包 / 解包"）。
 ##
 ## ★ 命名纪律（模组机制边界规则 6 的同款理由）：这里出现的是"操作"，不是"联机"，
 ##   将来单机回放 / 录像也能复用同一份命令定义。
 ##
-## 关联：本机采集在 [NetplaySession](netplay_session.gd) ｜ 事件名常量 [ConstEventName]
+## 关联：本机采集在 [NetplayActionGateway](netplay_action_gateway.gd) ｜
+## 本体的操作种类见 `GlobalUtils.E_PlayerAction`
 
 ## 点了一张卡（参数：卡槽下标 + 植物类型）
 const OP_CLICK_CARD := &"click_card"
@@ -114,32 +116,89 @@ static func is_valid(data: Dictionary) -> bool:
 	return op_of(data) != &""
 
 
-## 本体事件 → 命令操作名（认不出的返回空 StringName，调用方据此跳过）
+## 本体的玩家操作（`GlobalUtils.E_PlayerAction`）→ 命令操作名（认不出的返回空 StringName）
 ##
-## ⚠️ 这里**没有** `ADD_SUN_VALUE`：那条事件上只有"加了多少点"，说不清"点的是哪一颗"。
-## 拾取改由 `Sun` 的拾取闸门（`GlobalUtils.sun_click_gate`）在按下那一刻上行，
-## 带的是实体编号 —— 主机才能在自己这一局上摘掉同一颗。
-static func op_from_event(event_name: String) -> StringName:
-	match event_name:
-		ConstEventName.MAIN_GAME_CLICK_CARD:
+## ★ 为什么按**操作**而不是按 `EventBus` 事件映射：本体给玩家操作的统一上报口是
+##   `GlobalUtils.player_action_gate`（见 [联机模组规范](../../docs/参考存档/联机模组规范.md) §3.5），
+##   它带的是**操作种类**，不是事件名 —— 点格子 / 捡阳光 / 捡掉落物压根没有对应的事件。
+##   照操作映射，"本体那一次点击"与"网络上的这一条命令"才是一一对应的。
+##
+## ⚠️ 这里**没有**"加了多少阳光"这种按**数值**上报的操作：说不清"点的是哪一颗"。
+##   拾取上行的是**实体编号**（见 `OP_PICK_SUN`），主机才能在自己这一局上摘掉同一颗。
+static func op_from_action(action: int) -> StringName:
+	match action:
+		GlobalUtils.E_PlayerAction.ClickCard:
 			return OP_CLICK_CARD
-		ConstEventName.MAIN_GAME_CLICK_SHOVEL:
+		GlobalUtils.E_PlayerAction.ClickShovel:
 			return OP_CLICK_SHOVEL
+		GlobalUtils.E_PlayerAction.ClickCell:
+			return OP_CLICK_CELL
+		GlobalUtils.E_PlayerAction.PickSun:
+			return OP_PICK_SUN
+		GlobalUtils.E_PlayerAction.PickDrop:
+			return OP_PICK_DROP
 	return &""
 
 
-## 本体事件的 payload → 命令参数（只留可序列化的标量，对象一律换成下标 / 类型）
-static func args_from_event(event_name: String, payload: Array) -> Dictionary:
-	match event_name:
-		ConstEventName.MAIN_GAME_CLICK_CARD:
-			var card: Card = payload[0] if payload.size() > 0 and payload[0] is Card else null
-			if card == null:
-				return {}
-			return {
-				ARG_CARD_INDEX: card_index_of(card),
-				ARG_PLANT_TYPE: card.card_plant_type,
-			}
+## 本体的玩家操作 + payload → 命令参数（只留可序列化的标量，对象一律换成下标 / 类型）
+##
+## 拿不出参数的返回空字典 —— 调用方据此**不接管**（让本体照单机那样本地跑）。
+static func args_from_action(action: int, payload: Array) -> Dictionary:
+	match action:
+		GlobalUtils.E_PlayerAction.ClickCard:
+			return _args_of_click_card(payload)
+		GlobalUtils.E_PlayerAction.ClickShovel:
+			return {}
+		GlobalUtils.E_PlayerAction.ClickCell:
+			return _args_of_click_cell(payload)
+		GlobalUtils.E_PlayerAction.PickSun:
+			return _args_of_entity(payload, ARG_SUN_ID)
+		GlobalUtils.E_PlayerAction.PickDrop:
+			return _args_of_entity(payload, ARG_SUN_ID)
 	return {}
+
+
+## 点一张卡：卡槽下标 + 植物类型（下标错位时主机那一侧会对不上，宁可不动）
+static func _args_of_click_card(payload: Array) -> Dictionary:
+	var card: Card = payload[0] if payload.size() > 0 and payload[0] is Card else null
+	if card == null:
+		return {}
+	return {
+		ARG_CARD_INDEX: card_index_of(card),
+		ARG_PLANT_TYPE: card.card_plant_type,
+	}
+
+
+## 点某一格：只按 row / col（种植物与铲植物是同一枚入口，手里拿着什么就做什么）
+static func _args_of_click_cell(payload: Array) -> Dictionary:
+	var cell: PlantCell = payload[0] if payload.size() > 0 and payload[0] is PlantCell else null
+	if cell == null or not is_instance_valid(cell):
+		return {}
+	return {
+		ARG_ROW: cell.row_col.x,
+		ARG_COL: cell.row_col.y,
+	}
+
+
+## 捡一个场上实体（阳光 / 掉落物）：上行的是**编号**，不是数值（理由见 `OP_PICK_SUN`）
+static func _args_of_entity(payload: Array, key: String) -> Dictionary:
+	if payload.size() == 0:
+		return {}
+	var target = payload[0]
+	if target == null or not is_instance_valid(target):
+		return {}
+	var entity_id := int(target.get("entity_id")) if _has_prop(target, &"entity_id") else 0
+	if entity_id == 0:
+		return {}
+	return {key: entity_id}
+
+
+## 这个对象上有没有这个属性（捡的东西不止一种，直接 `get` 不存在的属性会报错）
+static func _has_prop(target, prop: StringName) -> bool:
+	for info in target.get_property_list():
+		if StringName(info["name"]) == prop:
+			return true
+	return false
 
 
 ## 一张出战卡在自己卡槽里的下标（没有卡槽 / 不在其中时返回 -1）

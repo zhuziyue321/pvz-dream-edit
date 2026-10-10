@@ -1,6 +1,6 @@
 extends ModBase
 class_name NetplayMod
-## 模组「联机」（骨架）：两人 / 多人**合作共守一块草坪**
+## 模组「联机」：两人 / 多人**合作共守一块草坪**
 ##
 ## ★ 为什么是模组：原版《植物大战僵尸》没有联机，这是同人加的玩法 ——
 ##   照 [模组机制](../../docs/参考存档/模组机制.md) 的判据「原版有 → 本体；原版没有 → 模组」，
@@ -10,22 +10,29 @@ class_name NetplayMod
 ##   1. `NetplaySession`（挂 SceneTree.root）—— 跨场景存活的连线与命令收发
 ##   2. 控制台「联机」一栏（`register_console_entries()`）—— **联机唯一的界面**：
 ##      目标 `地址:端口` 输入框 + 「开启房间」「加入房间」两个按钮 + 状态 / 最近流水，都在这栏里
-##   3. 每局把 `EventBus` 拦截器装上 —— 玩家操作采集成命令上行
+##   3. 每局占住本体的**玩家操作统一上报口**（`GlobalUtils.player_action_gate`）——
+##      点卡 / 铲子 / 点格子 / 捡阳光 / 捡掉落物都从这一处上行（见 `NetplayActionGateway`）
 ##   4. 房主进关 ⇒ 全屋跟进：房主进 `MainGameManager` 那一刻把关卡键值广播出去，
 ##      客户端照着它 `Global.game_para` + `GlobalUtils.change_scene()` 切进同一关
 ##      （后加入的人由 `NetplaySession._on_peer_connected()` 补拉）
 ##
-## ★ 为什么界面就放控制台：这一阶段联机还在探路（没做实体级的快照同步），
-##   值得先看数据对不对，而不是先做一个漂亮房间 —— 控制台是本体给模组的调试槽位
-##   （一行一条、不改场景、不改 `ConfigService`、关模组自动撤销），正合适。
-##   真要做正式 UI 时再按 `glove_slot.tscn` 的方式落成场景，届时搬走即可。
+## ★ 为什么界面就放控制台：联机还在探路，值得先看数据对不对，而不是先做一个漂亮房间 ——
+##   控制台是本体给模组的调试槽位（一行一条、不改场景、不改 `ConfigService`、
+##   关模组自动撤销），正合适。真要做正式 UI 时再按 `glove_slot.tscn` 的方式落成场景，届时搬走即可。
 ##
-## ★ 战斗同步（阶段三，见文档 §4.6）：**主机权威** —— 客户端按下的一次操作**不在本地生效**，
-##   上行给主机，主机在自己这一局上跑成的那一遍再下行给全屋，大家重放同一串操作。
-##   仍然**没有**实体级的状态下行（阶段四）：波次 / 出怪各跑各的定时器，实体增删不对齐。
+## ★ 三层同步（见文档 §4.6 ~ §4.11）：
+##   1. **命令层（主机权威）** —— 客户端按下的一次操作**不在本地生效**，上行给主机，
+##      主机在自己这一局上跑成的那一遍再下行给全屋，大家重放同一串操作；
+##   2. **波次 / 出怪 / 出卡层** —— 每一波、每一只僵尸、传送带上的每一张卡都由主机下发，
+##      客户端彻底不出怪（僵尸全由快照补种）；
+##   3. **快照层** —— 主机按「快照频率」（默认每秒 60 次，控制台可调）把"场上现在长什么样"
+##      整份广播，客户端按 `entity_id` 对齐，把两端本地模拟慢慢攒出的分叉抹平。
+##
+## ★ 客户端**没有**单独的「退出关卡」：要离开就是**退出房间**（断开连接），关卡一并退掉 ——
+##   只退关卡的话人还挂在房间里，房主会一直等一个已经不打这一关的人点准备。
 ##
 ## 本体留给本模组的槽位：
-##   · `EventBus.add_interceptor()`（拦截器钩子，通用能力，不带模组名）
+##   · `GlobalUtils.player_action_gate`（**玩家操作的统一上报口**，通用能力，不带模组名）
 ##   · `Character000Base.entity_id`（实体稳定标识）
 ##   · `GameRng`（可播种随机，两端抽同样的怪）
 ##   · `ZombieManager.set_wave_source()`（下一阶段把出怪权收归主机）
@@ -40,6 +47,8 @@ const SESSION_NODE_NAME := "NetplaySession"
 const CONSOLE_CATEGORY := "联机"
 ## 控制台输入框的持久化键（落在 `ConfigService` 的通用键值区，不用改 `ConfigService`）
 const CONSOLE_KEY_TARGET := "netplay.target"
+## 快照广播频率的持久化键
+const CONSOLE_KEY_SEND_RATE := "netplay.send_rate"
 ## 输入框的默认值 / 占位提示：`地址:端口`
 const TARGET_PLACEHOLDER := "127.0.0.1:8912"
 ## 没接过任何流水时状态栏里的占位文字
@@ -50,6 +59,13 @@ var _session: NetplaySession = null
 var _last_log: String = NO_LOG_YET
 ## 本机当前 / 最后一次进入的那一关的键值（房主退关时要靠它退回正确的选关页）
 var _last_level_key: Dictionary = {}
+## 快照广播频率（次/秒）：默认 60，控制台滑条改的就是它（详注见 `NetplayStateSync`）
+var _send_rate := NetplayStateSync.SEND_RATE_DEFAULT
+## 客户端：本局节点这一次退场是**房主拉我去下一关**造成的（不算我自己退出）
+##
+## 判据为什么非记不可：换关与"自己退出"在 `MainGameManager.tree_exited` 上长得一模一样，
+## 不记就分不开 —— 而房主需要知道的是**只**后者（见 `_on_main_game_exited()`）。
+var _following_host_switch := false
 ## 房主对每关结果的裁决：{`save_game_name` = true}；客户端只有在上榜的这些关写通关存档
 var _host_verdicts: Dictionary = {}
 ## 客户端正在替房主"补写"这一关的通关（`_write_gate()` 要对这一次临时放行）
@@ -61,11 +77,11 @@ func get_mod_id() -> StringName:
 
 
 func get_mod_name() -> String:
-	return "联机（骨架）"
+	return "联机"
 
 
 func get_mod_description() -> String:
-	return "多人合作共守一块草坪：ENet 连线 + 玩家操作命令上行（骨架，未做状态同步）；原版没有联机"
+	return "多人合作共守一块草坪：ENet 连线 + 玩家操作上行（主机权威）+ 每帧状态下行；原版没有联机"
 
 
 #region 生命周期
@@ -126,8 +142,9 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 	if _session.is_host() and _session.is_linked():
 		_last_level_key = _level_key_of(main_game.game_para)
 		_session.request_enter_level(_last_level_key)
-	## ★ 房主退关 ⇒ 全屋退：盯住本局节点的退场（`tree_exited` 只在真正离开这一局时响）
-	if _session.is_host():
+	## ★ 盯住本局节点的退场（`tree_exited` 只在真正离开这一局时响）：
+	##   房主据此喊"全屋退"；客户端据此上报"我自己退了"（见 `_on_main_game_exited()`）
+	if _session.is_linked():
 		if not main_game.tree_exited.is_connected(_on_main_game_exited):
 			main_game.tree_exited.connect(_on_main_game_exited)
 	## ★ 通关与否以房主为准：把"要不要写档"的裁决口占住（见 `MgmSaveManager.level_success_write_gate`）
@@ -154,8 +171,6 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 		battle_sync.name = NetplayBattleSync.SELF_NODE_NAME
 		main_game.add_child(battle_sync)
 		battle_sync.setup(_session, main_game, _set_last_log)
-		if main_game.hand_manager != null:
-			main_game.hand_manager.cell_click_gate = battle_sync.handle_cell_click
 	## ★ 波次同步：每一波由主机下发 —— 客户端的刷新定时器不再自己推进波次
 	##   （不然两端各跑各的定时器，第一波都不在同一刻来）
 	if _session.is_linked():
@@ -163,13 +178,16 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 		wave_sync.name = NetplayWaveSync.SELF_NODE_NAME
 		main_game.add_child(wave_sync)
 		wave_sync.setup(_session, main_game, _set_last_log)
-	## ★ 状态广播：主机每帧把"场上现在长什么样"整份广播，客户端照着对齐
-	##   （命令同步管"做了什么"，这一层管"现在是什么样" —— 两端本地模拟的分叉靠它抹平）
+	## ★ 状态广播：主机按「快照频率」（默认每秒 60 次，控制台可调）把"场上现在长什么样"
+	##   整份广播，客户端照着对齐（命令同步管"做了什么"，这一层管"现在是什么样" ——
+	##   两端本地模拟的分叉靠它抹平）
 	if _session.is_linked():
 		var state_sync := NetplayStateSync.new()
 		state_sync.name = NetplayStateSync.SELF_NODE_NAME
 		main_game.add_child(state_sync)
 		state_sync.setup(_session, main_game, _set_last_log)
+		## 控制台那条滑条在进关之前就可能改过了，进关时带上
+		state_sync.set_send_rate(float(_get_send_rate()))
 	## ★ 阳光同步：天上掉哪一颗由主机说了算，捡走哪一颗也要主机点头
 	##   （天降是 `randf_range` 摇的，两端摇不出同一颗；拾取要说清"哪一颗"，光有数值不够）
 	if _session.is_linked():
@@ -191,6 +209,13 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 		card_spawn_sync.name = NetplayCardSpawnSync.SELF_NODE_NAME
 		main_game.add_child(card_spawn_sync)
 		card_spawn_sync.setup(_session, main_game, _set_last_log)
+	## ★ 玩家操作的**统一网关**：占住本体的 `GlobalUtils.player_action_gate`，
+	##   之后本局里玩家的每一个操作都从它这一处上行（点卡 / 铲子 / 点格子 / 捡阳光 / 捡掉落物）
+	if _session.is_linked():
+		var gateway := NetplayActionGateway.new()
+		gateway.name = NetplayActionGateway.SELF_NODE_NAME
+		main_game.add_child(gateway)
+		gateway.setup(_session, main_game, _set_last_log)
 #endregion
 
 
@@ -213,6 +238,14 @@ func register_console_entries(registry: ConsoleRegistry) -> void:
 	registry.register_entry(ConsoleEntry.create_button(&"netplay_join", "加入房间", _on_console_join)
 		.set_category(CONSOLE_CATEGORY)
 		.set_tooltip("按上面的 地址:端口 加入别人的房间"))
+	registry.register_entry(ConsoleEntry.create_button(&"netplay_leave_room", "退出房间", _on_console_leave_room)
+		.set_category(CONSOLE_CATEGORY)
+		.set_tooltip("断开连接并退出当前关卡（客户端没有单独的「退出关卡」：要离开就是退出房间）；房主点了房间就散了"))
+	registry.register_entry(ConsoleEntry.create_slider(&"netplay_send_rate", "快照频率（次/秒）",
+			NetplayStateSync.SEND_RATE_MIN, NetplayStateSync.SEND_RATE_MAX, 1.0)
+		.set_category(CONSOLE_CATEGORY)
+		.set_tooltip("主机每秒广播几次「场上现在长什么样」：越大越跟手、越吃带宽；上限是物理帧率（一帧最多发一次）")
+		.bind(_get_send_rate, _set_send_rate))
 	registry.register_entry(ConsoleEntry.create_readout(&"netplay_status", "状态", _status_text)
 		.set_category(CONSOLE_CATEGORY)
 		.set_tooltip("本机角色与连接情况；会话一有动静就自动刷新这一行"))
@@ -265,6 +298,10 @@ func _connect_session_signals(session: NetplaySession) -> void:
 		session.level_enter_requested.connect(_on_level_enter_requested)
 	if not session.level_leave_requested.is_connected(_on_level_leave_requested):
 		session.level_leave_requested.connect(_on_level_leave_requested)
+	if not session.peer_level_left.is_connected(_on_session_changed):
+		session.peer_level_left.connect(_on_session_changed)
+	if not session.room_closed.is_connected(_on_room_closed):
+		session.room_closed.connect(_on_room_closed)
 	if not session.level_result_received.is_connected(_on_level_result_received):
 		session.level_result_received.connect(_on_level_result_received)
 	if not session.session_log.is_connected(_on_session_log):
@@ -284,6 +321,10 @@ func _disconnect_session_signals(session: NetplaySession) -> void:
 		session.level_enter_requested.disconnect(_on_level_enter_requested)
 	if session.level_leave_requested.is_connected(_on_level_leave_requested):
 		session.level_leave_requested.disconnect(_on_level_leave_requested)
+	if session.peer_level_left.is_connected(_on_session_changed):
+		session.peer_level_left.disconnect(_on_session_changed)
+	if session.room_closed.is_connected(_on_room_closed):
+		session.room_closed.disconnect(_on_room_closed)
 	if session.level_result_received.is_connected(_on_level_result_received):
 		session.level_result_received.disconnect(_on_level_result_received)
 	if session.session_log.is_connected(_on_session_log):
@@ -324,6 +365,52 @@ func _on_console_join() -> void:
 		return
 	var target := _console_target()
 	_session.join(target["address"], target["port"])
+
+
+## ★ 客户端**没有**单独的「退出关卡」：要离开就是**退出房间**（断开连接），关卡一并退掉
+##
+## 为什么这两件事必须绑在一起：只退关卡的话人还挂在房间里，房主那边的「开始」
+## 会一直等一个**已经不打这一关**的人点准备 —— 而他已经在选关页，永远点不到
+## （见 `NetplaySession.waiting_peer_ids()`）。断线是房主唯一不会误判的离场信号：
+## `peer_disconnected` 一到就把他的准备状态擦掉了。
+##
+## ⚠️ 顺序是先断后切：`close()` 之后旧的 `MainGameManager` 才退场，那时 `is_linked()`
+## 已经是 false，`_on_main_game_exited()` 不会再去发那条已经没人收的「我退了」。
+func _on_console_leave_room() -> void:
+	if _session == null or not is_instance_valid(_session):
+		return
+	if _session.is_host():
+		_set_last_log("已关闭房间（屋里的人会一起断开）")
+	else:
+		_set_last_log("已退出房间")
+	_session.close()
+	## 还站在关卡里就退回进关时那个模式的选关页（房主与客户端都退，见「同进同出」）
+	if Global.main_game != null:
+		_exit_level_to_choose_page()
+
+
+## 快照频率滑条的读值：持久化里存过哪份就用哪份（关掉游戏再开还在）
+func _get_send_rate() -> Variant:
+	if Global == null or Global.config_service == null:
+		return _send_rate
+	return float(Global.config_service.get_console_value(CONSOLE_KEY_SEND_RATE, _send_rate))
+
+
+## 快照频率滑条的写值：改内存 + 落持久化 + **当场**送到正在跑的那一局
+func _set_send_rate(value: Variant) -> void:
+	_send_rate = clampf(float(value), NetplayStateSync.SEND_RATE_MIN, NetplayStateSync.SEND_RATE_MAX)
+	if Global != null and Global.config_service != null:
+		Global.config_service.set_console_value(CONSOLE_KEY_SEND_RATE, _send_rate)
+	_apply_send_rate()
+
+
+## 把频率送到场上那一颗 `NetplayStateSync`（新开一局由 `install_to_main_game()` 带上）
+func _apply_send_rate() -> void:
+	if Global == null or Global.main_game == null:
+		return
+	var sync := Global.main_game.get_node_or_null(NetplayStateSync.SELF_NODE_NAME) as NetplayStateSync
+	if sync != null:
+		sync.set_send_rate(_send_rate)
 
 
 ## 读输入框里填的目标（`ConfigService` 的控制台键值区，没填过就用默认值）
@@ -397,6 +484,11 @@ func _on_level_enter_requested(level_key: Dictionary) -> void:
 	Global.game_para = para
 	_last_level_key = level_key
 	_set_last_log("正在进入 [%s]" % level_id)
+	## ★ 记下"这一次换场景是房主拉我去的"：旧的本局节点马上会退场，那种退场**不算**
+	## 我自己退出关卡（见 `_on_main_game_exited()`）。⚠️ 必须放在真正换场景之前 ——
+	## 放在函数开头的话，`_load_level()` 失败（本机没这一关）时标志会留下，
+	## 之后本机真的退出关卡就会被误判成"换关"，房主永远收不到那句「我退了」。
+	_following_host_switch = true
 	## 唯一推荐的换场景封装（`call_deferred` 内部延迟，不能 await）
 	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[para.game_sences])
 
@@ -464,17 +556,26 @@ func _status_text() -> String:
 
 
 #region 房间：房主退关 ⇒ 全屋退
-## 本局节点退场：**同进同出**，房主退了大家就退
+## 本局节点退场：**房主退了大家就退**；**客户端自己退了要告诉房主一声**
 ##
-## 注意这是个**连带动作**：换一关（`GlobalUtils.change_scene()` 到另一份关卡）时旧节点也会退场，
-## 那时 `_session.is_host()` 仍在、新的那一局马上又会来一次 `install_to_main_game()` 把大家拉进去，
-## 所以这里按下 Bool 直接喊"退"是安全的 —— 真正的依据是房主**不再进任何一关**。
+## 注意房主这一侧是个**连带动作**：换一关（`GlobalUtils.change_scene()` 到另一份关卡）时
+## 旧节点也会退场，那时 `_session.is_host()` 仍在、新的那一局马上又会来一次
+## `install_to_main_game()` 把大家拉进去，所以这里直接喊"退"是安全的 ——
+## 真正的依据是房主**不再进任何一关**。
+##
+## ★ 客户端那一侧必须**分得清两种情况**，因为它们长得一模一样（都是本局节点退场）：
+##   · 被房主拉去下一关 ⇒ `_following_host_switch` 为真 ⇒ 什么都不做
+##   · 自己退出关卡 ⇒ 上行一句「我退了」，房主才不会永远等他点准备（见 `declare_level_left()`）
 func _on_main_game_exited() -> void:
-	if _session == null or not _session.is_host():
+	if _session == null or not _session.is_linked():
 		return
-	if not _session.is_linked():
+	if _session.is_host():
+		_session.request_leave_level()
 		return
-	_session.request_leave_level()
+	if _following_host_switch:
+		_following_host_switch = false
+		return
+	_session.declare_level_left()
 
 
 ## 客户端收到「房主退了」：退回**进关时那个模式的选关页**（房主多半也是回到那里）
@@ -483,11 +584,27 @@ func _on_level_leave_requested() -> void:
 		return
 	if Global.main_game == null:
 		return
+	_set_last_log("房主退出关卡，跟着返回选关页")
+	_exit_level_to_choose_page()
+
+
+## 房主把**房间**关了（不只是退关）：客户端还站在关卡里的话也退回去
+##
+## 与 `_on_level_leave_requested()` 的区别：那一条是房主自己退关、屋里还连着；
+## 这一条是连接都没了 —— 走到这里说明再也不会有人把本机拉进下一关。
+func _on_room_closed() -> void:
+	if Global.main_game == null:
+		return
+	_set_last_log("房间已关闭，返回选关页")
+	_exit_level_to_choose_page()
+
+
+## 退出关卡 ⇒ 退回**进关时那个模式的选关页**（`_last_level_key` 是进关时记下的那份）
+func _exit_level_to_choose_page() -> void:
 	var scene_path := choose_level_scene_of_mode(int(_last_level_key.get("mode", 0)))
 	if scene_path.is_empty():
-		Log.info("联机模组: 房主退出关卡，但记不住进关的模式，已留在原地")
+		Log.info("联机模组: 想退出关卡，但记不住进关时是哪个模式，已留在原地")
 		return
-	_set_last_log("房主退出关卡，跟着返回选关页")
 	GlobalUtils.change_scene(scene_path)
 
 

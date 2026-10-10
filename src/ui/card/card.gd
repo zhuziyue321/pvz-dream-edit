@@ -187,6 +187,10 @@ func _on_button_pressed() -> void:
 	if is_main_game:
 		## 可以点击
 		if is_can_click:
+			## 统一先过玩家操作上报口：被接管时（联机客户端）这一次只是**请求**，本地不派发
+			## （见 `GlobalUtils.submit_player_action`）
+			if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.ClickCard, [self]):
+				return
 			EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_CARD, [self])
 		else:
 			SoundManager.play_other_SFX("buzzer")

@@ -81,9 +81,10 @@ func _on_interrupt_triggered():
 
 ## 点击金币
 func _on_button_pressed() -> void:
-	## 闸门被占住时（联机客户端）这一下只是**请求**：主机在自己那一局上收成了才算数，
-	## 两端才会一起入账（与点阳光同一条链路，见 `GlobalUtils.drop_click_gate`）
-	if GlobalUtils.drop_click_gate.is_valid() and bool(GlobalUtils.drop_click_gate.call(self)):
+	## 统一先过玩家操作上报口：被接管时（联机客户端）这一下只是**请求**，
+	## 主机在自己那一局上收成了才算数，两端才会一起入账
+	## （与点阳光同一条链路，见 `GlobalUtils.submit_player_action`）
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.PickDrop, [self]):
 		return
 	collect()
 

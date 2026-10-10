@@ -19,8 +19,11 @@ class_name NetplaySunSync
 ## 上一版在天降管理器上另开了一个 `spawn_sun_gate`，模组却只装了全局那个 ——
 ## 结果客户端的天降**根本没被拦住**，而探针还报 PASS（它只验了"闸门装上了"，没验"被谁读"）。
 ##
-## 边界：僵尸**掉落**的阳光还没收归主机（`component_drop_item.gd` 里跟金币混在一起），
-## 客户端那颗没有主机编号，点它照单机那样本地生效 —— 宁可不同步，也不能让玩家点着点不动。
+## 边界：不是每一颗阳光都归主机 —— 客户端自己长的那一颗（例如某些关卡脚本直接生成的）
+## 没有主机编号，主机那一局上根本不存在它，点它照单机那样本地生效
+## （`is_host_spawned()` 挡着）：宁可不同步，也不能让玩家点着点不动。
+## ⚠️ 早先这里写着"僵尸掉落的阳光还没收归主机"是**误记**：`DropItemComponent` 只掉
+## 金币 / 花园植物 / 巧克力，压根不掉阳光 —— 生成点全景见 [联机模组](../../docs/参考存档/联机模组.md) §4.8。
 ##
 ## 关联：[联机模组](../../docs/参考存档/联机模组.md) ｜ [联机模组规范](../../docs/参考存档/联机模组规范.md)
 
@@ -50,8 +53,6 @@ func _exit_tree() -> void:
 	EventBus.unsubscribe(ConstEventName.SUN_SPAWNED, _on_host_sun_spawned)
 	if GlobalUtils.sun_spawn_gate == _on_local_sun_spawn:
 		GlobalUtils.sun_spawn_gate = Callable()
-	if GlobalUtils.sun_click_gate == _on_local_sun_click:
-		GlobalUtils.sun_click_gate = Callable()
 
 
 ## 真正接线（帧末执行一次）
@@ -66,9 +67,10 @@ func _install() -> void:
 		## 一处订阅全覆盖（生成点各自在落点写完之后才推，见 `ConstEventName.SUN_SPAWNED` 的注释）
 		EventBus.subscribe(ConstEventName.SUN_SPAWNED, _on_host_sun_spawned)
 		return
-	## 客户端：本地的定时器不再掉阳光，点阳光也只是"请求"
+	## 客户端：本地的定时器不再掉阳光
+	## （点阳光那一下的上行不在这里 —— 所有玩家操作统一由 `NetplayActionGateway` 发出去，
+	##  它只问本节点一句"这一颗是主机下发过的吗"，见 `is_host_spawned()`）
 	GlobalUtils.sun_spawn_gate = _on_local_sun_spawn
-	GlobalUtils.sun_click_gate = _on_local_sun_click
 
 
 #region 主机：掉一颗就发一颗
@@ -87,27 +89,21 @@ func _on_host_sun_spawned(sun: Sun) -> void:
 #endregion
 
 
-#region 客户端：本地不掉 + 点一下只是请求
+#region 客户端：本地不掉
 ## 生成闸门：客户端一条都不自己长（天降 + 向日葵都归主机下发）
 func _on_local_sun_spawn() -> bool:
 	return _session != null and _session.is_linked() and _session.is_client()
 
 
-## 拾取闸门：**只接管主机下发过的那些**
+## 这一颗是不是**主机下发过的**（`NetplayActionGateway` 点阳光时先问这一句）
 ##
-## 客户端自己长的阳光（僵尸**掉落**的那颗还没收归主机）没有主机编号，主机那一局上根本没有它 ——
-## 接管只会得到"点不动"，所以放它回本机的老路：不同步，但照样能收。
-func _on_local_sun_click(sun: Sun) -> bool:
-	if _session == null or not _session.is_linked() or not _session.is_client():
-		return false
+## 只有这些走主机权威：主机那一局上有同一颗，才能"两端摘同一颗"。
+## 客户端自己长的那一颗没有主机编号 —— 主机那边根本不存在它，接管只会得到"点不动"，
+## 所以放它回本机的老路：不同步，但照样能收。
+func is_host_spawned(sun: Sun) -> bool:
 	if sun == null or not is_instance_valid(sun):
 		return false
-	if not _known_sun_ids.has(sun.entity_id):
-		return false
-	_session.send_command(NetplayCommand.build(NetplayCommand.OP_PICK_SUN, {
-		NetplayCommand.ARG_SUN_ID: sun.entity_id,
-	}))
-	return true
+	return _known_sun_ids.has(sun.entity_id)
 #endregion
 
 
