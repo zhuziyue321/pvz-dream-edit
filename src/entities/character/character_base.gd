@@ -344,10 +344,11 @@ func _on_ice_decelerate_timer_timeout() -> void:
 	update_speed_factor(1.0, E_Influence_Speed_Factor.IceDecelerateSpeed)
 	body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color(1, 1, 1))
 
-## 被冰冻控制
-func be_ice_freeze(time:float, new_time_ice_end_decelerate:float):
-	## 被冰冻掉20血
-	hp_component.Hp_loss(20,BulletRegistry.AttackMode.Real, true, false)
+## 被冰冻控制：先结算本次伤害，冰冻只是附加在伤害上的控制效果（寒冰菇 = 伤害 + 冰冻）。[br]
+## [param damage] 本次伤害，由发动方给出（寒冰菇炸弹组件的 `bomb_value`）；<=0 表示只冻不打。
+func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, damage:int = 20):
+	if damage > 0:
+		hp_component.Hp_loss(damage, BulletRegistry.AttackMode.Real, true, false)
 
 	self.time_ice_end_decelerate = new_time_ice_end_decelerate
 	update_speed_factor(0.0, E_Influence_Speed_Factor.IceFreezeSpeed)

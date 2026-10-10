@@ -122,13 +122,14 @@ func be_ice_decelerate(time: float) -> void:
 
 
 ## 仅在正常出战且受击窗口开启时接受冰冻；全场事件也不能绕过状态控制的受击开关。[br]
-## 父类先扣血后创建冰冻效果；致死时在父类返回后补做清理，避免死后残留冰块。
+## 父类先结算伤害再附加冰冻效果；致死时在父类返回后补做清理，避免死后残留冰块。
 ## [param time] 本次完全冰冻持续时间，单位为秒。
 ## [param new_time_ice_end_decelerate] 冰冻解除后继续减速的时长，单位为秒。
-func be_ice_freeze(time: float, new_time_ice_end_decelerate: float) -> void:
+## [param damage] 本次伤害（寒冰菇的 `bomb_value`）；窗口没开时伤害与冰冻一起被挡掉。
+func be_ice_freeze(time: float, new_time_ice_end_decelerate: float, damage: int = 20) -> void:
 	if not _can_receive_damage():
 		return
-	super.be_ice_freeze(time, new_time_ice_end_decelerate)
+	super.be_ice_freeze(time, new_time_ice_end_decelerate, damage)
 	if is_death:
 		prepare_death_animation()
 

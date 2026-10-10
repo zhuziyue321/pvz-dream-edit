@@ -164,7 +164,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="BombComponent" type="Node2D" parent="." index="10"]
 script = ExtResource("8_37t62")
-bomb_value = 0
+bomb_value = 20
 is_cherry_bomb = false
 bomb_sfx = &"Frozen"
 metadata/_custom_type_script = "uid://houapt72isd2"

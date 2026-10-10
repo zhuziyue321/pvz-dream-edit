@@ -174,8 +174,9 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	#endregion
 
 	#region 战斗效果（跨系统广播）
-	## [冰冻时长, 减速时长]（见 component_bomb_ice.gd 的 time_ice / time_decelerate）
-	ICE_ALL_ZOMBIE: [Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT],
+	## [冰冻时长, 减速时长, 伤害]（见 component_bomb_ice.gd 的 time_ice / time_decelerate / bomb_value）
+	## 寒冰菇的口径是「伤害 + 附加冰冻」：伤害是主体，冰冻只是挂在这次伤害上的控制效果。
+	ICE_ALL_ZOMBIE: [Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_INT],
 	## 三行热烈：payload 是所在行的列索引 owner_plant.row_col.x（int）
 	JALAPENO_BOMB_EFFECT: [Variant.Type.TYPE_INT],
 	JALAPENO_BOMB_ITEM_LANE: [Variant.Type.TYPE_INT],
