@@ -22,7 +22,13 @@ test/_userdir/
 test/_ud_*/
 test/_run_out.txt
 test/_probe_version.txt
+test/_semantic_scan_result.txt
 test/inject/report.txt
+
+# 第三方 addon 的编辑器状态：每次开编辑器都会自动改写（登记打开过的脚本列表），
+# 与代码无关。注意它已在 git 里被跟踪过 —— 光加这一行不够，
+# 还要 `git rm --cached addons/todo_controller/config/config.tres` 才生效。
+addons/todo_controller/config/config.tres
 
 # agents
 agents.state.json
