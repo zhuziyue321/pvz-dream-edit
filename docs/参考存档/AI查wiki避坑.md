@@ -65,11 +65,19 @@
 
 推荐接口（返回纯 wikitext，避开导航 / 广告 / 推荐卡）：
 
-| 站点                           | 取正文方式                                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| `wiki.pvz1.com`（DokuWiki）    | `https://wiki.pvz1.com/doku.php?id=<页面>&do=export_raw`                                           |
-| `plantsvszombies.fandom.com` | `https://plantsvszombies.fandom.com/wiki/<页面>?action=raw`                                        |
-| Fandom 搜索                    | `https://plantsvszombies.fandom.com/api.php?action=query&list=search&srsearch=<关键词>&format=json` |
+| 站点                           | 取正文方式                                                                                            | 备注                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **`plantsvszombies.wiki.gg`** | `https://plantsvszombies.wiki.gg/wiki/<页面>?action=raw`                                            | **实测最稳，建议优先用**（见下方说明）；本仓库 `minigame_09_beghouled_twist.gd` 已在引它 |
+| `wiki.pvz1.com`（DokuWiki）    | `https://wiki.pvz1.com/doku.php?id=<页面>&do=export_raw`                                           | 中文一代专精（B 级）                                                    |
+| `plantsvszombies.fandom.com` | `https://plantsvszombies.fandom.com/wiki/<页面>?action=raw`                                        | C 级；`?action=raw` **实测常超时 10s**，取不到就换 wiki.gg               |
+| Fandom 搜索                    | `https://plantsvszombies.fandom.com/api.php?action=query&list=search&srsearch=<关键词>&format=json` | 用来找页面真实标题（大小写写错会 404）                                     |
+
+> **优先 wiki.gg 的两个理由**（2026-10-10 实测）：
+> ① `?action=raw` 的稳定性明显好于 fandom —— 同一批请求里 fandom 连续超时两次、wiki.gg 一次拿到；
+> ② **只有 raw 才看得全**，`{{ConveyorPercent}}` 这类模板渲染后会丢掉植物名，只剩百分比数字，
+>    对着渲染页抄会把 74%/13%/13% 配到错误的植物上。
+>
+> 页面名大小写敏感：`Wall-nut_Bowling_2` 而非 `Wall-Nut_Bowling_2`（后者 404），拿不准就先用搜索接口确认标题。
 
 注意：
 
