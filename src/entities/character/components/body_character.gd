@@ -9,6 +9,15 @@ const BODY_MASK = preload("res://shaders/materials/body_mask.tres")
 var hit_tween: Tween = null  # 发光动画
 var light_and_dark_tween: Tween = null  # 明暗交替动画
 
+## 受击发光的累计次数（每调一次 `body_light()` 就 +1）
+##
+## 为什么要有这个计数：发光是一次**瞬时脉冲**（立刻调到 2 倍亮，再用 0.5 秒 tween 回白），
+## 不是"每帧都能读出来的状态" —— 读 `modulate` 只能读到 tween 途中的某个值，读不出
+## "此刻又闪了一下"。要把这一步表现同步给对端（录像回放 / 联机快照），需要一个
+## **可比较的整数**：值变了就说明又挨了一下，对端照着补一次 `body_light()` 即可。
+## 与 `entity_id` 同理，是通用能力，不含任何联机字样，不参与玩法判定。
+var body_light_count: int = 0
+
 # modulate 状态颜色变量
 var base_color := Color(1, 1, 1)
 
@@ -46,6 +55,7 @@ func _update_modulate():
 ## 发光动画函数
 func body_light():
 	## 先直接变亮
+	body_light_count += 1
 	set_other_color(E_ChangeColors.HitColor, Color(2, 2, 2))
 
 	if hit_tween and hit_tween.is_running():

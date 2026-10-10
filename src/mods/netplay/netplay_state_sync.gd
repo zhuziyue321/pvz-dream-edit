@@ -307,6 +307,7 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 	var z_type := PackedInt32Array()
 	var z_lane := PackedInt32Array()
 	var z_anim := PackedInt32Array()
+	var z_render := PackedInt32Array()
 	var z_x := PackedFloat32Array()
 	var z_y := PackedFloat32Array()
 	var z_hp := PackedFloat32Array()
@@ -331,6 +332,7 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 			z_type.append(int(z.zombie_type))
 			z_lane.append(z.lane)
 			z_anim.append(_pack_anim(z))
+			z_render.append(_pack_zombie_render(z))
 			z_x.append(z.global_position.x)
 			z_y.append(z.global_position.y)
 			z_hp.append(_hp_of(z))
@@ -340,6 +342,7 @@ func collect_snapshot(mg: MainGameManager) -> Dictionary:
 	snap[&"z_type"] = z_type
 	snap[&"z_lane"] = z_lane
 	snap[&"z_anim"] = z_anim
+	snap[&"z_render"] = z_render
 	snap[&"z_x"] = z_x
 	snap[&"z_y"] = z_y
 	snap[&"z_hp"] = z_hp
@@ -467,6 +470,7 @@ func collect_snapshot_extra(mg: MainGameManager) -> Dictionary:
 	var p_type := PackedInt32Array()
 	var p_cell := PackedInt32Array()
 	var p_hp := PackedFloat32Array()
+	var p_render := PackedInt32Array()
 	if mg.plant_cell_manager != null:
 		for row in mg.plant_cell_manager.all_plant_cells:
 			for cell in row:
@@ -485,10 +489,12 @@ func collect_snapshot_extra(mg: MainGameManager) -> Dictionary:
 					p_type.append(int(plant.plant_type))
 					p_cell.append(_pack_cell(cell))
 					p_hp.append(_hp_of(plant))
-	snap[&"p_id"] = p_id
-	snap[&"p_type"] = p_type
-	snap[&"p_cell"] = p_cell
-	snap[&"p_hp"] = p_hp
+					p_render.append(_pack_plant_render(plant))
+					snap[&"p_id"] = p_id
+					snap[&"p_type"] = p_type
+					snap[&"p_cell"] = p_cell
+					snap[&"p_hp"] = p_hp
+					snap[&"p_render"] = p_render
 	left -= p_id.size() * BYTES_PER_PLANT
 
 	## 阳光：id / 面值 / 位置（场上飘着的每一颗，客户端照着补 / 删）
@@ -718,6 +724,7 @@ func _align_zombies(mg: MainGameManager, snap: Dictionary) -> void:
 	var z_type: PackedInt32Array = snap.get(&"z_type", PackedInt32Array())
 	var z_lane: PackedInt32Array = snap.get(&"z_lane", PackedInt32Array())
 	var z_anim: PackedInt32Array = snap.get(&"z_anim", PackedInt32Array())
+	var z_render: PackedInt32Array = snap.get(&"z_render", PackedInt32Array())
 	var z_x: PackedFloat32Array = snap.get(&"z_x", PackedFloat32Array())
 	var z_y: PackedFloat32Array = snap.get(&"z_y", PackedFloat32Array())
 	var z_hp: PackedFloat32Array = snap.get(&"z_hp", PackedFloat32Array())
@@ -737,6 +744,7 @@ func _align_zombies(mg: MainGameManager, snap: Dictionary) -> void:
 		## `z_lane` 就是纯行号（动画状态在另一条 `z_anim` 里）
 		var lane := z_lane[i]
 		var anim := z_anim[i] if i < z_anim.size() else 0
+		var render := z_render[i] if i < z_render.size() else 0
 		if local.has(id):
 			var z: Zombie000Base = local[id]
 			if not is_instance_valid(z):
@@ -745,9 +753,12 @@ func _align_zombies(mg: MainGameManager, snap: Dictionary) -> void:
 			if z.hp_component != null:
 				z.hp_component.curr_hp = int(z_hp[i])
 			_apply_zombie_anim(z, anim)
+			_apply_zombie_render(z, render)
 		else:
 			## 补一只：多半是"主机这一波先出生 / 包到得晚"，照主机的编号生出来
-			_spawn_zombie(mg, id, z_type[i], lane, target)
+			var born := _spawn_zombie(mg, id, z_type[i], lane, target)
+			if born != null:
+				_apply_zombie_render(born, render)
 
 	## ⚠️ 同上：主机这一帧截断过就不能回收（否则僵尸一多，装不下的那批会被客户端误删）
 	if not _is_cut(snap, &"z_cut"):
@@ -940,6 +951,7 @@ func _align_plants(mg: MainGameManager, snap: Dictionary) -> void:
 	var p_type: PackedInt32Array = snap.get(&"p_type", PackedInt32Array())
 	var p_cell: PackedInt32Array = snap.get(&"p_cell", PackedInt32Array())
 	var p_hp: PackedFloat32Array = snap.get(&"p_hp", PackedFloat32Array())
+	var p_render: PackedInt32Array = snap.get(&"p_render", PackedInt32Array())
 
 	var local := {}
 	for row in mg.plant_cell_manager.all_plant_cells:
@@ -955,10 +967,12 @@ func _align_plants(mg: MainGameManager, snap: Dictionary) -> void:
 	for i in range(p_id.size()):
 		var id := p_id[i]
 		seen[id] = true
+		var render := p_render[i] if i < p_render.size() else 0
 		if local.has(id):
 			_apply_plant_hp(local[id], int(p_hp[i]))
+			_apply_plant_render(local[id], render)
 		else:
-			_spawn_plant(mg, id, p_type[i], _unpack_cell(p_cell[i]))
+			_spawn_plant(mg, id, p_type[i], _unpack_cell(p_cell[i]), render)
 
 	## 主机这一帧截断过就不能回收（同上：那几株只是"没采到"，不是"没有了"）
 	if not _is_cut(snap, &"p_cut"):
@@ -978,26 +992,29 @@ func _apply_plant_hp(plant, hp: int) -> void:
 
 
 ## 照主机的名册补种一株（客户端漏了的那些）
-func _spawn_plant(mg: MainGameManager, id: int, plant_type: int, rc: Vector2i) -> void:
+## [render] 主机这一帧报的渲染状态 —— 补出来那一下就写上去，不等下一帧（理由同 `_spawn_zombie`）
+func _spawn_plant(mg: MainGameManager, id: int, plant_type: int, rc: Vector2i, render: int = 0) -> Plant000Base:
 	if mg.plant_cell_manager == null:
-		return
+		return null
 	var cells := mg.plant_cell_manager.all_plant_cells
 	if rc.x < 0 or rc.x >= cells.size():
-		return
+		return null
 	var row = cells[rc.x]
 	if rc.y < 0 or rc.y >= row.size():
-		return
+		return null
 	var cell: PlantCell = row[rc.y]
 	if not is_instance_valid(cell):
-		return
+		return null
 	## ⚠️ 第三参数 `is_plant_start_effect = false`：补种**不该**再放一次种植特效，
 	## 那是"刚种下"的表现；补的是"主机那边早就有了、本地漏了"的那一株。
 	## ⚠️ `place`（槽位）不用传：它由植物自己的种植条件决定，`create_plant()` 会放对
 	var plant: Plant000Base = cell.create_plant(plant_type, false, false)
 	if not is_instance_valid(plant):
-		return
+		return null
 	## `create_plant()` 里已经入树领过号了，这里改成主机的编号，两端才认得同一株
 	plant.assign_entity_id(id)
+	_apply_plant_render(plant, render)
+	return plant
 
 
 ## 阳光：位置覆盖；主机有本地没有的补一颗；主机没有的缺席够了才回收
@@ -1047,10 +1064,12 @@ func _is_sun_falling(sun: Sun) -> bool:
 		and sun.spawn_sun_tween.is_running()
 
 
-func _spawn_zombie(mg: MainGameManager, id: int, zombie_type: int, lane: int, pos: Vector2) -> void:
+## 返回补出来的那一只（补失败返回 null），调用方要**当场**把渲染状态写上去 ——
+## 否则新生的这一只要等下一帧才轮到 `_align_zombies()` 拉齐，那一帧它是按本地默认值演的
+func _spawn_zombie(mg: MainGameManager, id: int, zombie_type: int, lane: int, pos: Vector2) -> Zombie000Base:
 	## 行号越界（换过地图 / 数据不对）就别生，省得挂到错误的行节点上
 	if mg.zombie_manager == null or lane < 0 or lane >= mg.zombie_manager.all_zombie_rows.size():
-		return
+		return null
 	var para := {
 		Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
 		Zombie000Base.E_ZInitAttr.Lane: lane,
@@ -1058,7 +1077,7 @@ func _spawn_zombie(mg: MainGameManager, id: int, zombie_type: int, lane: int, po
 	}
 	var z := mg.zombie_manager.create_norm_zombie(zombie_type, null, para, pos)
 	if z == null:
-		return
+		return null
 	## `create_norm_zombie()` 里已经入树领过号了，这里改成主机的编号，两端才认得同一只
 	z.assign_entity_id(id)
 	## ★ **当场**就转"只渲染"，不能等下一帧：`_align_zombies()` 只对**上一帧已经在场**的
@@ -1066,6 +1085,7 @@ func _spawn_zombie(mg: MainGameManager, id: int, zombie_type: int, lane: int, po
 	## （索敌 / 移动 / 啃植物），啃出来的伤害主机那一局上根本没有，两端立刻分叉。
 	## 组件若还没 `@onready` 就位，这一句会自己放弃（meta 不落），下一帧照旧重试。
 	_make_zombie_render_only(z)
+	return z
 
 
 func _spawn_sun(mg: MainGameManager, id: int, sun_value: int, pos: Vector2) -> void:
