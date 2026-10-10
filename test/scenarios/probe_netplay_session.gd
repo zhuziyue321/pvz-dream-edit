@@ -623,15 +623,31 @@ func _check_state_sync(a) -> void:
 		rebuilt.free()
 	GlobalUtils.bullet_spawn_gate = Callable()
 
-	## ★ 字节预算：ENet 不可靠包超 MTU 会整包丢弃，所以按字节排上限而不是按条数
+	## ★ 字节预算：ENet 不可靠包超 MTU 会整包丢弃，所以按字节排上限而不是按条数。
+	## 现在拆成**两包**（僵尸+子弹 / 植物+阳光），各自一份预算（见 `NetplaySession`）。
 	var z_cap := NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_ZOMBIE, 40,
-		NetplayStateSync.BYTE_BUDGET - NetplayStateSync.RESERVE_BULLETS - NetplayStateSync.RESERVE_PLANTS)
+		NetplayStateSync.BYTE_BUDGET - NetplayStateSync.RESERVE_BULLETS)
 	_check(a, "僵尸上限按字节算得出来（不是写死 40）", z_cap > 0 and z_cap <= 40)
-	_check(a, "预算算出来的上限装得进 MTU",
+	_check(a, "第一包（僵尸 + 子弹）装得进 MTU",
 		z_cap * NetplayStateSync.BYTES_PER_ZOMBIE + NetplayStateSync.RESERVE_BULLETS
-		+ NetplayStateSync.RESERVE_PLANTS <= NetplayStateSync.BYTE_BUDGET)
+		<= NetplayStateSync.BYTE_BUDGET)
+	var p_cap := NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_PLANT, 64,
+		NetplayStateSync.BYTE_BUDGET - NetplayStateSync.RESERVE_SUNS)
+	_check(a, "第二包（植物 + 阳光）也装得进 MTU",
+		p_cap * NetplayStateSync.BYTES_PER_PLANT + NetplayStateSync.RESERVE_SUNS
+		<= NetplayStateSync.BYTE_BUDGET)
+	## ★ 拆包的目的就在这一条：满盘（5 行 × 9 列 = 45 株）得真的装得下。
+	## 挤在一包里时植物只能排到十几株，名册被截断就等于"植物这一档名存实亡"。
+	_check(a, "★ 满盘 45 株植物装得下（否则名册被截断，植物等于没进快照）", p_cap >= 45)
 	_check(a, "字节给 0 时一条都装不下（不是反过来放开）",
 		NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_BULLET, 32, 0) == 0)
+
+	## ★ 植物名册带格子下标：解错了会把植物补种到**别的格子**上 —— 比不补更糟
+	var probe_cell := PlantCell.new()
+	probe_cell.row_col = Vector2i(3, 7)
+	_check(a, "格子下标打包往返（种错格子比不种更糟）",
+		NetplayStateSync._unpack_cell(NetplayStateSync._pack_cell(probe_cell)) == Vector2i(3, 7))
+	probe_cell.free()
 
 	## ★ 截断时不能回收：本地这几颗只是"主机这一帧没采到"，不是"主机那边没有了"
 	_check(a, "主机截断过就不回收（装不下的那批不会被误删）",

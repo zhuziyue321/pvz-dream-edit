@@ -68,11 +68,15 @@ function Start-Side {
     $old = $env:APPDATA
     $env:APPDATA = $UserDir
     try {
+        ## ⚠️ 必须拼成**整条**命令行并自己加引号：把 `--path` 与路径当成两个数组元素传，
+        ## PowerShell 不会替路径补引号，路径里有空格（本项目就是）会被拆成两半，
+        ## Godot 报 "Invalid project path specified: C:\Users\a"。
+        $argLine = '--headless --path "' + $Project + '" -- ' +
+                   "--scenario=res://test/scenarios/$Scenario.gd" +
+                   " --autopilot-max-seconds=$MaxSeconds"
         $p = Start-Process -FilePath $Godot -PassThru -WindowStyle Hidden `
              -RedirectStandardOutput $OutFile -RedirectStandardError $ErrFile `
-             -ArgumentList @('--headless', '--path', $Project, '--',
-                             "--scenario=res://test/scenarios/$Scenario.gd",
-                             "--autopilot-max-seconds=$MaxSeconds")
+             -ArgumentList $argLine
         return $p
     } finally {
         $env:APPDATA = $old
@@ -154,8 +158,6 @@ $ok = ($hostLine -match 'result=PASS') -and ($clientLine -match 'result=PASS')
 if ($ok) { Write-Host "[pair] RESULT=PASS" -ForegroundColor Green } else { Write-Host "[pair] RESULT=FAIL" -ForegroundColor Red }
 Write-Host "[pair] logs: $work"
 
-if (-not $KeepLogs -and $ok) {
-    ## keep the logs on failure - they are the evidence
-    Remove-Item -LiteralPath $hostOut, $hostErr, $clientOut, $clientErr -Force -ErrorAction SilentlyContinue
-}
+## ⚠️ 日志一律保留：PASS 也要留 —— 这一份"两端每一拍的实际数字"本身就是证据，
+## 删掉之后下一次想看细节只能再花四分钟重跑一遍。
 if ($ok) { exit 0 } else { exit 1 }

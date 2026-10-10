@@ -29,6 +29,8 @@ var _native_button: TextureButton = null
 ## 房主喊了「开始」⇒ 客户端这一下才准真的推进
 var _start_allowed := false
 var _was_in_choose := false
+## 房主**按过**开始、但那一刻还有人没准备 ⇒ 等他们准备好补按一次（见 `start_gate()`）
+var _pending_start := false
 ## 一条话写到控制台「最近一条」上（由 `NetplayMod` 传进来）
 var _notice: Callable = Callable()
 
@@ -63,6 +65,7 @@ func _process(_delta: float) -> void:
 	if _button == null and not _build_button():
 		return
 	_refresh()
+	_maybe_retry_start()
 
 
 #region 闸门：房主的「开始」要等所有人都准备好
@@ -79,6 +82,13 @@ func start_gate() -> bool:
 		if all_ready(_session.ready_peers, others):
 			_session.request_choose_card_start()
 			return true
+		## ★ 记下"这一下按过开始"，等大家都准备好由 `_maybe_retry_start()` 补按。
+		## 为什么非补不可：传送带 / 卡槽被锁死这类关**没有选卡界面**，进关就自动跳过
+		## （见 `MainGameManager.enter_choose_card_progress()`），而主机跳过的那一刻
+		## 客户端往往**还没被拉进关**，屋里自然没人准备好 ⇒ 闸门返回 false，主机停在选卡阶段。
+		## 客户端随后报的准备再也等不到第二次"开始" —— **整局永远开不了战**。
+		## （这是双进程实测抓到的：两端都停在 CHOOSE_CARD，场上一个僵尸都没有。）
+		_pending_start = true
 		_notify("还有人没准备（%s）—— 等大家都点了准备才能开始" % ready_count_text(_session.ready_peers, others))
 		return false
 	## 房主喊了开始：这一下是房主替本机按的
@@ -96,6 +106,23 @@ static func all_ready(ready_map: Dictionary, peer_ids: Array) -> bool:
 		if not bool(ready_map.get(peer_id, false)):
 			return false
 	return true
+
+
+## 「开始」被闸门挡过一次之后再补按一次 —— 只在"确实按过 + 现在都准备好了"时才补
+##
+## ⚠️ 必须限定 `_in_choose_phase()`：已经开战之后再补按会把 `CARD_SLOT_NORM_START_GAME`
+## 又推一遍（多轮关卡第二轮会因此被提前收工）。
+func _maybe_retry_start() -> void:
+	if not _pending_start or _session == null or not _session.is_host():
+		return
+	if not _in_choose_phase():
+		_pending_start = false
+		return
+	if not all_ready(_session.ready_peers, _session.other_peer_ids()):
+		return
+	_pending_start = false
+	_notify("大家都准备好了，补按开始")
+	_press_start()
 
 
 ## 「1/2」这样的准备进度
@@ -213,6 +240,7 @@ func _on_ready_state_changed(peer_id: int, ready: bool) -> void:
 	if _session == null or peer_id == _session.local_peer_id:
 		return
 	_refresh()
+	_maybe_retry_start()
 	_notify("玩家 %d %s" % [peer_id, "已准备" if ready else "取消了准备"])
 
 
@@ -237,6 +265,8 @@ func _leave_choose_phase() -> void:
 	if _was_in_choose:
 		_was_in_choose = false
 		_remove_button()
+	## 已经离开选卡阶段：那一下"补按开始"不必再等了（多半是已经开战了）
+	_pending_start = false
 	## 没走上选卡界面的那一局（传送带 / 没有选卡权）：没有「准备」可以按，
 	## 那就替本机直接报个准备 —— 免得房主永远在等一个不可能按下准备的人
 	if _session != null and _session.is_linked() and _session.is_client() and not is_local_ready():

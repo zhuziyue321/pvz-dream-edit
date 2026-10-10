@@ -54,6 +54,14 @@ signal battle_seed_received(seed_value: int)
 ## 主机广播了这一帧的**战斗快照**（客户端据此把场面对齐，见 `NetplayStateSync`）
 ## 走的是 unreliable：丢一帧下一帧就补上，不值得为它重传
 signal state_snapshot_received(snapshot: Dictionary)
+## 同一帧的**第二包快照**（植物 + 阳光）
+##
+## ★ 为什么要拆两包：ENet 的不可靠包**不分片**，超 MTU（约 1400B）就整包丢弃。
+## 把植物与阳光补进快照之后，满盘一局（僵尸 25 + 子弹 20 + 植物 45 + 阳光 10）约 1900B，
+## 一包装不下 —— 硬挤的结果就是植物被字节预算截断到十几株（满盘有 45 株），
+## 而截断时又不能回收，等于"植物这一档名存实亡"。拆包后两类各自都有完整预算。
+## ⚠️ 两包**独立丢失**：丢了一包只是那一类这一帧没对齐，下一帧就补上，互不影响。
+signal state_snapshot_extra_received(snapshot: Dictionary)
 
 var role: E_Role = E_Role.None
 var state: E_State = E_State.Idle
@@ -411,6 +419,20 @@ func state_snapshot(snapshot: Dictionary) -> void:
 	if multiplayer.get_remote_sender_id() != SERVER_PEER_ID:
 		return
 	state_snapshot_received.emit(snapshot)
+
+
+## 同帧的第二包（植物 + 阳光）—— 为什么要拆两包见上面那个信号的注释
+func send_state_snapshot_extra(snapshot: Dictionary) -> void:
+	if not is_host() or not is_linked():
+		return
+	state_snapshot_extra.rpc(snapshot)
+
+
+@rpc("any_peer", "unreliable")
+func state_snapshot_extra(snapshot: Dictionary) -> void:
+	if multiplayer.get_remote_sender_id() != SERVER_PEER_ID:
+		return
+	state_snapshot_extra_received.emit(snapshot)
 
 
 ## 抽一颗新种子：要的是"这一局的值"，不必密码学级；毫秒时刻够用也够分散

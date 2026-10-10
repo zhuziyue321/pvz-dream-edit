@@ -96,6 +96,56 @@ if ($real.Count -gt 0) {
     exit 1
 }
 
+## ── 第二道：探针脚本 `test/scenarios/*.gd` ────────────────────────────────
+## ⚠️ 上面那道 `--import` **覆盖不到**探针脚本：它们只在运行期按路径 `load()`，
+## 没有任何资源 / 脚本引用它们，于是永远进不了资源管线（见 KNOWN LIMITATION 1）。
+## 实测连着两次「`var x :=` 推断不出类型」的解析错误都被放行成 PASS，
+## 每次都要等一整轮双进程实测（约 4 分钟）才由输出里的 SCRIPT ERROR 暴露出来。
+## 这里用 `tool_compile_scenarios.gd` 把它们逐个 load 一遍，补上这个洞。
+Write-Host '[check] compiling test/scenarios/*.gd (NOT covered by --import)...'
+$sDir = Join-Path ([System.IO.Path]::GetTempPath()) 'pvz_check_scenarios'
+New-Item -ItemType Directory -Force -Path $sDir | Out-Null
+$sOut = Join-Path $sDir 'out.txt'
+$sErr = Join-Path $sDir 'err.txt'
+Remove-Item -LiteralPath $sOut, $sErr -Force -ErrorAction SilentlyContinue
+$oldAppData = $env:APPDATA
+$env:APPDATA = $sDir
+try {
+    $line2 = '"' + $Godot + '" --headless --path "' + $project + '" -- ' +
+             '--scenario=res://test/scenarios/tool_compile_scenarios.gd ' +
+             '--autopilot-max-seconds=120 > "' + $sOut + '" 2> "' + $sErr + '"'
+    cmd.exe /c $line2 | Out-Null
+} finally {
+    $env:APPDATA = $oldAppData
+}
+
+$sRaw = @()
+if (Test-Path -LiteralPath $sOut) { $sRaw = @(Get-Content -LiteralPath $sOut -Encoding UTF8) }
+$sErrRaw = @()
+if (Test-Path -LiteralPath $sErr) { $sErrRaw = @(Get-Content -LiteralPath $sErr -Encoding UTF8) }
+$m2 = $sRaw | Select-String -Pattern '\[COMPILE\] scripts=' | Select-Object -Last 1
+if ($m2) { $sLine = $m2.Line.Trim() } else { $sLine = '[COMPILE] scripts=? (autopilot did not finish)' }
+Write-Host ('[check] scenarios            : {0}' -f $sLine)
+
+## ⚠️ 判据跟 `--import` 那道**同一个**（ Parse Error / SCRIPT ERROR ... ），且要扫 **stdout + stderr**：
+## Godot 有时把 SCRIPT ERROR 打到 stdout（`--import` 那道打进 stderr，别照抄只扫一边）。
+
+$sBad = @()
+$sBad += @($sRaw | Select-String -Pattern $RealPattern | ForEach-Object { $_.Line })
+$sBad += @($sErrRaw | Select-String -Pattern $RealPattern | ForEach-Object { $_.Line })
+$sBad = @($sBad | Where-Object {
+    $l = $_
+    -not ($Known | Where-Object { $l -match $_ })
+})
+if ($sBad.Count -gt 0) {
+    Write-Host ''
+    Write-Host '---- PROBLEMS IN test/scenarios ----' -ForegroundColor Red
+    $sBad | Select-Object -First 20 | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+    Write-Host ''
+    Write-Host '[check] result=FAIL' -ForegroundColor Red
+    exit 1
+}
+
 if ($ShowIgnored -and $ignored.Count -gt 0) {
     Write-Host ''
     Write-Host '---- EXPECTED NOISE (ignored) ----' -ForegroundColor DarkGray

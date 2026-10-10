@@ -16,8 +16,10 @@ extends RefCounted
 ## 机器可读汇总：最后一行 `[PAIR-CLIENT] result=PASS|FAIL ...`
 
 const SESSION_PATH := "/root/NetplaySession"
+## 与主机端同一关（预热用，见 `_warm_up`）
+const LEVEL_SCRIPT := "res://src/levels/mode_adventure/adventure_01_10.gd"
 const PORT := 8912
-const OBSERVE_SECONDS := 45.0
+const OBSERVE_SECONDS := 60.0
 const REPORT_EVERY := 2.0
 
 var _snapshots := 0
@@ -40,6 +42,8 @@ func run(a) -> void:
 		a.log("!! 拿不到会话节点")
 		a.quit_game()
 		return
+
+	_warm_up(a)
 
 	## 等主机那边把房间开起来（会合点：主机写好 host_ready 这个文件）
 	var waited := 0.0
@@ -79,6 +83,9 @@ func run(a) -> void:
 		return
 	a.log("  已被带进 [%s]，阶段=%d" % [
 		str(_session.room_level_id), Global.main_game.main_game_progress])
+	## ★ 玩家会按的那颗「准备」：报上去主机才按得动开始
+	_session.declare_ready(true)
+	a.log("  已报准备 peer=%d" % _session.local_peer_id)
 
 	var elapsed := 0.0
 	while elapsed < OBSERVE_SECONDS:
@@ -101,6 +108,12 @@ func _on_snapshot(_snap: Dictionary) -> void:
 	_snapshots += 1
 
 
+func _progress() -> int:
+	if Global.main_game == null or not is_instance_valid(Global.main_game):
+		return -1
+	return Global.main_game.main_game_progress
+
+
 #region 回报
 ## 把本机看到的"场上长什么样"发回主机，由主机当场对拍
 func _report() -> void:
@@ -118,10 +131,14 @@ func _report() -> void:
 		"xs": mine["xs"],
 		"plants": mine["plants"],
 		"bullets": mine["bullets"],
+		"bids": mine["bids"],
+		"pids": mine["pids"],
+		"sids": mine["sids"],
 		"snapshots": _snapshots,
 	})
-	_a.log("  ... 已回报 #%d z=%d plants=%d bullets=%d 快照=%d 只渲染异常=%d" % [
-		_reports, ids.size(), int(mine["plants"]), int(mine["bullets"]), _snapshots, _render_only_bad])
+	_a.log("  ... 已回报 #%d z=%d plants=%d bullets=%d 快照=%d 只渲染异常=%d 阶段=%d 连线=%d" % [
+		_reports, ids.size(), int(mine["plants"]), int(mine["bullets"]), _snapshots,
+		_render_only_bad, _progress(), _session.state])
 
 
 func _view() -> Dictionary:
@@ -129,10 +146,14 @@ func _view() -> Dictionary:
 	var ids: Array = []
 	var hp: Array = []
 	var xs: Array = []
+	var bids: Array = []
+	var pids: Array = []
+	var sids: Array = []
 	var plants := 0
 	var bullets := 0
 	if mg == null or not is_instance_valid(mg):
-		return {"ids": ids, "hp": hp, "xs": xs, "plants": plants, "bullets": bullets}
+		return {"ids": ids, "hp": hp, "xs": xs, "plants": plants, "bullets": bullets,
+			"bids": bids, "pids": pids, "sids": sids}
 	if mg.zombie_manager != null:
 		for z in mg.zombie_manager.all_zombies_1d:
 			if not is_instance_valid(z) or z.entity_id == 0:
@@ -156,9 +177,23 @@ func _view() -> Dictionary:
 					var plant: Plant000Base = cell.get_plant(place)
 					if is_instance_valid(plant) and plant.entity_id != 0:
 						plants += 1
+						pids.append(plant.entity_id)
+	pids.sort()
+	if mg.suns != null:
+		for child in mg.suns.get_children():
+			var sun := child as Sun
+			if sun != null and is_instance_valid(sun) and sun.entity_id != 0:
+				sids.append(sun.entity_id)
+		sids.sort()
 	if mg.bullets != null:
 		bullets = mg.bullets.get_child_count()
-	return {"ids": ids, "hp": hp, "xs": xs, "plants": plants, "bullets": bullets}
+		for child in mg.bullets.get_children():
+			var bullet := child as Bullet000Base
+			if bullet != null and is_instance_valid(bullet) and bullet.entity_id != 0:
+				bids.append(bullet.entity_id)
+		bids.sort()
+	return {"ids": ids, "hp": hp, "xs": xs, "plants": plants, "bullets": bullets,
+		"bids": bids, "pids": pids, "sids": sids}
 
 
 func _sort_by_id(ids: Array, hp: Array, xs: Array) -> Array:
@@ -176,6 +211,23 @@ func _sort_by_id(ids: Array, hp: Array, xs: Array) -> Array:
 
 
 #region 小工具
+## 预热：趁**还没连线**把关卡与主游戏场景 load 一遍
+##
+## ★ 为什么必须预热：`change_scene_to_file()` 会把主线程堵住（加载 + 实例化整关），
+## 这一卡里没人去 `poll()` ENet；堵过 ENet 的对端超时（实测约 3~5 秒）主机就把本机踢掉了 ——
+## 表现为"刚被带进关就掉线"，两端从此各打各的。先把资源 load 进缓存，这一卡就短了。
+func _warm_up(a) -> void:
+	var script := load(LEVEL_SCRIPT) as GDScript
+	if script == null:
+		return
+	var para: ResourceLevelData = script.new()
+	var scene_path := str(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	var warmed := false
+	if scene_path != "":
+		warmed = load(scene_path) != null
+	a.log("  已预热关卡与主游戏场景（换场景那一卡会堵过 ENet 超时被踢）：%s" % str(warmed))
+
+
 func _flag_exists(flag: String) -> bool:
 	return FileAccess.file_exists(_rdy(flag))
 
