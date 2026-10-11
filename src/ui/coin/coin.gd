@@ -52,8 +52,8 @@ func _ready():
 	button.pressed.connect(_on_button_pressed)
 	## 自定义光标模式下系统鼠标平时是藏起来的（器皿级别的道具自己跟着鼠标走），
 	## 悬停到金币这类能点的 UI 上要露出来，玩家才点得动
-	if is_instance_valid(Global.main_game):
-		Global.main_game.bind_custom_cursor_hover(button)
+	if is_instance_valid(GameContext.curr_main_game):
+		GameContext.curr_main_game.bind_custom_cursor_hover(button)
 
 	await get_tree().create_timer(coin_exist_time, false).timeout
 	fade_and_delete()

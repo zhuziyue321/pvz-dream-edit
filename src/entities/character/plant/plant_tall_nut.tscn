@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://c78n78gfrkolq"]
+[gd_scene load_steps=23 format=3 uid="uid://c78n78gfrkolq"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_qbo1e"]
 [ext_resource type="Texture2D" uid="uid://bx76a21ng1hd1" path="res://assets/reanim/Tallnut_body.png" id="2_814ck"]
@@ -44,13 +44,21 @@ animation = &"Tallnut_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_uxf8y"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ecgny"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_ecgny"]
+states/Tallnut_idle/node = SubResource("AnimationNodeAnimation_uyw20")
+states/Tallnut_idle/position = Vector2(300, 100)
+transitions = ["Start", "Tallnut_idle", SubResource("AnimationNodeStateMachineTransition_ecgny")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_ecgny"]
 nodes/output/position = Vector2(520, 80)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_uyw20")
-nodes/Animation/position = Vector2(100, 80)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_ecgny")
+nodes/StateMachine/position = Vector2(100, 80)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_uxf8y")
 nodes/TimeScale/position = Vector2(340, 60)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="Resource" id="Resource_sum7j"]
 script = ExtResource("6_lgypc")

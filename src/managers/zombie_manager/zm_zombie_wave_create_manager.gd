@@ -13,68 +13,17 @@ var range_num_bungi:Vector2i = Vector2i(3,5)
 ## 僵尸选行系统
 @onready var zombie_choose_row_system: ZombieChooseRowSystem = %ZombieChooseRowSystem
 
-## 定义每个僵尸的战力值
-const zombie_power = {
-	CharacterRegistry.ZombieType.Z001Norm: 1,		# 普僵战力
-	CharacterRegistry.ZombieType.Z002Flag: 1,		# 旗帜战力
-	CharacterRegistry.ZombieType.Z003Cone: 2,		# 路障战力
-	CharacterRegistry.ZombieType.Z004PoleVaulter: 2,	# 撑杆战力
-	CharacterRegistry.ZombieType.Z005Bucket: 4,		# 铁桶战力
+## 僵尸战力 / 出怪权重的**唯一数据源**已收口到 `CharacterRegistry`
+## （数据本体：`data/character/registry_data/zombie_info_data.gd` 里的
+##  `ZOMBIE_SPAWN_POWER` / `ZOMBIE_SPAWN_WEIGHTS`）。
+##
+## 历史：这两张表曾在本文件里各有一份**逐行同值**的拷贝（U-02），于是「自然出怪」读本地表、
+## 「僵王召唤僵尸」读注册表 —— 改一次平衡数值要改两处，漏一处就是两套战力打架。
+## 现在只剩注册表那一份；植物僵尸（Z031+）的战力 / 权重不在这两张表里，走 `ZomBotanyConfig`。
 
-	CharacterRegistry.ZombieType.Z006Paper: 2,		# 读报战力
-	CharacterRegistry.ZombieType.Z007ScreenDoor: 4,	# 铁门战力
-	CharacterRegistry.ZombieType.Z008Football: 7,	# 橄榄球战力
-	CharacterRegistry.ZombieType.Z009Jackson: 5,		# 舞王战力
-	CharacterRegistry.ZombieType.Z010Dancer: 1,		# 伴舞权重
-
-	CharacterRegistry.ZombieType.Z012Snorkle: 3,		# 潜水
-	CharacterRegistry.ZombieType.Z013Zamboni: 7,		# 冰车
-	CharacterRegistry.ZombieType.Z014Bobsled: 3,		# 滑雪四兄弟
-	CharacterRegistry.ZombieType.Z015Dolphinrider: 3,# 海豚僵尸
-
-	CharacterRegistry.ZombieType.Z016Jackbox: 3,		# 小丑
-	CharacterRegistry.ZombieType.Z017Balloon: 2,		# 气球
-	CharacterRegistry.ZombieType.Z018Digger: 4,		# 矿工
-	CharacterRegistry.ZombieType.Z019Pogo: 4,			# 跳跳
-	CharacterRegistry.ZombieType.Z020Yeti: 4,			# 雪人
-
-	CharacterRegistry.ZombieType.Z022Ladder: 4,		# 扶梯
-	CharacterRegistry.ZombieType.Z023Catapult: 5,		# 投篮
-	CharacterRegistry.ZombieType.Z024Gargantuar: 10,	# 伽刚特尔
-	CharacterRegistry.ZombieType.Z025Imp: 1,			# 小鬼
-}
-
-## 创建 zombie_weights 字典，存储初始权重,普僵权重会修改，
-var zombie_weights:Dictionary = zombie_weights_ori.duplicate_deep()
-const zombie_weights_ori = {
-	CharacterRegistry.ZombieType.Z001Norm: 4000,			# 普僵权重
-	#CharacterRegistry.ZombieType.Z002Flag: 0,			# 旗帜权重
-	CharacterRegistry.ZombieType.Z003Cone: 4000,			# 路障权重
-	CharacterRegistry.ZombieType.Z004PoleVaulter: 2000,	# 撑杆权重
-	CharacterRegistry.ZombieType.Z005Bucket: 3000,		# 铁桶权重
-
-	CharacterRegistry.ZombieType.Z006Paper: 1000,		# 读报权重
-	CharacterRegistry.ZombieType.Z007ScreenDoor: 3500,	# 铁门权重
-	CharacterRegistry.ZombieType.Z008Football: 2000,		# 橄榄球权重
-	CharacterRegistry.ZombieType.Z009Jackson: 1000,		# 舞王权重
-	CharacterRegistry.ZombieType.Z010Dancer: 4000,		# 舞王权重
-
-	CharacterRegistry.ZombieType.Z012Snorkle: 2000,		# 潜水
-	CharacterRegistry.ZombieType.Z013Zamboni: 2000,		# 冰车
-	CharacterRegistry.ZombieType.Z014Bobsled: 2000,		# 滑雪四兄弟
-	CharacterRegistry.ZombieType.Z015Dolphinrider: 1500,	# 海豚僵尸
-
-	CharacterRegistry.ZombieType.Z016Jackbox: 1000,		# 小丑
-	CharacterRegistry.ZombieType.Z017Balloon: 2000,		# 气球
-	CharacterRegistry.ZombieType.Z018Digger: 1000,		# 矿工
-	CharacterRegistry.ZombieType.Z019Pogo: 1000,			# 跳跳
-	CharacterRegistry.ZombieType.Z020Yeti: 1,			# 雪人
-
-	CharacterRegistry.ZombieType.Z022Ladder: 1000,		# 扶梯
-	CharacterRegistry.ZombieType.Z023Catapult: 1500,	# 投篮
-	CharacterRegistry.ZombieType.Z024Gargantuar: 1500,	# 伽刚特尔
-	#CharacterRegistry.ZombieType.Z025Imp: 0,		# 小鬼
-}
+## 初始权重的**运行期副本**：普僵 / 路障的后期衰减直接写这里（`_update_weights`），
+## 不改动注册表里的公共基础数据
+var zombie_weights:Dictionary = CharacterRegistry.ZombieSpawnWeights.duplicate_deep()
 
 ## 僵尸随机选择池
 var zombie_choose_random_pool:RandomPicker
@@ -117,13 +66,13 @@ func update_zombie_refresh_types():
 	zombie_choose_random_pool = RandomPicker.new(zombie_choose_random_pool_data)
 
 
-## 僵尸战力：植物僵尸那 13 只的战力不在本文件的 zombie_power 表里，统一在 ZomBotanyConfig 配
-## （13 只各写一份会让两张表翻倍，且和 zom_botany_config.gd 各演化各的）
+## 僵尸战力：植物僵尸（Z031+）统一在 ZomBotanyConfig 配，其余读注册表的 `ZombieSpawnPower`
+## （唯一数据源，见文件头注释；13 只植物僵尸各写一份会让这张表翻倍，且和 zom_botany_config.gd 各演化各的）
 func get_zombie_power(zombie_type:CharacterRegistry.ZombieType) -> int:
 	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
 	if zom_botany_info != null:
 		return zom_botany_info.power
-	return zombie_power.get(zombie_type, -1)
+	return CharacterRegistry.ZombieSpawnPower.get(zombie_type, -1)
 
 
 ## 僵尸初始权重：植物僵尸走 ZomBotanyConfig，其余走 zombie_weights
@@ -221,7 +170,9 @@ func create_norm_wave_zombies(wave_spawn:Array[CharacterRegistry.ZombieType], wa
 			if lane < 0:
 				zombie_type = CharacterRegistry.ZombieType.Z013Zamboni
 		if lane < 0:
-			lane = zombie_choose_row_system.select_spawn_row(Global.character_registry.ZombieInfo[zombie_type][CharacterRegistry.ZombieInfoAttribute.ZombieRowType])
+			lane = zombie_choose_row_system.select_spawn_row(
+				Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType
+			)
 		wave_all_zombies.append(
 			wave_create_zombie(zombie_type, lane, wave, Callable(), i)
 		)
@@ -239,7 +190,7 @@ func select_bobsled_spawn_row() -> int:
 		Log.debug("全图没有冰道，本波雪橇队改成洗冰车")
 		return -1
 	return zombie_choose_row_system.select_spawn_row(
-		Global.character_registry.ZombieInfo[CharacterRegistry.ZombieType.Z014Bobsled][CharacterRegistry.ZombieInfoAttribute.ZombieRowType],
+		Global.character_registry.get_zombie_info(CharacterRegistry.ZombieType.Z014Bobsled, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType,
 		ice_row_weight)
 
 
@@ -358,20 +309,20 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 	if is_big_wave:
 		## 第一个旗帜僵尸
 		wave_spawn.append(CharacterRegistry.ZombieType.Z002Flag)
-		total_power += zombie_power[CharacterRegistry.ZombieType.Z002Flag]
+		total_power += get_zombie_power(CharacterRegistry.ZombieType.Z002Flag)
 		curr_spare_slot -= 1
 
 		# 第一次大波（第10波），刷新4个普通僵尸
 		if wave == 9:
 			for i in range(4):
 				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += zombie_power[CharacterRegistry.ZombieType.Z001Norm]
+				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
 				curr_spare_slot -= 1
 		# 之后的大波（第20波、30波...），刷新8个普通僵尸
 		else:
 			for i in range(8):
 				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += zombie_power[CharacterRegistry.ZombieType.Z001Norm]
+				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
 				curr_spare_slot -= 1
 
 	# 生成剩余僵尸，直到总战力符合当前战力上限
@@ -390,7 +341,7 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 		elif curr_wave_power_limit - total_power < min_power:
 			for i in range(curr_wave_power_limit - total_power):
 				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += zombie_power[CharacterRegistry.ZombieType.Z001Norm]
+				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
 				curr_spare_slot -= 1
 			continue
 		else:

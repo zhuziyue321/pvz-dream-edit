@@ -150,6 +150,15 @@ enum ZombieType {
 	Z044TallNutZombie,			## 高坚果僵尸：头顶高坚果（耐久 2200，原版只出现在 ZomBotany 2）
 
 	Z1001BobsledSingle=1001,	## 单个雪橇车僵尸
+
+	## 僵王博士 Dr. Zomboss（编号沿用 docs/Agent协作协议.md 的「Z999 boss 特殊占用」段）。[br]
+	## 它同时保留 [enum ZombieBossType].ZB001Doctor 作为**生成侧**标识
+	## （ResourceLevelData.boss_type / ZmBossRegistry / 僵王卡），
+	## 再登记到这里是为了让**通用僵尸系统**承认它是僵尸：all_zombies_2d 遍历、敌方计数、
+	## `is Zombie000Base` 判定、图鉴展示都走这一条。[br]
+	## 注意：它**不**出现在 ZOMBIE_SPAWN_WEIGHTS / ZOMBIE_SPAWN_POWER 里，不会被自然刷怪抽到，
+	## 出场只由关卡的 boss_type 驱动。
+	Z999ZombossDoctor = 999,
 	}
 
 ## 僵尸行类型
@@ -214,17 +223,26 @@ enum ZombieBossInfoAttribute {
 #endregion
 
 ## 获取植物属性方法
+## 三个访问器（植物 / 僵尸 / 僵王）口径统一：空类型 → debug，未注册类型 → error + null，
+## 都不裸索引（U-03）。以前植物 / 僵尸那两个是裸索引，未注册类型会直接崩，
+## 而僵王那个判了存在只报错 —— 同样的错一边崩一边报错，排查时很容易被带偏。
 func get_plant_info(plant_type:PlantType, info_attribute:PlantInfoAttribute):
 	if plant_type == PlantType.Null:
 		Log.debug("warning:获取空植物信息")
+		return null
+	if not PlantInfoData.PLANT_INFO.has(plant_type):
+		Log.error("CharacterRegistry：未注册的植物类型：%s" % plant_type)
 		return null
 	var curr_plant_info: Dictionary = PlantInfoData.PLANT_INFO[plant_type]
 	return curr_plant_info[info_attribute]
 
 ## 获取僵尸属性方法
 func get_zombie_info(zombie_type:ZombieType, info_attribute:ZombieInfoAttribute):
-	if zombie_type == 0:
+	if zombie_type == ZombieType.Null:
 		Log.debug("warning: 获取空僵尸信息")
+		return null
+	if not ZombieInfoData.ZOMBIE_INFO.has(zombie_type):
+		Log.error("CharacterRegistry：未注册的僵尸类型：%s" % zombie_type)
 		return null
 	var curr_zombie_info: Dictionary = ZombieInfoData.ZOMBIE_INFO[zombie_type]
 	return curr_zombie_info[info_attribute]

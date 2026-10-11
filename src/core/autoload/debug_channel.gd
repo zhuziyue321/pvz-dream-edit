@@ -180,7 +180,7 @@ func _auto_level_step(delta: float) -> void:
 		_report.line("[自动关卡] 正在切换到主游戏场景")
 		_report.flush()
 		GlobalUtils.change_scene(
-			Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 		)
 		return
 	_level_time += delta
@@ -189,9 +189,9 @@ func _auto_level_step(delta: float) -> void:
 	## 卡槽被系统自动填满时关卡会自行跳过选卡，此时阶段已不是 CHOOSE_CARD，不能重复开始。
 	if not _autostart_done and _level_time >= 3.0:
 		_autostart_done = true
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg == null:
-			_report.line("!! [自动关卡] Global.main_game 为空，无法开始游戏")
+			_report.line("!! [自动关卡] GameContext.curr_main_game 为空，无法开始游戏")
 			_report.flush()
 		elif mg.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
 			_report.line("[自动关卡] 跳过选卡，直接调用 main_game_start() 让波次开始")

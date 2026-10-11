@@ -24,7 +24,7 @@ func run(a) -> void:
 	state.curr_num_new_garden_plant = 0
 
 	a.log("STEP1 只拥有阳光房时，翻页不会进未购买的蘑菇园 / 水族馆")
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)

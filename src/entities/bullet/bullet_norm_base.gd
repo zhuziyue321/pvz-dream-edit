@@ -97,6 +97,9 @@ enum E_InitParasAttr{
 	## 阵营相关
 	BulletCamp,			## 子弹阵营（发射方决定；不传时沿用场景导出值 bullet_camp）
 
+	## 伤害来源相关
+	AttackValue,		## 发射方指定的子弹伤害（> 0 时覆盖子弹场景自身的 attack_value，见 AttackComponentBulletBase.attack_value_bullet）
+
 }
 
 ## 初始化子弹属性
@@ -117,6 +120,11 @@ func init_bullet(bullet_paras:Dictionary):
 	can_attack_status.can_attack_plant_status = bullet_paras.get(E_InitParasAttr.CanAttackPlantState, can_attack_status.can_attack_plant_status)
 	can_attack_status.can_attack_zombie_status = bullet_paras.get(E_InitParasAttr.CanAttackZombieState, can_attack_status.can_attack_zombie_status)
 
+	## 发射方指定的伤害：只有 > 0 才覆盖，默认沿用子弹场景自身的 attack_value
+	var attack_value_from_shooter := int(bullet_paras.get(E_InitParasAttr.AttackValue, -1))
+	if attack_value_from_shooter > 0:
+		self.attack_value = attack_value_from_shooter
+
 
 ## 获取子弹属性
 func get_bullet_paras()->Dictionary[E_InitParasAttr,Variant]:
@@ -128,6 +136,7 @@ func get_bullet_paras()->Dictionary[E_InitParasAttr,Variant]:
 		E_InitParasAttr.CanAttackPlantState : can_attack_status_component.can_attack_plant_status,
 		E_InitParasAttr.CanAttackZombieState : can_attack_status_component.can_attack_zombie_status,
 		E_InitParasAttr.BulletCamp : bullet_camp,
+		E_InitParasAttr.AttackValue : attack_value,
 	}
 
 ## 子弹与敌人碰撞

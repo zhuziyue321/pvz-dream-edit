@@ -83,6 +83,7 @@
 [ext_resource type="Script" uid="uid://bubdoydqtlc6d" path="res://src/menus/start_menu/panel_create_new_user.gd" id="79_xqlaa"]
 [ext_resource type="Script" uid="uid://b6dhsamdijupk" path="res://src/menus/start_menu/panel_rename_user.gd" id="81_dj5t5"]
 [ext_resource type="Script" uid="uid://cwusfudks6mhf" path="res://src/ui/dialog_error.gd" id="82_krdmy"]
+[ext_resource type="PackedScene" uid="uid://dm0dpage7kq3v" path="res://src/ui/mod_page/mod_page.tscn" id="83_modpage"]
 
 [sub_resource type="Animation" id="Animation_xll4c"]
 resource_name = "Idle"
@@ -2393,12 +2394,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "选项设置"
+text = "控制台"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CanvasLayer" parent="StartMenuOptionDialog/Button4" unique_id=693228414 instance=ExtResource("62_e0j7q")]
 visible = false
+mod_page_path = NodePath("../ModPage")
+
+[node name="ModPage" parent="StartMenuOptionDialog/Button4" instance=ExtResource("83_modpage")]
 
 [node name="Dialog_Help" parent="." unique_id=1135247515 instance=ExtResource("57_ry5e1")]
 visible = false

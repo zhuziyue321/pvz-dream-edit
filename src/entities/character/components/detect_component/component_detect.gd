@@ -14,10 +14,11 @@ enum E_LayType{
 	Item,			## 道具
 }
 ## 可以检测的道具
+## 位掩码：值就是下面 `is_detect_items` 开关里那个数字，加新道具要**两处一起加**
+## （旧代码在这里留了个 `Other = 4 ## 占位`，全仓无读取点、场景里也没人勾，已删）
 enum E_ItemType{
 	Brain = 1,	## 脑子（我是僵尸模式）
 	Pot = 2,	## 罐子
-	Other = 4,	## 占位
 }
 
 ## 层类型对应的值（检测）
@@ -42,7 +43,7 @@ const C_LayTypeValueReal:Dictionary[E_LayType, int]={
 @export var is_dectection := true
 @export_group("可检测道具")
 ## 是否检测脑子
-@export_flags("1 脑子", "2 罐子", "4 占位") var is_detect_items:int = 0
+@export_flags("1 脑子", "2 罐子") var is_detect_items:int = 0
 ## 检测到的道具
 var brain:BrainOnZombieMode
 ## 罐子

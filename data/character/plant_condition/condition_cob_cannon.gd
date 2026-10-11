@@ -17,8 +17,8 @@ func _judge_pre_plant(plant_cell:PlantCell) -> bool:
 ## 返回预种植植物,若当前植物格子可以种植紫卡,返回预种植紫卡,
 func get_preplant_purple(plant_cell:PlantCell, _curr_plant_type:CharacterRegistry.PlantType) ->Plant000Base:
 	## 非最后一列,前轮有植物,且没有南瓜
-	if plant_cell.row_col.y < Global.main_game.plant_cell_manager.row_col.y-1 and\
-	_judge_pre_plant(plant_cell) and _judge_pre_plant(Global.main_game.plant_cell_manager.all_plant_cells[plant_cell.row_col.x][plant_cell.row_col.y+1]):
+	if plant_cell.row_col.y < GameContext.curr_main_game.plant_cell_manager.row_col.y-1 and\
+	_judge_pre_plant(plant_cell) and _judge_pre_plant(GameContext.curr_main_game.plant_cell_manager.all_plant_cells[plant_cell.row_col.x][plant_cell.row_col.y+1]):
 		return plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	else:
 		return null

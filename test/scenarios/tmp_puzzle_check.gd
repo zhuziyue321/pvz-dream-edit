@@ -19,18 +19,18 @@ func run(a) -> void:
 func _enter(a, level_path: String) -> void:
 	var para: Resource = (load(level_path) as GDScript).new()
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
 
 
 func _check_pot(a) -> void:
 	await _enter(a, "res://src/levels/mode_puzzle/puzzle_pot_01.gd")
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		_failed += 1
 		a.log("[PCHECK] FAIL 砸罐子关未创建主游戏")
@@ -45,7 +45,7 @@ func _check_pot(a) -> void:
 
 func _check_zombie_endless(a) -> void:
 	await _enter(a, "res://src/levels/mode_puzzle/puzzle_zombie_10.gd")
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		_failed += 1
 		a.log("[PCHECK] FAIL 无尽关未创建主游戏")

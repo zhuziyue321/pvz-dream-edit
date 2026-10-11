@@ -74,13 +74,13 @@ func collect() -> void:
 	collected = true  # 设置已被收集
 	var target_position = Vector2()
 	SoundManager.play_other_SFX("points")
-	if is_instance_valid(Global.main_game):
-		if is_instance_valid(Global.main_game.marker_2d_sun_target):
+	if is_instance_valid(GameContext.curr_main_game):
+		if is_instance_valid(GameContext.curr_main_game.marker_2d_sun_target):
 			## 出战卡槽在canvaslayer中，位置和摄像头位置有偏移
-			target_position = Global.main_game.marker_2d_sun_target.global_position + Global.main_game.camera_2d.global_position
-			#Log.debug(Global.main_game.marker_2d_sun_target.get_canvas_layer_node().get_final_transform())
+			target_position = GameContext.curr_main_game.marker_2d_sun_target.global_position + GameContext.curr_main_game.camera_2d.global_position
+			#Log.debug(GameContext.curr_main_game.marker_2d_sun_target.get_canvas_layer_node().get_final_transform())
 		else:
-			target_position = Global.main_game.marker_2d_sun_target_default.global_position
+			target_position = GameContext.curr_main_game.marker_2d_sun_target_default.global_position
 
 		EventBus.push_event(ConstEventName.ADD_SUN_VALUE, [sun_value])
 

@@ -642,9 +642,8 @@ func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int = 20):
 			if not is_instance_valid(zombie):
 				continue
 			zombie.be_ice_freeze(time_ice, time_decelerate, damage)
-	# 僵王不加入普通僵尸列表，单独遍历登记集合，每只存活僵王只接收一次本次全场冻结。
-	for boss: ZB000Base in get_living_bosses():
-		boss.be_ice_freeze(time_ice, time_decelerate, damage)
+	## 僵王已并入 all_zombies_2d，上面的全场遍历已经覆盖它，不需要再单独遍历登记集合
+	## （否则每只僵王会收到两次冻结通知）。窗口检查仍在 ZB000Base.be_ice_freeze 内。
 
 func start_ice_timer(wait_time:float):
 	if not is_instance_valid(ice_timer):
@@ -676,6 +675,10 @@ func jalapeno_bomb_lane_zombie(lane:int):
 		if is_instance_valid(all_zombies_2d[lane][i]):
 			## 当前接受爆炸伤害的普通僵尸，继续沿用其原有灰烬与删除规则。
 			var zombie:Zombie000Base = all_zombies_2d[lane][i]
+			## 僵王现在也在列表里，但它必须走下面的专用入口 be_jalapeno：
+			## be_bomb 是普通僵尸的「灰烬 + 立即删除」流程，会把正在播死亡演出的僵王直接抹掉。
+			if zombie is ZB000Base:
+				continue
 			zombie.be_bomb(1800, true)
 	# 任意行的辣椒都可命中僵王，使用专用入口检查受击窗口并保留完整死亡演出。
 	# 使用快照，某只僵王死亡不会影响其余实例遍历。
@@ -722,5 +725,10 @@ func death_all_zombie():
 			continue
 		for i in range(zombie_row.size()-1, -1, -1):
 			var zombie:Zombie000Base = zombie_row[i]
+			## 僵王不受「一键清场 / 调试清场」影响：它有自己的死亡演出与胜利结算流程，
+			## 这里直接 character_death_disappear() 会把还活着或正在演出的实例连同奖杯一起抹掉。
+			## 要结算僵王请正常把它打死（或走关卡自身的清场流程）。
+			if zombie is ZB000Base:
+				continue
 			zombie.character_death_disappear()
 #endregion

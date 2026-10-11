@@ -307,7 +307,10 @@ horizontal_alignment = 1
 [node name="Label2" type="Label" parent="PanelHelp/ScrollContainer/VBoxContainer"]
 custom_minimum_size = Vector2(430, 0)
 layout_mode = 2
-text = "   该部分关卡读取游戏根目录下\"data/levels/params\"文件夹里的关卡文件。
+text = "   该部分关卡读取游戏用户数据目录下\"custom_level\"文件夹里的关卡文件,
+   Windows 下一般是:
+   C:/Users/<用户名>/AppData/Roaming/Godot/app_userdata/PVZ-Dream-Edit/custom_level
+   (编辑器里跑与导出后跑是同一个文件夹)
    一) 关卡包: 在该文件夹下新建一个子文件夹(文件夹名就是关卡名),
       里面放关卡脚本(建议命名 level.gd, 继承 LevelScriptBase),
       同一个文件夹里其余的文件都是这个脚本的依赖, 会自动一起加载。

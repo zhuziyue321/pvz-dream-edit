@@ -45,7 +45,7 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP1 商店上架与购买
 	a.log("STEP1 商店")
 	state.is_wall_nut_first_aid_bought = false
-	a.get_tree().change_scene_to_file(STORE_SCENE)
+	GlobalUtils.change_scene(STORE_SCENE)
 	if not await a.wait_scene("store", 15.0):
 		_check(a, "进入商店", false, str(a.get_tree().current_scene))
 		_finish(a)
@@ -106,7 +106,7 @@ func run(a) -> void:
 		_finish(a)
 		return
 
-	var cell: PlantCell = Global.main_game.plant_cell_manager.all_plant_cells[0][0]
+	var cell: PlantCell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[0][0]
 	var nut = cell.create_plant(P004)
 	await a.wait(0.5)
 	if not is_instance_valid(nut):
@@ -155,14 +155,14 @@ func _enter_level(a) -> bool:
 		_check(a, "1-1 关卡资源可加载", false, LEVEL_01_01)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		_check(a, "进入 1-1", false, "main_game 为空")
 		return false
-	if Global.main_game.plant_cell_manager == null:
+	if GameContext.curr_main_game.plant_cell_manager == null:
 		_check(a, "进入 1-1", false, "plant_cell_manager 为空")
 		return false
 	return true

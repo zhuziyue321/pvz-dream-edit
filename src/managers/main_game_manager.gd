@@ -56,7 +56,7 @@ func register_level_init_callback(callback: Callable) -> void:
 
 ## 创建主游戏自己的子管理器
 ## 与 DaveSellManager 同一套路：运行时 new() 出来挂到 Manager 节点下
-## （这些在场景里没有对应节点，见 MainGameSubManager._get_main_game 的 Global.main_game 兜底）
+## （这些在场景里没有对应节点，见 MainGameSubManager._get_main_game 的 GameContext.curr_main_game 兜底）
 ## 必须在任何存档逻辑之前建好：不支持续玩的多轮关卡一进关就要 re_main_game()
 func init_main_game_sub_managers() -> void:
 	reward_manager = MgmRewardManager.new()
@@ -289,7 +289,7 @@ func _enter_tree() -> void:
 
 ## 进入树时更新游戏参数，子管理器赋值对应的游戏参数
 func set_game_para() -> void:
-	## 「当前这一局」登记到 GameContext（Global.main_game 只是它的转发，见 global.gd 注释）
+	## 「当前这一局」登记到 GameContext（见 global.gd 里那段「当前局上下文不在 Global 里」的说明）
 	GameContext.curr_main_game = self
 	## 先获取当前关卡参数
 	if Global.game_para != null:

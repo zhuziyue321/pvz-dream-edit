@@ -1,0 +1,283 @@
+﻿Godot Engine v4.6.2.stable.official.71f334935 - https://godotengine.org
+
+Godot_v4.6.2-stable_win64.exe : SCRIPT ERROR: Parse Error: Too many arguments for "warn()" call. Expected at most 5 but
+ received 6.
+所在位置 C:\Users\a a\AppData\Local\Temp\genie-ps-1791698401635-1zkap6.ps1:954 字符: 35
++ ... op/Dream" ; & 'C:\Users\a a\Desktop\Godot_v4.6.2-stable_win64.exe' -- ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (SCRIPT ERROR: P...but received 6.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   at: GDScript::reload (res://src/entities/character/components/anim_component/component_anim_norm.gd:92)
+SCRIPT ERROR: Parse Error: The variable type is being inferred from a Variant value, so it will be typed as Variant. (W
+arning treated as error.)
+   at: GDScript::reload (res://src/entities/character/components/anim_component/component_anim_norm.gd:89)
+ERROR: Failed to load script "res://src/entities/character/components/anim_component/component_anim_norm.gd" with error
+ "Parse error".
+   at: load (modules/gdscript/gdscript.cpp:2907)
+✅ 成功加载当前用户: default user
+✅ 已加载用户列表: ["default user"]
+LevelRegistry: 扫到 108 个内置关卡
+LevelRegistry: 读到 50 关的冒险通关掉落声明
+开始自动保存存档
+联机模组：会话已就绪（默认端口 8912）
+ModManager: 已装载模组 [netplay] 联机
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:p
+osition'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:r
+otation'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:s
+cale'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:s
+kew'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:t
+exture'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:pos
+ition'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:rot
+ation'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:sca
+le'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:ske
+w'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:tex
+ture'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:po
+sition'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:ro
+tation'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:sc
+ale'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:sk
+ew'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:te
+xture'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_shoot_bl
+ink:position'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_shoot_bl
+ink:rotation'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_shoot_bl
+ink:scale'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_shoot_bl
+ink:skew'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_shoot_bl
+ink:texture'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Attack', couldn't resolve track:  'AttackComponent'. This warning can be disabled in Pro
+ject Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:pos
+ition'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:rot
+ation'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:sca
+le'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:ske
+w'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_sprout:tex
+ture'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:posit
+ion'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:rotat
+ion'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:scale
+'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:skew'
+. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_face:textu
+re'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:posi
+tion'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:rota
+tion'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:scal
+e'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:skew
+'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Idle_mouth:text
+ure'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Head_Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem/stem_correct/Anim_blink:posi
+tion'. This warning can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf:position'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf:rotation'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf:scale'. This warning can be disabl
+ed in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf:skew'. This warning can be disable
+d in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf:texture'. This warning can be disa
+bled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_left_tip:position'. This warning c
+an be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_left_tip:rotation'. This warning c
+an be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_left_tip:scale'. This warning can 
+be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_left_tip:skew'. This warning can b
+e disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_left_tip:texture'. This warning ca
+n be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_right_tip:position'. This warning 
+can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_right_tip:rotation'. This warning 
+can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_right_tip:scale'. This warning can
+ be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_right_tip:skew'. This warning can 
+be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Backleaf_right_tip:texture'. This warning c
+an be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_bottom:position'. This warning can be
+ disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_bottom:rotation'. This warning can be
+ disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_bottom:scale'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_bottom:skew'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_bottom:texture'. This warning can be 
+disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_top:position'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_top:rotation'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_top:scale'. This warning can be disab
+led in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_top:skew'. This warning can be disabl
+ed in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Stalk_top:texture'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf:position'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf:rotation'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf:scale'. This warning can be disab
+led in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf:skew'. This warning can be disabl
+ed in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf:texture'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_right_tip:position'. This warning
+ can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_right_tip:rotation'. This warning
+ can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_right_tip:scale'. This warning ca
+n be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_right_tip:skew'. This warning can
+ be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_right_tip:texture'. This warning 
+can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_tip_left:position'. This warning 
+can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_tip_left:rotation'. This warning 
+can be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_tip_left:scale'. This warning can
+ be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_tip_left:skew'. This warning can 
+be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Frontleaf_tip_left:texture'. This warning c
+an be disabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem:position'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem:rotation'. This warning can be di
+sabled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem:scale'. This warning can be disab
+led in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem:skew'. This warning can be disabl
+ed in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+WARNING: AnimationMixer: 'Idle', couldn't resolve track:  'Body/BodyCorrect/Anim_stem:texture'. This warning can be dis
+abled in Project Settings.
+   at: _update_caches (scene/animation/animation_mixer.cpp:717)
+SCRIPT ERROR: Invalid access to property or key 'anim_name_now' on a base object of type 'Node2D'.
+   at: _probe (res://test/tmp_probe_anim_tree.gd:79)
+   GDScript backtrace (most recent call first):
+       [0] _probe (res://test/tmp_probe_anim_tree.gd:79)
+SCRIPT ERROR: Invalid access to property or key 'text' on a base object of type 'Dictionary'.
+   at: _initialize (res://test/tmp_probe_anim_tree.gd:20)
+   GDScript backtrace (most recent call first):
+       [0] _initialize (res://test/tmp_probe_anim_tree.gd:20)
+       [1] _probe (res://test/tmp_probe_anim_tree.gd:79)
+2026-10-11 14:01:23 自动存档
+2026-10-11 14:01:23 存档全局数据成功, 存档路径:user://default user/GlobalSaveGame.json
+2026-10-11 14:02:24 自动存档
+2026-10-11 14:02:24 存档全局数据成功, 存档路径:user://default user/GlobalSaveGame.json

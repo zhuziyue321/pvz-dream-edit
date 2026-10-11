@@ -135,7 +135,7 @@ func show_lock_tip(text:String):
 ## 开始游戏
 func _on_button_1_pressed() -> void:
 	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelAdventure])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelAdventure))
 
 
 ## 迷你游戏(冒险模式 3-2 通关后解锁)
@@ -143,21 +143,21 @@ func _on_button_2_pressed() -> void:
 	if not _try_enter_mode(MainSceneRegistry.MainScenes.ChooseLevelMiniGame, "迷你游戏"):
 		return
 	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelMiniGame])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelMiniGame))
 
 ## 解密模式(冒险模式 4-6 通关后解锁)
 func _on_button_3_pressed() -> void:
 	if not _try_enter_mode(MainSceneRegistry.MainScenes.ChooseLevelPuzzle, "解密模式"):
 		return
 	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelPuzzle])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelPuzzle))
 
 ## 生存模式(通关冒险模式 5-10 后解锁)
 func _on_button_4_pressed() -> void:
 	if not _try_enter_mode(MainSceneRegistry.MainScenes.ChooseLevelSurvival, "生存模式"):
 		return
 	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelSurvival])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelSurvival))
 
 #region 选项
 func _on_option_button_1_pressed() -> void:
@@ -184,19 +184,19 @@ func _on_full_screen_button_toggled(toggled_on: bool) -> void:
 func _on_item_button_1_pressed() -> void:
 	if not _is_garden_enterable():
 		return
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Garden])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Garden))
 
 ## 图鉴(按钮在通关冒险模式 2-4 拿到大图鉴后才显示,这里的判定只是兜底)
 func _on_item_button_2_pressed() -> void:
 	if not _is_almanac_enterable():
 		return
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Almanac])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Almanac))
 
 ## 商店(按钮在通关冒险模式 3-4 获得车钥匙后才显示,这里的判定只是兜底)
 func _on_item_button_3_pressed() -> void:
 	if not _is_shop_enterable():
 		return
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Store])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store))
 
 ## 点击用户更新时
 func _on_button_update_user_pressed() -> void:

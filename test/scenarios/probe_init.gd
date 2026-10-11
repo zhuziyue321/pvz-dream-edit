@@ -5,7 +5,7 @@ extends RefCounted
 ##       初始化是否仍然完整跑到，且组件是否仍然被创建：
 ##         1. 普僵 Zombie001Norm——海草/随机外观仍然生效（原 _ready 里的逻辑）
 ##         2. 窝瓜 Plant018Squash——AttackComponent 的受击状态掩码组件仍被创建
-##         3. 睡莲 Plant017LilyPad——DownBase 的 ready_norm 链仍跑到（tween 已建立）
+##         3. 睡莲 Plant017LilyPad——DownBase 的 ready_norm 链仍跑到（起伏动画已播放）
 ##
 ## 机器可读汇总：最后一行 [INIT] result=PASS|FAIL failed=<n>
 
@@ -41,22 +41,22 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(2.0)
-	if Global.main_game == null:
-		a.log("!! Global.main_game 为空")
+	if GameContext.curr_main_game == null:
+		a.log("!! GameContext.curr_main_game 为空")
 		return false
 	## 卡槽被系统自动填满时会跳过选卡直接开始，这里不要重复触发开始流程
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
-	return Global.main_game.main_game_progress != null
+	return GameContext.curr_main_game.main_game_progress != null
 
 
 func _first_plant_cell() -> PlantCell:
-	var mgr := Global.main_game.plant_cell_manager
+	var mgr := GameContext.curr_main_game.plant_cell_manager
 	for row in mgr.all_plant_cells:
 		for cell in row:
 			if is_instance_valid(cell):
@@ -70,7 +70,7 @@ func _first_plant_cell() -> PlantCell:
 
 ## 普僵：改到 ready_norm() 之后，随机外观逻辑仍要生效
 func _check_norm_zombie(a) -> void:
-	var mgr := Global.main_game.zombie_manager
+	var mgr := GameContext.curr_main_game.zombie_manager
 	if mgr == null or mgr.zombie_wave_manager == null:
 		_check(a, "僵尸管理器可用", false, "zombie_wave_manager 为空")
 		return
@@ -131,6 +131,17 @@ func _check_lily_pad(a, cell: PlantCell) -> void:
 		return
 	_check(a, "睡莲创建成功", p is Plant017LilyPad, str(p.get_class()))
 	_check(a, "睡莲初始化后仍有效", is_instance_valid(p))
+	## 水面起伏已由基类 Plant000DownBase 的动画驱动（原来荷叶自己开 tween），
+	## 这里把播放头 seek 到谷底立刻应用，确认动画轨道真的落在本体 position.y 上
+	var float_player: AnimationPlayer = p.get_node_or_null(^"FloatAnimationPlayer")
+	if float_player == null:
+		_check(a, "睡莲起伏动画播放器存在", false, "缺少 FloatAnimationPlayer 节点")
+	else:
+		_check(a, "睡莲起伏动画已播放", float_player.is_playing(), str(float_player.current_animation))
+		var y_before := p.position.y
+		float_player.seek(float_player.current_animation_length * 0.5, true)
+		_check(a, "睡莲起伏动画改到了本体 y",
+			absf(p.position.y - y_before) > 0.1, "%f -> %f" % [y_before, p.position.y])
 	p.queue_free()
 	await a.wait(0.2)
 

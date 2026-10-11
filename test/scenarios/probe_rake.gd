@@ -40,7 +40,7 @@ func run(a) -> void:
 func _check_consume_on_success(a) -> void:
 	var state = Global.global_game_state
 	var before: int = state.get_rake_use_num()
-	Global.main_game.save_manager.update_level_state_data_success()
+	GameContext.curr_main_game.save_manager.update_level_state_data_success()
 	_check(a, "通关结算消耗一次钉耙使用次数", state.get_rake_use_num() == before - 1,
 		"before=%d after=%d" % [before, state.get_rake_use_num()])
 
@@ -107,22 +107,22 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(2.0)
-	if Global.main_game == null:
-		a.log("!! Global.main_game 为空")
+	if GameContext.curr_main_game == null:
+		a.log("!! GameContext.curr_main_game 为空")
 		return false
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
-	return Global.main_game != null
+	return GameContext.curr_main_game != null
 
 
 ## 取本关放下的第一把钉耙，没有则记一条失败
 func _get_rake(a) -> Rake:
-	var gim = Global.main_game.game_item_manager.gim_rake
+	var gim = GameContext.curr_main_game.game_item_manager.gim_rake
 	if gim == null:
 		_check(a, "钉耙管理器可用", false, "gim_rake 为空")
 		return null
@@ -150,7 +150,7 @@ func _check_rake_pos(a, rake: Rake) -> void:
 
 ## 真实链路：生成一只普通僵尸挪到钉耙上，等 Area2D 触发
 func _check_trigger(a, rake: Rake) -> void:
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	var lane: int = rake.lane
 	var zombie_init_para: Dictionary = {
 		Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
@@ -173,7 +173,7 @@ func _check_trigger(a, rake: Rake) -> void:
 		"is_death=%s lane=%d" % [str(zombie.is_death), zombie.lane])
 
 	## 已经死亡的僵尸不该再触发钉耙（换一把新的钉耙验证）
-	var second := Global.main_game.game_item_manager.gim_rake.create_rake(
+	var second := GameContext.curr_main_game.game_item_manager.gim_rake.create_rake(
 		Global.game_para.map_data, lane)
 	await a.frames(2)
 	second._try_trigger(zombie)

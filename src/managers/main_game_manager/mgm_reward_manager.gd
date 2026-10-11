@@ -16,7 +16,8 @@ class_name MgmRewardManager
 ## 谁在用它：
 ##   EventBus "battle_finished" —— 本轮战斗打完由 ZombieManager / PlantCellManager 推送
 ##   EventBus "create_trophy"   —— 玩法自己判胜 / 关卡流程判胜
-##   EventBus "win_main_game"   —— MainGameManager 快捷键 Ctrl+D 走这里结算
+##   MainGameManager            —— 快捷键 Ctrl+D **直接调** `shortcut_win_main_game()`
+##                                 （不是走 EventBus：那个 "win_main_game" 事件全仓 0 处 push，已删）
 ##   LevelTimelineManager       —— 关卡流程跑完强制胜利
 ##   关卡脚本 `await gain("taco")` —— LevelScriptBase.gain() 转到这里
 ##
@@ -52,8 +53,6 @@ func init_manager() -> void:
 	EventBus.subscribe(ConstEventName.BATTLE_FINISHED, on_battle_finished)
 	## 创建奖杯
 	EventBus.subscribe(ConstEventName.CREATE_TROPHY, create_trophy)
-	## 游戏胜利
-	EventBus.subscribe(ConstEventName.WIN_MAIN_GAME, win_main_game)
 	## 通关掉落物被点开后的收尾表演播完（见 CanvasLayerWhiteScreen）
 	EventBus.subscribe(ConstEventName.LEVEL_COMPLETE_PICKUP_FINISHED, _on_level_complete_pickup_finished)
 
@@ -311,11 +310,24 @@ func wait_unlock_drop_closed(new_drop:Node2D) -> void:
 		waited += UNLOCK_DROP_WAIT_STEP
 
 
+## 「本关现在该不该结算」的问询口：外部（联机这类「结算由别人驱动」的玩法）可以占这个位。
+##
+## 用法：给 `Callable` 赋值一个 `func() -> bool`，**返回 false 就先不结算** ——
+## 不写通关存档、不切场景，本关停在原地，等外部拿到"该结算了"的信号后**自己再调一次**
+## `win_main_game()`（`is_win_settled` 不会因为被推迟而置位，所以那一次调得进来）。
+## 没被占的说明"没人替我做主"，照旧结算。本体自己**从不**给这一位赋值。
+var level_settle_gate: Callable = Callable()
+
+
 ## 当前关卡完成
 func win_main_game():
 	## 已经结算过：不再写第二遍通关存档 / 不再切第二次场景
 	if is_win_settled:
 		Log.debug("本关已经结算过，跳过重复结算")
+		return
+	## 先看有没有人要替这一局定结算时机（见 `level_settle_gate`）：说了"再等等"就先停在场上
+	if level_settle_gate.is_valid() and not level_settle_gate.call():
+		Log.debug("已按外部裁决推迟本关的结算：" + str(game_para.save_game_name))
 		return
 	is_win_settled = true
 	## 游戏暂停因素、游戏速度
@@ -335,17 +347,18 @@ func win_main_game():
 
 	if is_need_goto_store_on_win(is_shop_unlocked_before, shop_expand_stage_before):
 		GlobalUtils.change_scene(
-			Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Store]
+			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store)
 		)
 		return
 
 	if is_need_goto_almanac_on_win(is_almanac_unlocked_before):
 		GlobalUtils.change_scene(
-			Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Almanac]
+			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Almanac)
 		)
 		return
 
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap.get(game_para.game_mode, Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu]))
+	## 本关的选关场景没登记时退回主菜单（走访问器的 fallback 参数，不再自己读 MainScenesMap）
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(game_para.game_mode, MainSceneRegistry.MainScenes.StartMenu))
 
 
 ## 通关后是否需要直接进商店（原版：3-4 拿到车钥匙开张、4-4 拿到玉米卷扩充、5-1 / 5-10 分批上架）

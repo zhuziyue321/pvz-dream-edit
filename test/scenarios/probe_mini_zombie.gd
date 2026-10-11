@@ -31,11 +31,11 @@ func _run_level(a, title: String, level_path: String) -> void:
 
 	Global.game_para = para
 	await a.frames(3)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(3.0)
 
-	var mg: MainGameManager = Global.main_game
-	_check(a, title + ": 已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg: MainGameManager = GameContext.curr_main_game
+	_check(a, title + ": 已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return
 	var zm: ZombieManager = mg.zombie_manager

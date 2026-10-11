@@ -31,7 +31,7 @@ var _start_allowed := false
 var _was_in_choose := false
 ## 房主**按过**开始、但那一刻还有人没准备 ⇒ 等他们准备好补按一次（见 `start_gate()`）
 var _pending_start := false
-## 一条话写到控制台「最近一条」上（由 `NetplayMod` 传进来）
+## 一句话写进日志（回调由 `NetplayMod` 传进来；没接上就什么都不做）
 var _notice: Callable = Callable()
 
 

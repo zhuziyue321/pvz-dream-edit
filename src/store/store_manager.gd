@@ -161,6 +161,6 @@ func _on_store_main_menu_button_pressed() -> void:
 	siganl_exit_store.emit()
 	Global.save_service.save_now()
 	if get_tree().current_scene == self:
-		GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+		GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 	else:
 		queue_free()

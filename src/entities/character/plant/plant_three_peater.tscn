@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=3 uid="uid://dxpxwh4ratj2h"]
+[gd_scene load_steps=52 format=3 uid="uid://dxpxwh4ratj2h"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_qug25"]
 [ext_resource type="Script" uid="uid://dnq2jch8kf4v6" path="res://src/entities/character/plant/plant_three_peater.gd" id="2_3bnf4"]
@@ -96,6 +96,14 @@ sync = true
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_s5y76"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xlxc8"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_xlxc8"]
+states/ThreePeater_idle/node = SubResource("AnimationNodeAnimation_bbqbg")
+states/ThreePeater_idle/position = Vector2(300, 100)
+transitions = ["Start", "ThreePeater_idle", SubResource("AnimationNodeStateMachineTransition_xlxc8")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_xlxc8"]
 graph_offset = Vector2(-640.6845, -51.189285)
 nodes/output/position = Vector2(660, 140)
@@ -109,8 +117,8 @@ nodes/Add2/position = Vector2(240, 40)
 "nodes/Add2 4/position" = Vector2(-360, 480)
 "nodes/Add2 5/node" = SubResource("AnimationNodeAdd2_41xtt")
 "nodes/Add2 5/position" = Vector2(-560, 640)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_bbqbg")
-nodes/Animation/position = Vector2(-100, -40)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_xlxc8")
+nodes/StateMachine/position = Vector2(-100, -40)
 "nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_yu1lk")
 "nodes/Animation 2/position" = Vector2(-700, -40)
 "nodes/Animation 3/node" = SubResource("AnimationNodeAnimation_qqmcl")
@@ -129,7 +137,7 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_s5y76")
 nodes/TimeScale/position = Vector2(493.534, 104.935)
 "nodes/Animation 7/node" = SubResource("AnimationNodeAnimation_jdor8")
 "nodes/Animation 7/position" = Vector2(-860, 800)
-node_connections = [&"output", 0, &"TimeScale", &"Add2", 0, &"Animation", &"Add2", 1, &"OneShot", &"Add2 2", 0, &"Animation 2", &"Add2 2", 1, &"Add2 3", &"Add2 3", 0, &"Animation 3", &"Add2 3", 1, &"Animation 4", &"Add2 4", 0, &"Animation 5", &"Add2 4", 1, &"Add2 5", &"Add2 5", 0, &"Animation 6", &"Add2 5", 1, &"Animation 7", &"TimeScale 2", 0, &"Add2 4", &"OneShot", 0, &"Add2 2", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"Add2"]
+node_connections = [&"output", 0, &"TimeScale", &"Add2", 0, &"StateMachine", &"Add2", 1, &"OneShot", &"Add2 2", 0, &"Animation 2", &"Add2 2", 1, &"Add2 3", &"Add2 3", 0, &"Animation 3", &"Add2 3", 1, &"Animation 4", &"Add2 4", 0, &"Animation 5", &"Add2 4", 1, &"Add2 5", &"Add2 5", 0, &"Animation 6", &"Add2 5", 1, &"Animation 7", &"TimeScale 2", 0, &"Add2 4", &"OneShot", 0, &"Add2 2", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"Add2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wvqqo"]
 size = Vector2(1000, 5)

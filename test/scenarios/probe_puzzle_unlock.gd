@@ -31,7 +31,7 @@ var _failed := 0
 func run(a) -> void:
 	a.log("")
 	a.log("========== 探针 冒险 4-6 礼盒解锁解谜模式 ==========")
-	## 等主菜单自身初始化完再切场景，否则 change_scene_to_file 会撞上「父节点正忙」
+	## 等主菜单自身初始化完再切场景，否则切场景会撞上「父节点正忙」
 	await a.wait(2.0)
 	_check_const(a)
 	_check_level_resource(a)
@@ -106,7 +106,7 @@ func _run_level(a, max_level: int) -> void:
 	para.set_choose_level(ADV, PAGE_04, ID_04_06)
 	Global.game_para = para
 	a.log("[场景] 进入 4-6（%s）" % para.save_game_name)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 
 	if not await _wait_main_game(a, 90.0):
 		_check(a, "4-6 进入 MAIN_GAME", false, "超时，阶段=%s" % str(_progress_name()))
@@ -116,12 +116,12 @@ func _run_level(a, max_level: int) -> void:
 		not Global.global_game_state.is_mode_unlocked(PUZZLE),
 		str(Global.global_game_state.get_max_success_adventure_level()))
 
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	var zwm = zm.zombie_wave_manager
 	_check(a, "波次管理器读到了携带波次 = %d" % EXPECT_WAVE, zwm.drop_unlock_wave == EXPECT_WAVE,
 		str(zwm.drop_unlock_wave))
 
-	var parent := Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent
+	var parent := GameContext.curr_main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent
 	_check(a, "（前置）掉落容器已就绪", parent != null)
 	if parent == null:
 		return
@@ -162,12 +162,12 @@ func _run_level(a, max_level: int) -> void:
 	_check(a, "打死该波僵尸后草坪上掉出礼盒", dropped != null, str(dropped))
 	if dropped == null:
 		## 区分「掉落链路坏了」和「僵尸没死透 / 关卡已经失败」
-		if Global.main_game != null:
-			Global.main_game.drop_item_manager.create_unlock_drop(Vector2(500, 300))
+		if GameContext.curr_main_game != null:
+			GameContext.curr_main_game.drop_item_manager.create_unlock_drop(Vector2(500, 300))
 			await a.wait(1.0)
 			_check(a, "（诊断）掉落入口本身可用（不是配置问题）", _find_present(parent) != null,
 				"剩余僵尸=%d 阶段=%s" % [
-					Global.main_game.zombie_manager.curr_zombie_num, _progress_name()])
+					GameContext.curr_main_game.zombie_manager.curr_zombie_num, _progress_name()])
 		return
 	_check(a, "礼盒是解锁类（不计花园植物、不写存档）", not dropped.is_garden_plant,
 		str(dropped.is_garden_plant))
@@ -199,7 +199,7 @@ func _run_level(a, max_level: int) -> void:
 ## ——画布有偏移时（本关 x 偏 150）把掉落点夹到 [0, 视口宽] 会让右边一截掉到画面外，
 ##   玩家只能眼看礼盒 15 秒后自己消失，所以必须夹到**看得见的那块世界矩形**里
 func _check_clamp(a) -> void:
-	var manager := Global.main_game.drop_item_manager
+	var manager := GameContext.curr_main_game.drop_item_manager
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
 		_check(a, "（前置）能取到根视口", false)
@@ -229,9 +229,9 @@ func _mark_cleared(max_level: int) -> void:
 
 
 func _progress_name() -> String:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return "main_game=null"
-	return str(Global.main_game.main_game_progress)
+	return str(GameContext.curr_main_game.main_game_progress)
 
 
 ## 等进 MAIN_GAME：中途出现戴夫就逐句点完（4-6 开场有一段赠礼对话），
@@ -241,7 +241,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 	var started := false
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game == null:
+		if GameContext.curr_main_game == null:
 			await a.wait(0.5)
 			waited += 0.5
 			continue
@@ -250,13 +250,13 @@ func _wait_main_game(a, timeout: float) -> bool:
 			await a.wait(0.4)
 			waited += 0.4
 			continue
-		var progress := Global.main_game.main_game_progress
+		var progress := GameContext.curr_main_game.main_game_progress
 		## 时间轴停在选卡上等玩家点「开始游戏」才按 —— 提前按会让后续事件（准备安放植物）
 		## 在已经开战之后补跑一遍，把关卡塞回 PREPARE，僵尸再怎么打也走不到下一步
-		if Global.main_game.is_timeline_waiting_choose_card and not started:
+		if GameContext.curr_main_game.is_timeline_waiting_choose_card and not started:
 			a.log("  点「开始游戏」（当前阶段=%d）" % progress)
 			started = true
-			Global.main_game.main_game_start()
+			GameContext.curr_main_game.main_game_start()
 			await a.wait(1.5)
 			waited += 1.5
 			continue
@@ -268,7 +268,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 
 
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():
@@ -283,13 +283,13 @@ func _find_dave() -> CrazyDave:
 func _kill_until_drop(a, parent: Node, timeout: float) -> Present:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game == null:
+		if GameContext.curr_main_game == null:
 			return null
 		## 关卡还停在选卡 / 准备阶段就想办法把它推下去
-		if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD \
-				or Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.PREPARE:
-			Global.main_game.main_game_start()
-		var zm = Global.main_game.zombie_manager
+		if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD \
+				or GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.PREPARE:
+			GameContext.curr_main_game.main_game_start()
+		var zm = GameContext.curr_main_game.zombie_manager
 		if zm.curr_zombie_num > 0:
 			zm.death_all_zombie()
 		var found := _find_present(parent)

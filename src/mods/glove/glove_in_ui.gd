@@ -9,6 +9,8 @@ class_name UIGlove
 signal glove_clicked
 
 @onready var glove_icon: TextureRect = $Glove
+## 冷却遮罩（与卡片那块同款：盖住 = 还不能点，随剩余时间往回收）
+@onready var cool_mask: ProgressBar = $CoolMask
 
 
 ## 鼠标点击手套：交给手持物组件处理（拿到手上）
@@ -29,3 +31,12 @@ func _unhandled_key_input(_event: InputEvent) -> void:
 func refresh_glove_ui(is_slot_visible: bool, is_icon_visible: bool) -> void:
 	visible = is_slot_visible
 	glove_icon.visible = is_icon_visible
+
+
+## 刷冷却遮罩（与显隐分开：显隐由 `HandComponentGlove.refresh_ui()` 决定，
+## 遮罩剩多少由它的 `_refresh_cool_ui()` 每帧推）
+## cool_ratio：还剩几分之几（0 = 没在冷却 → 收起遮罩）
+func refresh_glove_cool(cool_ratio: float) -> void:
+	cool_mask.visible = cool_ratio > 0.0
+	if cool_mask.visible:
+		cool_mask.ratio = clampf(cool_ratio, 0.0, 1.0)

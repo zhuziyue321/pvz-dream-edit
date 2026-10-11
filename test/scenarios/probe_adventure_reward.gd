@@ -38,8 +38,8 @@ func run(a) -> void:
 		new_drop.tip_text)
 	_check_seed_packet(a, new_drop)
 	_check(a, "掉奖励时还没出别的战利品（奖杯被奖励顶掉）",
-		_count_drops(Global.main_game.drop_item_manager) == 1,
-		str(_count_drops(Global.main_game.drop_item_manager)))
+		_count_drops(GameContext.curr_main_game.drop_item_manager) == 1,
+		str(_count_drops(GameContext.curr_main_game.drop_item_manager)))
 
 	# ------------------------------------------------ STEP2 点开奖励直接结算
 	a.log("STEP2 点开奖励（应直接结算，不再抛奖杯）")
@@ -57,18 +57,18 @@ func run(a) -> void:
 		_finish(a)
 		return
 	var parents2 := [
-		Global.main_game.drop_item_manager.dim_seed_packet.all_drop_seed_packet_parent,
-		Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent,
+		GameContext.curr_main_game.drop_item_manager.dim_seed_packet.all_drop_seed_packet_parent,
+		GameContext.curr_main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent,
 	]
 	var drop_before2 := 0
 	for parent2 in parents2:
 		drop_before2 += parent2.get_child_count()
-	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
+	GameContext.curr_main_game.reward_manager.create_trophy(Vector2(600, 300))
 	await a.wait(1.5)
 	## 奖杯现在也是一种战利品：按名字取贴图、掉在掉落容器里（见 LootRegistry / gain_loot），
 	## 与奖励同一个容器，所以「重打掉的是不是奖励」只能按类型 / 贴图分辨
 	var trophy_drop = _find_new_drop(
-		Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent)
+		GameContext.curr_main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent)
 	_check(a, "重打不再掉奖励（掉的不是种子包）", not (trophy_drop is SeedPacket),
 		str(drop_before2) + " -> " + str(trophy_drop))
 	_check(a, "重打直接出奖杯（奖杯贴图）",
@@ -150,8 +150,8 @@ func _enter_level(a, level_file: String, page: int, level_id: String) -> bool:
 	var p = (load("res://src/levels/mode_adventure/" + level_file + ".gd") as GDScript).new()
 	p.set_choose_level(ADV, page, level_id)
 	Global.game_para = p
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[p.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(p.game_sences))
 	if not await a.wait_scene("main_game", 15.0):
 		_check(a, "进入 " + level_id, false, str(a.get_tree().current_scene))
 		return false
@@ -163,7 +163,7 @@ func _enter_level(a, level_file: String, page: int, level_id: String) -> bool:
 ## 首次通关掉的是**本关自己声明的那个战利品**（`_init()` 里的 level_complete_loot），
 ## 走的就是关卡脚本 run_flow() 末尾那句 `await gain(level_complete_loot)`
 func _trigger_win_and_find_drop(a):
-	var dim = Global.main_game.drop_item_manager
+	var dim = GameContext.curr_main_game.drop_item_manager
 	var parents := [
 		dim.dim_seed_packet.all_drop_seed_packet_parent,
 		dim.dim_garden_plant.all_drop_garden_plant_parent,
@@ -171,8 +171,8 @@ func _trigger_win_and_find_drop(a):
 	var drop_before := 0
 	for parent in parents:
 		drop_before += parent.get_child_count()
-	var loot: String = Global.main_game.game_para.level_complete_loot
-	Global.main_game.reward_manager.gain(loot, Vector2(600, 300))
+	var loot: String = GameContext.curr_main_game.game_para.level_complete_loot
+	GameContext.curr_main_game.reward_manager.gain(loot, Vector2(600, 300))
 	await a.wait(1.5)
 	var new_drop: Node = null
 	for parent in parents:

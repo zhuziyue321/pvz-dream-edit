@@ -29,7 +29,7 @@ var _max_light_visible := false
 func run(a) -> void:
 	a.log("")
 	a.log("========== 探针 通关掉落物收尾表演（居中 -> 发光 -> 白屏 -> 结算） ==========")
-	## 等主菜单自身初始化完再切场景，否则 change_scene_to_file 会撞上「父节点正忙」
+	## 等主菜单自身初始化完再切场景，否则切场景会撞上「父节点正忙」
 	await a.wait(2.0)
 	await _run_level(a)
 	_finish(a)
@@ -48,7 +48,7 @@ func _run_level(a) -> void:
 	Global.game_para = para
 	para.set_choose_level(ADV, PAGE_01, ID_01_04)
 	a.log("[场景] 进入 1-4（%s）" % para.save_game_name)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 
 	if not await _wait_main_game(a, 90.0):
 		_check(a, "1-4 进入 MAIN_GAME", false, "超时，阶段=%s" % str(_progress_name()))
@@ -67,7 +67,7 @@ func _run_level(a) -> void:
 		return
 	_check(a, "白屏表演层开局是隐藏的（不挡画面）", not white_layer.visible, str(white_layer.visible))
 
-	var parent := Global.main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent
+	var parent := GameContext.curr_main_game.drop_item_manager.dim_garden_plant.all_drop_garden_plant_parent
 	_check(a, "（前置）掉落容器已就绪", parent != null)
 	if parent == null:
 		return
@@ -76,9 +76,9 @@ func _run_level(a) -> void:
 
 	## 走真正的结算线：掉出本关战利品并一直等到玩家点开后才切场景
 	## （关卡脚本 run_flow() 末尾那句 `await gain(level_complete_loot)` 就走这里）
-	var loot: String = Global.main_game.game_para.level_complete_loot
+	var loot: String = GameContext.curr_main_game.game_para.level_complete_loot
 	a.log("  触发本关结算线 gain(%s) @ %s" % [loot, str(DROP_POS)])
-	Global.main_game.reward_manager.gain(loot, DROP_POS)
+	GameContext.curr_main_game.reward_manager.gain(loot, DROP_POS)
 
 	var drop := await _wait_drop(a, parent, MAX_WAIT)
 	_check(a, "结算线掉出了本关奖励", drop != null, str(drop))
@@ -198,9 +198,9 @@ func _check_light_layer(a, white_layer: CanvasLayerWhiteScreen, drop_parent: Nod
 
 
 func _find_layer_by_name(layer_name: String) -> CanvasLayer:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return null
-	for c in Global.main_game.get_children():
+	for c in GameContext.curr_main_game.get_children():
 		if c is CanvasLayer and c.name == layer_name:
 			return c as CanvasLayer
 	return null
@@ -228,9 +228,9 @@ func _is_in_view(pos: Vector2) -> bool:
 
 ## 白屏表演层：主游戏场景里的 CanvasLayerWhiteScreen
 func _find_white_layer() -> CanvasLayerWhiteScreen:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return null
-	for c in Global.main_game.get_children():
+	for c in GameContext.curr_main_game.get_children():
 		if c is CanvasLayerWhiteScreen:
 			return c as CanvasLayerWhiteScreen
 	return null
@@ -273,9 +273,9 @@ func _mark_cleared(max_level: int) -> void:
 
 
 func _progress_name() -> String:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return "main_game=null"
-	return str(Global.main_game.main_game_progress)
+	return str(GameContext.curr_main_game.main_game_progress)
 
 
 ## 等进 MAIN_GAME：中途出现戴夫就逐句点完，停在选卡 / 准备阶段就替玩家点「开始游戏」
@@ -283,7 +283,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 	var started := false
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game == null:
+		if GameContext.curr_main_game == null:
 			await a.wait(0.5)
 			waited += 0.5
 			continue
@@ -292,14 +292,14 @@ func _wait_main_game(a, timeout: float) -> bool:
 			await a.wait(0.4)
 			waited += 0.4
 			continue
-		if Global.main_game.is_timeline_waiting_choose_card and not started:
-			a.log("  点「开始游戏」（当前阶段=%d）" % Global.main_game.main_game_progress)
+		if GameContext.curr_main_game.is_timeline_waiting_choose_card and not started:
+			a.log("  点「开始游戏」（当前阶段=%d）" % GameContext.curr_main_game.main_game_progress)
 			started = true
-			Global.main_game.main_game_start()
+			GameContext.curr_main_game.main_game_start()
 			await a.wait(1.5)
 			waited += 1.5
 			continue
-		if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+		if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 			return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -307,7 +307,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 
 
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

@@ -8,3 +8,5 @@ script = ExtResource("2_5l3k7")
 plant_up_position = Vector2(0, 0)
 
 [node name="DownPlantContainer" type="Node2D" parent="." index="7"]
+
+[node name="FloatAnimationPlayer" type="AnimationPlayer" parent="."]

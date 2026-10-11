@@ -1,11 +1,15 @@
 extends BombComponentBase
 class_name BombComponentJalapeno
 
-var owner_plant:Plant000Base
+## 宿主植物：在基类 `owner_character` 之上收窄一次类型，**不回写 owner**
+var owner_plant:Plant000Base:
+	get: return owner_character as Plant000Base
 
 func component_ready() -> void:
 	super()
-	owner_plant = owner as Plant000Base
+	if owner_plant == null:
+		Log.error("BombComponentJalapeno 只能挂在植物上，当前 owner：" + str(owner))
+		return
 
 ## 爆炸特效\冰道\梯子
 func _start_bomb_fx():

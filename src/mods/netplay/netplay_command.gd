@@ -43,6 +43,14 @@ const OP_PICK_DROP := &"pick_drop"
 ##   再走一条命令只会多一个"两边谁先到"的竞态；演出是**一次性事件**，只能走可靠命令。）
 ## （不是"玩家操作"，走的是 `battle_op` 那条下行通道，见 `NetplayWaveSync`）
 const OP_WAVE_NEXT := &"wave_next"
+## 主机这一段**打完了**（参数：空）—— 只有主机喊得动，理由与 `OP_WAVE_NEXT` 同一条：
+##
+## ★ 客户端**自己永远算不出"打完了"**：它一次波都不开（`start_next_wave_gate` 恒 false），
+##   `is_end_wave` 永远等不到真；场上的僵尸又是快照补出来的木偶，死也不走本地死亡流程，
+##   `curr_zombie_num` 只增不减。少这一条，关卡流程里「本段打完了吗」那个轮询在客户端
+##   永远等不到真 ⇒ 流程卡在开战那一步 ⇒ 本关走不到判胜 ⇒ 客户端拿不到本关给的植物。
+## （不是"玩家操作"，走的是 `battle_op` 那条下行通道，见 `NetplayWaveSync`）
+const OP_BATTLE_FINISHED := &"battle_finished"
 ## 主机出了一张卡（参数：卡的身份 + 从哪个卡槽出 + 落点）—— 只有主机喊得动
 ##
 ## 与 `OP_SUN_SPAWN` 同一条道理：传送带是从**随机池**里抽的（`CardRandomPool` 走全局
@@ -89,6 +97,10 @@ const ARG_CARD_REF := "card_ref"
 ## 主机那一局上没有它 —— 花多少由"手里拿着这一张的人"报，主机照着扣同样的数
 ## （紫卡会随场上株数加价，主机自己算不出来，只能照报的数扣）
 const ARG_SUN_COST := "sun_cost"
+## 种成之后**新植株的实体编号**（`OP_CLICK_CELL` 用）：由主机种成后回填进这条命令，
+## 客户端照着把自己刚种下那一株改写成同一个号 —— 两端从此认得同一株植物。
+## 不带的后果见 `NetplayBattleSync._claim_fresh_plant()`。
+const ARG_NEW_ID := "new_id"
 
 ## 字典键名（写出来是为了不让字符串散在收发两端）
 const KEY_OP := "op"
@@ -207,7 +219,7 @@ static func _has_prop(target, prop: StringName) -> bool:
 ## 两个人挑的往往不是同一株）。而"我现在拿着哪一张"才是主机重放时真正需要的那一条信息 ——
 ## 拿 `card_reference` 说身份，主机照着它自己取 / 造一张同样的。
 static func held_card() -> Card:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	if mg == null or not is_instance_valid(mg) or mg.hand_manager == null:
 		return null
 	var hand := mg.hand_manager.curr_hand_component as HandComponentCharacter

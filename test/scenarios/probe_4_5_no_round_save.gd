@@ -27,21 +27,21 @@ func run(a) -> void:
 	var err := ResourceSaver.save(save, path)
 	a.log("[4-5-save] 存档路径=%s 伪造结果=%d 存在=%s" % [path, err, str(ResourceLoader.exists(path))])
 
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(5.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[4-5-save] !! 主游戏未创建")
 		a.finish(true)
 		return
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 	a.log("[4-5-save] 进关后 轮次=%d(期望 1) 罐子数=%d(期望 %d) 占列=%s(期望 3 列) 存档仍存在=%s(期望 false)" % [
-		Global.main_game.curr_game_round, pcm.curr_pot_num, para.pot_num_on_fixed_mode,
+		GameContext.curr_main_game.curr_game_round, pcm.curr_pot_num, para.pot_num_on_fixed_mode,
 		str(_pot_cols(pcm)), str(ResourceLoader.exists(path))])
 
 	## 切到第 2 批：不写存档
-	Global.main_game.curr_game_round = 2
+	GameContext.curr_main_game.curr_game_round = 2
 	await pcm.start_next_game_plant_cell_manager_update()
 	a.log("[4-5-save] 切到第 2 批后 罐子数=%d(期望 %d) 存档存在=%s(期望 false)" % [
 		pcm.curr_pot_num, para.pot_num_on_fixed_mode, str(ResourceLoader.exists(path))])

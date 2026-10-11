@@ -135,13 +135,13 @@ func _exit_tree() -> void:
 
 ## 进关停靠点：关卡数据上配了 camera_init_x 就以关卡为准（见 ResourceLevelData.camera_init_x），
 ## 没配就是背景最左侧（拍到房子）。
-## 能在这里读到关卡数据：MainGameManager._enter_tree() 先设好 Global.main_game / game_para，
+## 能在这里读到关卡数据：MainGameManager._enter_tree() 先设好 GameContext.curr_main_game / game_para，
 ## 子节点（本相机）的 _ready 才跑。
 func get_init_position() -> Vector2:
 	var x := CAM_POS_INIT.x
-	if Global.main_game != null and Global.main_game.game_para != null \
-			and Global.main_game.game_para.has_camera_init_x():
-		x = Global.main_game.game_para.camera_init_x
+	if GameContext.curr_main_game != null and GameContext.curr_main_game.game_para != null \
+			and GameContext.curr_main_game.game_para.has_camera_init_x():
+		x = GameContext.curr_main_game.game_para.camera_init_x
 	return Vector2(x, CAM_POS_INIT.y)
 
 

@@ -35,15 +35,15 @@ func run(a) -> void:
 	## 回到第 1 批，实际进关卡看生成了多少罐子
 	para.apply_pot_config_on_round(1)
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[4-5] !! 主游戏未创建")
 		a.finish(true)
 		return
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 	a.log("[4-5] 第 1 批场上 罐子数=%d(期望 %d) 占列=%s 绿罐=%d(期望 %d) 棕罐=%d" % [
 		pcm.curr_pot_num, para.pot_num_on_fixed_mode, str(_pot_cols(pcm)),
 		_hint_num(pcm), para.pot_hint_num, pcm.curr_pot_num - _hint_num(pcm)])
@@ -51,14 +51,14 @@ func run(a) -> void:
 	## 种一株植物后切到第 2 批：植物要被清掉，罐子数 / 列数 / 提示罐要跟着换
 	pcm.all_plant_cells[0][0].create_plant(CharacterRegistry.PlantType.P001PeaShooterSingle)
 	a.log("[4-5] 切批次前 已种植物=%d" % _plant_num(pcm))
-	Global.main_game.curr_game_round = 2
+	GameContext.curr_main_game.curr_game_round = 2
 	await pcm.start_next_game_plant_cell_manager_update()
 	a.log("[4-5] 第 2 批场上 罐子数=%d(期望 %d) 占列=%s 绿罐=%d(期望 %d) 已种植物=%d(期望 0)" % [
 		pcm.curr_pot_num, para.pot_num_on_fixed_mode, str(_pot_cols(pcm)),
 		_hint_num(pcm), para.pot_hint_num, _plant_num(pcm)])
 
 	## 第 3 批：5 列 25 个罐子、3 个提示罐
-	Global.main_game.curr_game_round = 3
+	GameContext.curr_main_game.curr_game_round = 3
 	await pcm.start_next_game_plant_cell_manager_update()
 	a.log("[4-5] 第 3 批场上 罐子数=%d(期望 %d) 占列=%s 绿罐=%d(期望 %d)" % [
 		pcm.curr_pot_num, para.pot_num_on_fixed_mode, str(_pot_cols(pcm)),

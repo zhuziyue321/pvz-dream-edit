@@ -51,11 +51,11 @@ transitions = ["Wallnut_idle", "Wallnut_face", SubResource("AnimationNodeStateMa
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_hev76"]
 nodes/output/position = Vector2(900, 120)
-nodes/AnimationNodeStateMachine/node = SubResource("AnimationNodeStateMachine_63m75")
-nodes/AnimationNodeStateMachine/position = Vector2(260, 100)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_63m75")
+nodes/StateMachine/position = Vector2(260, 100)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_r0k88")
 nodes/TimeScale/position = Vector2(600, 100)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"AnimationNodeStateMachine"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="Resource" id="Resource_hev76"]
 script = ExtResource("8_y4g8x")

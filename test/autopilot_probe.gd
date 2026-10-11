@@ -96,8 +96,8 @@ func find_clickable(pattern: String, only_visible: bool = true) -> Array:
 ## 取草坪格子节点。[row] 0 = 最上面一行，[col] 0 = 最左一列，与 PlantCell.row_col 一致。
 ## 优先用 plant_cell_manager.all_plant_cells（权威），取不到再按节点名回退。
 func plant_cell_node(row: int, col: int) -> Control:
-	if Global != null and Global.main_game != null:
-		var pcm = Global.main_game.plant_cell_manager
+	if Global != null and GameContext.curr_main_game != null:
+		var pcm = GameContext.curr_main_game.plant_cell_manager
 		if pcm != null and pcm.all_plant_cells != null and not pcm.all_plant_cells.is_empty():
 			var cells = pcm.all_plant_cells
 			if row >= 0 and row < cells.size() and col >= 0 and col < cells[row].size():
@@ -133,8 +133,8 @@ func probe_hover_line(x: float, y: float) -> String:
 	if hovered != null:
 		hpath = str(hovered.get_path())
 	var curr := "-"
-	if Global != null and Global.main_game != null:
-		var mg = Global.main_game
+	if Global != null and GameContext.curr_main_game != null:
+		var mg = GameContext.curr_main_game
 		if mg.hand_manager != null and mg.hand_manager.curr_plant_cell != null:
 			curr = str(mg.hand_manager.curr_plant_cell.get_path())
 	return "[悬停] %s -> viewport鼠标=%s hovered=%s 当前格=%s" % [

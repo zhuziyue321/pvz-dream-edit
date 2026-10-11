@@ -153,7 +153,7 @@ func init_manager() -> void:
 	signal_connect_plant_cell_with_hand_manager(main_game.hand_manager)
 	tomb_stone_manager.init_tomb_stone_manager(game_para)
 	## 没有存档直接创建植物和创建罐子
-	if not Global.main_game.is_save_game_data_on_init:
+	if not GameContext.curr_main_game.is_save_game_data_on_init:
 		init_pot()
 		cerate_pot()
 		if game_para.is_zombie_mode:
@@ -273,7 +273,7 @@ func pot_open_update(is_zombie:bool, glo_pos:Vector2):
 	curr_pot_num -= 1
 	if curr_pot_num == 0:
 		## 如果最后一个罐子是僵尸，并且场上有僵尸,让僵尸管理器管理本轮战斗的收尾
-		if is_zombie or Global.main_game.zombie_manager.curr_zombie_num != 0:
+		if is_zombie or GameContext.curr_main_game.zombie_manager.curr_zombie_num != 0:
 			EventBus.push_event(ConstEventName.END_WAVE_ZOMBIE)
 		else:
 			## 罐子全砸开 + 场上没僵尸 = 本轮战斗打完，不判胜（胜利由关卡流程决定）
@@ -337,15 +337,15 @@ func start_next_game_plant_cell_manager_update():
 			await get_tree().process_frame
 			is_clear_plant = true
 		if plant_random_pool_on_zombie_mode.get_item_weight(CharacterRegistry.PlantType.P002SunFlower) > 1:
-			Log.debug(str("我是僵尸多轮游戏模式，更新向日葵随机权重为:") + str(max(9-Global.main_game.curr_game_round, 1)))
-			plant_random_pool_on_zombie_mode.update_item_weight(CharacterRegistry.PlantType.P002SunFlower, max(9-Global.main_game.curr_game_round, 1))
+			Log.debug(str("我是僵尸多轮游戏模式，更新向日葵随机权重为:") + str(max(9-GameContext.curr_main_game.curr_game_round, 1)))
+			plant_random_pool_on_zombie_mode.update_item_weight(CharacterRegistry.PlantType.P002SunFlower, max(9-GameContext.curr_main_game.curr_game_round, 1))
 		Log.debug("我是僵尸模式创建植物")
 		create_plant_on_zombie_mode()
 
 	## 多轮砸罐子关每批罐子的配置不一样（原版冒险 4-5：3 列 → 4 列 → 5 列，一批比一批难），
 	## 先切到本轮的配置，再按本轮的列数重算候选格子，最后创建罐子
 	if game_para.is_pot_mode:
-		game_para.apply_pot_config_on_round(Global.main_game.curr_game_round)
+		game_para.apply_pot_config_on_round(GameContext.curr_main_game.curr_game_round)
 		PcmPotUtil.init_plant_cell_row_on_zombie_row_type(self)
 	## 创建罐子
 	cerate_pot()

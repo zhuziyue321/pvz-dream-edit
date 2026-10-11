@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://m3w2qdnyrqju"]
+[gd_scene load_steps=19 format=3 uid="uid://m3w2qdnyrqju"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_ax4bb"]
 [ext_resource type="Texture2D" uid="uid://bilk171gldfxp" path="res://assets/reanim/PotatoMine_rock3.png" id="2_3ugka"]
@@ -26,13 +26,21 @@ animation = &"ZenGarden_sprout_idle_noflower"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_sgebj"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_q5g85"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_q5g85"]
+states/ZenGarden_sprout_idle_noflower/node = SubResource("AnimationNodeAnimation_q0wse")
+states/ZenGarden_sprout_idle_noflower/position = Vector2(300, 100)
+transitions = ["Start", "ZenGarden_sprout_idle_noflower", SubResource("AnimationNodeStateMachineTransition_q5g85")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_q5g85"]
 graph_offset = Vector2(-334.909, 88.4545)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_q0wse")
-nodes/Animation/position = Vector2(-180, 140)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_q5g85")
+nodes/StateMachine/position = Vector2(-180, 140)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_sgebj")
 nodes/TimeScale/position = Vector2(120, 140)
-node_connections = [&"TimeScale", 0, &"Animation", &"output", 0, &"TimeScale"]
+node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"]
 
 [node name="Plant1000Sprout" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_ax4bb")]
 script = ExtResource("2_6ggwp")

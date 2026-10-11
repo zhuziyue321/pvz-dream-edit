@@ -92,7 +92,7 @@ func run(a) -> void:
 	a.log("  客户端已加入：%s" % str(session.other_peer_ids()))
 
 	await _enter_level(a)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("!! 没进成关卡")
 		a.quit_game()
 		return
@@ -137,9 +137,9 @@ func _ok() -> bool:
 
 
 func _progress() -> int:
-	if Global.main_game == null or not is_instance_valid(Global.main_game):
+	if GameContext.curr_main_game == null or not is_instance_valid(GameContext.curr_main_game):
 		return -1
-	return Global.main_game.main_game_progress
+	return GameContext.curr_main_game.main_game_progress
 
 
 #region 进关
@@ -152,15 +152,15 @@ func _enter_level(a) -> void:
 	Global.game_para = para
 	## ⚠️ 客户端是照 `para.game_sences` 换场景的（见 `NetplayMod._on_level_enter_requested`），
 	## 主机这里必须用同一个表达式 —— 走不同的话两端根本不在同一个场景里，测出来全是假的
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(para.game_sences))
 	var t := 0.0
-	while (Global.main_game == null or not is_instance_valid(Global.main_game)) and t < 25.0:
+	while (GameContext.curr_main_game == null or not is_instance_valid(GameContext.curr_main_game)) and t < 25.0:
 		await a.wait(0.5)
 		t += 0.5
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return
-	a.log("  已进关，阶段=%d" % Global.main_game.main_game_progress)
+	a.log("  已进关，阶段=%d" % GameContext.curr_main_game.main_game_progress)
 #endregion
 
 
@@ -171,7 +171,7 @@ func _enter_level(a) -> void:
 ## 代价：这些植物不会出现在客户端（快照只同步植物血量，不负责凭空种一棵），
 ## 所以 `plants` 那两列两端**本来就不该相等**，别拿它当判据。
 func _seed_plants(a) -> void:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	if mg == null or mg.plant_cell_manager == null:
 		return
 	var cells := mg.plant_cell_manager.all_plant_cells
@@ -231,7 +231,7 @@ func _session() -> NetplaySession:
 ## 客户端那一颗应当来自主机的下发（`sun_spawn` 命令）或快照补种 ——
 ## 两边都对得上才算阳光这条路真的通。
 func _maybe_make_sun() -> void:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	if mg == null or not is_instance_valid(mg):
 		return
 	if not is_instance_valid(mg.day_suns_manager):
@@ -335,7 +335,7 @@ func _classify(key: StringName, ok: bool) -> void:
 
 ## 主机这一刻眼里的"场上长什么样"
 func _view() -> Dictionary:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	var ids: Array = []
 	var hp: Array = []
 	var xs: Array = []

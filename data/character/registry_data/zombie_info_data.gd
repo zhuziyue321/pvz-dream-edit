@@ -303,6 +303,16 @@ const ZOMBIE_INFO = {
 		CharacterRegistry.ZombieInfoAttribute.ZombieScenes:preload("res://src/entities/character/zombie/zombie_bobsled_single.tscn"),
 		CharacterRegistry.ZombieInfoAttribute.ZombieRowType:CharacterRegistry.ZombieRowType.Land
 	},
+
+	## 僵王博士：登记到僵尸表仅为让通用僵尸系统认它是僵尸，出场仍只由关卡 boss_type 驱动。
+	## 它不在 ZOMBIE_SPAWN_POWER / ZOMBIE_SPAWN_WEIGHTS 里，因此不参与任何自然刷怪。
+	CharacterRegistry.ZombieType.Z999ZombossDoctor:{
+		CharacterRegistry.ZombieInfoAttribute.ZombieName: "ZB001Doctor",
+		CharacterRegistry.ZombieInfoAttribute.CoolTime: 0.0,
+		CharacterRegistry.ZombieInfoAttribute.SunCost: 10000,
+		CharacterRegistry.ZombieInfoAttribute.ZombieScenes:preload("res://src/entities/character/zombie_boss/zombie_boss_doctor.tscn"),
+		CharacterRegistry.ZombieInfoAttribute.ZombieRowType:CharacterRegistry.ZombieRowType.Land
+	},
 }
 
 ## 每种僵尸消耗的出怪战力，供自然波次和僵王放置技能只读访问，无需复制。[br]

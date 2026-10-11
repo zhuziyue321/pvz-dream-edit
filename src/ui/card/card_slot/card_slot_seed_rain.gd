@@ -62,7 +62,7 @@ func spawn_card_by_reference(card_reference: ResourceCardReference, pos: Vector2
 	temp_card_para[CardManager.E_TempCardParaAttr.CardReference] = card_reference
 	temp_card_para[CardManager.E_TempCardParaAttr.GlobalPos] = pos
 	temp_card_para[CardManager.E_TempCardParaAttr.ExistTime] = card_exist_time_norm
-	var new_card := Global.main_game.card_manager.create_temp_card(temp_card_para) as Card
+	var new_card := GameContext.curr_main_game.card_manager.create_temp_card(temp_card_para) as Card
 
 	seed_rain_card_update(new_card)
 	card_created.emit(card_reference, all_num_card)

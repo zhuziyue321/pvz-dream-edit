@@ -37,8 +37,8 @@ var _is_one_shot_started := false
 
 
 func _ready() -> void:
-	if Global.main_game != null:
-		main_game = Global.main_game
+	if GameContext.curr_main_game != null:
+		main_game = GameContext.curr_main_game
 
 
 #region 执行关卡流程
@@ -57,7 +57,7 @@ func is_one_shot_timeline() -> bool:
 ## 中途若又被调用（多轮关卡进入下一轮），旧的这次执行会在下一个 await 点退出
 func run_timeline() -> void:
 	if main_game == null:
-		main_game = Global.main_game
+		main_game = GameContext.curr_main_game
 	if main_game == null or main_game.game_para == null:
 		Log.error("LevelTimelineManager: 主游戏 / 关卡数据不存在，无法执行关卡流程")
 		return

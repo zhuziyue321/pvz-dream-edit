@@ -53,7 +53,7 @@ func _check_config(a) -> void:
 		ZomBotanyConfig.get_info(CharacterRegistry.ZombieType.Z044TallNutZombie).plant_hp, 2200)
 	## 窝瓜僵尸没有鸭子圈版本：行类型必须是陆地，否则泳池关水面行会刷出「没有鸭子圈却在水上走」的它
 	_expect(a, "窝瓜僵尸只在陆地行",
-		CharacterRegistry.ZombieInfo[CharacterRegistry.ZombieType.Z033SquashZombie][CharacterRegistry.ZombieInfoAttribute.ZombieRowType],
+		Global.character_registry.get_zombie_info(CharacterRegistry.ZombieType.Z033SquashZombie, CharacterRegistry.ZombieInfoAttribute.ZombieRowType),
 		CharacterRegistry.ZombieRowType.Land)
 
 
@@ -61,7 +61,7 @@ func _check_config(a) -> void:
 func _check_scenes(a) -> void:
 	for zombie_type in ZomBotanyConfig.C_ZOM_BOTANY_INFO:
 		var info := ZomBotanyConfig.get_info(zombie_type)
-		var scene: PackedScene = CharacterRegistry.ZombieInfo[zombie_type][CharacterRegistry.ZombieInfoAttribute.ZombieScenes]
+		var scene: PackedScene = Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieScenes)
 		if scene == null:
 			_failed += 1
 			a.log("  FAIL 注册表里没有植物僵尸场景 " + str(zombie_type))

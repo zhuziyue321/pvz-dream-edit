@@ -62,9 +62,9 @@ func runtime_lines() -> Array[String]:
 	if Global == null:
 		out.append("Global 不存在")
 		return out
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
-		out.append("Global.main_game = null（不在关卡内）")
+		out.append("GameContext.curr_main_game = null（不在关卡内）")
 		return out
 	out.append("主游戏阶段 main_game_progress = " + str(mg.main_game_progress))
 	out.append_array(plant_cell_lines())
@@ -80,9 +80,9 @@ func plant_cells_summary() -> String:
 
 
 func plant_cell_lines() -> Array[String]:
-	if Global == null or Global.main_game == null:
+	if Global == null or GameContext.curr_main_game == null:
 		return ["植物格子: 不在关卡内"]
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 	if pcm == null:
 		return ["!! plant_cell_manager 为空"]
 	var cells = pcm.all_plant_cells
@@ -123,9 +123,9 @@ func plant_cell_lines() -> Array[String]:
 
 
 func zombie_lines() -> Array[String]:
-	if Global == null or Global.main_game == null:
+	if Global == null or GameContext.curr_main_game == null:
 		return ["僵尸管理器: 不在关卡内"]
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	if zm == null:
 		return ["!! zombie_manager 为空"]
 	var total := 0
@@ -147,9 +147,9 @@ func zombie_lines() -> Array[String]:
 
 ## 场上僵尸数（不在关卡内返回 -1）
 func zombie_count() -> int:
-	if Global == null or Global.main_game == null:
+	if Global == null or GameContext.curr_main_game == null:
 		return -1
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	if zm == null:
 		return -1
 	var n := 0
@@ -159,9 +159,9 @@ func zombie_count() -> int:
 
 
 func ui_lines() -> Array[String]:
-	if Global == null or Global.main_game == null:
+	if Global == null or GameContext.curr_main_game == null:
 		return []
-	var cm = Global.main_game.card_manager
+	var cm = GameContext.curr_main_game.card_manager
 	if cm == null:
 		return []
 	var sun := -1
@@ -182,9 +182,9 @@ func ui_lines() -> Array[String]:
 ## 用来盯「某个事件什么时候发生、发生时周围是什么状态」。
 func observe_line(label: String, elapsed: float, cell_path: String = "") -> String:
 	var parts: Array[String] = ["t=%.1fs" % elapsed]
-	if Global == null or Global.main_game == null:
+	if Global == null or GameContext.curr_main_game == null:
 		return "[观察] " + label + "  不在关卡内  " + " ".join(parts)
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	var zs: Array[String] = []
 	if zm != null:
 		for lane in range(zm.all_zombies_2d.size()):

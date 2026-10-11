@@ -175,12 +175,12 @@ func _day_suns_manager() -> DaySunsManagner:
 	return manager if is_instance_valid(manager) else null
 
 
-## 本节点记录的这一局还活着就用它，否则退回去问 `Global.main_game`
+## 本节点记录的这一局还活着就用它，否则退回去问 `GameContext.curr_main_game`
 ## （换关时旧节点会先灭再换新，用"活着的那一份"才不会对着空气操作）
 func _resolve_main_game() -> MainGameManager:
 	if _main_game != null and is_instance_valid(_main_game):
 		return _main_game
-	var mg: MainGameManager = Global.main_game
+	var mg: MainGameManager = GameContext.curr_main_game
 	return mg if is_instance_valid(mg) else null
 
 

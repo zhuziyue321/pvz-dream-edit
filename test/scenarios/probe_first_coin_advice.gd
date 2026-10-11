@@ -36,7 +36,7 @@ func run(a) -> void:
 	_mark_cleared(state, 10)
 	_check(a, "进 2-1 后金钱已解锁", state.is_money_unlocked(), str(state.get_max_success_adventure_level()))
 
-	var dim = Global.main_game.drop_item_manager.dim_coin
+	var dim = GameContext.curr_main_game.drop_item_manager.dim_coin
 	if dim == null:
 		_check(a, "找到 DIM_Coin 节点", false, "null")
 		_finish(a)
@@ -96,7 +96,7 @@ func _mark_cleared(state, upto: int) -> void:
 
 ## 主游戏界面层下的提示条（第一次掉钱时由 MainGameManager 挂上去）
 func _find_advice_ui():
-	var ui_layer: Node = Global.main_game.canvas_layer_ui
+	var ui_layer: Node = GameContext.curr_main_game.canvas_layer_ui
 	if ui_layer == null:
 		return null
 	for c in ui_layer.get_children():
@@ -107,7 +107,7 @@ func _find_advice_ui():
 
 ## 界面层下除 except 以外的提示条数量（教程关自己也会挂提示条，要排除掉）
 func _count_advice_ui_except(except) -> int:
-	var ui_layer: Node = Global.main_game.canvas_layer_ui
+	var ui_layer: Node = GameContext.curr_main_game.canvas_layer_ui
 	if ui_layer == null:
 		return 0
 	var num := 0

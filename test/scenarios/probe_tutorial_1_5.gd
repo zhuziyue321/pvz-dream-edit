@@ -62,7 +62,7 @@ func run(a) -> void:
 		return
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 
 	# ------------------------------------------------ STEP1 教学启动与预置植物
 	a.log("STEP1 教学启动、预置豌豆射手、传送带未启动")
@@ -192,10 +192,10 @@ func run(a) -> void:
 	_check(a, "已通关时不再播教学（没有提示条）",
 		_hint() == null or not _hint().is_advice_visible(),
 		str(_hint() != null and _hint().is_advice_visible()))
-	_check(a, "没有教学时传送带照常自动启动", Global.main_game.card_manager.is_conveyor_belt_started,
-		str(Global.main_game.card_manager.is_conveyor_belt_started))
-	_check(a, "没有教学时红线照样出现", _is_stripe_visible(Global.main_game),
-		str(_is_stripe_visible(Global.main_game)))
+	_check(a, "没有教学时传送带照常自动启动", GameContext.curr_main_game.card_manager.is_conveyor_belt_started,
+		str(GameContext.curr_main_game.card_manager.is_conveyor_belt_started))
+	_check(a, "没有教学时红线照样出现", _is_stripe_visible(GameContext.curr_main_game),
+		str(_is_stripe_visible(GameContext.curr_main_game)))
 
 	_finish(a)
 
@@ -203,9 +203,9 @@ func run(a) -> void:
 #region 断言与工具
 ## 本关的提示条（「提示快捷工具」挂的那一条，见 TutorialAdviceUI.find_level_hint）
 func _hint() -> TutorialAdviceUI:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return null
-	return TutorialAdviceUI.find_level_hint(Global.main_game)
+	return TutorialAdviceUI.find_level_hint(GameContext.curr_main_game)
 
 
 ## 当前提示文本；没有提示条时返回空串
@@ -245,8 +245,8 @@ func _enter_level(a, wait_tutorial: bool) -> bool:
 	var para = (load(LEVEL_PATH) as GDScript).new()
 	para.set_choose_level(ADV, 0, "0005")
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(para.game_sences))
 	if not await _wait_main_game_created(a, 40.0):
 		return false
 	## 开场戴夫对话（在教学之前）：逐句点完
@@ -261,7 +261,7 @@ func _enter_level(a, wait_tutorial: bool) -> bool:
 func _wait_main_game_created(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null and Global.main_game.game_para != null:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game.game_para != null:
 			return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -274,7 +274,7 @@ func _wait_main_game_created(a, timeout: float) -> bool:
 func _wait_battle_started(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg != null and mg.card_manager.is_conveyor_belt_started:
 			return true
 		await a.wait(0.5)
@@ -287,10 +287,10 @@ func _wait_battle_started(a, timeout: float) -> bool:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null:
+		if GameContext.curr_main_game != null:
 			if _find_dave() != null and not await _skip_dave_dialog(a):
 				return false
-			if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+			if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -303,7 +303,7 @@ func _wait_opening_dave(a, timeout: float) -> bool:
 	var waited := 0.0
 	var is_dave_appeared := false
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg != null:
 			if _find_dave() != null:
 				is_dave_appeared = true
@@ -381,7 +381,7 @@ func _wait_dave_appear(a, timeout: float) -> bool:
 
 ## 界面上正在说话的戴夫（挂在 canvas_layer_ui 下），没有则返回 null
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

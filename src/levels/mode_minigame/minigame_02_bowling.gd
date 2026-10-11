@@ -17,16 +17,15 @@ func _init() -> void:
 	## 进关就停在相机归位位（保龄球关没有预览僵尸 / 选卡，不该先拍房子）
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 	zombie_multy = 3
+	## 本关传送带只出普通坚果(1001) / 爆炸坚果(1002)，不出巨型坚果保龄球(1003)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
 	1001: 2,
-	1002: 1,
-	1003: 1
+	1002: 1
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
 	0: 1001,
-	1: 1002,
-	2: 1003
+	1: 1002
 	})
 	is_bowling_stripe = true
 	plant_cell_can_use.assign({

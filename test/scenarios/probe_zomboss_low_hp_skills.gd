@@ -19,7 +19,7 @@ func run(a) -> void:
 		return
 
 	var boss = null
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	for _i in 40:
 		var bosses := mg.zombie_manager.get_living_bosses()
 		if not bosses.is_empty():
@@ -83,23 +83,23 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL_05_10)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameRoof]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameRoof)
 	)
 	await a.wait(3.0)
-	var mg := Global.main_game
-	_check(a, "已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return false
 	if mg.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
 		mg.main_game_start()
 	await a.wait(2.0)
-	return Global.main_game != null
+	return GameContext.curr_main_game != null
 
 
 ## 全场摆花盆，保证任一条踩踏区域里都有植物（踩踏候选要求区域内有存活植物）。
 func _plant_targets(a) -> void:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	var grid: Array = mg.plant_cell_manager.all_plant_cells
 	if grid.is_empty():
 		_check(a, "取到草坪格子", false, "all_plant_cells 为空")

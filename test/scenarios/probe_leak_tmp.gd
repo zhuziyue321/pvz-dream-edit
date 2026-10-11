@@ -3,11 +3,11 @@ extends RefCounted
 
 func run(a) -> void:
 	await a.wait(1.0)
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game != null and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game != null and GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(6.0)
 	a.finish(true)

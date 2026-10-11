@@ -41,13 +41,13 @@ func _check_level(a, level: Dictionary) -> void:
 	a.log("---------- " + str(level["name"]) + " ----------")
 	var para: Resource = (load(level["path"]) as GDScript).new()
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameRoof]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameRoof)
 	)
 	await a.wait(3.0)
 
-	var mg := Global.main_game
-	_check(a, "已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return
 	if mg.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:

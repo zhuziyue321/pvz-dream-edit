@@ -8,17 +8,20 @@ class_name CanAttackStatusComponent
 ## 可以攻击的植物状态掩码
 @export_flags("1 正常", "2 悬浮", "4 地刺", "8 低矮") var can_attack_plant_status:int = 1
 ## 可以攻击的僵尸状态掩码
-@export_flags("1 正常", "2 跳跃", "4 水下", "8 空中", "16 地下", "32 跳入泳池") var can_attack_zombie_status:int = 1
+## 注意：僵王的免疫位（64）刻意不在任何角色的默认值里，谁都不勾就永远打不到抬头的僵王。
+@export_flags("1 正常", "2 跳跃", "4 水下", "8 空中", "16 地下", "32 跳入泳池", "64 僵王抬头") var can_attack_zombie_status:int = 1
 
 ## 敌人受击状态是否在掩码内（可被攻击）
 func can_attack(enemy:Character000Base) -> bool:
+	## 僵王优先判定：ZB000Base 现在是 Zombie000Base 的子类，若不先短路会被上面的
+	## 僵尸分支命中，而那里用「组合掩码」比较，抬头的僵王会被某些大掩码误判为可攻击
+	## （典型：仙人掌低姿态那句 can_attack_zombie_status = ~8 是全掩码，能命中任意位）。
+	## 僵王的受击窗口只用 IsNorm 一位表达，见 ZB000Base.set_hurt_window()。
+	if enemy is ZB000Base:
+		return enemy.character_init_type == Character000Base.E_CharacterInitType.IsNorm \
+			and (enemy.curr_be_attack_status & Zombie000Base.E_BeAttackStatusZombie.IsNorm) != 0
 	if enemy is Plant000Base:
 		return (enemy.curr_be_attack_status & can_attack_plant_status) != 0
 	elif enemy is Zombie000Base:
 		return (enemy.curr_be_attack_status & can_attack_zombie_status) != 0
-	elif enemy is ZB000Base:
-		## 僵王没有受击状态枚举，受击窗口由状态机直接控制（见 ZB000Base.hurt_box_component）；
-		## 这里只校验出战状态，并要求攻击者至少能打到「正常」状态的僵尸。
-		return enemy.character_init_type == Character000Base.E_CharacterInitType.IsNorm \
-			and (can_attack_zombie_status & Zombie000Base.E_BeAttackStatusZombie.IsNorm) != 0
 	return false

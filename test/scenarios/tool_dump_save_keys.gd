@@ -21,9 +21,9 @@ const MODES := [
 func run(a) -> void:
 	var total := 0
 	for mode in MODES:
-		var path: String = Global.main_scene_registry.MainScenesMap[mode]
+		var path: String = Global.main_scene_registry.get_scene_path(mode)
 		a.log("[SAVEKEY] === mode=%s scene=%s" % [str(mode), path])
-		a.get_tree().change_scene_to_file(path)
+		GlobalUtils.change_scene(path)
 		await a.wait(2.0)
 		var root: Node = a.get_tree().current_scene
 		if root == null:

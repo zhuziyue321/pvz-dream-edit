@@ -16,7 +16,7 @@ var _failed := 0
 func run(a) -> void:
 	a.log("")
 	a.log("========== PROBE 僵尸水族馆入口场景（脱离主游戏） ==========")
-	a.get_tree().change_scene_to_file(SHELL_SCENE)
+	GlobalUtils.change_scene(SHELL_SCENE)
 	await a.wait_scene("zombiquarium")
 	await a.wait(1.5)
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://cj37h0ygw03e6"]
+[gd_scene load_steps=26 format=3 uid="uid://cj37h0ygw03e6"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_w8in0"]
 [ext_resource type="Texture2D" uid="uid://nj6m28m6k5p1" path="res://assets/reanim/PeaShooter_frontleaf_righttip.png" id="2_1x6ev"]
@@ -36,10 +36,18 @@ fadeout_time = 0.2
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_s04lx"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_t884t"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_t884t"]
+states/WinterMelon_idle/node = SubResource("AnimationNodeAnimation_jvi63")
+states/WinterMelon_idle/position = Vector2(300, 100)
+transitions = ["Start", "WinterMelon_idle", SubResource("AnimationNodeStateMachineTransition_t884t")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_t884t"]
 graph_offset = Vector2(-495, 27)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_jvi63")
-nodes/Animation/position = Vector2(-320, 100)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_t884t")
+nodes/StateMachine/position = Vector2(-320, 100)
 "nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_nrqmn")
 "nodes/Animation 2/position" = Vector2(-540, 300)
 nodes/OneShot/node = SubResource("AnimationNodeOneShot_6ty4r")
@@ -48,7 +56,7 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_s04lx")
 nodes/TimeScale/position = Vector2(140, 160)
 "nodes/TimeScale 2/node" = SubResource("AnimationNodeTimeScale_26gh6")
 "nodes/TimeScale 2/position" = Vector2(-260, 300)
-node_connections = [&"output", 0, &"TimeScale", &"OneShot", 0, &"Animation", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"OneShot", &"TimeScale 2", 0, &"Animation 2"]
+node_connections = [&"output", 0, &"TimeScale", &"OneShot", 0, &"StateMachine", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"OneShot", &"TimeScale 2", 0, &"Animation 2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_vvf6f"]
 size = Vector2(1000, 5)

@@ -254,7 +254,7 @@
 [ext_resource type="Texture2D" uid="uid://darqb1l0wgsuw" path="res://assets/reanim/Zombie_cone1.png" id="225_oyv8q"]
 [ext_resource type="Texture2D" uid="uid://spfd63h0e5vv" path="res://assets/image/projectile/ProjectileCactus.png" id="226_se6ca"]
 [ext_resource type="Texture2D" uid="uid://is2g44uxfgvp" path="res://assets/reanim/Zombie_bucket1.png" id="226_wbb0f"]
-[ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/entities/character/components/drop_body/zombie_arm1_drop.gd" id="227_t5s4d"]
+[ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/items/drop_body/zombie_arm1_drop.gd" id="227_t5s4d"]
 [ext_resource type="Texture2D" uid="uid://dkf4tt81vr4vi" path="res://assets/reanim/Zombie_cone3.png" id="228_kthx8"]
 [ext_resource type="Texture2D" uid="uid://depnxiqbfjmso" path="res://assets/reanim/Zombie_polevaulter_pole2.png" id="229_g1ryr"]
 [ext_resource type="Texture2D" uid="uid://csf3mfk2nww55" path="res://assets/reanim/Zombie_polevaulter_pole.png" id="230_pa72g"]

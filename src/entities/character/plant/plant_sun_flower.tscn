@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3 uid="uid://wte35drumapp"]
+[gd_scene load_steps=43 format=3 uid="uid://wte35drumapp"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_3q4dl"]
 [ext_resource type="Script" uid="uid://cw14nqa0mih0i" path="res://src/entities/character/plant/plant_sun_flower.gd" id="2_vbc7f"]
@@ -52,13 +52,21 @@ animation = &"SunFlower_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_pq6s2"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_kbloa"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_kbloa"]
+states/SunFlower_idle/node = SubResource("AnimationNodeAnimation_3ucv5")
+states/SunFlower_idle/position = Vector2(300, 100)
+transitions = ["Start", "SunFlower_idle", SubResource("AnimationNodeStateMachineTransition_kbloa")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_kbloa"]
 nodes/output/position = Vector2(840, 140)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_3ucv5")
-nodes/Animation/position = Vector2(360, 140)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_kbloa")
+nodes/StateMachine/position = Vector2(360, 140)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_pq6s2")
 nodes/TimeScale/position = Vector2(660, 140)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [node name="Plant002SunFlower" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_3q4dl")]
 script = ExtResource("2_vbc7f")

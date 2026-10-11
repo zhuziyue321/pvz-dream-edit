@@ -1,0 +1,191 @@
+[
+ {
+  "scene": "src/dave/hand_item/hand_plant_pea_shooter_single.tscn",
+  "root": "AnimationNodeBlendTree_ul06u",
+  "libs": [
+   "|sub|AnimationLibrary_q6tdq"
+  ]
+ },
+ {
+  "scene": "src/dave/hand_item/hand_plant_sun_flower.tscn",
+  "root": "AnimationNodeBlendTree_kbloa",
+  "libs": [
+   "|sub|AnimationLibrary_p20s5"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_cabbage_pult.tscn",
+  "root": "AnimationNodeBlendTree_v16nm",
+  "libs": [
+   "|sub|AnimationLibrary_pp5t7"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_cherry_bomb.tscn",
+  "root": "AnimationNodeBlendTree_dniyj",
+  "libs": [
+   "|sub|AnimationLibrary_q5e28"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_corn_pult.tscn",
+  "root": "AnimationNodeBlendTree_lqpdm",
+  "libs": [
+   "|sub|AnimationLibrary_sp1kv"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_garlic.tscn",
+  "root": "AnimationNodeBlendTree_ce242",
+  "libs": [
+   "|sub|AnimationLibrary_vggsd"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_gatling_pea.tscn",
+  "root": "AnimationNodeBlendTree_unqju",
+  "libs": [
+   "|sub|AnimationLibrary_7vcvm"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_gold_magnet.tscn",
+  "root": "AnimationNodeBlendTree_k6o72",
+  "libs": [
+   "|sub|AnimationLibrary_t6jq4"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_lily_pad.tscn",
+  "root": "AnimationNodeBlendTree_iaqk1",
+  "libs": [
+   "|sub|AnimationLibrary_gmjy2"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_mari_gold.tscn",
+  "root": "AnimationNodeBlendTree_rdg00",
+  "libs": [
+   "|sub|AnimationLibrary_6m1dl"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_melon_pult.tscn",
+  "root": "AnimationNodeBlendTree_3h8kf",
+  "libs": [
+   "|sub|AnimationLibrary_o3ogr"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_pea_shooter_single.tscn",
+  "root": "AnimationNodeBlendTree_ul06u",
+  "libs": [
+   "|sub|AnimationLibrary_q6tdq"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_plantern.tscn",
+  "root": "AnimationNodeBlendTree_at01j",
+  "libs": [
+   "|sub|AnimationLibrary_q37s8"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_potato_mine.tscn",
+  "root": "AnimationNodeBlendTree_f5s5r",
+  "libs": [
+   "|sub|AnimationLibrary_8d14f"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_pumpkin.tscn",
+  "root": "AnimationNodeBlendTree_bbrx8",
+  "libs": [
+   "|sub|AnimationLibrary_6x5pj"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_snow_pea.tscn",
+  "root": "AnimationNodeBlendTree_tv5fm",
+  "libs": [
+   "|sub|AnimationLibrary_wx2c3"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_sprout.tscn",
+  "root": "AnimationNodeBlendTree_q5g85",
+  "libs": [
+   "|sub|AnimationLibrary_eoyx3"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_star_fruit.tscn",
+  "root": "AnimationNodeBlendTree_lia21",
+  "libs": [
+   "|sub|AnimationLibrary_el77c"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_sun_flower.tscn",
+  "root": "AnimationNodeBlendTree_kbloa",
+  "libs": [
+   "|sub|AnimationLibrary_p20s5"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_tall_nut.tscn",
+  "root": "AnimationNodeBlendTree_ecgny",
+  "libs": [
+   "|sub|AnimationLibrary_mp8j5"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_three_peater.tscn",
+  "root": "AnimationNodeBlendTree_xlxc8",
+  "libs": [
+   "|sub|AnimationLibrary_oqttt"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_torch_wood.tscn",
+  "root": "AnimationNodeBlendTree_7d34a",
+  "libs": [
+   "|sub|AnimationLibrary_ytarc"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_twin_sun_flower.tscn",
+  "root": "AnimationNodeBlendTree_oa6lc",
+  "libs": [
+   "|sub|AnimationLibrary_m3ffd"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_wall_nut.tscn",
+  "root": "AnimationNodeBlendTree_hev76",
+  "libs": [
+   "|sub|AnimationLibrary_w5ly5"
+  ]
+ },
+ {
+  "scene": "src/entities/character/plant/plant_winter_melon.tscn",
+  "root": "AnimationNodeBlendTree_t884t",
+  "libs": [
+   "|sub|AnimationLibrary_eil7v"
+  ]
+ },
+ {
+  "scene": "src/entities/character/zombie/zombie_norm.tscn",
+  "root": "AnimationNodeBlendTree_d1hh3",
+  "libs": [
+   "|sub|AnimationLibrary_si8kf"
+  ]
+ },
+ {
+  "scene": "src/entities/character/zombie/zombie_catapult.tscn",
+  "root": "AnimationNodeBlendTree_b0mfq",
+  "libs": [
+   "|sub|AnimationLibrary_76j0u"
+  ]
+ }
+]

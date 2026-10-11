@@ -19,7 +19,7 @@ class_name AnimationFrameUtil
 ##      (小推车的 _process 会自己往前开、_ready 会去取视口尺寸)
 ##   2. AnimationPlayer 只有**入树**才能 seek，所以临时挂一个 SubViewport 当容器
 ##   3. 定格用 play + seek(time, true) + stop(true)：stop(true) 是保留当前姿态，
-##      写成 stop() 会退回第 0 帧(coin.gd / 僵王博士（zombie_boss_001_doctor）里是同一套写法)
+##      写成 stop() 会退回第 0 帧(coin.gd / 僵王博士（zombie_boss_doctor）里是同一套写法)
 ##   4. AnimationTree 每帧会覆盖 AnimationPlayer 的姿态，必须在 seek 之前摘掉
 ##   5. 定格后摘掉播放器 / 碰撞体等非显示节点，剩下一棵纯 Sprite2D 的静态节点树
 ##   6. 要图片就把这棵树按包围盒等比缩放居中，再离屏渲染成 Texture2D

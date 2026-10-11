@@ -1,6 +1,18 @@
 extends Node
 
 ## 游戏暂停因素
+##
+## ⚠️ **本类与 `process_mode = PROCESS_MODE_ALWAYS` 是互补关系，不是两套重复的暂停机制**
+## （U-12 曾误判成「TreePauseManager 形同虚设 + 25 个文件各写各的」，核实后不成立）：
+##   - **本类管整棵树**：任一因素为真 → `get_tree().paused = true`，全场停。
+##     调用方共 10 处，集中在菜单 / 游戏结束 / 重新选卡三个因素上
+##     （`main_game_menu_option_dialog` `mgm_lose_manager` `main_game_manager`
+##      `zombiquarium_manager` `zm_boss_registry` `mgm_reward_manager`）。
+##   - **`process_mode = ALWAYS` 全仓只有 5 处，且每一处都是「全场暂停时仍要跑」的豁免**：
+##     相机、卡槽（重新选卡时要能操作）、联机准备按钮、调试通道
+##     —— 见 `main_game_manager.gd:589`、`mgm_lose_manager.gd:57`、
+##     `netplay_ready_flow.gd:51`、`debug_channel.gd:67`。
+## 所以别把两者当成「该统一成一套」的东西：一个负责停全场，一个负责把个别节点摘出去。
 enum E_PauseFactor {
 	Menu,			## 菜单
 	GameOver,		## 游戏结束

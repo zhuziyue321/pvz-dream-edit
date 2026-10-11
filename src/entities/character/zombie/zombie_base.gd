@@ -87,6 +87,10 @@ enum E_BeAttackStatusZombie{
 	IsSky = 8,			## 空中
 	IsDownGround = 16,	## 地下
 	IsJumpInPool = 32,	## 跳入泳池,该状态无法被高建国拦截
+	## 僵王抬头（受击窗口关闭）期间的免疫态：高于所有 @export_flags 已登记的组合位，
+	## 任何不显式勾选它的攻击掩码都按位与之相交为 0，天然打不到。
+	## 低头 / 抬头由 ZB000Base.set_hurt_window() 统一切换，详情见 docs/参考存档/特殊关卡.md
+	IsBossInvulnerable = 64,
 }
 
 #endregion

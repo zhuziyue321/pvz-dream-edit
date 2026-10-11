@@ -37,6 +37,14 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 #endregion
 
 #region 关卡背景
+## ⚠️ 这里有三个都像「是哪一套场景」的字段，它们**粒度不同，不是重复表达**（U-09 已核实）：
+##   - `game_sences`：用哪个**主场景文件**（前院 / 泳池 / 屋顶 三个槽位，见 MainSceneRegistry）；
+##   - `game_BG`：用哪套**背景视觉**（比上者多了「夜」「雾」—— 前院关照样可以是夜）；
+##   - `scene_name`：套用哪套**预设组合**（SceneSettingRegistry），选中后由
+##     `apply_scene_setting()` 一次性展开、覆写上面这些字段。
+## 优先级是单向明确的：**先按 scene_name 展开预设，再让关卡脚本在覆写的
+## `apply_scene_setting()` 里改自己要改的**（见本文件该函数上方的示例）。
+## 所以不必把它们收敛成一个字段 —— 合成一个反而表达不了「前院 + 夜」这种组合。
 ## 游戏场景
 @export var game_sences: MainSceneRegistry.MainScenes = MainSceneRegistry.MainScenes.MainGameFront
 ## 游戏轮次:多轮游戏且自然出怪 自动更新自然出怪列表 -1表示无尽，不要用其余的数字表示无尽
@@ -172,6 +180,15 @@ func apply_scene_setting() -> void:
 ## 出怪倍率
 @export var zombie_multy := 1
 ## 每轮游戏出怪波次，每10波生成1旗帜
+##
+## ⚠️ 同名的「波数」在本项目里有三份，改之前先认准是哪一份：
+##   1. **本字段**（`level_data.max_wave`）= 每轮波数，**只有 3 个小游戏关直接赋值**
+##      （05 / 07 / 09；15 关走 `max_wave_hammer_zombie`、16 关把波数当 `start_battle()` 的入参）。
+##   2. `ZombieWaveManager.max_wave` = **本关累计总波数**（多轮关卡按轮往上加，
+##      见 `apply_max_wave()` 与 `start_next_game_zombie_wave_mananger_update()`）。
+##   3. 其余 100+ 关的波数是**「开战」事件带进去的**（`level_script_base.start_battle()`
+##      → `LevelTimelineEventStartBattle._apply_battle_para`），运行时**不读本字段** ——
+##      改了它看不出效果，是这里最常见的误会。
 @export var max_wave := 30
 ## 开局到第一波僵尸的延迟秒数（「开战」事件里等这个秒数再开第一波；
 ## 关卡流程要提前开波就用 `await start_first_wave()`，不读本值）

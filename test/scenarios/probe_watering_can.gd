@@ -28,7 +28,7 @@ func run(a) -> void:
 	state.garden_data = {"num_bg_page_0": 1, "num_bg_page_1": 0, "num_bg_page_2": 0}
 	state.curr_num_new_garden_plant = 0
 
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)

@@ -10,6 +10,10 @@ class_name NetplayWaveSync
 ##   host  开了一波 ──▶ `ZombieWaveManager.wave_started` ──▶ 下发 `wave_next(波次号/大波/升旗)`
 ##   client 收到    ──▶ 只播演出（升旗 +「一大波僵尸正在接近」），**一个僵尸都不造**
 ##
+## ★ 顺带同步"**这一段打完了**"（`battle_finished`）：客户端既不自己开波、僵尸又都是木偶，
+##   "打完了"这个结论它自己**永远算不出来**（见 `_on_host_battle_finished`）——
+##   不下发的话客户端的关卡流程会一直卡在「开战」那一步，本关走不到判胜。
+##
 ## 那客户端场上的僵尸从哪来：**状态广播**（`NetplayStateSync`）每帧把主机场上的僵尸整份
 ## 报下来，客户端按 `entity_id` 补出来。于是"出怪"整件事彻底归主机：
 ##   · 不必赌两端的随机序列一致 —— `GameRng` 是一条共享序列，一端多调一次就全串位，
@@ -52,6 +56,11 @@ func setup(session: NetplaySession, main_game: MainGameManager, notice: Callable
 func _install() -> void:
 	if _session == null or not _session.is_linked():
 		return
+	## ★ 「这一段打完了」由主机下发（与波次同属战斗节奏）：**不依赖波次管理器** ——
+	##   砸罐子这类没有波次管理器的玩法同样要收得到，否则客户端的流程照样卡在开战那一步
+	EventBus.subscribe(ConstEventName.BATTLE_FINISHED, _on_host_battle_finished)
+	if not _session.battle_op_received.is_connected(_on_battle_op_received):
+		_session.battle_op_received.connect(_on_battle_op_received)
 	var wave_manager: ZombieWaveManager = _wave_manager()
 	if wave_manager == null:
 		return
@@ -64,12 +73,11 @@ func _install() -> void:
 	if _session.is_host():
 		if not wave_manager.wave_started.is_connected(_on_wave_started):
 			wave_manager.wave_started.connect(_on_wave_started)
-	if not _session.battle_op_received.is_connected(_on_battle_op_received):
-		_session.battle_op_received.connect(_on_battle_op_received)
 
 
 func _exit_tree() -> void:
 	## 换关时旧节点会先灭：闸门要还回去，别把下一局的波次也锁住
+	EventBus.unsubscribe(ConstEventName.BATTLE_FINISHED, _on_host_battle_finished)
 	var wave_manager: ZombieWaveManager = _wave_manager()
 	if wave_manager != null and wave_manager.start_next_wave_gate == _client_wave_gate:
 		wave_manager.start_next_wave_gate = Callable()
@@ -111,6 +119,22 @@ func _on_wave_started(wave: int) -> void:
 	}))
 
 
+## 主机这一段打完了 ⇒ 告诉客户端一声（EventBus "battle_finished"，只管主机那一局）
+##
+## ★ 为什么必须下发而不是让客户端自己算：客户端**一次波都不开**（闸门恒 false），
+##   `is_end_wave` 永远等不到真；场上的僵尸又是快照补出来的木偶，死了也不走本地死亡流程，
+##   `curr_zombie_num` 只增不减 —— **两端各凑一半的判据在客户端永远凑不齐**。
+##   少了这一条，客户端的关卡流程会一直卡在「开战」那一步（`start_battle` 的轮询等不到真），
+##   直到房主离场把这一关拆掉时才醒过来 —— 那时主游戏已经没了，`gain()` 只能跳过，
+##   客户端就永远拿不到本关给的植物（比如 1-2 的樱桃炸弹）。
+func _on_host_battle_finished(_glo_pos: Vector2 = Vector2.ZERO) -> void:
+	if _session == null or not _session.is_host():
+		return
+	if _resolve_main_game() == null:
+		return
+	_session.request_battle_op(NetplayCommand.build(NetplayCommand.OP_BATTLE_FINISHED, {}))
+
+
 ## 客户端收到主机开的那一波 ⇒ **只播演出，不开波、不出怪**
 ##
 ## ★ 场上的僵尸一个都不在这里造：主机那边生成后会被状态广播（`NetplayStateSync`）采进快照，
@@ -122,6 +146,9 @@ func _on_wave_started(wave: int) -> void:
 ##   命令只在开波那一刻发，爬升那一段永远差着 —— 它走每帧快照，见 `NetplayStateSync` 的 `pr`。
 func _on_battle_op_received(op: StringName, args: Dictionary) -> void:
 	if _session == null or _session.is_host():
+		return
+	if op == NetplayCommand.OP_BATTLE_FINISHED:
+		_on_client_battle_finished()
 		return
 	if op != NetplayCommand.OP_WAVE_NEXT:
 		return
@@ -145,6 +172,22 @@ func _on_battle_op_received(op: StringName, args: Dictionary) -> void:
 		wave_manager.ui_remind_word.zombie_approach(bool(args.get(NetplayCommand.ARG_FINAL, false)))
 
 
+## 客户端：主机说"这一段打完了" ⇒ 把本段标成打完，让**关卡流程能往下走**
+##
+## ★ 为什么只改这两个字段就够了：关卡流程（`LevelTimelineEventStartBattle`）判"这一段打完了吗"
+##   问的就是它们（`is_end_wave and curr_zombie_num == 0`）。流程一往下走就会走到关卡脚本
+##   收尾那几句（掉本关奖励 / 判胜），客户端才拿得到本关给的植物。
+##   ⚠️ 这里**不**在本地推 `BATTLE_FINISHED` 事件：那一下还会触发多轮关卡的切轮
+##   （`MgmRewardManager.on_battle_finished` → `start_next_round_game`），切轮归主机，
+##   客户端自己切会跟主机的摆场打架。
+func _on_client_battle_finished() -> void:
+	var mg: MainGameManager = _resolve_main_game()
+	if mg == null or mg.zombie_manager == null:
+		return
+	mg.zombie_manager.is_end_wave = true
+	mg.zombie_manager.curr_zombie_num = 0
+
+
 ## 本局的波次管理器（只接管普通出怪模式：没有外部出怪器的 `Norm` 关）
 func _wave_manager() -> ZombieWaveManager:
 	var mg: MainGameManager = _resolve_main_game()
@@ -157,12 +200,12 @@ func _wave_manager() -> ZombieWaveManager:
 	return mg.zombie_manager.zombie_wave_manager
 
 
-## 本节点记录的这一局还活着就用它，否则退回去问 `Global.main_game`
+## 本节点记录的这一局还活着就用它，否则退回去问 `GameContext.curr_main_game`
 ## （换关时旧节点会先灭再换新，用"活着的那一份"才不会对着空气操作）
 func _resolve_main_game() -> MainGameManager:
 	if _main_game != null and is_instance_valid(_main_game):
 		return _main_game
-	var mg: MainGameManager = Global.main_game
+	var mg: MainGameManager = GameContext.curr_main_game
 	return mg if is_instance_valid(mg) else null
 
 

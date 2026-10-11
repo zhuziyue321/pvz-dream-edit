@@ -45,8 +45,6 @@ var battle_progress := 0.0
 var is_wave_started := false
 ## 本帧要升旗的旗帜下标（-1 = 不升），被读走后清掉
 var _flag_to_raise := -1
-## 本帧是否要把旗帜全部收起（多轮游戏切新一轮），被读走后清掉
-var _is_flag_reset_pending := false
 #endregion
 
 ## 当前可以生成的僵尸类型
@@ -105,7 +103,7 @@ func create_one_group_min_zombie():
 	var idle_tombstones := _idle_tombstone_list()
 	if idle_tombstones.is_empty():
 		## 场上没有墓碑了（都被啃光）→ 先补一批
-		if Global.main_game.plant_cell_manager.tombstone_list.is_empty():
+		if GameContext.curr_main_game.plant_cell_manager.tombstone_list.is_empty():
 			EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [randi()%3+1])
 			await get_tree().create_timer(2).timeout
 			idle_tombstones = _idle_tombstone_list()
@@ -131,7 +129,7 @@ func create_one_group_min_zombie():
 ## 当前可以出怪的墓碑（排除正在冒头的、以及已被销毁但还没从列表里摘掉的）
 func _idle_tombstone_list() -> Array[TombStone]:
 	var idle_tombstones: Array[TombStone] = []
-	for tombstone: TombStone in Global.main_game.plant_cell_manager.tombstone_list:
+	for tombstone: TombStone in GameContext.curr_main_game.plant_cell_manager.tombstone_list:
 		if is_instance_valid(tombstone) and not tombstone.is_creating_zombie():
 			idle_tombstones.append(tombstone)
 	return idle_tombstones
@@ -187,10 +185,10 @@ func _on_hammer_zombie_timer_timeout() -> void:
 
 			## 等待3秒创建墓碑后再等待两秒
 			await get_tree().create_timer(3).timeout
-			if Global.main_game.plant_cell_manager.tombstone_list.size() >= 5:
+			if GameContext.curr_main_game.plant_cell_manager.tombstone_list.size() >= 5:
 				EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [1])
 			else:
-				EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [5 - Global.main_game.plant_cell_manager.tombstone_list.size()])
+				EventBus.push_event(ConstEventName.CREATE_TOMBSTONE, [5 - GameContext.curr_main_game.plant_cell_manager.tombstone_list.size()])
 			await get_tree().create_timer(2).timeout
 			hammer_zombie_timer.wait_time = interval_every_group + randf_range(-0.1, 0.1)
 
@@ -219,9 +217,7 @@ func take_flag_raise_index() -> int:
 	_flag_to_raise = -1
 	return flag_i
 
-## 取走「本帧要收起所有旗帜」的请求（本玩法是单轮，恒为 false）
-func take_flag_reset() -> bool:
-	var is_reset := _is_flag_reset_pending
-	_is_flag_reset_pending = false
-	return is_reset
+## 取走「本帧要收起所有旗帜」的请求：本玩法是**单轮**，永远不收旗 ——
+## 这里**不重写**，直接用基类 `ZombieWaveSourceBase.take_flag_reset()` 的 `return false`
+## （旧代码在这里养了一个只被读、从没被置 true 的 `_is_flag_reset_pending`，已删）
 #endregion

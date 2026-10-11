@@ -91,7 +91,19 @@ func owner_update_speed(_speed_product:float):
 	pass
 
 
-## 主场景访问器：组件需要的主场景能力一律走这里，**不要**直接写 Global.main_game。
+## **宿主角色访问器** —— 组件要拿宿主一律走这里（U-06）。
+##
+## 曾经并存四种写法：`owner as Plant000Base` / `@onready var owner_character = owner` /
+## 就地 `if owner is Zombie000Base:` / 以及最糟的 **`owner = owner as XxxBase`（回写）**。
+## 回写那条要特别当心：`owner` 是**引擎属性**，`as` 一旦失败就会被赋成 null，
+## 于是同一个角色下**所有**依赖 owner 的组件一起失效，而且不报错
+## （症状是「僵尸不炸 / 植物不攻击」，很难往 owner 上想）。
+## 统一走本访问器：只做类型转换、**绝不回写**；调用方判 null 即可。
+var owner_character: Character000Base:
+	get: return owner as Character000Base
+
+
+## 主场景访问器：组件需要的主场景能力一律走这里，**不要**直接取 GameContext.curr_main_game（旧称 Global.main_game，已删除）。
 ##
 ## 为什么：组件直接取全局单例，等于绕开硬约束 1-2「组件只通过 owner / 信号 / 场景配置通信」
 ## —— 表面上没有 get_parent()，实际上把耦合换成了更隐蔽的全局依赖。
@@ -99,6 +111,6 @@ func owner_update_speed(_speed_product:float):
 ## **不要在本方法里转问 owner**：曾经写成 `owner as Character000Base` 再取宿主的访问器，
 ## 结果组件的 owner 一旦不是角色基类就静默返回 null —— 攻击组件因此拿不到 bullets 父节点，
 ## 表现为「植物不发射子弹」，且没有任何报错。主场景本来就是全局单例，直接取即可。
-## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
+## 「当前这一局」的真相源在 GameContext（见 global.gd 里那段「当前局上下文不在 Global 里」的说明）。
 func get_main_game() -> MainGameManager:
 	return GameContext.curr_main_game

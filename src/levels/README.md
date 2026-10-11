@@ -8,6 +8,7 @@
 - 关卡资源类型：`ResourceLevelData`（`core/level_data.gd`），现役关卡**已经是 `.gd` 脚本关卡**。
 - 只服务某一关的脚本与该关 `.gd` **同目录、文件名带关卡名前缀**；多关共用的进 `core/<玩法>/`（见 [AGENTS.md](./AGENTS.md)）。
 - 取关卡走注册表 `LevelRegistry`（`core/level_registry.gd`），不要硬编码 `res://` 路径。
-- 玩家自制关卡不在这里，在根目录 `data/levels/params/`。
+- 玩家自制关卡不在这里，在用户数据目录 `user://custom_level/`
+  （Windows 下 = `C:/Users/<用户名>/AppData/Roaming/Godot/app_userdata/PVZ-Dream-Edit/custom_level`）。
 
 **规则与约定不写在这里**，一律在 [docs/](../../docs/README.md)。

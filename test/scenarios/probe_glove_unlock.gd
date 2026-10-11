@@ -11,6 +11,9 @@ extends RefCounted
 
 const ADV := MainSceneRegistry.MainScenes.ChooseLevelAdventure
 const LEVEL_04_06 := "res://src/levels/mode_adventure/adventure_04_06.gd"
+## 4-6 开场戴夫赠礼对话（关卡脚本里是 `DAVE_GLOVE` 这个常量，对话内容在数据层；
+## 4-6 已是关卡脚本，对话不再由脚本现场构造，所以探针直接加载这份资源来验）
+const DAVE_GLOVE_TRES := "res://data/dave/dialog/adventure_04_06_glove.tres"
 ## 4-6 在选关界面上的位置：第 4 个页（0 起 = 3）的第 6 关，关卡编号 0036
 const PAGE_04 := 3
 const ID_04_06 := "0036"
@@ -56,6 +59,10 @@ func run(a) -> void:
 	## 35 = 已通关 4-5：戴夫刚把手套交出来
 	await _run_level(a, 35, true)
 	_check_dave_talks(a)
+	## ★ 还原：模组开关是**持久化**的（写进 user://<用户名>/mod_config.ini），
+	##   本探针把它打开了，不关回去会污染同一份存档目录下的其它探针（probe_hand / probe_mod_page）
+	ModManager.set_mod_enabled(ModIds.GLOVE, false)
+	ModManager.save_mods()
 	_finish(a)
 
 
@@ -100,8 +107,8 @@ func _check_dialog_resource(a) -> void:
 	if para == null:
 		_check(a, "（前置）4-6 关卡资源可加载", false, LEVEL_04_06)
 		return
-	## 对话在 run_flow() 里现场构造（见 adventure_04_06._build_dave_dialog），这里直接调它取
-	var dialog: CrazyDaveDialogResource = para._build_dave_dialog()
+	## 对话资源挂在关卡脚本的 DAVE_GLOVE 常量上（数据层），直接加载它来验
+	var dialog: CrazyDaveDialogResource = load(DAVE_GLOVE_TRES)
 	if dialog == null:
 		_check(a, "（前置）4-6 挂着开场戴夫对话", false)
 		return
@@ -161,13 +168,20 @@ func _run_level(a, max_level: int, expect_unlocked: bool) -> void:
 	Global.game_para = para
 	a.log("[场景] 进入 4-6（%s）" % para.save_game_name)
 	await a.wait(2.0)
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	## ★ 上一局还活着时，`change_scene` 是**帧末才真正切**的：不等到"换了个新局"就往下走，
+	##   拿到的会是上一局的手套组件（它在上一局的进度下判定过了），表现为「进度够了却没启用」。
+	##   所以记住旧局，等到 `curr_main_game` 换成另一个实例为止
+	var old_mg = GameContext.curr_main_game
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
-	if not await _wait_main_game(a, 60.0):
+	if not await _wait_main_game(a, 60.0, old_mg):
 		_check(a, "4-6 进入 MAIN_GAME", false, "超时")
 		return
 	_check(a, "4-6 进入 MAIN_GAME", true)
+	var new_max_level := Global.global_game_state.get_max_success_adventure_level()
+	a.log("  新一局：max_success_adventure_level=%d（手套解锁=%s）" % [
+		new_max_level, str(GloveMod.is_unlocked(new_max_level))])
 
 	var comp := _glove_comp()
 	if comp == null:
@@ -195,22 +209,24 @@ func _set_progress(max_level: int) -> void:
 
 
 func _glove_comp() -> HandComponentGlove:
-	if Global.main_game == null or Global.main_game.hand_manager == null:
+	if GameContext.curr_main_game == null or GameContext.curr_main_game.hand_manager == null:
 		return null
-	return Global.main_game.hand_manager.get_hand_component(
+	return GameContext.curr_main_game.hand_manager.get_hand_component(
 		HandComponentBase.E_HandComponentType.Glove) as HandComponentGlove
 
 
 ## 等进 MAIN_GAME；中途出现戴夫就逐句点完，并记录台词（只在第一次记录）
-func _wait_main_game(a, timeout: float) -> bool:
+## old_mg：上一局的管理器（>1 次进关时必传）—— `change_scene` 是帧末才切的，
+## 不排除旧实例就会把上一局的组件当成这一局的来断言
+func _wait_main_game(a, timeout: float, old_mg = null) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game != old_mg:
 			var dave := _find_dave()
 			if dave != null:
 				if not await _walk_dave_dialog(a):
 					return false
-			if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+			if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -218,7 +234,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 
 
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

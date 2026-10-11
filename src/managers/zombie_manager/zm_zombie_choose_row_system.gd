@@ -23,9 +23,9 @@ var total_base_weight_all_type :Dictionary[CharacterRegistry.ZombieRowType, floa
 
 ## 当前关卡的僵尸行数（前院/屋顶 5 行，泳池 6 行），行数由场景决定，不要写死
 func get_row_num() -> int:
-	if Global.main_game == null or Global.main_game.zombie_manager == null:
+	if GameContext.curr_main_game == null or GameContext.curr_main_game.zombie_manager == null:
 		return 0
-	return Global.main_game.zombie_manager.all_zombie_rows.size()
+	return GameContext.curr_main_game.zombie_manager.all_zombie_rows.size()
 
 
 ## 行历史数组与当前行数对齐（换场景/关卡时行数可能不同）
@@ -41,8 +41,8 @@ func _ensure_row_history_size(row_num: int) -> void:
 func init_zombie_choose_row_system(zombie_rows: Array = []):
 	var all_rows: Array = zombie_rows
 	if all_rows.is_empty():
-		all_rows = Global.main_game.zombie_manager.all_zombie_rows if (
-			Global.main_game != null and Global.main_game.zombie_manager != null
+		all_rows = GameContext.curr_main_game.zombie_manager.all_zombie_rows if (
+			GameContext.curr_main_game != null and GameContext.curr_main_game.zombie_manager != null
 		) else []
 	var row_num := all_rows.size()
 	if row_num <= 0:
@@ -92,15 +92,29 @@ func init_zombie_choose_row_system(zombie_rows: Array = []):
 	is_initialized = true
 	## 丢车保护：小推车触发时由 LawnMover 推送
 	EventBus.subscribe(ConstEventName.LAWN_MOVER_TRIGGERED, on_lawn_mover_triggered)
-	set_process(true)
+	## 保护计时器归零就关掉 _process：绝大多数关卡一行都没被保护过，
+	## 常开等于每帧白跑一遍全行循环（见 on_lawn_mover_triggered / _refresh_process）
+	_refresh_process()
+
+
+## 只在「至少有一行还在保护中」时才跑 _process
+func _refresh_process() -> void:
+	for left in lane_protect_time_left:
+		if left > 0.0:
+			set_process(true)
+			return
+	set_process(false)
 
 
 func _process(delta: float) -> void:
 	if lane_protect_time_left.is_empty():
+		set_process(false)
 		return
 	for i in range(lane_protect_time_left.size()):
 		if lane_protect_time_left[i] > 0.0:
 			lane_protect_time_left[i] = maxf(lane_protect_time_left[i] - delta, 0.0)
+	## 本帧减完全归零，下一帧就不用再跑了
+	_refresh_process()
 
 
 #region 丢车保护
@@ -114,6 +128,8 @@ func on_lawn_mover_triggered(mower_lane: int) -> void:
 		return
 	_ensure_lane_protect_size(row_num)
 	lane_protect_time_left[mower_lane] = mower_protect_time
+	## 有了非零的计时器，_process 才需要跑（见 _refresh_process）
+	_refresh_process()
 	Log.debug("丢车保护：第 %d 行 %.1f 秒内不出怪" % [mower_lane, mower_protect_time])
 
 
@@ -222,7 +238,7 @@ func select_spawn_row(zombie_row_type: CharacterRegistry.ZombieRowType, special_
 					fallback_rows.append(i)
 		if fallback_rows.is_empty():
 			## 兜底的兜底：至少不要选到「不自然出怪」的行
-			var rows = Global.main_game.zombie_manager.all_zombie_rows
+			var rows = GameContext.curr_main_game.zombie_manager.all_zombie_rows
 			for i in range(row_num):
 				if i < rows.size() and rows[i].zombie_row_type != CharacterRegistry.ZombieRowType.None:
 					fallback_rows.append(i)

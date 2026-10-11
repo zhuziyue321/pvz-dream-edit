@@ -27,7 +27,7 @@
 | `character/` | 角色属性资源：`plant_condition/` 种植条件（`.tres` + 其 `.gd` 同置）、`body_change/` 换装 |
 | `map/` | 地图（格子 / 僵尸行）数据 `ResourceMapData` |
 | `dave/` | 疯狂戴夫对话（`dialog/` 剧本 + `dialog_detail/` 台词） |
-| `levels/` | 玩家自制关卡参数（`params/`） |
+| `levels/` | 玩家自制关卡的**样例**参数（`params/`）；真正被扫描的是 `user://custom_level/` |
 | `tutorial/` | 新手教程步骤数据 |
 | `save/` | 存档数据结构 |
 | `ui/` | UI 主题与卡片背景等 |

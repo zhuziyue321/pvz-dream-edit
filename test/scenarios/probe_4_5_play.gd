@@ -13,15 +13,15 @@ func run(a) -> void:
 		a.finish(true)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(5.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[4-5] !! 主游戏未创建")
 		a.finish(true)
 		return
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 	a.log("[4-5] 第 1 批罐子数=%d 占列=%s 提示罐=%d" % [
 		pcm.curr_pot_num, str(_pot_cols(pcm)), _hint_num(pcm)])
 
@@ -41,8 +41,8 @@ func run(a) -> void:
 			await a.wait(0.25)
 	await a.wait(1.0)
 	a.log("[4-5] 砸光后 罐子数=%d 阶段=%d 临时卡片=%d" % [
-		pcm.curr_pot_num, Global.main_game.main_game_progress,
-		Global.main_game.card_manager.curr_temp_cards.size()])
+		pcm.curr_pot_num, GameContext.curr_main_game.main_game_progress,
+		GameContext.curr_main_game.card_manager.curr_temp_cards.size()])
 	await a.dump("砸光第 1 批罐子")
 
 	## 走一次「下一批罐子」：戴夫先说话，再摆上第 2 批
@@ -55,8 +55,8 @@ func run(a) -> void:
 		await a.wait(1.0)
 	await a.wait(3.0)
 	a.log("[4-5] 轮次=%d 第 2 批罐子数=%d 占列=%s 提示罐=%d 临时卡片=%d 已种植物=%d" % [
-		Global.main_game.curr_game_round, pcm.curr_pot_num, str(_pot_cols(pcm)), _hint_num(pcm),
-		Global.main_game.card_manager.curr_temp_cards.size(), _plant_num(pcm)])
+		GameContext.curr_main_game.curr_game_round, pcm.curr_pot_num, str(_pot_cols(pcm)), _hint_num(pcm),
+		GameContext.curr_main_game.card_manager.curr_temp_cards.size(), _plant_num(pcm)])
 	await a.dump("第 2 批罐子")
 	a.finish(true)
 

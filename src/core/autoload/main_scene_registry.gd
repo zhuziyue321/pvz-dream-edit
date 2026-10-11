@@ -43,6 +43,32 @@ enum MainScenes{
 	MainScenes.Store: "res://src/store/store.tscn",
 }
 
+## **取场景路径一律走这里**，不要自己写 `get_scene_path(...)`（U-08）。
+##
+## 为什么：以前全仓 100+ 处直接索引这张表，其中有的写 `get_scene_path(k)`、
+## 有的写 `MainScenesMap.get(k, 兜底)` —— 槽位没登记时一个直接崩、一个静默兜底，
+## 两种口径混在一起，排查时很难判断「到底崩没崩」。
+## 现在统一：没登记就 Log.error 并返回 ""，调用方判空即可；需要兜底就传 `fallback`。
+##
+## [param fallback] 主槽位没登记时改用它；不传表示不要兜底。
+func get_scene_path(main_scenes: MainScenes, fallback: MainScenes = MainScenes.Null) -> String:
+	var path: String = MainScenesMap.get(main_scenes, "")
+	if path == "" and fallback != MainScenes.Null:
+		path = MainScenesMap.get(fallback, "")
+	if path == "":
+		Log.error("MainSceneRegistry：未登记的场景槽位 %s" % str(main_scenes))
+	return path
+
+
+## **写入场景槽位**（供模组在 install() 时注入，如自制关卡的选关界面）。
+## 走方法而不是让外部直接改 `MainScenesMap`：那张表是 `@export` 的，直接改等于绕开一切校验。
+func set_scene_path(main_scenes: MainScenes, path: String) -> void:
+	if path == "":
+		Log.error("MainSceneRegistry：注入的场景路径为空 %s" % str(main_scenes))
+		return
+	MainScenesMap[main_scenes] = path
+
+
 ## 场景 → 默认地图数据路径（关卡资源没写 map_data 时按它取，见 docs/参考存档/地图实现.md）
 ## 用路径 + 延迟 load：map_data.gd 反过来引用了本类的 MainScenes 枚举，
 ## 直接 preload 会构成循环依赖

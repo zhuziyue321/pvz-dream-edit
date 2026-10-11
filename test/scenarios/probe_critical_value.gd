@@ -56,21 +56,21 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(2.0)
-	if Global.main_game == null:
-		a.log("!! Global.main_game 为空")
+	if GameContext.curr_main_game == null:
+		a.log("!! GameContext.curr_main_game 为空")
 		return false
 	## 替玩家点「开始游戏」：小推车是在「准备-安放-植物」之前登场的，
 	## 提前开战会让流程停在选卡那一步，推车永远不出现（断言会白失败）
 	await ProbeUtil.click_start(a)
 	await ProbeUtil.wait_lawn_mowers(a, 20.0)
-	return Global.main_game.main_game_progress != null
+	return GameContext.curr_main_game.main_game_progress != null
 
 func _new_norm_zombie(a, lane: int) -> Zombie000Base:
-	var mgr := Global.main_game.zombie_manager
+	var mgr := GameContext.curr_main_game.zombie_manager
 	if mgr == null or mgr.zombie_wave_manager == null:
 		_check(a, "僵尸管理器可用", false, "zombie_wave_manager 为空")
 		return null
@@ -84,7 +84,7 @@ func _new_norm_zombie(a, lane: int) -> Zombie000Base:
 
 
 func _mower_of(lane: int) -> LawnMover:
-	var gim = Global.main_game.game_item_manager.gim_lawn_mover
+	var gim = GameContext.curr_main_game.game_item_manager.gim_lawn_mover
 	if gim == null or lane >= gim.all_lawn_movers.size():
 		return null
 	var mower: LawnMover = gim.all_lawn_movers[lane]
@@ -93,7 +93,7 @@ func _mower_of(lane: int) -> LawnMover:
 
 ## 第一行真的配了推车的行号：没铺草皮的行本来就没有推车（见地图数据 have_lawn_mover）
 func _mower_lane() -> int:
-	var gim = Global.main_game.game_item_manager.gim_lawn_mover
+	var gim = GameContext.curr_main_game.game_item_manager.gim_lawn_mover
 	if gim == null:
 		return 0
 	for lane in range(gim.all_lawn_movers.size()):

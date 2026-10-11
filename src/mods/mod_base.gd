@@ -14,11 +14,14 @@ class_name ModBase
 ##                                 （**要改关卡数据就只能在这里改**，见该方法的注释）
 ##   `install_to_main_game(mg)`  —— 每局主游戏 `init_manager()` 里、`HandManager` 注册组件
 ##                                 之前调一次（要加手持物 / 卡槽按钮就在这里加）
-##   `register_console_entries()` —— `install()` 之后调一次：往控制台加自己的调试开关 / 按钮
+##   `create_detail_control()`  —— 模组页面选中本模组时调一次：**右半边的界面**（显示什么、
+##                                 能改什么全由模组决定，玩法相关的界面都写在这）
 ##   `uninstall()`              —— 目前只手动调用：运行期关掉开关时，新的主游戏不再安装
-##                                 （顺带会把本模组登记的控制台条目整组撤销）
 ##
 ## 关闭的模组 = 完全不安装：主游戏场景里不会多出任何一个节点，也不需要本体留分支。
+
+## 「模组页面」右侧详情控件的**刷新回调** meta 键（见 `create_detail_control()`）
+const DETAIL_REFRESH_META := &"mod_detail_refresh"
 
 ## 模组 id（必须返回 `ModIds` 里的常量）
 @abstract
@@ -32,24 +35,33 @@ func get_mod_name() -> String:
 func get_mod_description() -> String:
 	return ""
 
+
+## 「模组页面」右侧详情里**模组自己那一块**：显示什么、能改什么，全由模组决定
+##
+## 页面只保证三样东西（名称 / 开 / 关 / 说明），下面这一块交给模组 ——
+## 想放几行状态、几个开关、一个按钮，就在这里 `add_child` 好再返回。
+## 不重写 = 返回 null，页面在详情区写一句「这个模组没有要显示的东西」。
+##
+## 值会变的（如联机状态那一栏）挂一个刷新回调，页面会在条目值变化时调它一次：
+##   control.set_meta(ModBase.DETAIL_REFRESH_META, func() -> void: 刷新())
+##
+## 想复用控制台那套「条目 → 控件」（勾选框 / 按钮 / 滑条 / 输入框 / 只读行）就用
+## `ConsoleEntryControl`：一个实例造一堆控件、`refresh()` 一次刷全部值。
+func create_detail_control() -> Control:
+	return null
+
+
+## 造一行详情正文（给 `create_detail_control()` 用：页面上说明文字的样式统一在这里，
+## 模组只管往自己的 VBoxContainer 里 add_child）
+static func create_detail_label(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return label
+
 ## 全局安装（游戏启动，只调一次）
 func install() -> void:
-	pass
-
-
-## 往控制台登记本模组的快捷项（可选重写）
-##
-## 这是模组开发的**快捷工具**：不用改面板、不用改场景、不用改 `ConfigService`，
-## 在这里加一行就多一个开关：
-##   registry.register_entry(ConsoleEntry.create_toggle(&"xxx_free_move", "无视冷却")
-##       .set_category(get_mod_name())
-##       .bind_config("xxx.free_move", false))
-##
-## 想要持久化就用 `bind_config()`（值落在 `ConfigService.console_values`，关控制台时存盘）；
-## 只想一次性触发一个动作就用 `ConsoleEntry.create_button()`。
-##
-## 模组被关掉时，这里登记过的条目会被 `ModManager` 整组撤销（按模组 id 匹配 `source`）。
-func register_console_entries(_registry: ConsoleRegistry) -> void:
 	pass
 
 

@@ -20,7 +20,7 @@ func run(a) -> void:
 	## 往温室里放 3 株植物
 	state.curr_num_new_garden_plant = 3
 
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)

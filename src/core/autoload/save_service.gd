@@ -2,7 +2,11 @@ extends Node
 class_name SaveService
 
 ## 全局游戏存档服务：只负责持久化金币/花园/关卡进度
-## 文件 IO 与自动保存逻辑放在这里，Global 只负责业务/运行态状态
+## 文件 IO 放在这里，Global 只负责业务/运行态状态
+##
+## 存档时机：**只在关键节点手动调用 `save_now()`**（购买道具 / 关卡结算 / 切换用户 / 花园变更…）。
+## 没有常驻的定时自动存档 —— 定时器会在玩家没操作时悄悄落盘，把内存里的脏状态固化成档
+## （新用户继承旧档、损坏档被空档顶掉都源于此），且写档失败时玩家毫不知情。
 
 @onready var user_manager: UserManager = %UserManager
 ## 与 Global 根下的 GlobalGameState 同级，用 % 引用，避免依赖 get_parent() 类型
@@ -22,13 +26,11 @@ const ReadBroken := "broken"
 
 ## 存档保护开关：本局一旦判定「损坏且无法恢复」就锁死写入，直到下次读档重新判定。
 ##
-## 为什么必须锁：读档失败时 state 仍是默认值，而自动存档每 60 s 跑一次 ——
-## 不锁的话，60 s 后 save_now() 就把这份空档写回去，原档被挪成 .bak 后
-## 再被下一次写档顶掉，**一次损坏变成永久丢档**。
+## 为什么必须锁：读档失败时 state 仍是默认值，而存档是手动触发的 ——
+## 不锁的话，下一次 save_now()（退出商店 / 关卡结算 / 切换用户任意一个）就把这份空档写回去，
+## 原档被挪成 .bak 后再被下一次写档顶掉，**一次损坏变成永久丢档**。
 ## 锁住之后本局照常能玩，只是不再落盘；原档已隔离成 .corrupt，可人工恢复。
 var _save_locked := false
-
-var _auto_save_timer: Timer
 
 ## 本局是否处于「存档损坏保护中」（true = 不再写档，原档已隔离）。
 ## UI 想提示玩家时读这个，不要在别处自己判。
@@ -40,34 +42,11 @@ func _get_save_game_path() -> String:
 		return ""
 	return "user://" + user_manager.curr_user_name + "/" + SaveGameFileName
 
-## 启用自动保存存档
-func start_autosave(interval_sec: float = 60.0) -> void:
-	if _auto_save_timer != null:
-		return
-
-	_auto_save_timer = Timer.new()
-	_auto_save_timer.wait_time = interval_sec
-	_auto_save_timer.one_shot = false
-	_auto_save_timer.autostart = true
-	add_child(_auto_save_timer)
-	Log.debug("开始自动保存存档")
-	_auto_save_timer.timeout.connect(_on_auto_save_timer_timeout)
-
-func stop_autosave() -> void:
-	if _auto_save_timer == null:
-		return
-	_auto_save_timer.stop()
-	_auto_save_timer.queue_free()
-	_auto_save_timer = null
-
-func _on_auto_save_timer_timeout() -> void:
-	Log.debug(str(GlobalUtils.get_curr_time()) + str(" 自动存档"))
-	save_now()
-
+## 立即写一次全局存档（唯一的存档入口，由各业务节点在关键时机手动调用）
 func save_now() -> void:
 	var path := _get_save_game_path()
 	if path.is_empty():
-		# 未选用户时常见，不算错误（用 verbose 避免自动存档定时刷屏）
+		# 未选用户时常见，不算错误
 		Log.debug("全局存档跳过：未登录用户或用户名为空")
 		return
 
@@ -114,9 +93,20 @@ func load_global_game_data() -> void:
 	## 所以读取前先把保护开关清掉，由 _load_json 按本次结果重新置位。
 	_save_locked = false
 
+	## 该用户一份存档文件都没有（新建的用户 / 首次启动）：**必须**把运行态清回默认值。
+	##
+	## 不清的后果就是"新用户继承了上一个账号的存档"：读档是"只覆盖读到的键"，
+	## 没有档时什么都不覆盖，上一个用户留在内存里的金币 / 关卡进度 / 花园 / 选卡 /
+	## 已解锁植物会原样带过来，再被下一次存档写进这个空目录，从"看着像继承"变成"真的继承"。
+	## 只判主档：主档没了但 .bak 还在时仍要走 _load_json 的备份回退，不能当成新用户。
+	if not FileAccess.file_exists(path) and not FileAccess.file_exists(path + ".bak"):
+		global_game_state.reset_to_defaults()
+		Log.debug(str("✅ 该用户尚无存档，已按新档初始化: ") + str(path))
+		return
+
 	var loaded: Variant = _load_json(path)
-	## null = 没有可用档：新用户保持默认值即可；损坏档同样保持默认值，
-	## 但已由 _load_json 隔离原档并锁住写入，这里直接返回，不动 state。
+	## null = 损坏档且无备份可用：已由 _load_json 隔离原档并锁住写入，
+	## 这里直接返回，不动 state（保持默认值，反正本局也不会落盘）。
 	if loaded == null:
 		return
 	var data := loaded as Dictionary
@@ -277,7 +267,7 @@ func _save_json(data: Dictionary, path: String) -> bool:
 ##
 ## 为什么要把「不存在」和「读不出来」分开：前者是「这个用户还没存过」，正常；
 ## 后者是「存过但坏了」，异常。混成一个空字典，调用方就只能一律按空档处理，
-## 而自动存档会立刻把这份空档写回去 —— 那才是一档丢失的真正起点。
+## 而下一次 save_now() 会立刻把这份空档写回去 —— 那才是一档丢失的真正起点。
 func _read_json_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		return {"state": ReadMissing, "data": {}}
@@ -340,10 +330,10 @@ func _migrate_save_data(data: Dictionary) -> Dictionary:
 ## 返回 null 有两种情况，调用方不必区分，但内部处理不同：
 ##   ① 文件不存在 —— 新用户，正常：state 保持默认值，允许写入；
 ##   ② 主档与 .bak 都损坏 —— 异常：原档已隔离为 .corrupt，并置 `_save_locked`
-##      锁死本局写入，避免自动存档把空档固化成永久丢档。
+##      锁死本局写入，避免下一次存档把空档固化成永久丢档。
 ##
 ## **不要改回「损坏就返回 {}」**：那样调用方会把 state 全量设成默认值，
-## 60 s 后 save_now() 写回的就是一份空档，而原档已经变成 .bak 再被顶掉。
+## 下一次 save_now() 写回的就是一份空档，而原档已经变成 .bak 再被顶掉。
 func _load_json(path: String) -> Variant:
 	var read := _read_json_file(path)
 	if read["state"] == ReadOk:

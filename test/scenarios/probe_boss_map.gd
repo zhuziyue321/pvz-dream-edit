@@ -178,8 +178,8 @@ func _check_level_runtime(a) -> bool:
 	Global.game_para = para
 	await a.wait(2.0)
 	a.log("[场景] 进入 5-10（%s）" % para.save_game_name)
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[para.game_sences]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(para.game_sences)
 	)
 	if not await _wait_main_game(a, 90.0):
 		_check(a, "5-10 进入 MAIN_GAME", false, "超时")
@@ -187,7 +187,7 @@ func _check_level_runtime(a) -> bool:
 	_check(a, "5-10 进入 MAIN_GAME", true)
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	_check(a, "关卡参数已切到夜屋顶", mg.game_para.game_BG == ConstLevelData.GameBg.Boss,
 		str(mg.game_para.game_BG))
 	## 夜屋顶是裸屋顶：没有花盆就种不下任何植物 —— 花盆由 run_flow() 开头「系统种植」铺出来
@@ -312,8 +312,8 @@ func _count_pots(mg, col_count: int) -> int:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null \
-			and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+		if GameContext.curr_main_game != null \
+			and GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 			return true
 		await a.wait(0.5)
 		waited += 0.5

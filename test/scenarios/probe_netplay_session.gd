@@ -1,15 +1,16 @@
 extends RefCounted
-## 探针：联机模组的地基（会话挂载 + 三个本体扩展点 + 控制台那一栏）
+## 探针：联机模组的地基（会话挂载 + 三个本体扩展点 + 联机面板）
 ## 覆盖（都是「编译门禁抓不到、只能跑起来才知道」的那类）：
 ##   1. 会话节点真的挂进了 /root（autoload 阶段直接 add_child 会被拒，已改成延迟挂）
 ##   2. `EventBus` 拦截器：装上 → push 事件被拦到 → 摘掉 → 不再被拦
 ##   3. `GameRng`：未播种时可用；播种后同种子两次取值完全一致；clear_seed 回到未播种
 ##   4. `Character000Base.entity_id`：分配器自增、重置生效
-##   5. 控制台「联机」栏：输入框 + 两个按钮 + 状态 / 最近流水；状态变了能刷到 probe 值上
+##   5. 联机面板（模组页面右侧）：输入框 + 三个按钮 + 状态；状态变了能刷到 probe 值上
+##      （这一份界面已经从控制台搬出来：控制台里不再有「联机」那一栏）
 ##   6~9. 房里谁说了算：房主进关 ⇒ 全屋跟进 / 选卡协商 / 房主退关 ⇒ 全屋退 + 通关以房主为准 /
 ##        客户端先报准备，准备好了房主才按得动「开始」
 ##   10~13. 主机权威：操作上行 + 种子同源；**每一波由主机下发**（编号一起下发）；
-##          阳光由主机下发 + 拾取走主机权威；**主机按「快照频率」（默认每秒 60 次，控制台可调）
+##          阳光由主机下发 + 拾取走主机权威；**主机按「快照频率」（默认每秒 60 次，模组页面里可调）
 ##          广播全份战斗快照**，客户端按 entity_id 对齐
 ##          （客户端的刷新定时器不再自己推进波次，闸门默认为空 = 单机零影响）
 ##   12. 阳光同步：天降由主机下发（客户端本地不掉）+ 拾取按**实体编号**走主机权威
@@ -27,7 +28,7 @@ var _seen_events: Array[String] = []
 
 func run(a) -> void:
 	a.log("")
-	a.log("========== PROBE 联机地基：会话 + 三个扩展点 + 控制台那一栏 ==========")
+	a.log("========== PROBE 联机地基：会话 + 三个扩展点 + 联机面板 ==========")
 	if not ModManager.is_mod_enabled(ModIds.NETPLAY):
 		ModManager.set_mod_enabled(ModIds.NETPLAY, true)
 		a.log("  已启用联机模组（ModIds.NETPLAY）")
@@ -37,7 +38,7 @@ func run(a) -> void:
 	_check_interceptor(a)
 	_check_game_rng(a)
 	_check_entity_id(a)
-	_check_console_entries(a)
+	_check_panel_entries(a)
 	_check_room_level_sync(a)
 	_check_card_negotiation(a)
 	_check_leave_and_verdict(a)
@@ -137,31 +138,44 @@ func _take_three() -> Array:
 #endregion
 
 
-#region 5. 控制台「联机」栏
-func _check_console_entries(a) -> void:
+#region 5. 联机面板（模组页面右侧）
+func _check_panel_entries(a) -> void:
 	a.log("")
-	a.log("--- 5. 控制台「联机」栏（输入框 + 两个按钮 + 状态 / 流水） ---")
-	var registry := Global.console_registry
-	if registry == null:
-		_check(a, "（前置）控制台注册表可用", false)
-		return
-	var target := registry.get_entry(&"netplay_target")
-	var host := registry.get_entry(&"netplay_host")
-	var join := registry.get_entry(&"netplay_join")
-	_check(a, "输入框条目已登记且是 Text 形态",
-		target != null and target.kind == ConsoleEntry.E_Kind.Text)
-	_check(a, "「开启房间」按钮已登记", host != null and host.kind == ConsoleEntry.E_Kind.Button)
-	_check(a, "「加入房间」按钮已登记", join != null and join.kind == ConsoleEntry.E_Kind.Button)
-	_check(a, "三条同在「联机」组",
-		target != null and target.category == "联机"
-		and host != null and host.category == "联机"
-		and join != null and join.category == "联机",
-		"" if target == null else target.category)
-
+	a.log("--- 5. 联机面板（输入框 + 三个按钮 + 状态） ---")
+	## 联机的界面已经从**控制台**搬到**模组页面**：条目不再登记进注册表，
+	## 而是由 `NetplayMod.create_detail_control()` 拿着这一份条目现造控件。
+	## 所以这里不再查 `Global.console_registry`，直接问模组要这一批条目。
 	var mod := ModManager.get_mod(ModIds.NETPLAY) as NetplayMod
 	if mod == null:
 		_check(a, "（前置）拿到模组实例", false)
 		return
+	var by_id: Dictionary[StringName, ConsoleEntry] = {}
+	for item in mod._build_panel_entries():
+		var entry := item as ConsoleEntry
+		if entry != null:
+			by_id[entry.id] = entry
+	a.log("  联机面板条目=%d" % by_id.size())
+	var target := by_id.get(&"netplay_target") as ConsoleEntry
+	var host := by_id.get(&"netplay_host") as ConsoleEntry
+	var join := by_id.get(&"netplay_join") as ConsoleEntry
+	var leave := by_id.get(&"netplay_leave_room") as ConsoleEntry
+	_check(a, "输入框条目是 Text 形态",
+		target != null and target.kind == ConsoleEntry.E_Kind.Text)
+	_check(a, "「开启房间」按钮在面板里", host != null and host.kind == ConsoleEntry.E_Kind.Button)
+	_check(a, "「加入房间」按钮在面板里", join != null and join.kind == ConsoleEntry.E_Kind.Button)
+	_check(a, "「退出房间」按钮在面板里", leave != null and leave.kind == ConsoleEntry.E_Kind.Button)
+	_check(a, "四条都在「联机」组",
+		target != null and target.category == "联机"
+		and host != null and host.category == "联机"
+		and join != null and join.category == "联机"
+		and leave != null and leave.category == "联机",
+		"" if target == null else target.category)
+	## ★ 反断言：控制台里不该再有联机的影子（搬干净了才算完）
+	if Global.console_registry != null:
+		var in_console := Global.console_registry.get_entries("联机")
+		_check(a, "控制台里不再有「联机」那一栏", in_console.is_empty(),
+			str(in_console.size()))
+
 	var r1 := mod._parse_target("192.168.1.9:9000")
 	_check(a, "解析 地址:端口", r1["address"] == "192.168.1.9" and r1["port"] == 9000, str(r1))
 	var r2 := mod._parse_target("9001")
@@ -171,31 +185,36 @@ func _check_console_entries(a) -> void:
 	_check(a, "空输入回退默认值",
 		r3["address"] == NetplaySession.DEFAULT_ADDRESS and r3["port"] == NetplaySession.DEFAULT_PORT, str(r3))
 
-	## 状态 / 最近流水：控制台那一栏里的两行只读文本
-	var status := registry.get_entry(&"netplay_status")
-	var last_log := registry.get_entry(&"netplay_last_log")
+	## 只读文本只剩「状态」一行：「最近一条」「房间关卡」两行已撤销
+	var status := by_id.get(&"netplay_status") as ConsoleEntry
 	_check(a, "状态条目已登记且是 Readout 形态",
 		status != null and status.kind == ConsoleEntry.E_Kind.Readout)
-	_check(a, "最近流水条目已登记", last_log != null and last_log.kind == ConsoleEntry.E_Kind.Readout)
 	var status_text := str(status.get_value()) if status != null else ""
 	_check(a, "状态初值为「未连接」", status_text.contains("未连接"), status_text)
-	_check(a, "流水初值是占位文本",
-		(str(last_log.get_value()) if last_log != null else "") == "（还没有动作）")
+	_check(a, "面板里不再有「最近一条」", not by_id.has(&"netplay_last_log"))
+	_check(a, "面板里不再有「房间关卡」", not by_id.has(&"netplay_room_level"))
 
-	## 值在外面被改了：面板要能收到「重读一遍」的通知
+	## 值在外面被改了：模组页面要能收到「重读一遍」的通知
+	## （刷新的总线还是 `ConsoleRegistry` 的 `values_changed`：模组不再往控制台登记条目，
+	##   只是借这条信号告诉前台「值变了，重读一遍」）
 	var fired := {"v": false}
-	registry.values_changed.connect(func(): fired["v"] = true)
-	registry.request_refresh()
-	_check(a, "request_refresh 会通知面板重读", fired["v"])
+	if Global.console_registry == null:
+		_check(a, "（前置）拿到刷新总线", false)
+		return
+	Global.console_registry.values_changed.connect(func(): fired["v"] = true)
+	Global.console_registry.request_refresh()
+	_check(a, "request_refresh 会通知前台重读", fired["v"])
 
-	## 会话一动，控制台那行流水就跟着变（用 close()：不占端口，且必定发一条流水）
+	## 会话一动前台就该重读（用 close()：不占端口，且必定发一条流水）——
+	## 流水不再占面板上一行，这里只验「会话一动 ⇒ 前台收到重读通知」
 	var session := a.get_node_or_null(SESSION_PATH) as NetplaySession
 	if session == null:
 		_check(a, "（前置）拿到会话", false)
 		return
+	var fired_on_close := {"v": false}
+	Global.console_registry.values_changed.connect(func(): fired_on_close["v"] = true)
 	session.close()
-	_check(a, "会话流水刷到控制台那一行", str(last_log.get_value()) == "已断开",
-		str(last_log.get_value()))
+	_check(a, "会话一有动静就通知前台重读", fired_on_close["v"])
 #endregion
 
 
@@ -534,6 +553,13 @@ func _check_wave_sync(a) -> void:
 	_check(a, "开波命令带得回「是不是最终波」", not bool(show_args.get(NetplayCommand.ARG_FINAL, true)))
 	_check(a, "开波命令**不带**出怪清单（不出怪就是不出怪）", not show_args.has("z_ids"), str(show_args))
 
+	## ★ 命令：这一段打完了 —— 客户端**自己算不出这一刻**（不开波 + 僵尸是木偶），只能由主机下发；
+	##   少了它，客户端的关卡流程会卡在「开战」那一步，本关走不到判胜 ⇒ 拿不到本关给的植物
+	var cmd_finished := NetplayCommand.build(NetplayCommand.OP_BATTLE_FINISHED, {})
+	_check(a, "「这一段打完了」认得出自己的操作名",
+		NetplayCommand.op_of(cmd_finished) == NetplayCommand.OP_BATTLE_FINISHED, str(cmd_finished))
+	_check(a, "「这一段打完了」是一条能认的命令", NetplayCommand.is_valid(cmd_finished))
+
 	## 闸门语义：客户端**永远不开波**（波次时机归 `wave_next`，僵尸归快照补种）
 	var sync := NetplayWaveSync.new()
 	_check(a, "客户端一次波都不自己开", not sync._client_wave_gate())
@@ -660,23 +686,44 @@ func _check_state_sync(a) -> void:
 	sync._reap_missing(null, {1: dummy}, {1: true}, sync._delete_zombie)
 	_check(a, "重新出现在快照里就清零", not sync._missing.has(1))
 
-	## ★ 动画状态由主机下发（客户端照着演，哪怕本地 AI 被关掉）。
-	## 这里验的是"本体字段 → 包 → 解回本体字段"的往返，而不是"常数存在"。
+	## ★ 动画由主机下发"播哪一条 + 播到第几秒"，客户端**照播** —— 而不是下发一堆状态字段
+	## 让客户端自己推导（那条路推导链断在哪儿就要往哪儿补，见 `netplay_state_sync.gd` 头注）。
+	## 这里验的是这套**下标协议**的契约。
 	var zz := Zombie000Base.new()
-	zz.is_attack = true
-	zz.is_swimming = true
-	var packed_a := sync._pack_anim(zz)
-	_check(a, "啃食 / 游泳两位打得进去", (packed_a & NetplayStateSync.ANIM_ATTACK) != 0
-		and (packed_a & NetplayStateSync.ANIM_SWIM) != 0)
-	_check(a, "默认不啃不游的打包里不该有这两位",
-		sync._pack_anim(Zombie000Base.new())
-		& (NetplayStateSync.ANIM_ATTACK | NetplayStateSync.ANIM_SWIM) == 0)
-	## 往返：解回另一只僵尸，字段要一致
-	var zz2 := Zombie000Base.new()
-	sync._apply_zombie_anim(zz2, packed_a)
-	_check(a, "★ 主机下发的动画状态解得回本体字段（客户端才演得对）",
-		zz2.is_attack and zz2.is_swimming)
-	## 变体（walk_status 等）只在 Zombie001Norm 上有，其它僵尸类不该被这个逻辑崩掉
+	_check(a, "拿不到播放器时不接管（返回 ANIM_NONE，而不是被当成 0 号动画）",
+		NetplayStateSync._anim_index_of(zz) == NetplayStateSync.ANIM_NONE)
+	_check(a, "ANIM_NONE 占住单字节的最大值（下标只能落在它之下）",
+		NetplayStateSync.ANIM_NONE == 255)
+	## ⚠️ 客户端收包的第一道防线：下标乱来也不能崩在这一行 —— 崩了就是整局断线
+	NetplayStateSync._apply_anim(zz, NetplayStateSync.ANIM_NONE)
+	NetplayStateSync._apply_anim(zz, 0)
+	NetplayStateSync._apply_anim(zz, 250)
+	NetplayStateSync._apply_anim(null, 0)
+	_check(a, "★ 下标乱来（不接管 / 越界 / 空角色）都不会崩在这一行", true)
+	## 接管动画树只做一次（重复关会跟快照打架）
+	NetplayStateSync._take_over_anim(zz)
+	NetplayStateSync._take_over_anim(zz)
+	_check(a, "接管动画是幂等的（第二次不重复关）", zz.has_meta(&"netplay_anim_taken"))
+
+	## ★ 下标协议的**核心假设**：两端实例化的是同一份 .tscn ⇒ 同一下标就是同一条动画，
+	## 于是**不需要任何"动画名 → 编号"的硬编码表**（硬约束 §1-4 说的正是别散落这类映射）。
+	## 这里把"取列表 → 按下标解回名字"整条跑一遍。
+	var ap := AnimationPlayer.new()
+	var lib := AnimationLibrary.new()
+	ap.add_animation_library("", lib)
+	lib.add_animation("walk", Animation.new())
+	lib.add_animation("death", Animation.new())
+	var anim_list := NetplayStateSync._anim_list_of(ap)
+	_check(a, "动画列表缓存得住（不是每帧每只都重新取一遍）",
+		NetplayStateSync._anim_list_of(ap) == anim_list)
+	_check(a, "（前置）两条动画都在列表里", anim_list.size() == 2, str(anim_list))
+	_check(a, "★ 下标 ↔ 名字 往返一致（两端同下标就是同一条动画）",
+		anim_list[anim_list.find("walk")] == "walk"
+		and anim_list[anim_list.find("death")] == "death")
+	ap.free()
+
+	## 变体（walk_status 等）只在 Zombie001Norm 上有 —— 现在动画走下标，这些字段不再下发，
+	## 但 `_has_prop` 还在给"取可选组件"用，缓存键那个坑（按脚本而不是引擎基类）仍要守住。
 	var zn := Zombie001Norm.new()
 	## ⚠️ 缓存键必须按脚本算：`get_class()` 返回的是引擎基类，普僵和僵尸基类是同一个，
 	## 共用键会让先查的那只污染另一只（这正是一开始 FAIL 的原因）
@@ -685,17 +732,8 @@ func _check_state_sync(a) -> void:
 	_check(a, "（前置）普僵确实有走路变体这个属性", sync._has_prop(zn, &"walk_status"))
 	_check(a, "没有这个属性的僵尸类不算有（不能被 set 崩掉）",
 		not sync._has_prop(zz, &"walk_status"))
-	var zn_packed := sync._pack_anim(zn)
-	var zn2 := Zombie001Norm.new()
-	zn2.walk_status = 2
-	sync._apply_zombie_anim(zn2, zn_packed)
-	_check(a, "走路变体能由主机指定（两端不再各挑各的）", zn2.walk_status == zn.walk_status)
-	## 主机说它死了而本地没有血量组件（组件被摘掉的角色）：不该崩在这一行
-	sync._apply_zombie_anim(zz, NetplayStateSync.ANIM_DEATH)
-	zz2.free()
-	zz.free()
 	zn.free()
-	zn2.free()
+	zz.free()
 
 	## ★ 客户端僵尸转"只渲染"：判定关掉，只留下渲染。
 	## 这道闸门**必须是粘的** —— 死亡 / 魅惑 / 睡眠这些正常流程都会调
@@ -758,16 +796,70 @@ func _check_state_sync(a) -> void:
 	_check(a, "第一包（僵尸 + 子弹）装得进 MTU",
 		z_cap * NetplayStateSync.BYTES_PER_ZOMBIE + NetplayStateSync.RESERVE_BULLETS
 		<= NetplayStateSync.BYTE_BUDGET)
+	## ★ 第二包还要装**出战卡槽**（`cd_*`：每张卡的身份 + 剩余冷却），它的字节是从
+	##   植物名册这份预算里扣的 —— 算上限时必须把它预留出来，不然"45 株装得下"只是纸面上的。
+	var extra_fixed := NetplayStateSync.RESERVE_PROGRESS + NetplayStateSync.RESERVE_SUN_VALUE \
+		+ NetplayStateSync.MAX_CARDS * NetplayStateSync.BYTES_PER_CARD
 	var p_cap := NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_PLANT, 64,
-		NetplayStateSync.BYTE_BUDGET - NetplayStateSync.RESERVE_SUNS)
-	_check(a, "第二包（植物 + 阳光）也装得进 MTU",
-		p_cap * NetplayStateSync.BYTES_PER_PLANT + NetplayStateSync.RESERVE_SUNS
+		NetplayStateSync.BYTE_BUDGET - NetplayStateSync.RESERVE_SUNS - extra_fixed)
+	_check(a, "第二包（植物 + 阳光 + 出战卡槽）也装得进 MTU",
+		p_cap * NetplayStateSync.BYTES_PER_PLANT + NetplayStateSync.RESERVE_SUNS + extra_fixed
 		<= NetplayStateSync.BYTE_BUDGET)
 	## ★ 拆包的目的就在这一条：满盘（5 行 × 9 列 = 45 株）得真的装得下。
 	## 挤在一包里时植物只能排到十几株，名册被截断就等于"植物这一档名存实亡"。
-	_check(a, "★ 满盘 45 株植物装得下（否则名册被截断，植物等于没进快照）", p_cap >= 45)
+	_check(a, "★ 满盘 45 株 + 满槽 12 张卡一并装得下（否则名册被截断，植物等于没进快照）",
+		p_cap >= 45)
 	_check(a, "字节给 0 时一条都装不下（不是反过来放开）",
 		NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_BULLET, 32, 0) == 0)
+
+	## ★ 出战卡槽也要能照主机那一副重建：卡的身份压成数字发过来，客户端得还原得回同一张
+	## 1 = 豌豆射手、2 = 向日葵（编号口径见关卡脚本里的注释）
+	var pea_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant, 1, false)
+	var imit_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant, 1, true)
+	var card_snap := {
+		&"cd_type": PackedInt32Array([int(pea_ref.card_type), int(imit_ref.card_type)]),
+		&"cd_id": PackedInt32Array([pea_ref.content_id, imit_ref.content_id]),
+		&"cd_imit": PackedByteArray([0, 1]),
+		&"cd_cool": PackedFloat32Array([0.0, 3.5]),
+	}
+	var cards := NetplayStateSync._cards_of(card_snap)
+	var refs: Array = cards[&"refs"]
+	var cools: PackedFloat32Array = cards[&"cools"]
+	_check(a, "卡的身份能还原成引用（照它才能在客户端补出同一张卡）",
+		refs.size() == 2
+		and refs[0].get_selection_key() == pea_ref.get_selection_key()
+		and refs[1].get_selection_key() == imit_ref.get_selection_key())
+	## ⚠️ 冷却必须与身份**成对**取回来：分成两趟各丢一次非法编号的话，冷却会张冠李戴
+	_check(a, "剩余冷却与身份一一对应（第 i 个冷却就是第 i 张卡的）",
+		cools.size() == 2 and is_equal_approx(cools[0], 0.0) and is_equal_approx(cools[1], 3.5))
+	## ⚠️ 模仿者与普通版是**两张不同的卡**（`get_selection_key()` 带模仿位）：
+	## 混成一张的话，客户端会把玩家带的那张模仿者换成普通版
+	_check(a, "模仿者与普通版还原出来是两个不同身份", pea_ref.get_selection_key() != imit_ref.get_selection_key())
+	## ⚠️ 身份变了要**比得出来**：比不出来就永远停在第一次那份名单上，主机中途加的卡进不来
+	var changed_snap := card_snap.duplicate()
+	changed_snap[&"cd_id"] = PackedInt32Array([pea_ref.content_id, 2])
+	_check(a, "换了一张卡时身份序列变得出来（否则主机改了卡槽客户端不会跟着改）",
+		NetplayStateSync._card_sig_of(card_snap) != NetplayStateSync._card_sig_of(changed_snap))
+	_check(a, "没换卡时身份序列保持一致（否则卡槽会被每帧重建一次）",
+		NetplayStateSync._card_sig_of(card_snap) == NetplayStateSync._card_sig_of(card_snap.duplicate()))
+	## 非法编号（不在枚举里）要被丢掉，不能把坏引用塞进卡槽
+	var bad_snap := {&"cd_type": PackedInt32Array([1]), &"cd_id": PackedInt32Array([-7]),
+		&"cd_imit": PackedByteArray([0]), &"cd_cool": PackedFloat32Array([0.0])}
+	var bad_cards := NetplayStateSync._cards_of(bad_snap)
+	_check(a, "编号非法的卡直接丢掉（不把坏引用塞进卡槽）",
+		(bad_cards[&"refs"] as Array).is_empty() and (bad_cards[&"cools"] as PackedFloat32Array).is_empty())
+
+	## 卡要能"按还剩几秒"摆冷却 —— 两端各跑各的计时器，攒下的误差靠它一次抹平
+	var probe_card := Card.new()
+	## ⚠️ 剩余秒数是**属性**（`cool_remain`），不是 `get_cool_remain()` ——
+	##   内联写法的 getter 不会另外挂出一个方法，`has_method` 查不到
+	_check(a, "卡能按剩余秒数摆冷却，也读得出剩余秒数",
+		probe_card.has_method("set_card_cool_remain") and "cool_remain" in probe_card)
+	probe_card.free()
+	## 出战卡槽要能整体换成主机那份（缺的照模板补、多的退回待选区）
+	var probe_slot := CardSlotBattle.new()
+	_check(a, "出战卡槽能整体换成主机那一份卡", probe_slot.has_method("set_cards"))
+	probe_slot.free()
 
 	## ★ 植物名册带格子下标：解错了会把植物补种到**别的格子**上 —— 比不补更糟
 	var probe_cell := PlantCell.new()

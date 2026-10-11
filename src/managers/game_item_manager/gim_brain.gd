@@ -27,19 +27,19 @@ func create_all_brain_on_zombie_mode():
 		brain.queue_free()
 	curr_brain.clear()
 	curr_brain_num = 0
-	for i in range(Global.main_game.zombie_manager.all_zombie_rows.size()):
+	for i in range(GameContext.curr_main_game.zombie_manager.all_zombie_rows.size()):
 		_create_one_brain(i)
 
 ## 创建一个脑子
 ##[lane:int] 行数
 func _create_one_brain(lane:int):
-	var curr_plant_cell:PlantCell = Global.main_game.plant_cell_manager.all_plant_cells[lane][0]
+	var curr_plant_cell:PlantCell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[lane][0]
 	var brain:BrainOnZombieMode = BRAIN_ON_ZOMBIE_MODE.instantiate()
 	brain.init_brain(curr_plant_cell)
 
 	brain.lane = lane
 	brain.z_index = lane * 50 + 40
-	brain.position = Vector2(GlobalXBrain, Global.main_game.zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y) - brain_on_zombie_mode.global_position
+	brain.position = Vector2(GlobalXBrain, GameContext.curr_main_game.zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y) - brain_on_zombie_mode.global_position
 
 	brain_on_zombie_mode.add_child(brain)
 	brain.signal_brain_death.connect(_on_brain_death.bind(brain))

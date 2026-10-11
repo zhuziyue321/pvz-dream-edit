@@ -18,19 +18,19 @@ func run(a) -> void:
 		a.finish(true)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[IZOMBIE] !! 主游戏未创建")
 		a.finish(true)
 		return
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	_check(a, "已进入 MAIN_GAME", mg.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME)
 
 	## 1. 僵尸卡阳光费用

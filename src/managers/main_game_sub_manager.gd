@@ -17,13 +17,13 @@ func _get_main_game() -> void:
 		game_para = main_game.game_para
 		return
 	## 运行时 new() 出来再 add_child 的子管理器（DaveSellManager / 结算、存档、失败流程子管理器）
-	## 没有 owner：走全局引用，MainGameManager._enter_tree 已经把自己注册进 Global.main_game，
+	## 没有 owner：走全局引用，MainGameManager._enter_tree 已经把自己注册进 GameContext.curr_main_game，
 	## 且根节点 _enter_tree 先于子节点，所以这里一定能取到
-	if Global.main_game != null:
-		main_game = Global.main_game
+	if GameContext.curr_main_game != null:
+		main_game = GameContext.curr_main_game
 		game_para = main_game.game_para
 		return
-	Log.error("MainGameSubManager: 根节点非 MainGameManager 且 Global.main_game 为空，节点: %s" % get_path())
+	Log.error("MainGameSubManager: 根节点非 MainGameManager 且 GameContext.curr_main_game 为空，节点: %s" % get_path())
 
 @abstract
 func init_manager() -> void

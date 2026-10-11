@@ -51,7 +51,7 @@ var TOMBSTONE = load("res://src/items/tombstone.tscn")
 ## （见 Global.character_registry.get_zombie_boss_info(..., BossScenes)），血条由 LevelInfo 统一管理。
 
 ## 舞王管理器
-var JACKSON_MANAGER = load("res://src/entities/character/components/jackson/jackson_manager.tscn")
+var JACKSON_MANAGER = load("res://src/entities/character/zombie/jackson/jackson_manager.tscn")
 
 ## 奖杯不再是一个独立场景：它是一种**战利品**，按名字取贴图现生产
 ## （名字 -> 贴图那张表在 LootRegistry，生产在 DropItemManager.create_loot_drop）
@@ -85,3 +85,12 @@ const DIRT_RISE_EFFECT = preload("res://src/entities/character/item/dirt_rise_ef
 
 ## 梯子
 const LADDER = preload("res://src/items/ladder.tscn")
+
+## 小推车 / 水路清洁车 / 屋顶清洁车（按 `GIM_LawnMover.E_LawnMoverType` 索引）
+## 类型由地图数据 `row_data.lawn_mover_type` 给；水路 / 屋顶款还要在商店买过才配发
+## （见 `GIM_LawnMover.is_lane_can_have_mover`）
+const LAWN_MOVER_MAP: Dictionary = {
+	GIM_LawnMover.E_LawnMoverType.LawnMover:   preload("res://src/items/lawn_mower/lawn_mower.tscn"),
+	GIM_LawnMover.E_LawnMoverType.PoolCleaner: preload("res://src/items/lawn_mower/pool_cleaner.tscn"),
+	GIM_LawnMover.E_LawnMoverType.RoofCleaner: preload("res://src/items/lawn_mower/roof_cleaner.tscn"),
+}

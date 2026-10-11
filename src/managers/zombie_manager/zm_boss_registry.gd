@@ -104,6 +104,10 @@ func _create_boss_instance(boss_type: CharacterRegistry.ZombieBossType, spawn_po
 	## 关卡覆盖的血量必须在角色入树之前写入：血量组件 _ready 才按上限初始化当前血量。
 	boss.set_boss_hp(manager.game_para.boss_hp)
 	boss.character_init_type = Character000Base.E_CharacterInitType.IsNorm
+	## 僵王站在草坪外，lane 本来不参与任何行判定（component_detect 对它豁免同行限制），
+	## 但 all_zombies_2d 是**按下标索引**的数组，必须给一个合法行号：
+	## 留 -1 会落到 GDScript 的负下标语义（取到最后一行），语义就错了。这里固定落到首行。
+	boss.lane = 0 if manager.all_zombie_rows.size() > 0 else -1
 	boss.position = spawn_position
 	## 先连接信号并计数，再触发角色 _ready，避免初始化期间发出的通知被遗漏。
 	if not register_boss(boss, boss_type, count_as_new):
@@ -139,9 +143,33 @@ func register_boss(boss: ZB000Base, boss_type: CharacterRegistry.ZombieBossType,
 	boss.signal_trophy_requested.connect(_on_boss_trophy_requested.bind(instance_id))
 	boss.tree_exiting.connect(_on_boss_tree_exiting.bind(instance_id))
 	manager.curr_zombie_num += 1
+	_sync_boss_to_zombie_lists(boss, true)
 	if boss.is_inside_tree():
 		manager.signal_living_bosses_changed.emit()
 	return true
+
+
+## 把僵王接进 / 移出按行保存的僵尸列表（all_zombies_2d / all_zombies_1d）。[br]
+## 僵王现在是正式僵尸，必须进这两张表才会被「全场事件」遍历到（冰冻、三叶草、清场等）；
+## 它的作战位置仍在草坪外，植物能否命中由检测框几何决定、与这里落在第几行无关
+## （component_detect 对 ZB000Base 豁免同行限制）。[br]
+## 计数仍由本类的 curr_zombie_num 管理，ZombieManager 那边不重复增减。[br]
+## [param add_to_list] true 表示入场登记，false 表示死亡或离树时清理。
+func _sync_boss_to_zombie_lists(boss: ZB000Base, add_to_list: bool) -> void:
+	if not is_instance_valid(boss):
+		return
+	var lane_index: int = boss.lane
+	if lane_index < 0 or lane_index >= manager.all_zombies_2d.size():
+		return
+	var row_list: Array = manager.all_zombies_2d[lane_index]
+	if add_to_list:
+		if not row_list.has(boss):
+			row_list.append(boss)
+		if not manager.all_zombies_1d.has(boss):
+			manager.all_zombies_1d.append(boss)
+		return
+	row_list.erase(boss)
+	manager.all_zombies_1d.erase(boss)
 
 
 ## [param instance_id] 发出死亡通知的登记实例；先检查原有清场条件，再检查额外 Boss 条件。
@@ -151,6 +179,7 @@ func _on_boss_dead(instance_id: int) -> void:
 		return
 	_boss_dead_total += 1
 	manager.curr_zombie_num -= 1
+	_sync_boss_to_zombie_lists(boss, false)
 	manager.signal_living_bosses_changed.emit()
 	## 同一次死亡也满足普通清场时，保留原清场结算时机，不强制等待 Boss 演出。
 	manager._try_finish_wave(boss.global_position)
@@ -188,6 +217,7 @@ func _on_boss_trophy_requested(global_pos: Vector2, instance_id: int) -> void:
 
 ## [param instance_id] 即将离树的登记实例；直接移除不计为击杀。
 func _on_boss_tree_exiting(instance_id: int) -> void:
+	_sync_boss_to_zombie_lists(_get_registered_boss(instance_id), false)
 	_registered_bosses.erase(instance_id)
 	_boss_types.erase(instance_id)
 	if _counted_boss_ids.erase(instance_id):

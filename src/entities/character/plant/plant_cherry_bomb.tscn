@@ -65,11 +65,11 @@ graph_offset = Vector2(57, -49)
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_dniyj"]
 nodes/output/position = Vector2(740, 140)
-nodes/AnimationNodeStateMachine/node = SubResource("AnimationNodeStateMachine_fj2s8")
-nodes/AnimationNodeStateMachine/position = Vector2(100, 80)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_fj2s8")
+nodes/StateMachine/position = Vector2(100, 80)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_fj2s8")
 nodes/TimeScale/position = Vector2(460, 80)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"AnimationNodeStateMachine"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_2gy5r"]
 size = Vector2(250, 200)

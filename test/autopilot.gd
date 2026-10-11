@@ -138,12 +138,6 @@ func _run_scenario() -> void:
 		_report.line("!! 场景脚本没有实现 run(a)")
 		_finish("接口不符", not _keep_window())
 		return
-	## 关掉每 60 秒一次的自动存档，避免污染日志
-	if Global != null:
-		var ss = Global.get("save_service")
-		if ss != null and ss.has_method("stop_autosave"):
-			ss.stop_autosave()
-			_report.line("已关闭自动存档（避免日志噪声）")
 	_report.line("看门狗: " + str(int(_max_seconds)) + " 秒")
 	_flush()
 	_report.line("[autopilot] 开始执行 " + _scenario_path)

@@ -120,14 +120,14 @@ func _on_texture_button_pressed() -> void:
 ## 拾取后飞向的目标：出战卡槽（与阳光一致，见 sun.gd）
 ## 拿不到卡槽位置时返回 Vector2.ZERO，调用方改成原地淡出
 func get_card_slot_target() -> Vector2:
-	if not is_instance_valid(Global.main_game):
+	if not is_instance_valid(GameContext.curr_main_game):
 		return Vector2.ZERO
-	if is_instance_valid(Global.main_game.marker_2d_sun_target):
+	if is_instance_valid(GameContext.curr_main_game.marker_2d_sun_target):
 		## 卡槽在 canvaslayer 中，位置和摄像头位置有偏移
-		return Global.main_game.marker_2d_sun_target.global_position \
-			+ Global.main_game.camera_2d.global_position
-	if is_instance_valid(Global.main_game.marker_2d_sun_target_default):
-		return Global.main_game.marker_2d_sun_target_default.global_position
+		return GameContext.curr_main_game.marker_2d_sun_target.global_position \
+			+ GameContext.curr_main_game.camera_2d.global_position
+	if is_instance_valid(GameContext.curr_main_game.marker_2d_sun_target_default):
+		return GameContext.curr_main_game.marker_2d_sun_target_default.global_position
 	return Vector2.ZERO
 
 

@@ -406,13 +406,13 @@ func get_sibling_layer() -> Node:
 	return get_parent()
 
 
-## 主场景访问器：角色需要的主场景能力一律走这里，**不要**在实体里直接写 Global.main_game。
+## 主场景访问器：角色需要的主场景能力一律走这里，**不要**在实体里直接取 GameContext.curr_main_game（旧称 Global.main_game，已删除）。
 ##
 ## 为什么：直接取全局单例等于让角色（僵尸 / 植物 / 僵王）隐式依赖「当前一定有一局主游戏」，
 ## 而展示态（图鉴、卡片静态预览、花园）没有主场景，那些分支只能靠调用点散落的
 ## is_instance_valid() 各兜各的（历史上 seed_packet 就因此接过已释放实例）。
 ## 收进本方法之后：实体代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处。
-## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
+## 「当前这一局」的真相源在 GameContext（见 global.gd 里那段「当前局上下文不在 Global 里」的说明）。
 ##
 ## 组件请用 ComponentNormBase 提供的同名访问器（它内部转问 owner，即本角色）。
 func get_main_game() -> MainGameManager:

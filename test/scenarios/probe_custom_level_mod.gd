@@ -75,13 +75,11 @@ func _check(a, desc: String, ok: bool) -> void:
 
 ## 与 custom_choose_level.gd:get_base_path() 同款口径
 func _custom_level_base() -> String:
-	if OS.has_feature("editor"):
-		return ProjectSettings.globalize_path("res://")
-	return OS.get_executable_path().get_base_dir()
+	return CustomChooseLevel.get_base_path()
 
 
 func _make_pkg(a) -> void:
-	_dir = _custom_level_base() + "/data/levels/params/" + PKG_DIR_NAME
+	_dir = _custom_level_base() + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR + "/" + PKG_DIR_NAME
 	if DirAccess.make_dir_recursive_absolute(_dir) != OK and not DirAccess.dir_exists_absolute(_dir):
 		a.log("[CUSTMOD] FAIL 建目录失败 " + _dir)
 		_failed += 1

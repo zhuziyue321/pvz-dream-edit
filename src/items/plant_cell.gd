@@ -244,7 +244,7 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 
 	## 关卡全场加速（「僵尸快跑」关 speed_factor_plant = 2）：
 	## 必须在 add_child 之后 —— 攻击组件是在 _ready 里才连上 signal_update_speed 的
-	var main_game: MainGameManager = Global.main_game
+	var main_game: MainGameManager = GameContext.curr_main_game
 	if is_instance_valid(main_game) and main_game.game_para != null:
 		main_game.game_para.apply_speed_factor_to_plant(plant)
 
@@ -525,7 +525,7 @@ func _detach_down_plant_container(plant: Plant000Base) -> void:
 
 #region 蹦极僵尸偷植物
 ## 返回当前可偷取的第一层植物；选择目标与实际偷取共用此顺序，失效或死亡实例不参与。
-## 僵王的蹦极技能也通过本接口筛选目标（见 z_b_001_doctor_skill_bungee.gd）
+## 僵王的蹦极技能也通过本接口筛选目标（见 zb_doctor_skill_bungee.gd）
 func get_bungi_target() -> Plant000Base:
 	# 各种植层的偷取优先级；一次只取一株，不连带移除整格植物。
 	for place in [
@@ -578,13 +578,13 @@ func create_tombstone():
 	tombstone.position = Vector2(size.x / 2, size.y)
 	update_special_state_plant(true, E_SpecialStatePlant.IsTombstone)
 
-	Global.main_game.plant_cell_manager.tombstone_list.append(tombstone)
+	GameContext.curr_main_game.plant_cell_manager.tombstone_list.append(tombstone)
 
 
 ## 刪除墓碑，墓碑死亡时调用该函数
 func tombstone_death_update_plant_cell_data():
 	signal_cell_delete_tombstone.emit(self, tombstone)
-	Global.main_game.plant_cell_manager.tombstone_list.erase(tombstone)
+	GameContext.curr_main_game.plant_cell_manager.tombstone_list.erase(tombstone)
 	## 等到墓碑被删除后，下一帧更新（如果鼠标拿着新植物在当前格子中，可以更新）
 	await get_tree().process_frame
 	update_special_state_plant(false, E_SpecialStatePlant.IsTombstone)
@@ -683,7 +683,7 @@ func set_forbidden_plant_types(types: Array[CharacterRegistry.PlantType]) -> voi
 
 #region 罐子
 var pot:ScaryPot
-const SCARY_POT = preload("uid://bfhjvru3xr23t")
+const SCARY_POT = preload("res://src/items/scary_pot.tscn")
 
 ## 生成一个罐子
 func create_pot(pot_para:Dictionary) -> ScaryPot:
@@ -839,12 +839,12 @@ func get_plant_ladder() -> Plant000Base:
 ## 获取周围一圈(包括本身格子)的某个植物
 ## 网格查询在 PlantCellManager（all_plant_cells / row_col 都在那儿），这里只按 row_col 转发
 func get_plant_surrounding(p_t:CharacterRegistry.PlantType) -> Array[Plant000Base]:
-	return Global.main_game.plant_cell_manager.get_plant_surrounding(self, p_t)
+	return GameContext.curr_main_game.plant_cell_manager.get_plant_surrounding(self, p_t)
 
 
 ## 获取周围一圈的植物格子，包括本身
 func get_plant_cell_surrounding()->Array[PlantCell]:
-	return Global.main_game.plant_cell_manager.get_plant_cell_surrounding(self)
+	return GameContext.curr_main_game.plant_cell_manager.get_plant_cell_surrounding(self)
 
 #region 存档
 ## 植物格子存档

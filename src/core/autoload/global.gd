@@ -31,8 +31,7 @@ func _ready() -> void:
 	user_manager.ensure_default_user()
 	if not user_manager.curr_user_name.is_empty():
 		reload_session_for_current_user()
-	## 创建全局数据自动存档计时器（由 SaveService 负责）
-	save_service.start_autosave(60.0)
+	## 不再起定时自动存档：存档一律由业务节点在关键时机调 SaveService.save_now()
 
 
 ## 在 `user_manager.curr_user_name` 已更新后，加载该用户下的全局存档与配置（与启动时一致）。
@@ -41,17 +40,18 @@ func reload_session_for_current_user() -> void:
 		return
 	save_service.load_global_game_data()
 	config_service.load_and_apply_config()
+	## 「调试模式」给的三种保龄球不写在存档里,而 curr_plant 刚被读档覆盖过 ——
+	## 按 ConfigService 里那个开关再同步一次（换用户 / 重进游戏都走这条路）
+	global_game_state.apply_debug_mode(bool(config_service.get_console_value(
+		ConsoleBuiltinEntries.DEBUG_MODE_KEY, false)))
 
-## ⚠️ **当前局上下文已迁出 Global** —— 真正的持有者是 `GameContext.curr_main_game`。
+## ⚠️ **当前局上下文不在 Global 里** —— 唯一持有者是 `GameContext.curr_main_game`。
 ##
-## 这里保留一个同名属性纯粹是为了存量代码：`src/` 下有 37 个文件直连 `Global.main_game`，
-## 一次性全改的改动面太大、且没有断言基线兜底（见架构总览 §12.3 的 Global 分期方案）。
-## 现在它是**转发**，读写都落到 GameContext，行为与改造前完全一致。
+## 历史：这里曾有一个同名转发属性 `Global.main_game`，供 100+ 个存量文件直连。
+## 2026-10-11 已全量迁走（`src/` `test/` `data/` 共 117 个文件、473 处），转发属性随之**删除**
+## —— 留着它就会不停有人再写 `Global.main_game`，两条路径永远消不掉。
 ##
-## 新代码请直接走 `GameContext`，或在角色 / 子弹 / 组件里用各自的 `get_main_game()`。
-var main_game:MainGameManager:
-	get: return GameContext.curr_main_game
-	set(value): GameContext.curr_main_game = value
+## 现在一律走 `GameContext`，或在角色 / 子弹 / 组件里用各自的 `get_main_game()`。
 
 var game_para:ResourceLevelData
 
@@ -117,10 +117,10 @@ func _run_debug_follow_key(event: InputEvent) -> bool:
 
 ## 「Ctrl+D 然后按 0」：立刻通关本关（必须正在关卡里）
 func debug_win_main_game() -> void:
-	if not is_instance_valid(main_game):
+	if not GameContext.is_in_main_game():
 		Log.info("调试快捷键 Ctrl+D + 0：当前不在关卡内，忽略")
 		return
-	main_game.shortcut_win_main_game()
+	GameContext.curr_main_game.shortcut_win_main_game()
 
 
 ## 「Ctrl+D 然后按 1」：通关所有冒险关卡（只写全局关卡数据，不结算当前这一局）

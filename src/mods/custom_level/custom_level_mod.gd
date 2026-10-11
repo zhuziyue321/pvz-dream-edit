@@ -1,6 +1,6 @@
 extends ModBase
 class_name CustomLevelMod
-## 自制关卡模组：把 `data/levels/params` 下的玩家自制关卡脚本加载成可选关卡
+## 自制关卡模组：把 `user://custom_level` 下的玩家自制关卡脚本加载成可选关卡
 ##
 ## 原版没有「玩家自制关卡」这个功能（原版只有内置的模式选关），所以整条链路都在模组里：
 ##   - 选关界面 `custom_choose_level.tscn`（扫描目录、动态建按钮、分页）
@@ -12,10 +12,11 @@ class_name CustomLevelMod
 ##   - 主菜单的 `BG_Right` 节点（入口按钮挂它下面）
 ## 场景路径由本模组在 `install()` 时注入注册表 —— 本体不许出现模组里的路径。
 ##
-## 开关在 `data/mods/mod_config.tres` 的 `enabled_mods`，默认关闭（本体 = 原版体验）。
+## 开关：模组页面里开 / 关（存进 `user://<用户名>/mod_config.ini`），默认关闭（本体 = 原版体验）；
+## `data/mods/mod_config.tres` 只是**没有存档文件时播种用的工程默认**。
 ## 装载时机与写法见 [模组机制](../../docs/参考存档/模组机制.md)。
 
-## 选关界面：注入到 `MainSceneRegistry.MainScenesMap[ChooseLevelCustom]`
+## 选关界面：注入到 `MainSceneRegistry.get_scene_path(ChooseLevelCustom)`
 const CUSTOM_CHOOSE_LEVEL_TSCN := "res://src/mods/custom_level/custom_choose_level.tscn"
 ## 主菜单场景：认它来决定「什么时候该挂入口按钮」
 const START_MENU_TSCN := "res://src/menus/start_menu/start_menu.tscn"
@@ -38,7 +39,35 @@ func get_mod_name() -> String:
 
 
 func get_mod_description() -> String:
-	return "读取 data/levels/params 下的玩家自制关卡脚本并加一个主菜单入口；原版没有自制关卡"
+	return "读取 user://custom_level 下的玩家自制关卡脚本并加一个主菜单入口；原版没有自制关卡"
+
+
+## 模组页面右侧：关卡从哪读、读到了几个、装了它主菜单会多出什么
+func create_detail_control() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	## 目录约定写在选关界面上（`CustomChooseLevel.CUSTOM_LEVEL_DIR`），这里引用它，不抄第二份
+	box.add_child(ModBase.create_detail_label("关卡目录：" + CustomChooseLevel.get_base_path() + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR))
+	box.add_child(ModBase.create_detail_label("目录里现在有 %d 个条目（一个关卡包目录或一个关卡脚本算一个）" % _count_level_entries()))
+	box.add_child(ModBase.create_detail_label("启用了它，主菜单会多一个「自制关卡」入口；关掉这个模组，入口按钮与选关页一起消失"))
+	return box
+
+
+## 数一下目录里有多少个条目（只数不加载：加载关卡脚本是选关界面该干的事）
+func _count_level_entries() -> int:
+	var root := CustomChooseLevel.get_base_path()
+	var dir := DirAccess.open(root + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR)
+	if dir == null:
+		return 0
+	var count := 0
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not file_name.begins_with("."):
+			count += 1
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return count
 
 
 #region 生命周期
@@ -68,7 +97,7 @@ func uninstall() -> void:
 #region 安装
 ## 把选关界面的路径填进注册表（`ChooseLevelCustom` 这个枚举槽位是本体留的）
 func _register_choose_level_scene() -> void:
-	Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelCustom] = CUSTOM_CHOOSE_LEVEL_TSCN
+	Global.main_scene_registry.set_scene_path(MainSceneRegistry.MainScenes.ChooseLevelCustom, CUSTOM_CHOOSE_LEVEL_TSCN)
 
 
 ## 每次有场景进树：认出主菜单就补入口按钮
@@ -102,5 +131,5 @@ func _remove_entry_button() -> void:
 
 func _on_entry_pressed() -> void:
 	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.ChooseLevelCustom])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelCustom))
 #endregion

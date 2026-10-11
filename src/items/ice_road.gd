@@ -27,7 +27,7 @@ signal signal_ice_road_disappear
 ## 冰道初始化,生产冰道的节点调用
 func ice_road_init(curr_lane:int):
 	self.lane = curr_lane
-	self.curr_lane_plant_cells = Global.main_game.plant_cell_manager.all_plant_cells[lane]
+	self.curr_lane_plant_cells = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[lane]
 	for plant_cell:PlantCell in self.curr_lane_plant_cells:
 		x_plant_cell_target.append(plant_cell.global_position.x + plant_cell.size.x*2/3)
 
@@ -41,7 +41,7 @@ func ice_road_init(curr_lane:int):
 				curr_i_plant_cell = i + 1
 				break
 	## 更新冰道数据
-	Global.main_game.zombie_manager.all_ice_roads[lane].append(self)
+	GameContext.curr_main_game.zombie_manager.all_ice_roads[lane].append(self)
 
 ## 关卡开局自带的冰道（「全面冻结」专用）：右端就是节点当前位置，向左一路铺到 cover_left_x
 ## 与洗冰车铺出来的冰道只有一个区别：**不启动消失计时器** —— 没有「冰车死了 30 秒后蒸发」这一说，
@@ -75,6 +75,6 @@ func _on_ice_road_disappear_timer_timeout() -> void:
 	ice_road_disappear()
 
 func ice_road_disappear():
-	Global.main_game.zombie_manager.all_ice_roads[lane].erase(self)
+	GameContext.curr_main_game.zombie_manager.all_ice_roads[lane].erase(self)
 	signal_ice_road_disappear.emit()
 	queue_free()

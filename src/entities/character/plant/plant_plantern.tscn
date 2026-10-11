@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://bha6drx2vixym"]
+[gd_scene load_steps=23 format=3 uid="uid://bha6drx2vixym"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_4psf1"]
 [ext_resource type="Texture2D" uid="uid://bw4au5i7yaikd" path="res://assets/reanim/Plantern_stem.png" id="2_71jlg"]
@@ -31,13 +31,21 @@ animation = &"Plantern_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_7bgn4"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_at01j"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_at01j"]
+states/Plantern_idle/node = SubResource("AnimationNodeAnimation_8ld7j")
+states/Plantern_idle/position = Vector2(300, 100)
+transitions = ["Start", "Plantern_idle", SubResource("AnimationNodeStateMachineTransition_at01j")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_at01j"]
 graph_offset = Vector2(-120, 27.6364)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_8ld7j")
-nodes/Animation/position = Vector2(-120, 100)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_at01j")
+nodes/StateMachine/position = Vector2(-120, 100)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_7bgn4")
 nodes/TimeScale/position = Vector2(100, 100)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_4prwg"]
 size = Vector2(448, 400)

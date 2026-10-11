@@ -34,8 +34,8 @@ var _failed := 0
 func run(a) -> void:
 	a.log("[WRITESAVEKEY] 目标=%s" % ("全部" if TARGET_IDS.is_empty() else str(TARGET_IDS)))
 	for mode in MODES:
-		var path: String = Global.main_scene_registry.MainScenesMap[mode]
-		a.get_tree().change_scene_to_file(path)
+		var path: String = Global.main_scene_registry.get_scene_path(mode)
+		GlobalUtils.change_scene(path)
 		await a.wait(2.0)
 		var root: Node = a.get_tree().current_scene
 		if root == null:

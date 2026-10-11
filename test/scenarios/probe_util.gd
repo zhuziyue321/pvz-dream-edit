@@ -18,7 +18,7 @@ extends RefCounted
 static func click_start(a, timeout: float = 40.0) -> void:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg == null:
 			return
 		if mg.is_timeline_waiting_choose_card:
@@ -37,7 +37,7 @@ static func click_start(a, timeout: float = 40.0) -> void:
 static func wait_lawn_mowers(a, timeout: float = 20.0) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var gim = Global.main_game.game_item_manager.gim_lawn_mover
+		var gim = GameContext.curr_main_game.game_item_manager.gim_lawn_mover
 		if gim != null and gim.is_lawn_movers_inited and gim.pending_appear_lawn_movers.is_empty():
 			## 本关压根不该有车也算「等到了」：没铺草皮的行本来就没有车，
 			## 泳池 / 屋顶清洁车还要先在商店买过才会配发（见 GIM_LawnMover.is_lane_can_have_mover）

@@ -31,7 +31,7 @@ func run(a) -> void:
 	_reset_garden(state)
 
 	a.log("STEP1 没买蜗牛时，花园里没有蜗牛、巧克力按钮隐藏")
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)
@@ -49,7 +49,7 @@ func run(a) -> void:
 		state.buy_garden_tool(GardenManager.E_GardenTool.Snail))
 	_check(a, "买一份巧克力（5 个）成功",
 		state.add_garden_tool_num(GardenManager.E_GardenTool.Chocolate, 5))
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "重新进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)
@@ -104,7 +104,7 @@ func run(a) -> void:
 
 	a.log("STEP6 巧克力用完（库存 0）后，工具栏把它藏起来")
 	state.garden_data[GlobalGameState.GARDEN_TOOL_NUM_KEY] = {"5": 0}
-	a.get_tree().change_scene_to_file(GARDEN_SCENE)
+	GlobalUtils.change_scene(GARDEN_SCENE)
 	if not await a.wait_scene("garden", 15.0):
 		_check(a, "重新进入花园", false, str(a.get_tree().current_scene))
 		_finish(a)

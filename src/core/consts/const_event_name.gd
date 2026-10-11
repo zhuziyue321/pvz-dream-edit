@@ -107,14 +107,14 @@ const END_WAVE_ZOMBIE := "end_wave_zombie"
 const BATTLE_FINISHED := "battle_finished"
 ## 开始下一轮（多轮关卡）。payload: 无
 const START_NEXT_ROUND_GAME := "start_next_round_game"
-## 通关。payload: 无
-const WIN_MAIN_GAME := "win_main_game"
 ## 僵尸进家。payload: [僵尸]
 const ZOMBIE_GO_HOME := "zombie_go_home"
 ## 小推车被触发。payload: 见 ZombieChooseRowSystem
 const LAWN_MOVER_TRIGGERED := "lawn_mover_triggered"
-## 补充小推车。payload: 无
-const REPLENISH_LAWN_MOVER := "replenish_lawn_mover"
+## ⚠️ 已删两个死事件（2026-10-11）：`WIN_MAIN_GAME` / `REPLENISH_LAWN_MOVER` 全仓**只有订阅、0 处 push**，
+##   实际分别走直接调用（`MainGameManager.shortcut_win_main_game()` → `reward_manager.win_main_game()`）
+##   与关卡流程事件（`LevelTimelineEventLawnMover` → `init_or_replenish_lawn_movers()`）。
+##   留着"订阅了永远不响"的分支只会让人以为还有第二条路，故连订阅一起删。
 #endregion
 
 #region 设置 / 调试
@@ -196,12 +196,7 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	END_WAVE_ZOMBIE: [],
 	BATTLE_FINISHED: [Variant.Type.TYPE_VECTOR2],
 	START_NEXT_ROUND_GAME: [],
-	## ⚠️ 死事件：全仓只有订阅方（mgm_reward_manager.gd），**没有任何 push 调用点**。
-	## 保留是因为签名表只做校验、不做清理判定；真要删得先确认该分支已无人触发。
-	WIN_MAIN_GAME: [],
 	LAWN_MOVER_TRIGGERED: [Variant.Type.TYPE_INT],
-	## ⚠️ 死事件：同上，只有 gim_lawn_mover.gd 订阅，无发布方
-	REPLENISH_LAWN_MOVER: [],
 	#endregion
 
 	#region 设置 / 调试

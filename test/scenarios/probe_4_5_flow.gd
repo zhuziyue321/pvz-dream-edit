@@ -14,15 +14,15 @@ func run(a) -> void:
 		a.finish(true)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(5.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[4-5] !! 主游戏未创建")
 		a.finish(true)
 		return
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 
 	## 开场戴夫对话
 	for i in range(4):
@@ -72,14 +72,14 @@ func _log_batch(a, pcm, round_i: int) -> void:
 			else:
 				brown += 1
 	a.log("[4-5] 第 %d 批 轮次=%d 罐子数=%d 占列=%s 绿罐=%d 棕罐=%d" % [
-		round_i, Global.main_game.curr_game_round, pcm.curr_pot_num, str(_pot_cols(pcm)), green, brown])
+		round_i, GameContext.curr_main_game.curr_game_round, pcm.curr_pot_num, str(_pot_cols(pcm)), green, brown])
 	## 切到第 2 / 3 批之后，第 1 批的配置必须还是 3 列 15 罐 0 提示
-	var para = Global.main_game.game_para
+	var para = GameContext.curr_main_game.game_para
 	para.init_para()
 	a.log("[4-5]   重算第 1 批配置：列=%s 罐子数=%d 提示罐=%d" % [
 		str(para.pot_col_range), para.pot_num_on_fixed_mode, para.pot_hint_num])
 	if round_i < 3:
-		para.apply_pot_config_on_round(Global.main_game.curr_game_round)
+		para.apply_pot_config_on_round(GameContext.curr_main_game.curr_game_round)
 
 
 ## 场上罐子占了哪些列

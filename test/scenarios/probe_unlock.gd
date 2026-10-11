@@ -19,8 +19,8 @@ func run(a) -> void:
 		return
 	await a.wait(4.0)
 	## 卡槽被系统自动填满时关卡已跳过选卡并进入主游戏，不要重复触发开始流程
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.choosed_card_start_game()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.choosed_card_start_game()
 	await a.wait(4.0)
 
 	var state = Global.global_game_state
@@ -29,7 +29,7 @@ func run(a) -> void:
 	_check(a, "新档只解锁初始植物", before.size() == 1 and before.has(CharacterRegistry.PlantType.P001PeaShooterSingle), str(before))
 
 	## 通关 1-1（关卡序号 1）-> 向日葵
-	Global.main_game.save_manager.update_level_state_data_success()
+	GameContext.curr_main_game.save_manager.update_level_state_data_success()
 	await a.wait(0.5)
 	var after1: Array = state.curr_plant.duplicate()
 	a.log("  1-1 通关后已解锁: %s" % str(after1))

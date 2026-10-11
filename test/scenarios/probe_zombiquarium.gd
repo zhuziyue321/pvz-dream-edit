@@ -38,11 +38,11 @@ func _run_win(a, title: String) -> void:
 
 	Global.game_para = para
 	await a.frames(3)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(4.0)
 
-	var mg := Global.main_game
-	_check(a, title + ": 已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, title + ": 已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return
 	var scene: ZombiquariumScene = mg.get_node_or_null("ZombiquariumScene")
@@ -142,7 +142,7 @@ func _run_win(a, title: String) -> void:
 ## 出战卡槽里那张价格正好等于 [param sun_cost] 的自定义种子包（见
 ## `minigame_08_zombie_aquarium._create_seed_packets`：100 买僵尸、1000 买奖杯）
 func _find_packet(sun_cost: int) -> Card:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	if mg == null or mg.card_manager == null or mg.card_manager.card_slot_battle == null:
 		return null
 	for card in mg.card_manager.card_slot_battle.curr_cards:
@@ -158,10 +158,10 @@ func _run_lose(a, title: String) -> void:
 	var para: Resource = (load(LEVEL_AQUARIUM) as GDScript).new()
 	Global.game_para = para
 	await a.frames(3)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(4.0)
 
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	var scene: ZombiquariumScene = mg.get_node_or_null("ZombiquariumScene")
 	if scene == null:
 		_check(a, title + ": 水族馆已挂上", false, "主游戏下没有 ZombiquariumScene")

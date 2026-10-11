@@ -42,7 +42,14 @@ func _physics_process(delta: float) -> void:
 		movement_component.reset_track_movement(true, false, target_enemy.hurt_box_component.global_position)
 		## 计时器清零：目标死掉的下一帧立刻重新索敌，换目标不引入额外延迟
 		_retarget_timer = 0.0
-	## 敌人不存在 全局寻找敌人
+	## 无限穿透（max_attack_num == -1）时已经结算过的敌人
+##
+## 为什么需要：无限穿透的子弹不会被消耗，而追踪子弹会一直贴着目标飞，
+## 一旦目标在受击盒边缘反复进出就会不停触发 area_entered，对同一个敌人连续造成伤害。
+## 这里按「同一个敌人只结算一次」去重，语义上也正是「穿透」——穿过谁就打谁一次。
+var _attacked_enemies_on_infinite: Array[Character000Base] = []
+
+## 敌人不存在 全局寻找敌人
 	else:
 		## 全量索敌按时间节流（见 RETARGET_INTERVAL），没到点就沿用上一帧的结果
 		_retarget_timer -= delta
@@ -82,6 +89,7 @@ func _try_attack_target_if_already_overlapping() -> void:
 	if not is_instance_valid(target_enemy) or target_enemy.is_death:
 		return
 	## 无限穿透仍依赖多次 area_entered；若在此每帧补判会连续造成伤害
+	## （同一敌人的重复结算由 _on_area_2d_attack_area_entered 里的去重挡住）
 	if max_attack_num == -1:
 		return
 	if curr_attack_num >= max_attack_num:
@@ -94,11 +102,16 @@ func _try_attack_target_if_already_overlapping() -> void:
 
 ## 子弹与敌人碰撞
 func _on_area_2d_attack_area_entered(area: Area2D) -> void:
-	## 子弹还有攻击次数
-	if max_attack_num != -1 and curr_attack_num < max_attack_num:
-		if area.owner == target_enemy:
+	if area.owner != target_enemy:
+		return
+	## 有限穿透：还剩攻击次数就结算，次数用完后由 attack_once() 自行销毁
+	if max_attack_num != -1:
+		if curr_attack_num < max_attack_num:
 			attack_once(target_enemy)
-	## 子弹无限穿透 TODO:这地方可能会有问题,不过一般没有无限穿透的追踪子弹
-	if max_attack_num == -1:
-		if area.owner == target_enemy:
-			attack_once(target_enemy)
+		return
+	## 无限穿透：子弹不销毁，会一直贴着目标飞（可能反复进出受击框），
+	## 因此按「同一个敌人只结算一次」去重，避免对同一目标连续造成伤害
+	if _attacked_enemies_on_infinite.has(target_enemy):
+		return
+	_attacked_enemies_on_infinite.append(target_enemy)
+	attack_once(target_enemy)

@@ -32,11 +32,11 @@ func run(a) -> void:
 		_finish(a)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(3.0)
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
-		a.log("!! Global.main_game 为空")
+		a.log("!! GameContext.curr_main_game 为空")
 		_finish(a)
 		return
 	var zm = mg.zombie_manager

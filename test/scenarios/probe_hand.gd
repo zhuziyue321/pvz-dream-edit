@@ -91,7 +91,7 @@ func _finish(a) -> void:
 
 #region 状态读取
 func _hm() -> HandManager:
-	return Global.main_game.hand_manager
+	return GameContext.curr_main_game.hand_manager
 
 
 func _hand_type() -> int:
@@ -103,14 +103,14 @@ func _holding() -> bool:
 
 
 func _hand_node_count() -> int:
-	var tc: Node = Global.main_game.get_node_or_null("CanvasLayerTemp/TemporaryCharacter")
+	var tc: Node = GameContext.curr_main_game.get_node_or_null("CanvasLayerTemp/TemporaryCharacter")
 	if tc == null:
 		return -1
 	return tc.get_child_count()
 
 
 func _sun() -> int:
-	return Global.main_game.card_manager.card_slot_battle.sun_value
+	return GameContext.curr_main_game.card_manager.card_slot_battle.sun_value
 
 
 ## 铲子组件
@@ -167,7 +167,7 @@ func _pick_cells(a, card: Control) -> void:
 	if cond == null:
 		return
 	var found_src := false
-	for row_cells in Global.main_game.plant_cell_manager.all_plant_cells:
+	for row_cells in GameContext.curr_main_game.plant_cell_manager.all_plant_cells:
 		for c in row_cells:
 			var pc := c as PlantCell
 			if pc == null or not cond.judge_is_can_plant(pc, plant_type):
@@ -183,7 +183,7 @@ func _pick_cells(a, card: Control) -> void:
 
 func _cell_plants(spec: Vector2i) -> Array:
 	var res: Array = []
-	var pc = Global.main_game.plant_cell_manager.all_plant_cells[spec.x][spec.y]
+	var pc = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[spec.x][spec.y]
 	for key in pc.plant_in_cell:
 		if is_instance_valid(pc.plant_in_cell[key]):
 			res.append(str(pc.plant_in_cell[key].plant_type))
@@ -339,8 +339,8 @@ func _check_glove(a) -> void:
 	## 拿起：来源格子的植物，搬到同一行的另一个可种格子
 	var src := _cell
 	var dst := _cell_dst
-	var src_cell = Global.main_game.plant_cell_manager.all_plant_cells[src.x][src.y]
-	var dst_cell = Global.main_game.plant_cell_manager.all_plant_cells[dst.x][dst.y]
+	var src_cell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[src.x][src.y]
+	var dst_cell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[dst.x][dst.y]
 	var plant_before = src_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	if not is_instance_valid(plant_before):
 		_check(a, "（前置）来源格子有植物", false)
@@ -554,11 +554,11 @@ func _pick_card(a) -> void:
 
 func _to_battle(a) -> bool:
 	## 卡槽被系统自动填满时关卡已跳过选卡并进入主游戏，不要重复触发开始流程
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.choosed_card_start_game()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.choosed_card_start_game()
 	await a.wait(6.0)
-	a.log("  阶段=%d 阳光=%d" % [Global.main_game.main_game_progress, _sun()])
-	if Global.main_game.main_game_progress != 3:
+	a.log("  阶段=%d 阳光=%d" % [GameContext.curr_main_game.main_game_progress, _sun()])
+	if GameContext.curr_main_game.main_game_progress != 3:
 		a.log("!! 还没到 MAIN_GAME 阶段")
 		return false
 	return true

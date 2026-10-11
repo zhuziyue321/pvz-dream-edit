@@ -30,11 +30,11 @@ func run(a) -> void:
 		_finish(a)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("!! 主游戏未创建")
 		_finish(a)
 		return
@@ -42,7 +42,7 @@ func run(a) -> void:
 	## 提前开战流程就停在选卡那一步了，碾压那段永远拿不到车
 	await ProbeUtil.click_start(a)
 	await ProbeUtil.wait_lawn_mowers(a, 20.0)
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	if zm == null or zm.zombie_wave_manager == null:
 		a.log("!! 波次管理器不可用")
 		_finish(a)
@@ -74,7 +74,7 @@ func run(a) -> void:
 ## 取当前存活的僵尸，带上行号；过滤掉列表里已释放的残留引用
 func _pick_zombies() -> Array[Zombie000Base]:
 	var list: Array[Zombie000Base] = []
-	for z in Global.main_game.zombie_manager.all_zombies_1d:
+	for z in GameContext.curr_main_game.zombie_manager.all_zombies_1d:
 		if is_instance_valid(z):
 			list.append(z)
 	return list
@@ -124,7 +124,7 @@ func _check_butter(a, z: Zombie000Base) -> void:
 
 func _check_garlic_lane(a, z: Zombie000Base) -> void:
 	a.log("-- 大蒜换行 --")
-	var rows = Global.main_game.zombie_manager.all_zombie_rows
+	var rows = GameContext.curr_main_game.zombie_manager.all_zombie_rows
 	var lane_before: int = z.lane
 	## 注意别用 func(): lane_updated = true 这种写法：GDScript 的 lambda 对外部局部变量是值捕获，
 	## 改不到外面的 bool，探针会假失败。用字典当盒子才能回传
@@ -161,7 +161,7 @@ func _check_garlic_lane(a, z: Zombie000Base) -> void:
 
 func _check_mower_run(a, z: Zombie000Base) -> void:
 	a.log("-- 小推车碾压 --")
-	var gim = Global.main_game.game_item_manager.gim_lawn_mover
+	var gim = GameContext.curr_main_game.game_item_manager.gim_lawn_mover
 	if gim == null or gim.all_lawn_movers.is_empty():
 		_check(a, "拿到一辆小推车", false, "gim_lawn_mover 为空")
 		return

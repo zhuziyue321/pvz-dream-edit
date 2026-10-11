@@ -15,21 +15,21 @@ func run(a) -> void:
 		a.finish()
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[FREED] !! main_game 为空")
 		a.finish()
 		return
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(2.0)
 
 	var place = CharacterRegistry.PlacePlantInCell.Norm
 	var p_type = CharacterRegistry.PlantType.P001PeaShooterSingle
-	var cell: PlantCell = Global.main_game.plant_cell_manager.all_plant_cells[0][0]
+	var cell: PlantCell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[0][0]
 
 	## STEP1 第一次种植
 	var p1 = cell.create_plant(p_type)

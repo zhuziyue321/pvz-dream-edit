@@ -79,7 +79,7 @@ static func init_plant_cell_row_on_zombie_row_type(pcm: PlantCellManager) -> voi
 		var plant_cell_row: Array = pcm.all_plant_cells[i]
 		## 用 has() 兜底：ZombieRowType 以后新增取值（例如 Both）时不会因为字典缺键而报错
 		var zombie_row_type: CharacterRegistry.ZombieRowType = \
-			Global.main_game.zombie_manager.all_zombie_rows[i].zombie_row_type
+			GameContext.curr_main_game.zombie_manager.all_zombie_rows[i].zombie_row_type
 		if not pcm.plant_cell_row_on_zombie_row_type.has(zombie_row_type):
 			pcm.plant_cell_row_on_zombie_row_type[zombie_row_type] = []
 		pcm.plant_cell_row_on_zombie_row_type[zombie_row_type].append_array(
@@ -225,7 +225,7 @@ static func create_random_res_pot(
 		ScaryPot.E_PotInitParaAttr.PotType: pot_type,
 		ScaryPot.E_PotInitParaAttr.IsFixedRes: false,
 		ScaryPot.E_PotInitParaAttr.PlantCell: plant_cell,
-		ScaryPot.E_PotInitParaAttr.IsAlwaysLookPot: Global.main_game.game_para.is_can_look_random_res_pot
+		ScaryPot.E_PotInitParaAttr.IsAlwaysLookPot: GameContext.curr_main_game.game_para.is_can_look_random_res_pot
 	}
 	plant_cell_creat_pot(pcm, plant_cell, pot_para)
 

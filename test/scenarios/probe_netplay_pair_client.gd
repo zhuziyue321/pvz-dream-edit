@@ -74,15 +74,15 @@ func run(a) -> void:
 
 	## 等被主机带进关卡（本机不自己进关：`GlobalUtils.enter_level_gate` 挡着）
 	t = 0.0
-	while (Global.main_game == null or not is_instance_valid(Global.main_game)) and t < 60.0:
+	while (GameContext.curr_main_game == null or not is_instance_valid(GameContext.curr_main_game)) and t < 60.0:
 		await a.wait(0.5)
 		t += 0.5
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("!! 没被带进关卡")
 		a.quit_game()
 		return
 	a.log("  已被带进 [%s]，阶段=%d" % [
-		str(_session.room_level_id), Global.main_game.main_game_progress])
+		str(_session.room_level_id), GameContext.curr_main_game.main_game_progress])
 	## ★ 玩家会按的那颗「准备」：报上去主机才按得动开始
 	_session.declare_ready(true)
 	a.log("  已报准备 peer=%d" % _session.local_peer_id)
@@ -109,9 +109,9 @@ func _on_snapshot(_snap: Dictionary) -> void:
 
 
 func _progress() -> int:
-	if Global.main_game == null or not is_instance_valid(Global.main_game):
+	if GameContext.curr_main_game == null or not is_instance_valid(GameContext.curr_main_game):
 		return -1
-	return Global.main_game.main_game_progress
+	return GameContext.curr_main_game.main_game_progress
 
 
 #region 回报
@@ -142,7 +142,7 @@ func _report() -> void:
 
 
 func _view() -> Dictionary:
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	var ids: Array = []
 	var hp: Array = []
 	var xs: Array = []
@@ -213,7 +213,7 @@ func _sort_by_id(ids: Array, hp: Array, xs: Array) -> Array:
 #region 小工具
 ## 预热：趁**还没连线**把关卡与主游戏场景 load 一遍
 ##
-## ★ 为什么必须预热：`change_scene_to_file()` 会把主线程堵住（加载 + 实例化整关），
+## ★ 为什么必须预热：`change_scene_to_file()`（`GlobalUtils.change_scene()` 内部走的就是它）会把主线程堵住（加载 + 实例化整关），
 ## 这一卡里没人去 `poll()` ENet；堵过 ENet 的对端超时（实测约 3~5 秒）主机就把本机踢掉了 ——
 ## 表现为"刚被带进关就掉线"，两端从此各打各的。先把资源 load 进缓存，这一卡就短了。
 func _warm_up(a) -> void:
@@ -221,7 +221,7 @@ func _warm_up(a) -> void:
 	if script == null:
 		return
 	var para: ResourceLevelData = script.new()
-	var scene_path := str(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	var scene_path := str(Global.main_scene_registry.get_scene_path(para.game_sences))
 	var warmed := false
 	if scene_path != "":
 		warmed = load(scene_path) != null

@@ -16,20 +16,20 @@ func run(a) -> void:
 		a.finish(true)
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(3.0)
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		a.log("[KILLALL] !! 主游戏未创建")
 		a.finish(true)
 		return
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
-	a.log("[KILLALL] 当前阶段=%d" % Global.main_game.main_game_progress)
+	a.log("[KILLALL] 当前阶段=%d" % GameContext.curr_main_game.main_game_progress)
 
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	## 1-1 是教程关，第一波由教程管理器「种下第一株植物后」才启动（见 ZombieManager.start_game()），
 	## 干等永远不会出僵尸，这里直接调波次创建管理器摆 3 只普通僵尸上场。
 	var creator = zm.zombie_wave_manager.zombie_wave_create_manager

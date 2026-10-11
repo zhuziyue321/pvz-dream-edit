@@ -15,6 +15,11 @@ class_name HandComponentGlove
 ##
 ## 原版没有这个玩法（原版手套是禅境花园工具），所以整条链路（本组件 + 卡槽按钮 + 真手套）
 ## 都在模组里；关掉模组 = 本组件根本不会被创建。
+##
+## **冷却**（原版也没有，默认关）：搬完一株之后等几秒才能再搬，开关与时长在模组页面里设
+## （`GloveMod.is_cooldown_enabled()` / `GloveMod.get_cooldown_time()`，
+## 值落在**模组存档文件** `[glove]` 段，与模组开关同一份，见 `GloveMod` 的类注释）。
+## 冷却中手套拿不起来（点它只有一声"不行"），卡槽图标上盖一层遮罩随剩余时间往回收。
 
 ## 卡槽里的手套（本体是卡槽背景，Glove 图标由本组件控制显隐）
 var ui_glove: UIGlove
@@ -40,6 +45,11 @@ var carry_from_cell: PlantCell
 var carry_ori_z_index: int = 0
 ## 植物原点 → 图案中心的偏移，让搬运时图案中心对准鼠标
 var carry_offset: Vector2 = Vector2.ZERO
+
+## 冷却还剩几秒（`> 0` = 正在冷却，这段时间不能再拿手套）
+var cool_remain: float = 0.0
+## 本次冷却的总时长（秒）：给卡槽遮罩算「还剩几分之几」用；0 = 没在冷却
+var cool_total: float = 0.0
 
 
 ## 由 `GloveMod` 在把本组件加进场景树之前调用：模组自己建的节点没法用 `%同名` 取
@@ -73,6 +83,10 @@ func is_unlocked() -> bool:
 
 ## 点卡槽手套 / 按 G：拿到手上（由 `GloveMod` 接到卡槽按钮的 signal 上）
 func on_click_glove() -> void:
+	## 冷却中：给一声"不行"，不放行（遮罩已经画在卡槽上，玩家看得到为什么按不动）
+	if is_cooling():
+		SoundManager.play_other_SFX("buzzer")
+		return
 	if not hand_manager.take_hand(get_hand_component_type()):
 		## 组件被禁用（关卡没有草坪操作、没解锁）时不发音效
 		return
@@ -195,6 +209,7 @@ func _put_plant(plant_cell: PlantCell) -> bool:
 	plant.top_level = false
 	plant.z_index = carry_ori_z_index
 	SoundManager.play_other_SFX("plant2")
+	_start_cooldown()
 	return true
 
 
@@ -230,6 +245,7 @@ func refresh_ui() -> void:
 	var is_in_play := is_instance_valid(main_game) and main_game.is_lawn_playable()
 	var is_slot_visible := is_enabling and is_in_play
 	ui_glove.refresh_glove_ui(is_slot_visible, is_slot_visible and not is_curr_hand())
+	_refresh_cool_ui()
 
 
 ## 清空搬运数据（幂等）
@@ -245,4 +261,57 @@ func _clear_glove_look() -> void:
 	if is_instance_valid(plant_be_glove_look):
 		plant_be_glove_look.be_shovel_look_end()
 	plant_be_glove_look = null
+#endregion
+
+
+#region 冷却
+## 当前是否正在冷却（这段时间手套拿不起来）
+func is_cooling() -> bool:
+	return cool_remain > 0.0
+
+
+## 冷却倒计时：用自己的 `_process`，**不是** `hand_process()`
+## —— 后者只在「手套拿在手上」时才被 `HandManager` 调到（见 `HandManager._process`），
+##    而冷却恰恰发生在**放下之后**、手上没东西的时候。
+func _process(delta: float) -> void:
+	if cool_remain <= 0.0:
+		return
+	## 运行期把开关关掉了：立刻结束冷却，别让人干等一个已经不存在的限制
+	if not GloveMod.is_cooldown_enabled():
+		_end_cooldown()
+		return
+	cool_remain -= delta
+	if cool_remain > 0.0:
+		_refresh_cool_ui()
+		return
+	_end_cooldown()
+
+
+## 开始冷却：**搬完一株**才开始（拿起又放回 / 取消不算 —— 那一下没有真的改动布局）
+func _start_cooldown() -> void:
+	if not GloveMod.is_cooldown_enabled():
+		return
+	var cool_time := GloveMod.get_cooldown_time()
+	if cool_time <= 0.0:
+		return
+	cool_total = cool_time
+	cool_remain = cool_time
+	_refresh_cool_ui()
+
+
+## 结束冷却（正常走完 / 开关被关掉，都要把遮罩收掉）
+func _end_cooldown() -> void:
+	cool_remain = 0.0
+	cool_total = 0.0
+	_refresh_cool_ui()
+
+
+## 卡槽遮罩：按「还剩几分之几」盖住手套图标（0 = 没在冷却 → 收起遮罩）
+func _refresh_cool_ui() -> void:
+	if not is_instance_valid(ui_glove):
+		return
+	var cool_ratio := 0.0
+	if cool_total > 0.0 and cool_remain > 0.0:
+		cool_ratio = clampf(cool_remain / cool_total, 0.0, 1.0)
+	ui_glove.refresh_glove_cool(cool_ratio)
 #endregion

@@ -21,7 +21,7 @@ func _ready() -> void:
 func _on_exit_button_pressed() -> void:
 	## 如果当前场景为图鉴场景
 	if get_tree().current_scene == self:
-		GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+		GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 	## 从其余场景进入图鉴场景
 	else:
 		queue_free()

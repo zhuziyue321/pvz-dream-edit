@@ -12,11 +12,12 @@ class_name ConsoleEntry
 ##   Text    —— 文本输入框：`create_text()` + `bind()` / `bind_config()`（回车或失焦时写回）
 ##   Readout —— 只读文本行：`create_readout()` + `bind(getter, setter)`（值随时在变，如联机状态）
 ##
-## 模组里最典型的用法（写在 `ModBase.register_console_entries()` 里）：
-##   registry.register_entry(ConsoleEntry.create_toggle(&"glove_free_move", "手套无视冷却")
+## 模组想在自己的界面里放同样的控件（`ModBase.create_detail_control()`）：
+##   var entry := ConsoleEntry.create_toggle(&"glove_free_move", "手套无视冷却")
 ##       .set_category("手套")
 ##       .set_tooltip("调试用：搬运植物不再受冷却限制")
-##       .bind_config("glove.free_move", false))
+##       .bind_config("glove.free_move", false)
+##   再用 `ConsoleEntryControl.create_control(entry)` 把它变成真正的控件加进自己的面板。
 ##
 ## `bind_config()` 的值落在 `ConfigService` 的通用键值区（config.ini 的 `[console]` 段），
 ## 关控制台时跟其它设置一起存盘 —— **加一个持久化开关不需要改 `ConfigService`**。

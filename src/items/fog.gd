@@ -80,7 +80,7 @@ func update_fog_dynamic():
 	for i in range(min(collision_shapes.size(), 8)):
 		var shape_node = collision_shapes[i]
 		var shape = shape_node.shape
-		var global_pos = shape_node.global_position - Global.main_game.camera_2d.global_position
+		var global_pos = shape_node.global_position - GameContext.curr_main_game.camera_2d.global_position
 		var local_pos = dynamic_fog.make_canvas_position_local(global_pos)
 		var uv = local_pos / dynamic_fog.size
 

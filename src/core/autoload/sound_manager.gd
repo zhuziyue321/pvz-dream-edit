@@ -333,9 +333,12 @@ func play_crazy_dave_SFX(option:StringName):
 ## 雷声:雷雨关打闪电时播放(assets/audio/sounds/thunder.ogg)
 const THUNDER_SFX: AudioStream = preload("res://assets/audio/sounds/thunder.ogg")
 
+## 雨声:雷雨关循环播放。与 THUNDER_SFX 一样走 preload —— 运行期 load() 会卡帧，
+## 且这里原先写的是 uid:// 引用，改资源名后全文搜 res:// 搜不到（见硬约束 1-5）
+const RAIN_SFX: AudioStream = preload("res://assets/audio/SFX/item/rain.ogg")
+
 func play_rain_SFX():
-	var RAIN = load("uid://dmjld1k8ieh1g")
-	rain_player.stream = RAIN
+	rain_player.stream = RAIN_SFX
 	rain_player.play()
 
 func stop_rain_SFX():
@@ -372,9 +375,12 @@ const SFXOtherMap := {
 	&"tap2":preload("res://assets/audio/SFX/card_and_shovel/tap2.ogg"),
 
 	##-------------------------- 进度相关 --------------------------
-	## 汽笛音效
+	## 原版 progress 目录下的两条**不同**音效（文件名不同、不是同一条的两种叫法）：
+	##   siren  = 汽笛
+	##   awooga = 原版"一大波僵尸逼近"的警报音
+	## ⚠️ 二者当前在 `src/` 里**都还没有播放点**（只有本表这一处声明），是留着待接线的库存音效，
+	##    不是"重复登记" —— 别当成冗余删掉，接线时按上面的口径选。
 	&"siren": preload("res://assets/audio/SFX/progress/siren.ogg"),
-	## TODO :这个也是汽笛音效？
 	&"awooga":preload("res://assets/audio/SFX/progress/awooga.ogg"),
 	## 最后一波
 	&"finalwave":preload("res://assets/audio/SFX/progress/finalwave.ogg"),

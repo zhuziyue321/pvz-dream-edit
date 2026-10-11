@@ -1,8 +1,10 @@
 extends MainGameItemBase
 class_name ScaryPot
 
-const SCARY_POT_WATER = preload("uid://bcaaxvox84hq5")
-## 罐子类型
+const SCARY_POT_WATER = preload("res://assets/image/main_game_item/Scary_Pot_water.png")
+## 罐子类型（**单个罐子级**：这一个罐子里装的是植物还是僵尸）
+## ⚠️ 名字和 `ConstLevelData.E_PotMode` 撞车，但**两者不是一回事**（U-11）：
+## 本枚举是说「罐子里装的是什么」，`E_PotMode` 是说「这一关的罐子怎么生成」。
 enum E_PotType{
 	Random,	## 随机罐子
 	Plant,	## 植物罐子
@@ -166,12 +168,12 @@ func random_res():
 			if p_plant_zombie <=0.5:
 				curr_plant_type = Global.global_read_data.whitelist_plant_types_with_pot.pick_random()
 			else:
-				var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
+				var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
 				curr_zombie_type = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[curr_zomebi_row_type].pick_random()
 		E_PotType.Plant:
 			curr_plant_type = Global.global_read_data.whitelist_plant_types_with_pot.pick_random()
 		E_PotType.Zombie:
-			var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
+			var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
 			curr_zombie_type = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[curr_zomebi_row_type].pick_random()
 
 ## 打开植物
@@ -181,7 +183,7 @@ func open_plant(plant_type:CharacterRegistry.PlantType):
 		CardManager.E_TempCardParaAttr.GlobalPos:marker_2d_create_card_or_trophy.global_position,
 		CardManager.E_TempCardParaAttr.ExistTime:card_exist_time
 	}
-	var card:Card = Global.main_game.card_manager.create_temp_card(temp_card_para)
+	var card:Card = GameContext.curr_main_game.card_manager.create_temp_card(temp_card_para)
 
 	## 控制卡片移动
 	var move_x = randf_range(-20, 20)
@@ -204,13 +206,13 @@ func open_zombie(zombie_type:CharacterRegistry.ZombieType):
 		Zombie000Base.E_ZInitAttr.IsPotZombie:true,
 	}
 
-	Global.main_game.zombie_manager.create_norm_zombie(
+	GameContext.curr_main_game.zombie_manager.create_norm_zombie(
 		zombie_type,
-		Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x],
+		GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x],
 		zombie_init_para,
 		Vector2(
 			plant_cell.global_position.x + plant_cell.size.x/2,
-			Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_create_position.global_position.y
+			GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_create_position.global_position.y
 		),
 		GlobalUtils.get_special_zombie_callable(zombie_type, plant_cell)
 	)
@@ -311,7 +313,7 @@ func character_static_init_res_random_plant():
 
 ## 结果随机罐子初始化僵尸虚影
 func character_static_init_res_random_zombie():
-	var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
+	var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
 	## 从白名单生成所有的僵尸虚影
 	for zombie_type:CharacterRegistry.ZombieType in Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[curr_zomebi_row_type]:
 		all_zombie_character_statics[zombie_type] = AllCards.all_zombie_card_prefabs[zombie_type].character_static.duplicate()

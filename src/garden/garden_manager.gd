@@ -128,6 +128,23 @@ const PLANT_CELL_NUM_PER_PAGE: Dictionary = {
 static func get_plant_cell_num_per_page(bg_type: E_GardenBgType) -> int:
 	return int(PLANT_CELL_NUM_PER_PAGE.get(bg_type, 0))
 
+#region 花园存档键
+## 花园存档的三层键（背景 → 页 → 植物格子）**只在这里拼一次**
+## 以前读写两侧各拼一遍字符串，散在 4 个文件里（garden_manager / garden_bg_page /
+## garden_water_flag / global_garden_state），改格式要同步 8 处 —— 现在改这里一处即可。
+##
+## ⚠️ 键名是**存档格式本身**：改了会让老存档读不出来，不要为了好看动它。
+## 参数一律收 `int`：调用方有的是枚举、有的是循环计数，收 int 两边都能直接传。
+static func make_bg_save_key(bg_type: int) -> String:
+	return "第%d类背景" % bg_type
+
+static func make_page_save_key(page: int) -> String:
+	return "第%d页" % page
+
+static func make_cell_save_key(cell_index: int) -> String:
+	return "第%d个植物格子" % cell_index
+#endregion
+
 ## 阳光房场景
 const BgPageScenes = {
 	E_GardenBgType.GreenHouse:    preload("res://src/garden/bg_00_greenhouse.tscn"),
@@ -171,9 +188,9 @@ func init_new_page():
 	## 商店还没买的背景(蘑菇园 / 水族馆)页数为 0,不能进
 	_fix_curr_bg_type_if_not_owned()
 	## 背景种类
-	var curr_bg_data = Global.global_game_state.garden_data.get("第"+str(curr_bg_type)+"类背景", {})
+	var curr_bg_data = Global.global_game_state.garden_data.get(make_bg_save_key(curr_bg_type), {})
 	## 当前背景种类的页码数据
-	var curr_bg_page_data = curr_bg_data.get("第"+str(curr_page)+"页", {})
+	var curr_bg_page_data = curr_bg_data.get(make_page_save_key(curr_page), {})
 
 	curr_bg_page_node = BgPageScenes[curr_bg_type].instantiate()
 	add_child(curr_bg_page_node)
@@ -181,7 +198,7 @@ func init_new_page():
 	var empty_plant_cells:Array[Node] = curr_bg_page_node.init_curr_gb_page(curr_bg_page_data, curr_page)
 
 	## 温室背景
-	if curr_bg_type == 0:
+	if curr_bg_type == E_GardenBgType.GreenHouse:
 		## 新增植物数量和空闲格子的数量的最小值
 		for i in range(min(Global.global_game_state.curr_num_new_garden_plant, empty_plant_cells.size())):
 			var empty_plant_cell:PlantCellGarden =  empty_plant_cells[i]
@@ -242,12 +259,12 @@ func save_curr_page_data():
 	var curr_bg_page_data:Dictionary = {}
 	for i in range(curr_bg_page_node.all_plant_cells.size()):
 		var plant_cell :PlantCellGarden = curr_bg_page_node.all_plant_cells[i]
-		curr_bg_page_data["第" + str(i) + "个植物格子"] = plant_cell.get_curr_plant_cell_data()
+		curr_bg_page_data[make_cell_save_key(i)] = plant_cell.get_curr_plant_cell_data()
 
 	## 若当前类背景数据还未初始化
-	if "第"+str(curr_bg_type)+"类背景" not in Global.global_game_state.garden_data:
-		Global.global_game_state.garden_data["第"+str(curr_bg_type)+"类背景"] = {}
-	Global.global_game_state.garden_data["第"+str(curr_bg_type)+"类背景"]["第"+str(curr_page)+"页"] = curr_bg_page_data
+	if make_bg_save_key(curr_bg_type) not in Global.global_game_state.garden_data:
+		Global.global_game_state.garden_data[make_bg_save_key(curr_bg_type)] = {}
+	Global.global_game_state.garden_data[make_bg_save_key(curr_bg_type)][make_page_save_key(curr_page)] = curr_bg_page_data
 	## 独轮车信息
 	Global.global_game_state.garden_data["WheelBarrow"] = wheel_barrow.choosed_plant_data
 	Global.save_service.save_now()
@@ -263,7 +280,7 @@ func _on_store_enter_key_pressed():
 
 	SoundManager.play_other_SFX("tap")
 	## 商店场景添加为子节点
-	var store_node:StoreManager = load(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Store]).instantiate()
+	var store_node:StoreManager = load(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store)).instantiate()
 	canvas_layer_store.add_child(store_node)
 	store_node.siganl_exit_store.connect(_update_back_from_store)
 
@@ -385,6 +402,6 @@ func _input(event: InputEvent) -> void:
 ## 返回菜单按钮
 func _on_return_start_menu_pressed() -> void:
 	save_curr_page_data()
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 
 #endregion

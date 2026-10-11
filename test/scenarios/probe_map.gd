@@ -53,14 +53,14 @@ func _goto_level(a) -> bool:
 
 
 func _hovered() -> String:
-	var h: Control = Global.main_game.get_viewport().gui_get_hovered_control()
+	var h: Control = GameContext.curr_main_game.get_viewport().gui_get_hovered_control()
 	if h == null:
 		return "无"
 	return str(h.get_path())
 
 
 func _curr() -> String:
-	var hm = Global.main_game.hand_manager
+	var hm = GameContext.curr_main_game.hand_manager
 	if hm == null or hm.curr_plant_cell == null:
 		return "-"
 	return "%s row_col=%s" % [str(hm.curr_plant_cell.get_path()), str(hm.curr_plant_cell.row_col)]
@@ -128,7 +128,7 @@ func _spot_checks(a) -> void:
 	a.log("--- 选点核查 ---")
 	for p in [Vector2(20, 230), Vector2(84, 130), Vector2(163, 230), Vector2(404, 130), Vector2(404, 330)]:
 		await _move(a, p)
-		var vp: Viewport = Global.main_game.get_viewport()
+		var vp: Viewport = GameContext.curr_main_game.get_viewport()
 		a.log("  发到%s -> viewport鼠标=%s hovered=%s curr=%s" % [
 			_v2(p), _v2(vp.get_mouse_position()), _hovered(), _curr()])
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://w2cplfosy68e"]
+[gd_scene load_steps=16 format=3 uid="uid://w2cplfosy68e"]
 
 [ext_resource type="PackedScene" uid="uid://n2y27ai1nm5f" path="res://src/entities/character/plant/plant_down_base.tscn" id="1_fjhlc"]
 [ext_resource type="Script" uid="uid://crduuvgrpopay" path="res://src/entities/character/plant/plant_lily_pad.gd" id="2_13n6p"]
@@ -25,19 +25,28 @@ animation = &"LilyPad_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_36qgt"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_iaqk1"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_iaqk1"]
+states/LilyPad_idle/node = SubResource("AnimationNodeAnimation_3puwi")
+states/LilyPad_idle/position = Vector2(300, 100)
+transitions = ["Start", "LilyPad_idle", SubResource("AnimationNodeStateMachineTransition_iaqk1")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_iaqk1"]
 graph_offset = Vector2(-166.231, -5.6116)
 nodes/output/position = Vector2(480, 120)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_3puwi")
-nodes/Animation/position = Vector2(20, 100)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_iaqk1")
+nodes/StateMachine/position = Vector2(20, 100)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_36qgt")
 nodes/TimeScale/position = Vector2(280, 80)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [node name="Plant017LilyPad" instance=ExtResource("1_fjhlc")]
 script = ExtResource("2_13n6p")
 plant_up_position = Vector2(0, 10)
 plant_type = 17
+is_float_anim = true
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]
 init_be_attack_status = 8

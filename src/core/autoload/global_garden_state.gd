@@ -154,11 +154,11 @@ func has_empty_garden_cell() -> bool:
 	for bg_type in get_owned_garden_bg_types():
 		var cell_num := GardenManager.get_plant_cell_num_per_page(bg_type)
 		var bg_data: Dictionary = state.garden_data.get(
-			"第" + str(int(bg_type)) + "类背景", {})
+			GardenManager.make_bg_save_key(int(bg_type)), {})
 		for page in range(get_garden_bg_page_num(bg_type)):
-			var page_data: Dictionary = bg_data.get("第" + str(page) + "页", {})
+			var page_data: Dictionary = bg_data.get(GardenManager.make_page_save_key(page), {})
 			for i in range(cell_num):
-				if page_data.get("第" + str(i) + "个植物格子", {}).is_empty():
+				if page_data.get(GardenManager.make_cell_save_key(i), {}).is_empty():
 					return true
 	return false
 #endregion

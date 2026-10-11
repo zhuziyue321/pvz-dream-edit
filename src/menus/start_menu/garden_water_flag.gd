@@ -23,12 +23,12 @@ func judge_garden_condition():
 func _judge_need_water() -> bool:
 	for i in range(GardenManager.E_GardenBgType.size()):
 		## 背景种类
-		var curr_bg_data = Global.global_game_state.garden_data.get("第"+str(i)+"类背景", {})
+		var curr_bg_data = Global.global_game_state.garden_data.get(GardenManager.make_bg_save_key(i), {})
 		for j in range(Global.global_game_state.garden_data["num_bg_page_" + str(i)]):
 			## 当前背景种类的页码数据
-			var curr_bg_page_data = curr_bg_data.get("第"+str(j)+"页", {})
+			var curr_bg_page_data = curr_bg_data.get(GardenManager.make_page_save_key(j), {})
 			for k in range(curr_bg_page_data.size()):
-				var plant_data:Dictionary = curr_bg_page_data.get("第"+str(k)+"个植物格子", {})
+				var plant_data:Dictionary = curr_bg_page_data.get(GardenManager.make_cell_save_key(k), {})
 				## 如果该植物格子有植物
 				if plant_data:
 					var next_update_time = plant_data.get("next_update_time")

@@ -10,12 +10,7 @@ enum E_LawnMoverType{
 	RoofCleaner,
 }
 
-## 小推车场景
-const LawnMoverSecneMap = {
-	E_LawnMoverType.LawnMover : preload("res://src/items/lawn_mower/lawn_mower.tscn"),
-	E_LawnMoverType.PoolCleaner : preload("res://src/items/lawn_mower/pool_cleaner.tscn"),
-	E_LawnMoverType.RoofCleaner : preload("res://src/items/lawn_mower/roof_cleaner.tscn")
-}
+## 小推车场景：「类型 → 场景」一律走注册表（硬约束 §1-4），表在 `SceneRegistry.LAWN_MOVER_MAP`
 
 @onready var lawn_movers: Node2D = %LawnMovers
 ## 小推车生成的全局x位置
@@ -38,10 +33,6 @@ var pending_appear_lawn_movers:Array[LawnMover] = []
 ## 本关是否已经初始化过推车（多轮关卡每轮都重跑一遍流程，第 2 轮起只补车、不再重建）
 var is_lawn_movers_inited:bool = false
 
-
-func _ready() -> void:
-	## 补充小推车
-	EventBus.subscribe(ConstEventName.REPLENISH_LAWN_MOVER, replenish_lawn_mover)
 
 ## 初始化小推车（首次布场 / 从存档恢复）
 ##
@@ -111,10 +102,6 @@ func create_all_lawn_movers(is_has_all_lawn_mover:Array=[], is_defer_appear:bool
 			new_lawn_mover = null
 		all_lawn_movers.append(new_lawn_mover)
 
-## 补充小推车（EventBus 回调）
-func replenish_lawn_mover():
-	_replenish_lawn_movers(false)
-
 ## 补充小推车
 ## is_defer_appear: true = 补出来的车也等入场事件一起送到（多轮关卡的第 2 轮起）
 func _replenish_lawn_movers(is_defer_appear:bool):
@@ -136,7 +123,7 @@ func _replenish_lawn_movers(is_defer_appear:bool):
 ## is_defer_appear: true = 出生在屏幕外左侧（登记到 pending_appear_lawn_movers），
 ## 不自己播入场动画；false = 照旧自己从左侧滑到位
 func create_lawn_mover(lane:int, lawn_mover_type:E_LawnMoverType, global_pos:Vector2, is_defer_appear:bool=false)->LawnMover:
-	var new_lawn_mover:LawnMover = LawnMoverSecneMap[lawn_mover_type].instantiate()
+	var new_lawn_mover:LawnMover = SceneRegistry.LAWN_MOVER_MAP[lawn_mover_type].instantiate()
 	new_lawn_mover.lane = lane
 	new_lawn_mover.z_index = lane * 50 + 40
 	## 由于在ready中会检测屋顶，使用全局位置，因此在add_child之前修改其局部位置

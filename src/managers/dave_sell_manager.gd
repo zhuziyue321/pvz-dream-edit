@@ -73,7 +73,7 @@ func start_sell_flow() -> void:
 
 ## 本关是否让戴夫推销
 func is_can_sell() -> bool:
-	var main_game: MainGameManager = Global.main_game
+	var main_game: MainGameManager = GameContext.curr_main_game
 	if main_game == null or main_game.game_para == null:
 		return false
 	var game_para: ResourceLevelData = main_game.game_para
@@ -97,7 +97,7 @@ func is_can_sell() -> bool:
 
 ## 本关的冒险模式关卡序号(1-1 = 1 …… 5-10 = 50)
 func _get_curr_adventure_level() -> int:
-	var main_game: MainGameManager = Global.main_game
+	var main_game: MainGameManager = GameContext.curr_main_game
 	if main_game == null or main_game.game_para == null:
 		return 0
 	return Global.global_game_state.get_adventure_level_on_save_game_name(main_game.game_para.save_game_name)
@@ -148,7 +148,7 @@ func _play_dave(dialog: CrazyDaveDialogResource, choose_title: String,
 		agree_callable: Callable, disagree_callable: Callable) -> void:
 	var crazy_dave: CrazyDave = SceneRegistry.CRAZY_DAVE.instantiate()
 	crazy_dave.init_dave(dialog)
-	Global.main_game.canvas_layer_ui.add_child(crazy_dave)
+	GameContext.curr_main_game.canvas_layer_ui.add_child(crazy_dave)
 	if agree_callable.is_valid():
 		crazy_dave.choose_content.text = choose_title
 		crazy_dave.signal_agree_choose.connect(agree_callable)
@@ -188,8 +188,8 @@ func _on_agree(price: int, result_detail: CrazyDaveDialogDetailResource) -> void
 	Global.save_service.save_now()
 	Log.debug(str("夜晚戴夫卖出卡槽扩充,已购买次数:") + str(game_state.get_card_slot_upgrade_num()))
 	## 卡槽数变了:重新结算冒险模式的锁定卡槽 / 预选卡,并给本关出战卡槽补一格
-	Global.main_game.game_para.refresh_pre_choosed_card_on_card_slot_change()
-	Global.main_game.card_manager.add_one_battle_card_placeholder()
+	GameContext.curr_main_game.game_para.refresh_pre_choosed_card_on_card_slot_change()
+	GameContext.curr_main_game.card_manager.add_one_battle_card_placeholder()
 	result_detail.text = _get_agree_text()
 
 

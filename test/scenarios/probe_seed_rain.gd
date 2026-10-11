@@ -29,11 +29,11 @@ func run(a) -> void:
 	Global.game_para = para
 	## 让上一场景的收尾走完再切，否则 remove_child 会撞上 busy
 	await a.frames(3)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(3.0)
 
-	var mg := Global.main_game
-	_check(a, "已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		_finish(a)
 		return

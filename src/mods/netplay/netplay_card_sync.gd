@@ -28,7 +28,7 @@ var _others: Dictionary = {}
 var _asked_refresh := false
 ## 上一帧还在选卡吗（选卡结束时要用它触发一次还原）
 var _was_in_choose := false
-## 一条话写到控制台「最近一条」上（由 `NetplayMod` 传进来；没有就只写日志）
+## 一句话写进日志（回调由 `NetplayMod` 传进来；没接上就什么都不做）
 var _notice: Callable = Callable()
 
 

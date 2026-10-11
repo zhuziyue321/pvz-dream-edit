@@ -44,8 +44,8 @@ func run(a) -> void:
 		return
 	_check(a, "关卡脚本建出了蹦极闪电战管理器", true, blitz.get_path())
 	_check(a, "管理器挂在关卡脚本这一侧（本体没有常驻节点）",
-		Global.main_game.zombie_manager.get_node_or_null("BungiBlitzManager") == null,
-		"本体残留节点=%s" % str(Global.main_game.zombie_manager.get_node_or_null("BungiBlitzManager")))
+		GameContext.curr_main_game.zombie_manager.get_node_or_null("BungiBlitzManager") == null,
+		"本体残留节点=%s" % str(GameContext.curr_main_game.zombie_manager.get_node_or_null("BungiBlitzManager")))
 
 	await _check_drop_wave(a)
 	await _check_big_wave_steal(a)
@@ -84,32 +84,32 @@ func _boot(a, level: String) -> bool:
 		a.log("!! 关卡资源加载失败: " + level)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameRoof]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameRoof)
 	)
 	await a.wait(2.0)
-	if Global.main_game == null:
-		a.log("!! Global.main_game 为空")
+	if GameContext.curr_main_game == null:
+		a.log("!! GameContext.curr_main_game 为空")
 		return false
 	## 传送带关不进选卡阶段；万一进了就手动开始，避免关卡永远停在选卡
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.main_game_start()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.main_game_start()
 	await a.wait(3.0)
-	return Global.main_game != null and Global.main_game.zombie_manager != null
+	return GameContext.curr_main_game != null and GameContext.curr_main_game.zombie_manager != null
 
 
 ## 蹦极闪电战管理器归关卡脚本所有：从 game_para（= adventure_05_05.gd 实例）上取
 func _blitz_manager() -> Adventure0505BungiBlitz:
-	if Global.main_game == null or Global.main_game.game_para == null:
+	if GameContext.curr_main_game == null or GameContext.curr_main_game.game_para == null:
 		return null
 	## game_para 静态类型是 ResourceLevelData，这里按名字取（不是脚本关时取到 null）
-	var blitz = Global.main_game.game_para.get("bungi_blitz")
+	var blitz = GameContext.curr_main_game.game_para.get("bungi_blitz")
 	return blitz if is_instance_valid(blitz) else null
 
 
 ## 正常波次：僵尸由空投蹦极僵尸送进场
 func _check_drop_wave(a) -> void:
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	var spawn_x: float = zm.all_zombie_rows[0].zombie_create_position.global_position.x
 
 	zm.zombie_wave_manager.start_next_wave()
@@ -283,8 +283,8 @@ func _check_drop_wave(a) -> void:
 
 ## 大波：额外来一批偷植物的蹦极僵尸
 func _check_big_wave_steal(a) -> void:
-	var zm = Global.main_game.zombie_manager
-	var plant_before: int = Global.main_game.plant_cell_manager.get_cell_have_plant().size()
+	var zm = GameContext.curr_main_game.zombie_manager
+	var plant_before: int = GameContext.curr_main_game.plant_cell_manager.get_cell_have_plant().size()
 	if plant_before <= 0:
 		_check(a, "大波时场上有植物可偷（5-5 预置花盆）", false, "有植物的格子=0")
 		return
@@ -295,15 +295,15 @@ func _check_big_wave_steal(a) -> void:
 	await a.wait(15.0)
 	_check(a, "偷植物的蹦极僵尸偷完自己消失", _num(zm, false) == 0, "残留=%d" % _num(zm, false))
 	_check(a, "大波的蹦极僵尸真的偷走了植物",
-		Global.main_game.plant_cell_manager.get_cell_have_plant().size() < plant_before,
-		"偷前=%d 偷后=%d" % [plant_before, Global.main_game.plant_cell_manager.get_cell_have_plant().size()])
+		GameContext.curr_main_game.plant_cell_manager.get_cell_have_plant().size() < plant_before,
+		"偷前=%d 偷后=%d" % [plant_before, GameContext.curr_main_game.plant_cell_manager.get_cell_have_plant().size()])
 
 
 ## 没开闪电战的关卡：照常从场地边缘出怪
 func _check_norm_level(a) -> void:
 	if not await _boot(a, LEVEL_05_01):
 		return
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	var blitz := _blitz_manager()
 	_check(a, "未开启的关卡：关卡脚本没有建空投管理器", blitz == null,
 		"管理器=%s" % str(blitz))
@@ -408,7 +408,7 @@ func first_drop_bungi(zm) -> Zombie026BungiDrop:
 func _check_auto_wave(a) -> void:
 	if not await _boot(a, LEVEL_05_05):
 		return
-	var zm = Global.main_game.zombie_manager
+	var zm = GameContext.curr_main_game.zombie_manager
 	## 5-5 的 first_wave_delay 是 20 秒，再等几波（最短波长 6 秒）
 	var max_drop := 0
 	for i in range(100):

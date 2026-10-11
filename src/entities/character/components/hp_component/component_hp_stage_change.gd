@@ -8,7 +8,7 @@ class_name HpStageChangeComponent
 ## 禁用机制不会误伤本类：全仓无代码对 hp / anim 组件调 `disable_component()`，
 ## 详见 HpComponent 的类注释。
 
-@onready var owner_character: Character000Base = owner
+## 宿主角色走基类 ComponentNormBase.owner_character（U-06 统一后的唯一写法）
 @onready var hp_component: HpComponent = %HpComponent
 
 @export_group("血量临界值(两者个数必须对应)")

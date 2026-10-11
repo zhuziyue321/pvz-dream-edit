@@ -75,7 +75,7 @@ func encyclopedia():
 	## 连点会叠出多个图鉴场景，已经打开就不再创建
 	if canvas_layer_almanac.get_child_count() > 0:
 		return
-	var almance_node = load(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Almanac]).instantiate()
+	var almance_node = load(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Almanac)).instantiate()
 	canvas_layer_almanac.add_child(almance_node)
 
 
@@ -83,7 +83,7 @@ func encyclopedia():
 func resume_game():
 	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
 
-	Global.main_game.save_manager.re_main_game()
+	GameContext.curr_main_game.save_manager.re_main_game()
 
 	TreePauseManager.end_tree_pause_clear_all_pause_factors()
 	Global.time_scale = 1.0
@@ -97,7 +97,7 @@ func return_main_menu():
 	TreePauseManager.end_tree_pause_clear_all_pause_factors()
 	Global.time_scale = 1.0
 	Engine.time_scale = Global.time_scale
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 
 ## 功能未实现
 func _unrealized():

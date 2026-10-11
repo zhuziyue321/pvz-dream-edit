@@ -22,9 +22,13 @@ signal signal_trigger_bomb
 
 func component_ready() -> void:
 	super()
-	owner = owner as Zombie000Base
+	## 只**判**类型、绝不回写 owner：`owner` 是引擎属性，一旦 `as` 失败被赋成 null，
+	## 同角色下所有依赖 owner 的组件会一起静默失效（见 ComponentNormBase.owner_character）
+	if not (owner is Zombie000Base):
+		Log.error("BombComponentJackbox 只能挂在僵尸上，当前 owner：" + str(owner))
+		return
 	## 如果出战角色
-	if owner.character_init_type == Character000Base.E_CharacterInitType.IsNorm:
+	if owner_character.character_init_type == Character000Base.E_CharacterInitType.IsNorm:
 		var p = randi_range(1,100)
 		## 早爆小丑
 		if p <= probability_early_bomb:

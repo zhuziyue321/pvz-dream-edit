@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://0gwoathhcraf"]
+[gd_scene load_steps=24 format=3 uid="uid://0gwoathhcraf"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_gk1fj"]
 [ext_resource type="Script" uid="uid://ccsk1fv8nukl6" path="res://src/entities/character/plant/plant_gold_magnet.gd" id="2_er5xs"]
@@ -33,11 +33,19 @@ animation = &"GoldMagnet_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_ykox4"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_k6o72"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_k6o72"]
+states/GoldMagnet_idle/node = SubResource("AnimationNodeAnimation_er5xs")
+states/GoldMagnet_idle/position = Vector2(300, 100)
+transitions = ["Start", "GoldMagnet_idle", SubResource("AnimationNodeStateMachineTransition_k6o72")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_k6o72"]
 graph_offset = Vector2(-338.124, 180.615)
 nodes/output/position = Vector2(680, 140)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_er5xs")
-nodes/Animation/position = Vector2(20, 140)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_k6o72")
+nodes/StateMachine/position = Vector2(20, 140)
 "nodes/Animation 2/node" = SubResource("AnimationNodeAnimation_k6o72")
 "nodes/Animation 2/position" = Vector2(-200, 340)
 nodes/OneShot/node = SubResource("AnimationNodeOneShot_d1osr")
@@ -46,7 +54,7 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_ykox4")
 nodes/TimeScale/position = Vector2(480, 140)
 "nodes/TimeScale 2/node" = SubResource("AnimationNodeTimeScale_px343")
 "nodes/TimeScale 2/position" = Vector2(100, 340)
-node_connections = [&"output", 0, &"TimeScale", &"OneShot", 0, &"Animation", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"OneShot", &"TimeScale 2", 0, &"Animation 2"]
+node_connections = [&"output", 0, &"TimeScale", &"OneShot", 0, &"StateMachine", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"OneShot", &"TimeScale 2", 0, &"Animation 2"]
 
 [node name="Plant046GoldMagnet" instance=ExtResource("1_gk1fj")]
 script = ExtResource("2_er5xs")

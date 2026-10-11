@@ -24,6 +24,37 @@ signal signal_animation_finished(anim_name:StringName)
 var animation_origin_speed :float = -1
 
 
+#region 当前动画上报（★ 通用只读能力：谁都能问，不参与任何判定）
+##
+## ★ **为什么要有这一段**：动画树（AnimationTree）驱动角色时，`AnimationPlayer.current_animation`
+##   **是空的** —— 树走的是自己的 playback，从不调 `play()`，所以从外面读播放器根本问不出
+##   "此刻在播哪一条、播到第几秒"。只有动画组件自己知道，于是由它来报。
+##
+## ★ 与 `entity_id` / `BodyCharacter.body_light_count` 同款：本体提供的**通用能力**，
+##   不含联机字样、不改任何状态、不参与判定，谁需要谁读。
+##
+## 用法：先 `update_current_anim()` 刷新，再读 `anim_name_now` / `anim_position_now`。
+## 拿不到时名字为 `&""`、位置为 `-1.0` ⇒ 读的一方按"这一帧没有动画"处理。
+##
+## 关联：[联机模组](../../../../docs/参考存档/联机模组.md) §4.9（动画同步）
+var _anim_probe_frame := -1
+## 当前正在播的动画名（没有在播的是 `&""`）
+var anim_name_now := &""
+## 当前动画播到第几秒（没有在播的是 `-1.0`）
+var anim_position_now := -1.0
+
+## 刷新 `anim_name_now` / `anim_position_now`
+##
+## ⚠️ 同一帧内重复调用是廉价的（内部按帧缓存）：一个角色一帧可能被问好几次。
+func update_current_anim() -> void:
+	if _anim_probe_frame == Engine.get_frames_drawn():
+		return
+	_anim_probe_frame = Engine.get_frames_drawn()
+	anim_name_now = &""
+	anim_position_now = -1.0
+#endregion
+
+
 ## 获取动画原始速度
 func get_animation_origin_speed():
 	if animation_origin_speed == -1:

@@ -151,11 +151,11 @@ func _on_choose_level_button(choose_level_button:ChooseLevelButton):
 
 ## 进入游戏关卡
 func choose_level_start_game(game_scense:MainSceneRegistry.MainScenes):
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[game_scense])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(game_scense))
 
 ## 返回开始菜单
 func back_start_menu():
-	GlobalUtils.change_scene(Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 
 
 func _on_last_pressed() -> void:

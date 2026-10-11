@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://1k30aslpk43r"]
+[gd_scene load_steps=25 format=3 uid="uid://1k30aslpk43r"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_rdg00"]
 [ext_resource type="Texture2D" uid="uid://cy3xu8ug3gd2" path="res://assets/reanim/PeaShooter_backleaf.png" id="2_43sbo"]
@@ -29,14 +29,22 @@ animation = &"MariGold_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_43sbo"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_rdg00"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_rdg00"]
+states/MariGold_idle/node = SubResource("AnimationNodeAnimation_rdg00")
+states/MariGold_idle/position = Vector2(300, 100)
+transitions = ["Start", "MariGold_idle", SubResource("AnimationNodeStateMachineTransition_rdg00")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_rdg00"]
 graph_offset = Vector2(-89.4546, 45.0909)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_rdg00")
-nodes/Animation/position = Vector2(20, 160)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_rdg00")
+nodes/StateMachine/position = Vector2(20, 160)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_43sbo")
 nodes/TimeScale/position = Vector2(240, 140)
 nodes/output/position = Vector2(420, 140)
-node_connections = [&"TimeScale", 0, &"Animation", &"output", 0, &"TimeScale"]
+node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"]
 
 [node name="Plant039MariGold" instance=ExtResource("1_rdg00")]
 script = ExtResource("2_n70fy")

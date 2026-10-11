@@ -13,18 +13,18 @@ func run(a) -> void:
 		return
 	Global.game_para = para
 	a.log("[场景] 切换到主游戏场景")
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(2.0)
 	await a.dump("关卡场景已加载（此刻应在选卡阶段）")
 
 	## 卡槽被系统自动填满时关卡已进入开始流程，这里不要重复触发
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
 		a.log("[场景] 跳过选卡: main_game_start()")
-		Global.main_game.main_game_start()
+		GameContext.curr_main_game.main_game_start()
 	else:
-		a.log("[场景] 关卡已自动跳过选卡, 当前阶段=%d" % Global.main_game.main_game_progress)
+		a.log("[场景] 关卡已自动跳过选卡, 当前阶段=%d" % GameContext.curr_main_game.main_game_progress)
 	await a.wait(3.0)
 	await a.dump("游戏已开始（应进入 MAIN_GAME）")
 

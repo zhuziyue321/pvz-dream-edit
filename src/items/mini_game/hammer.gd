@@ -81,8 +81,8 @@ func spawn_sun(create_global_position:Vector2):
 	var new_sun = SceneRegistry.SUN.instantiate()
 	if new_sun is Sun:
 
-		new_sun.init_sun(sun_value, Global.main_game.suns.to_local(create_global_position))
-		Global.main_game.suns.add_child(new_sun)
+		new_sun.init_sun(sun_value, GameContext.curr_main_game.suns.to_local(create_global_position))
+		GameContext.curr_main_game.suns.add_child(new_sun)
 
 		var offset_x := randf_range(-30, 30)
 		## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）

@@ -24,7 +24,7 @@ func run(a) -> void:
 		_finish(a)
 		return
 
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	var boss = await _wait_boss(a)
 	if boss == null:
 		_finish(a)
@@ -166,23 +166,23 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL_05_10)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameRoof]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameRoof)
 	)
 	await a.wait(3.0)
-	var mg := Global.main_game
-	_check(a, "已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return false
 	if mg.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
 		mg.main_game_start()
 	await a.wait(2.0)
-	return Global.main_game != null
+	return GameContext.curr_main_game != null
 
 
 ## 等博士出场（boss_spawn_wave = 0，开战即自动出场）。
 func _wait_boss(a):
-	var mg := Global.main_game
+	var mg := GameContext.curr_main_game
 	for _i in 40:
 		var bosses := mg.zombie_manager.get_living_bosses()
 		if not bosses.is_empty():

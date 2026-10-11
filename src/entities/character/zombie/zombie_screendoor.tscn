@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="2_w3rtv"]
 [ext_resource type="Texture2D" uid="uid://bcnptydg0xkej" path="res://assets/reanim/Zombie_screendoor1.png" id="3_0pwdr"]
 [ext_resource type="Texture2D" uid="uid://r7s1hgj6smgj" path="res://assets/reanim/Zombie_screendoor3.png" id="4_asigi"]
-[ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/entities/character/components/drop_body/zombie_arm1_drop.gd" id="5_rjx66"]
+[ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/items/drop_body/zombie_arm1_drop.gd" id="5_rjx66"]
 [ext_resource type="Texture2D" uid="uid://ddlkkrp74v64f" path="res://assets/reanim/Zombie_outerarm_upper2.png" id="5_w3rtv"]
 [ext_resource type="Texture2D" uid="uid://d4avxxg7q7cl2" path="res://assets/reanim/Zombie_screendoor2.png" id="6_g6fjw"]
 

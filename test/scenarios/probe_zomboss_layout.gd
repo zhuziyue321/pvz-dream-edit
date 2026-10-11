@@ -16,13 +16,13 @@ func run(a) -> void:
 	a.log("========== PROBE 僵王博士落点 ==========")
 	var para: Resource = (load(LEVEL_PATH) as GDScript).new()
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameRoof]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameRoof)
 	)
 	await a.wait(3.0)
 
-	var mg := Global.main_game
-	_check(a, "已进入主游戏", mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		_finish(a)
 		return

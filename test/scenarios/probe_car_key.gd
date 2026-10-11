@@ -30,15 +30,15 @@ func run(a) -> void:
 	var p = (load(LEVEL_PATH) as GDScript).new()
 	p.set_choose_level(ADV, 2, "0024")
 	Global.game_para = p
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[p.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(p.game_sences))
 	if not await a.wait_scene("main_game", 15.0):
 		_check(a, "进入 3-4", false, str(a.get_tree().current_scene))
 		_finish(a)
 		return
 	await a.wait(5.0)
 
-	var para = Global.main_game.game_para
+	var para = GameContext.curr_main_game.game_para
 	_check(a, "关卡 id=0024(3-4)", para.level_id == "0024", para.level_id)
 	## 本关掉什么：写在本关脚本 `_init()` 的 level_complete_loot 上（战利品名字）
 	_check(a, "本关声明的战利品是车钥匙", para.level_complete_loot == LootRegistry.CAR_KEYS,
@@ -51,10 +51,10 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP2 通关掉落：掉钥匙代替奖杯
 	a.log("STEP2 触发通关掉落（gain 本关战利品）")
-	var dim = Global.main_game.drop_item_manager.dim_garden_plant
+	var dim = GameContext.curr_main_game.drop_item_manager.dim_garden_plant
 	var parent = dim.all_drop_garden_plant_parent
 	var drop_before: int = parent.get_child_count()
-	Global.main_game.reward_manager.gain(para.level_complete_loot, Vector2(600, 300))
+	GameContext.curr_main_game.reward_manager.gain(para.level_complete_loot, Vector2(600, 300))
 	await a.wait(1.5)
 
 	var new_drop = _find_new_present(parent)
@@ -97,17 +97,17 @@ func run(a) -> void:
 	var p2 = (load(LEVEL_PATH) as GDScript).new()
 	p2.set_choose_level(ADV, 2, "0024")
 	Global.game_para = p2
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[p2.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(p2.game_sences))
 	if not await a.wait_scene("main_game", 15.0):
 		_check(a, "重打进入 3-4", false, str(a.get_tree().current_scene))
 		_finish(a)
 		return
 	await a.wait(5.0)
-	var dim2 = Global.main_game.drop_item_manager.dim_garden_plant
+	var dim2 = GameContext.curr_main_game.drop_item_manager.dim_garden_plant
 	var parent2 = dim2.all_drop_garden_plant_parent
 	var drop_before2: int = parent2.get_child_count()
-	Global.main_game.reward_manager.create_trophy(Vector2(600, 300))
+	GameContext.curr_main_game.reward_manager.create_trophy(Vector2(600, 300))
 	await a.wait(1.5)
 	## 重打 3-4：车钥匙那一步已经掉过（存档里已通关，不再掉第二次），
 	## 这里掉的是兜底战利品「奖杯」—— 与车钥匙掉在同一个容器里，只能按贴图分辨

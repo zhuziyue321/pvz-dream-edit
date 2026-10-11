@@ -67,6 +67,27 @@ var selected_cards: Array = []
 ## 初始只有豌豆射手,白卡通过冒险模式关卡解锁(见 ConstPlantUnlock),紫卡与模仿者在商店购买后加入
 var curr_plant :Array[CharacterRegistry.PlantType]= ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
 
+## 把所有**落盘字段**清回默认值(切到一个还没有存档的新用户时调用)
+##
+## 为什么必须显式清:读档是"只覆盖读到的键",而新用户连存档文件都没有 ——
+## 不先清空的话,上一个用户留在内存里的金币 / 关卡进度 / 花园 / 选卡 / 已解锁植物 / 僵尸
+## 会被自动存档原样写进新用户的空目录,表现就是"新建的用户继承了上一个账号的存档"。
+## 调用方只有一个:SaveService.load_global_game_data() 判定"该用户没有任何存档文件"时。
+func reset_to_defaults() -> void:
+	coin_value = DEFAULT_COIN_VALUE
+	curr_num_new_garden_plant = DEFAULT_CURR_NUM_NEW_GARDEN_PLANT
+	card_slot_upgrade_num = DEFAULT_CARD_SLOT_UPGRADE_NUM
+	is_pool_cleaner_bought = DEFAULT_IS_POOL_CLEANER_BOUGHT
+	is_roof_cleaner_bought = DEFAULT_IS_ROOF_CLEANER_BOUGHT
+	rake_use_num = DEFAULT_RAKE_USE_NUM
+	is_wall_nut_first_aid_bought = DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT
+	is_first_coin_advice_shown = DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN
+	garden_data = DEFAULT_GARDEN_DATA.duplicate(true)
+	curr_all_level_state_data = DEFAULT_CURR_ALL_LEVEL_STATE_DATA.duplicate(true)
+	selected_cards = []
+	curr_plant = ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
+	curr_zombie = DEFAULT_CURR_ZOMBIE.duplicate()
+
 #region 植物解锁进度
 ## 植物是否已解锁
 func is_plant_unlocked(plant_type:CharacterRegistry.PlantType) -> bool:
@@ -88,6 +109,42 @@ func unlock_plants(plant_types:Array) -> Array[CharacterRegistry.PlantType]:
 		if unlock_plant(int(plant_type) as CharacterRegistry.PlantType):
 			new_unlock.append(int(plant_type) as CharacterRegistry.PlantType)
 	return new_unlock
+
+## 控制台「调试模式」的总开关,开通后才能拿到的植物见 ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES
+##
+## 为什么不随存档走:开关本身落在 ConfigService 的控制台通用键值区(
+## `ConsoleBuiltinEntries.DEBUG_MODE_KEY`),不和账号存档一条线 —— 所以每次读档把 curr_plant
+## 覆盖之后都要按开关再同步一次(同步入口 Global.reload_session_for_current_user)。
+var is_debug_mode := false
+
+## 切换调试模式:[param value] 为 true 时把调试植物并进已解锁植物,false 时按同一份名单撤掉
+func apply_debug_mode(value: bool) -> void:
+	is_debug_mode = value
+	_sync_debug_mode_plants()
+
+## 按当前 is_debug_mode 同步「只有调试模式才有的植物」
+## 关掉时必须真的从 curr_plant 里删:读档会按存档记录重建那份列表(见 SaveService._build_curr_plant),
+## 只把开关置 false 的话,上一次开调试写进存档的植物下次读档又会回来。
+func _sync_debug_mode_plants() -> void:
+	if is_debug_mode:
+		unlock_plants(ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES)
+		return
+	for plant_type:CharacterRegistry.PlantType in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
+		curr_plant.erase(plant_type)
+		_remove_debug_card_from_selected_cards(plant_type)
+
+## 从「上次选卡」里摘掉一株已不可选的植物
+## 为什么必须连这里一起清:「重选上次卡片」是照存档条目直接点待选卡位的(
+## 见 CardSlotNorm._on_re_card_button_pressed),卡片容器在关掉调试模式后已经隐藏,
+## 条目留着就会选进去一张看不见的卡。
+func _remove_debug_card_from_selected_cards(plant_type:CharacterRegistry.PlantType) -> void:
+	for i in range(selected_cards.size() - 1, -1, -1):
+		var card_data: Dictionary = selected_cards[i]
+		if int(card_data.get("card_type", ResourceCardReference.CardType.Null)) != ResourceCardReference.CardType.Plant:
+			continue
+		if int(card_data.get("content_id", 0)) != plant_type:
+			continue
+		selected_cards.remove_at(i)
 
 ## 通关冒险模式某关后解锁该关对应的植物,返回本次新解锁的植物
 ## adventure_level: 冒险模式关卡序号(1-1 = 1 …… 5-10 = 50)
@@ -387,7 +444,8 @@ func add_card_slot_upgrade() -> bool:
 	return true
 #endregion
 
-var curr_zombie :Array[CharacterRegistry.ZombieType]= [
+## 已解锁僵尸的默认列表(新用户 / 重置存档时的初始值,见 reset_to_defaults)
+const DEFAULT_CURR_ZOMBIE: Array[CharacterRegistry.ZombieType] = [
 	CharacterRegistry.ZombieType.Z001Norm,
 	CharacterRegistry.ZombieType.Z002Flag,
 	CharacterRegistry.ZombieType.Z003Cone,
@@ -415,6 +473,9 @@ var curr_zombie :Array[CharacterRegistry.ZombieType]= [
 	CharacterRegistry.ZombieType.Z025Imp,
 	CharacterRegistry.ZombieType.Z1001BobsledSingle,
 ]
+
+## 已解锁的僵尸（新用户取 DEFAULT_CURR_ZOMBIE，见 reset_to_defaults）
+var curr_zombie :Array[CharacterRegistry.ZombieType]= DEFAULT_CURR_ZOMBIE.duplicate()
 
 ## 已解锁的僵王；博士默认可选，与已解锁的普通僵尸共同组成僵尸候选页
 var curr_zombie_boss :Array[CharacterRegistry.ZombieBossType] = [

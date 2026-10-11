@@ -56,14 +56,14 @@ func _check_level(
 	para.set_choose_level(scene, page, level_id)
 	Global.game_para = para
 	await a.wait(2.0)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 
 	if not await _wait_main_game(a, 60.0):
 		_check(a, label + " 进入 MAIN_GAME", false, "超时")
 		return
 	_check(a, label + " 进入 MAIN_GAME", true)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	await a.wait(1.0)
 
 	## 固定出战卡（玩家不选卡）
@@ -166,12 +166,12 @@ func _check_lose(
 	para.set_choose_level(scene, page, level_id)
 	Global.game_para = para
 	await a.wait(2.0)
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	if not await _wait_main_game(a, 60.0):
 		_check(a, "失败流程 进入 MAIN_GAME", false, "超时")
 		return
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var zm = mg.zombie_manager
 	var victim: Zombie000Base = null
 	var waited := 0.0
@@ -222,10 +222,10 @@ func _finish(a) -> void:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null:
+		if GameContext.curr_main_game != null:
 			if _find_dave() != null and not await _skip_dave_dialog(a):
 				return false
-			if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+			if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -261,7 +261,7 @@ func _find_loot(dim) -> Node2D:
 
 ## 界面上正在说话的戴夫（挂在 canvas_layer_ui 下），没有则返回 null
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

@@ -50,7 +50,7 @@ func run(a) -> void:
 		return
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var wave_manager = mg.zombie_manager.zombie_wave_manager
 
 	# ------------------------------------------------ STEP1 教学启动
@@ -126,8 +126,8 @@ func run(a) -> void:
 	else:
 		_check(a, "教学结束后开战，第一波僵尸启动", false, "超时未开波")
 	_check(a, "第一波由开战排上（is_first_wave_started）",
-		Global.main_game.zombie_manager.is_first_wave_started,
-		str(Global.main_game.zombie_manager.is_first_wave_started))
+		GameContext.curr_main_game.zombie_manager.is_first_wave_started,
+		str(GameContext.curr_main_game.zombie_manager.is_first_wave_started))
 	_check(a, "教学提示顺序与原版一致", _advice_seq == EXPECT_ADVICE, str(_advice_seq))
 
 	# ------------------------------------------------ STEP5 已通关后不再播教程
@@ -149,9 +149,9 @@ func run(a) -> void:
 #region 断言与工具
 ## 本关的提示条（「提示快捷工具」挂的那一条，见 TutorialAdviceUI.find_level_hint）
 func _hint() -> TutorialAdviceUI:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return null
-	return TutorialAdviceUI.find_level_hint(Global.main_game)
+	return TutorialAdviceUI.find_level_hint(GameContext.curr_main_game)
 
 
 ## 当前提示文本；没有提示条时返回空串
@@ -189,8 +189,8 @@ func _enter_level(a, wait_tutorial: bool) -> bool:
 	var para = (load(LEVEL_PATH) as GDScript).new()
 	para.set_choose_level(ADV, 0, "0002")
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(para.game_sences))
 	if not await _wait_main_game(a, 40.0):
 		return false
 	if wait_tutorial:
@@ -202,7 +202,7 @@ func _enter_level(a, wait_tutorial: bool) -> bool:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null and Global.main_game.main_game_progress == 3:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game.main_game_progress == 3:
 			return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -225,7 +225,7 @@ func _wait_hint_visible(a, timeout: float) -> bool:
 func _wait_wave_started(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg != null and mg.zombie_manager != null and mg.zombie_manager.zombie_wave_manager.curr_wave >= 0:
 			return true
 		await a.wait(0.5)
@@ -248,7 +248,7 @@ func _wait_advice(a, expect_text: String, timeout: float) -> bool:
 func _grow_sunflowers_to_end(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		var hint := _hint()
 		if hint != null and not hint.is_advice_visible():
 			return true

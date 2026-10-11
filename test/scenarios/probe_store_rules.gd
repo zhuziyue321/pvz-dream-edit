@@ -34,7 +34,7 @@ func run(a) -> void:
 	state.coin_value = 1000000
 
 	a.log("STEP1 进入商店")
-	a.get_tree().change_scene_to_file(STORE_SCENE)
+	GlobalUtils.change_scene(STORE_SCENE)
 	if not await a.wait_scene("store", 15.0):
 		_check(a, "进入商店", false, str(a.get_tree().current_scene))
 		_finish(a)

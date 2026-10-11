@@ -6,7 +6,11 @@ class_name ConsoleRegistry
 ## `_on_check_box_N_toggled`），加一个开关要同时改场景、改脚本、改 ConfigService 三处，
 ## 模组更是完全没有地方挂自己的调试开关。
 ## 现在：**条目是数据**，谁都能登记 —— 本体的在 `ConsoleBuiltinEntries`，
-## 模组的在 `ModBase.register_console_entries()`，面板只负责把它们变成控件。
+## 面板只负责把它们变成控件。
+##
+## ⚠️ 模组**不**再往这里挂东西：模组的界面在自己的**模组页面**
+## （`src/ui/mod_page/mod_page.tscn`，主菜单 → 选项 → 控制台 →「模组」），
+## 因此控制台里不会自动多出「模组」那一组。
 ##
 ## 生命周期：
 ##   `_ready()`                 —— 登记本体内置条目（模组条目由 ModManager 在它自己的 _ready 里登记）
@@ -29,8 +33,6 @@ signal values_changed()
 
 ## 没写分组的条目落到这一组
 const CATEGORY_DEFAULT := "通用"
-## ModManager 给每个模组登记的开关放在这一组
-const CATEGORY_MOD := "模组"
 ## 本体内置条目的登记方标记
 const SOURCE_BUILTIN := &"builtin"
 

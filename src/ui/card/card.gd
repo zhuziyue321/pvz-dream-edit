@@ -117,7 +117,7 @@ func judge_card_ready():
 	# 阳光充足 且 卡片冷却完成
 	if is_sun_enough and not _is_cooling:
 		## 紫卡并且不能种植
-		if is_purple_card and not plant_condition.judge_purple_card_can_plant(Global.main_game.plant_cell_manager.all_plant_cells, card_plant_type):
+		if is_purple_card and not plant_condition.judge_purple_card_can_plant(GameContext.curr_main_game.plant_cell_manager.all_plant_cells, card_plant_type):
 			card_not_can_click()
 		else:
 			card_ready()
@@ -128,6 +128,27 @@ func set_card_cool_end():
 	_cool_timer = 0
 	_cool_mask.value = _cool_timer
 	_is_cooling = false
+
+## 还剩几秒冷却；没在冷却就是 0（只读，给"要把冷却照别人的数摆一遍"的场景用）
+var cool_remain: float:
+	get:
+		return _cool_timer if _is_cooling else 0.0
+
+## 按**剩余秒数**设冷却：冷却到"还剩 [param remain] 秒"，[param remain] <= 0 视为冷却结束
+##
+## ⚠️ 与 `card_cool()` 的区别：那个是"从头开始冷却一轮"，这个是"直接摆到还剩几秒" ——
+##   两端各跑各的计时器时，用它把**已经攒下的误差**一次性抹平，不必重开一轮。
+## ⚠️ 结束那一路必须过 `judge_card_ready()`：能不能点是**阳光 + 冷却 + 紫卡前置**一起判的，
+##   只把计时器归零而不过这一道，遮罩会收掉但卡还是灰的。
+func set_card_cool_remain(remain: float) -> void:
+	if remain <= 0.0:
+		set_card_cool_end()
+		judge_card_ready()
+		return
+	if not _is_cooling:
+		card_cool()
+	_cool_timer = remain
+	_cool_mask.value = remain
 
 ## 卡片可以点击
 func card_ready():
@@ -171,8 +192,8 @@ func _on_button_pressed() -> void:
 		return
 
 	## 如果时主游戏场景,并且游戏中
-	var is_main_game: bool = is_instance_valid(Global.main_game) \
-		and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME
+	var is_main_game: bool = is_instance_valid(GameContext.curr_main_game) \
+		and GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME
 	## 关卡自定义种子包：不交给手持管理器，点击行为由关卡脚本给的回调决定（本体不做玩法判断）
 	if card_context == CardContext.Custom:
 		if not is_main_game:

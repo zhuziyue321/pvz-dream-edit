@@ -32,7 +32,7 @@ func init_curr_gb_page(bg_page_data:Dictionary, page:int) -> Array[Node]:
 	var empty_plant_cells :Array[Node] = []
 	if bg_page_data:
 		for i in range(all_plant_cells.size()):
-			var plant_data = bg_page_data.get("第"+str(i)+"个植物格子", {})
+			var plant_data = bg_page_data.get(GardenManager.make_cell_save_key(i), {})
 			var plant_cell_garden:PlantCellGarden = all_plant_cells[i]
 			## 如果该植物格子有植物
 			if plant_data:

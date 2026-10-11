@@ -30,7 +30,7 @@ const SELF_NODE_NAME := "NetplayActionGateway"
 
 var _session: NetplaySession = null
 var _main_game: MainGameManager = null
-## 一条话写到控制台「最近一条」上（由 `NetplayMod` 传进来）
+## 一句话写进日志（回调由 `NetplayMod` 传进来；没接上就什么都不做）
 var _notice: Callable = Callable()
 
 
@@ -122,12 +122,12 @@ func _sync_node(node_name: String) -> Node:
 	return mg.get_node_or_null(node_name)
 
 
-## 本节点记录的这一局还活着就用它，否则退回去问 `Global.main_game`
+## 本节点记录的这一局还活着就用它，否则退回去问 `GameContext.curr_main_game`
 ## （换关时旧节点会先灭再换新，用"活着的那一份"才不会对着空气操作）
 func _resolve_main_game() -> MainGameManager:
 	if _main_game != null and is_instance_valid(_main_game):
 		return _main_game
-	var mg: MainGameManager = Global.main_game
+	var mg: MainGameManager = GameContext.curr_main_game
 	return mg if is_instance_valid(mg) else null
 
 

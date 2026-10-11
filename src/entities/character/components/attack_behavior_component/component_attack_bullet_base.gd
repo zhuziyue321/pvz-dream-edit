@@ -13,8 +13,10 @@ var is_lane:=true
 
 ## 攻击参数,动画攻击一次的参数
 @export var attack_para:StringName= &"parameters/OneShot/request"
-### TODO:子弹攻击伤害(为正数时可以给子弹赋值,默认为子弹攻击力)
-#@export var attack_value_bullet:int = -1
+## 子弹伤害覆盖值：> 0 时用它给生成的子弹赋值，覆盖子弹场景自身的 attack_value；
+## 默认 -1（不覆盖，用子弹自己的伤害）。用于「同一张攻击组件发射不同伤害的子弹」，
+## 例如寒冰射手与豌豆射手共用攻击组件但伤害不同、或僵尸方子弹伤害由关卡倍率决定
+@export var attack_value_bullet:int = -1
 @export var attack_cd:float = 1.5
 ## 攻击子弹类型
 @export var attack_bullet_type:BulletRegistry.BulletType = BulletRegistry.BulletType.Bullet001Pea
@@ -116,6 +118,7 @@ func get_bullet_paras(marker_2d_bullet_glo_pos:Vector2, ray_direction:Vector2) -
 		Bullet000NormBase.E_InitParasAttr.CanAttackPlantState : get_can_attack_status_component().can_attack_plant_status,
 		Bullet000NormBase.E_InitParasAttr.CanAttackZombieState : get_can_attack_status_component().can_attack_zombie_status,
 		Bullet000NormBase.E_InitParasAttr.BulletCamp : get_bullet_camp(),
+		Bullet000NormBase.E_InitParasAttr.AttackValue : attack_value_bullet,
 	}
 
 ## 发射方的阵营：僵尸持有本组件时（投石车僵尸、植物僵尸）子弹归僵尸方，打玩家的植物

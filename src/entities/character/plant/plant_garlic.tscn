@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://dg3hfd5luujlk"]
+[gd_scene load_steps=21 format=3 uid="uid://dg3hfd5luujlk"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_34mm5"]
 [ext_resource type="Script" uid="uid://bpoiu58r2rpiu" path="res://src/entities/character/plant/plant_garlic.gd" id="2_5vkpm"]
@@ -23,14 +23,22 @@ animation = &"Garlic_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_5vkpm"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ce242"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_ce242"]
+states/Garlic_idle/node = SubResource("AnimationNodeAnimation_7chwr")
+states/Garlic_idle/position = Vector2(300, 100)
+transitions = ["Start", "Garlic_idle", SubResource("AnimationNodeStateMachineTransition_ce242")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_ce242"]
 graph_offset = Vector2(124.467, 162.872)
 nodes/output/position = Vector2(540, 140)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_7chwr")
-nodes/Animation/position = Vector2(180, 160)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_ce242")
+nodes/StateMachine/position = Vector2(180, 160)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_5vkpm")
 nodes/TimeScale/position = Vector2(380, 140)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="Resource" id="Resource_fgxvd"]
 script = ExtResource("11_eruay")

@@ -2,21 +2,24 @@ extends ChooseLevel
 class_name CustomChooseLevel
 ## 自制关卡的选关界面 —— **属于自制关卡模组**（入口 `res://src/mods/custom_level/custom_level_mod.gd`）
 ##
-## 本体不引用本文件：`MainSceneRegistry.MainScenesMap[ChooseLevelCustom]` 的场景路径
+## 本体不引用本文件：`MainSceneRegistry.get_scene_path(ChooseLevelCustom)` 的场景路径
 ## 由模组在 `install()` 时注入，模组没启用就进不来这里（本体零分支、零节点）。
 
 const CHOOSE_LEVEL_BUTTON_CUSTOMIZE = preload("res://src/mods/custom_level/choose_level_button_customize.tscn")
 
-## 玩家自制关卡根目录（相对基路径，基路径见 get_base_path()）
+## 玩家自制关卡目录（相对基路径 `user://`，基路径见 get_base_path()）
+##
+## 实际落点（Windows）：`C:/Users/<用户名>/AppData/Roaming/Godot/app_userdata/PVZ-Dream-Edit/custom_level`
+## —— 编辑器里跑与导出后跑是**同一个**目录，玩家往这里丢关卡文件即可。
 ##
 ## 目录里两种摆法都认（**关卡一律是 `.gd` 关卡脚本**，见 LevelScriptBase）：
-##   1）关卡包（推荐）：`params/<关卡名>/` —— 一个子目录 = 一个关卡，目录名就是关卡 id。
+##   1）关卡包（推荐）：`custom_level/<关卡名>/` —— 一个子目录 = 一个关卡，目录名就是关卡 id。
 ##      目录里的**关卡脚本**当关卡，目录里**其余的文件**全是这个脚本的依赖
 ##      （辅助脚本 / 数据 / 场景，只加载进引擎缓存，不进选关列表）。
-##   2）散装文件：`params/xxx.gd` —— 文件名 basename 就是关卡 id。
+##   2）散装文件：`custom_level/xxx.gd` —— 文件名 basename 就是关卡 id。
 ##      「是不是关卡」只认继承链（LevelScriptBase / ResourceLevelData），
 ##      认不出来的 `.gd` 与所有 `.tres` 都只当依赖，不会在选关列表里冒出假关卡。
-const CUSTOM_LEVEL_DIR := "data/levels/params"
+const CUSTOM_LEVEL_DIR := "custom_level"
 
 ## 关卡脚本后缀（关卡只有这一种形态：一个 .gd = 属性 + 流程）
 const SCRIPT_EXT := ["gd"]
@@ -63,18 +66,20 @@ func _ready() -> void:
 	_ready_update_page()
 
 
-func get_base_path() -> String:
-	if OS.has_feature("editor"):
-		return ProjectSettings.globalize_path("res://")
-	else:
-		return OS.get_executable_path().get_base_dir()
+## 自制关卡的基路径：Godot 的 user:// 目录（编辑器与导出后同址）
+static func get_base_path() -> String:
+	return ProjectSettings.globalize_path("user://").trim_suffix("/")
 
 
 ## [folder_path] 相对基路径的自制关卡目录
 ## 返回 [[关卡实例, 关卡id], ...]，顺序 = 先散装文件、后关卡包（均按名字排序）
-func scan_custom_levels(folder_path: String) -> Array:
+func scan_custom_levels(folder_path: String = CUSTOM_LEVEL_DIR) -> Array:
 	var root = get_base_path() + "/" + folder_path
 	var dir = DirAccess.open(root)
+	if dir == null:
+		## 玩家第一次进来时目录还不存在：建一个，他才知道该往哪放关卡
+		if DirAccess.make_dir_recursive_absolute(root) == OK:
+			dir = DirAccess.open(root)
 	if dir == null:
 		Log.debug(str("目录不存在:") + str(root))
 		return []

@@ -50,6 +50,6 @@
 - **关卡的识别走白名单，不看文件名**：`LevelRegistry` 只在脚本继承链上出现 `LevelScriptBase` / `ResourceLevelData` 时才登记成关卡（`LEVEL_BASE_CLASS_NAMES` / `is_level_script()`），带前缀的辅助脚本不会被误登记（见 [关卡格式V2.md §3.4](../../docs/参考存档/关卡格式V2.md#34-关卡注册表-levelregistryp0-已落地)）。
 - **被 ≥2 关共用的关卡侧代码进 `core/<玩法>/`**：不再属于「某一关专属」时**不**硬套关卡名前缀，按玩法分子目录放进 `core/`（先例 `core/zomboss/`，现有 `core/beghouled/`、`core/hammer_zombie/`）；只有 1 关用的时候才按上一条进 `mode_*/`（硬约束 §1-8；细则见 [D-07](../../docs/参考存档/规范细则存档.md#d-07-关卡脚本-vs-游戏本体一次性机制的落位)）。
 - **关卡路径不要硬编码**：一律走 `LevelRegistry`（`src/levels/core/level_registry.gd`，`LEVEL_DIR = "res://src/levels"`），业务代码不散落 `res://` 关卡路径（硬约束 §1-4）。
-- **关卡 id = 文件名 basename**，与玩家自制关卡（`data/levels/params/`）共用一套 id 规则。
+- **关卡 id = 文件名 basename**，与玩家自制关卡（`user://custom_level/`）共用一套 id 规则。
 
 > 批量改名 / 移动**必须先关闭 Godot 编辑器**（否则 `.uid` 与引用会错乱）—— 见 [../docs/项目规范.md](../../docs/项目规范.md) §1-5。

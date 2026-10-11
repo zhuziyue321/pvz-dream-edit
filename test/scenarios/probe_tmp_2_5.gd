@@ -23,8 +23,8 @@ func run(a) -> void:
 	para.set_choose_level(ADV, PAGE_02, ID_02_05)
 	Global.game_para = para
 	await a.wait(2.0)
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	if not await _wait_main_game(a, 60.0):
 		_check(a, "2-5 进入 MAIN_GAME", false, "超时")
@@ -32,7 +32,7 @@ func run(a) -> void:
 		return
 	_check(a, "2-5 进入 MAIN_GAME", true)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	await a.wait(1.0)
 
 	## 固定出战卡
@@ -98,10 +98,10 @@ func _finish(a) -> void:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null:
+		if GameContext.curr_main_game != null:
 			if _find_dave() != null and not await _skip_dave_dialog(a):
 				return false
-			if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+			if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -110,7 +110,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 
 ## 界面上正在说话的戴夫（挂在 canvas_layer_ui 下），没有则返回 null
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

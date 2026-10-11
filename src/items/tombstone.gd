@@ -77,11 +77,11 @@ func create_new_zombie(new_zombie_type:CharacterRegistry.ZombieType, anim_multip
 		Zombie000Base.E_ZInitAttr.Lane:row_col.x,
 	}
 
-	var zombie: Zombie000Base = Global.main_game.zombie_manager.create_norm_zombie(
+	var zombie: Zombie000Base = GameContext.curr_main_game.zombie_manager.create_norm_zombie(
 		new_zombie_type,
-		Global.main_game.zombie_manager.all_zombie_rows[row_col.x],
+		GameContext.curr_main_game.zombie_manager.all_zombie_rows[row_col.x],
 		zombie_init_para,
-		Vector2(global_position.x,Global.main_game.zombie_manager.all_zombie_rows[row_col.x].zombie_create_position.global_position.y)
+		Vector2(global_position.x,GameContext.curr_main_game.zombie_manager.all_zombie_rows[row_col.x].zombie_create_position.global_position.y)
 	)
 	if not is_instance_valid(zombie):
 		return false

@@ -68,7 +68,7 @@ signal signal_drain_hp(curr_hp: int, loss_hp: int)
 ## 血量回到临界值之上（读档、小僵尸大麻烦重置血量）时发射一次
 signal signal_leave_critical(curr_hp: int)
 
-@onready var owner_character: Character000Base = owner
+## 宿主角色走基类 ComponentNormBase.owner_character（U-06 统一后的唯一写法）
 @onready var hp_component: HpComponent = %HpComponent
 
 

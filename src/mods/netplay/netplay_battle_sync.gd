@@ -132,19 +132,86 @@ func _replay_click_cell(args: Dictionary) -> bool:
 	## 手里拿的不是这一张 ⇒ 主机这一侧也要先拿起同一张（返回的不是 null 时是**临时造的**那一张）
 	var temp_card: Card = null
 	if args.has(NetplayCommand.ARG_CARD_REF) and not _is_holding_card(mg, args):
-		temp_card = _take_card_of(mg, args)
-		if temp_card == null:
-			return false
+		## ★ **传送带关优先拿主机传送带上那一张**：客户端手里的卡是照主机下发重建的，
+		## 它拿走一张，主机的传送带上就有对应的一张（同身份）—— 直接拿它，本体自己会
+		## 走 `card_use_end` 消耗掉，两端传送带上的卡才对得上。
+		## 走 `_take_card_of()` 造临时卡的话，主机传送带**永远不消耗**这一张（临时卡种完
+		## 就 `queue_free()`），而客户端每拿一张少一张 ⇒ 两端越差越多，最后客户端无卡可取。
+		## ⚠️ 传送带上找不到（主机那几张已被拿走 / 已经流走）才回退造临时卡兜底。
+		var from_belt := _take_belt_card_of(mg, args)
+		if not from_belt:
+			temp_card = _take_card_of(mg, args)
+			if temp_card == null:
+				return false
 	## ★ 补一次 hover：主机没有把鼠标放到这一格上，不补的话判的是"自己鼠标底下那一格"
+	## ★ 顺手记下这一格现在有哪些株：种成之后凭差集认出"刚种下的那一株"
+	var before := _plant_ids_in_cell(cell)
 	mg.hand_manager._on_cell_mouse_enter(cell)
 	mg.hand_manager._on_click_cell(cell)
+	_claim_fresh_plant(cell, before, args)
 	## 手上已经没有这一张 = 种成了（`click_cell()` 返回 true 才会 `drop_hand()`）
 	var ok := not _is_holding_card(mg, args) if args.has(NetplayCommand.ARG_CARD_REF) else true
+	## ★★ **"快照先到"会让这一笔重复抵达，必须判成功**：
+	## 主机的快照（unreliable、每帧发）常常比这条 battle_op（reliable）**先到**，
+	## 客户端那一头已经照快照把这一株**补种出来**了。于是重放种植时 `create_plant()`
+	## 撞上"当前位置已经有植物"直接 return ⇒ `click_cell()` 返回 false ⇒
+	## **`drop_hand()` 不发生 ⇒ 手里的植物一直举着**：
+	##   · 玩家看不到"种下去了"的反馈，就会再点 ⇒ 每一次点击都重演这条失败链；
+	##   · 日志被同一句刷屏（手上多一张卡就多一个格子交替出现，掩掉真正要找的日志）。
+	## 而在联机语义里这条 op 是**主机已经生效的事实**，它重复抵达应当判**成功** ——
+	## 所以这里补一次"放手"，让客户端这一笔正常收尾。
+	## ⚠️ 判据必须是"这一格**真的有植物了**"：地形不符 / 阳光不够那些真失败时格子还是空的，
+	##    那种情况不能放手（`curr_hand_component.click_cell()` 的 false 语义要保持）。
+	if not ok and cell.get_curr_plant_num() > 0:
+		## ⚠️ **无条件放手，不要用 `_is_holding_card()` 当条件**：那个是按"卡的身份字典"
+		## 逐字段比对的，客户端手上那一张与命令里带的那一份只要有一个字段对不上就判 false；
+		## 拿它当"要不要放手"的开关，判不准时这一笔就一直卡在手上（表现就是反复种同一格）。
+		## `drop_hand()` 本身幂等（就是切回本关的空闲手持物），空手时调也没有副作用。
+		mg.hand_manager.drop_hand()
+		ok = true
 	if temp_card != null:
 		## 临时那一张只是"替客户端拿一下卡"的壳，用完就扔 —— 别把它留在主机的场上
 		mg.hand_manager.drop_hand()
 		temp_card.queue_free()
 	return ok
+
+
+## 这一格上现在有哪些植株的编号（种前先记一份，种后凭差集认出新的那一株）
+func _plant_ids_in_cell(cell: PlantCell) -> Dictionary:
+	var ids := {}
+	for place in cell.plant_in_cell:
+		var plant: Plant000Base = cell.get_plant(place)
+		if is_instance_valid(plant) and plant.entity_id != 0:
+			ids[plant.entity_id] = true
+	return ids
+
+
+## ★★ 两端必须认得**同一株植物**，否则快照层会每帧补种
+##
+## 客户端种下的那一株，编号是**本地自增**出来的（`Character000Base.take_next_entity_id()`，
+## 两端各数各的），天生和主机报的号不同 ⇒ `_align_plants()` 按号找不到它 ⇒ 判定"缺这一株"
+## ⇒ `_spawn_plant()` 撞在"该格已有植物"上 ⇒ 每帧刷一条日志。
+## 更糟的是本地号还可能**恰好撞上**主机另一株的号，让对齐层认错人 —— 那种错位靠
+## "按格子+类型认领"补不回来（它已经被当成匹配上了）。
+##
+## 所以：主机种成后把新植株的编号回填进这条命令，客户端照着改写自己那一株。
+func _claim_fresh_plant(cell: PlantCell, before: Dictionary, args: Dictionary) -> void:
+	var fresh: Plant000Base = null
+	for place in cell.plant_in_cell:
+		var plant: Plant000Base = cell.get_plant(place)
+		if is_instance_valid(plant) and plant.entity_id != 0 and not before.has(plant.entity_id):
+			fresh = plant
+			break
+	if fresh == null or _session == null:
+		return
+	if _session.is_host():
+		## 主机：写进命令里一起下发（args 是引用，`handle_local_command()` 随后广播的就是它）
+		args[NetplayCommand.ARG_NEW_ID] = fresh.entity_id
+		return
+	## 客户端：改写成主机的编号（命令里没带就维持原样，交给 `_align_plants()` 认领兜底）
+	var host_id := int(args.get(NetplayCommand.ARG_NEW_ID, 0))
+	if host_id != 0:
+		fresh.assign_entity_id(host_id)
 
 
 ## 捡一颗阳光：按**实体编号**找到自己这一局上的同一颗，再走本体的拾取入口
@@ -160,7 +227,7 @@ func _replay_pick_sun(args: Dictionary) -> bool:
 ## 捡一枚金币 / 巧克力（与捡阳光同一条链路：按**编号**找到自己这一局上的同一枚）
 ## 查找与拾取都收在 `NetplayDropSync` 上（金币与巧克力不在同一个父节点下，那边已经收过口了）
 func _replay_pick_drop(args: Dictionary) -> bool:
-	return NetplayDropSync.collect_drop_by_id(Global.main_game,
+	return NetplayDropSync.collect_drop_by_id(GameContext.curr_main_game,
 		int(args.get(NetplayCommand.ARG_SUN_ID, 0)))
 
 
@@ -233,6 +300,33 @@ func _take_card_of(mg: MainGameManager, args: Dictionary) -> Card:
 	Log.warn("联机模组：主机这一侧拿不起这一张卡 %s" % str(args.get(NetplayCommand.ARG_CARD_REF, {})))
 	card.queue_free()
 	return null
+
+
+## 传送带关：从主机**自己的传送带**上拿起同身份的那一张（拿不到返回 false）
+##
+## ★ 与 `_take_card_of()` 的区别：这一张是**本体传送带上的实体**，拿走之后本体照自己的
+## `card_use_end` 把它消耗掉 —— 主机传送带因此与客户端同步少一张（客户端那一张是照
+## 主机下发重建的，拿走即销毁）。而 `_take_card_of()` 造的是临时卡，不消耗传送带任何东西。
+## ⚠️ 走的是本体同一个入口 `MAIN_GAME_CLICK_CARD`，所以拿起来的表现 / 校验全都不用模组抄。
+func _take_belt_card_of(mg: MainGameManager, args: Dictionary) -> bool:
+	if mg.card_manager == null:
+		return false
+	var belt := mg.card_manager.card_slot_conveyor_belt
+	if belt == null or not is_instance_valid(belt):
+		return false
+	var reference := _card_ref_of(args)
+	if reference == null:
+		return false
+	var wanted := reference.to_dict()
+	for entry in belt.curr_cards:
+		var card := entry as Card
+		if card == null or not is_instance_valid(card) or card.card_reference == null:
+			continue
+		if card.card_reference.to_dict() != wanted:
+			continue
+		EventBus.push_event(ConstEventName.MAIN_GAME_CLICK_CARD, [card])
+		return _is_holding_card(mg, args)
+	return false
 
 
 ## 照着身份造一张**不在任何卡槽上**的卡（只为让主机"替客户端拿一下"）
@@ -310,13 +404,14 @@ func _sun_of(args: Dictionary) -> Sun:
 	return null
 
 
-## 本节点记录的这一局还活着就用它，否则退回去问 `Global.main_game`
+## 本节点记录的这一局还活着就用它，否则退回去问 `GameContext.curr_main_game`
 ## （换关时旧节点会先灭再换新，用"活着的那一份"才不会对着空气操作）
 func _resolve_main_game() -> MainGameManager:
 	if _main_game != null and is_instance_valid(_main_game):
 		return _main_game
-	## `:=` 推断不出来（`Global.main_game` 出来是 Variant），这里必须写明类型
-	var mg: MainGameManager = Global.main_game
+	## 显式写明类型：下面 is_instance_valid() 判的是「实例还活着」，
+	## 类型写清是为了一眼看出判的是 MainGameManager（GameContext 里它本来就有类型，`:=` 也推得出来）
+	var mg: MainGameManager = GameContext.curr_main_game
 	return mg if is_instance_valid(mg) else null
 
 

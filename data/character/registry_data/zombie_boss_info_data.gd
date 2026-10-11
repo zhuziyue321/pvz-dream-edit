@@ -7,7 +7,7 @@ extends RefCounted
 const ZOMBIE_BOSS_INFO = {
 	CharacterRegistry.ZombieBossType.ZB001Doctor: {
 		CharacterRegistry.ZombieBossInfoAttribute.BossName: "ZB001Doctor",
-		CharacterRegistry.ZombieBossInfoAttribute.BossScenes: preload("res://src/entities/character/zombie_boss/zombie_boss_001_doctor.tscn"),
+		CharacterRegistry.ZombieBossInfoAttribute.BossScenes: preload("res://src/entities/character/zombie_boss/zombie_boss_doctor.tscn"),
 		CharacterRegistry.ZombieBossInfoAttribute.SunCost: 10000,
 		CharacterRegistry.ZombieBossInfoAttribute.CoolTime: 0,
 	},

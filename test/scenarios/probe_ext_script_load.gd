@@ -2,8 +2,8 @@ extends RefCounted
 ## 探针：验证「从游戏外部目录加载 .gd 脚本」是否可行。
 ##
 ## 关卡格式 V2 的 `level_script`（关卡脚本钩子）依赖这件事：
-## 玩家自制关卡是把 `.tres` 丢进「自制关卡目录」（编辑器下 = 项目根 /data/levels/params，
-## 导出后 = exe 同级 /data/levels/params，见 src/menus/choose_level/custom_choose_level.gd）。
+## 玩家自制关卡是把 `.tres` 丢进「自制关卡目录」（= user://custom_level，编辑器与导出后同址，
+## 见 src/mods/custom_level/custom_choose_level.gd）。
 ## 若自制关卡还能带一个 `.gd`，就必须确认这个目录里的 `.gd` 能被加载。
 ##
 ## 测三种方式 × 两个目录：
@@ -60,10 +60,9 @@ func run(a) -> void:
 
 
 ## 自制关卡目录的基路径：与 custom_choose_level.gd:get_base_path() 同款口径
+## （2026-10-11 起自制关卡改到 user:// 下，所以这里与上面的 user:// 是同一个目录）
 func _custom_level_base() -> String:
-	if OS.has_feature("editor"):
-		return ProjectSettings.globalize_path("res://")
-	return OS.get_executable_path().get_base_dir()
+	return CustomChooseLevel.get_base_path()
 
 
 ## 建临时目录并返回它的真实绝对路径；建不出来返回 ""

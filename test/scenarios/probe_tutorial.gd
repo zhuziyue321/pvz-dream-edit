@@ -71,7 +71,7 @@ func run(a) -> void:
 		_finish(a)
 		return
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var battle = mg.card_manager.card_slot_battle
 	var wave_manager = mg.zombie_manager.zombie_wave_manager
 
@@ -192,8 +192,8 @@ func run(a) -> void:
 	var para2: ResourceLevelData = para2_res.new() if para2_res is Script else para2_res
 	para2.set_choose_level(ADV, 0, "0001")
 	Global.game_para = para2
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront))
 	if not await _wait_main_game(a, 30.0):
 		_check(a, "重进 1-1 到 MAIN_GAME", false, "超时")
 		_finish(a)
@@ -202,7 +202,7 @@ func run(a) -> void:
 	_check(a, "已通关时场上没有教程提示条", _hint() == null or not _hint().is_advice_visible(),
 		str(_hint() != null and _hint().is_advice_visible()))
 	## 已通关分支跳过了教程，走的是「允许操作 → 准备安放植物 → 开战」
-	var mg2 = Global.main_game
+	var mg2 = GameContext.curr_main_game
 	var wave2 = mg2.zombie_manager.zombie_wave_manager
 	if not await _wait_wave_started(a, wave2, 40.0):
 		_check(a, "已通关分支跳过教程后正常开战", false, "curr_wave=" + str(wave2.curr_wave))
@@ -215,8 +215,8 @@ func run(a) -> void:
 	## 流程协程还挂在 wait_take_card 上时玩家退回主菜单：MainGameManager 一被释放，
 	## 等待事件必须自己退出，不能再去访问已释放的对象（见 LevelScriptBase._run_event 的保护）
 	## 先回主菜单（_goto_level 从那里起步），再清掉通关记录让教程重播
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 	await a.wait(2.0)
 	state.curr_all_level_state_data = {}
 	state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
@@ -228,13 +228,13 @@ func run(a) -> void:
 		_check(a, "教程重新起来", false, "提示条没出现")
 		_finish(a)
 		return
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.StartMenu])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 	await a.wait(3.0)
 	_check(a, "已退回主菜单", a.get_node_or_null("/root/StartMenu") != null,
 		str(a.get_node_or_null("/root/StartMenu")))
-	_check(a, "退回主菜单后主游戏已释放", not is_instance_valid(Global.main_game),
-		str(is_instance_valid(Global.main_game)))
+	_check(a, "退回主菜单后主游戏已释放", not is_instance_valid(GameContext.curr_main_game),
+		str(is_instance_valid(GameContext.curr_main_game)))
 
 	_finish(a)
 
@@ -242,9 +242,9 @@ func run(a) -> void:
 #region 断言与工具
 ## 本关的提示条（「提示快捷工具」挂的那一条，见 TutorialAdviceUI.find_level_hint）
 func _hint() -> TutorialAdviceUI:
-	if Global.main_game == null:
+	if GameContext.curr_main_game == null:
 		return null
-	return TutorialAdviceUI.find_level_hint(Global.main_game)
+	return TutorialAdviceUI.find_level_hint(GameContext.curr_main_game)
 
 
 ## 当前提示文本；没有提示条时返回空串
@@ -278,7 +278,7 @@ func _finish(a) -> void:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null and Global.main_game.main_game_progress == 3:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game.main_game_progress == 3:
 			return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -289,7 +289,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 func _wait_operation_allowed(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if mg != null and mg.is_lawn_operation_allowed:
 			var battle = mg.card_manager.card_slot_battle
 			if battle != null and not battle.curr_cards.is_empty() \
@@ -339,7 +339,7 @@ func _wait_advice(a, expect_text: String, timeout: float) -> bool:
 func _collect_sun_until_advice(a, expect_text: String, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		var mg = Global.main_game
+		var mg = GameContext.curr_main_game
 		if _hint_text() == expect_text:
 			return true
 		var suns: Node = mg.suns

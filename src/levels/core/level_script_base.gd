@@ -172,7 +172,7 @@ func create_custom_seed_packet(
 
 ## 当前出战卡槽；本关没有常规卡槽 / 主游戏还没起来时返回 null
 func _get_battle_card_slot() -> CardSlotBattle:
-	var mg: MainGameManager = Global.main_game
+	var mg: MainGameManager = GameContext.curr_main_game
 	if mg == null or mg.card_manager == null:
 		return null
 	return mg.card_manager.card_slot_battle
@@ -331,7 +331,13 @@ func gain(loot_name: String, glo_pos: Vector2 = Vector2.ZERO) -> void:
 
 ## 判胜用的主游戏：优先用流程注入的那个，没有再退回全局（与 _get_battle_card_slot 同一套兜底）
 func _get_win_main_game() -> MainGameManager:
-	var mg: MainGameManager = _mg if is_instance_valid(_mg) else Global.main_game
+	## ★ 本关自己的主游戏已经被销毁 = **这一关已经不存在了**（玩家退出 / 联机时被房主带走了），
+	##   判胜无从谈起，安静跳过：这不是错误，挂在流程协程上的那几步会在关卡拆除后醒过来
+	##   （那时 `GameContext.curr_main_game` 也已经是 null / 下一关的那一个，判到别人头上去才真是错）。
+	if _mg != null and not is_instance_valid(_mg):
+		Log.debug("关卡脚本：本关已经结束（主游戏不在了），判胜已跳过")
+		return null
+	var mg: MainGameManager = _mg if is_instance_valid(_mg) else GameContext.curr_main_game
 	if mg == null or not is_instance_valid(mg) or mg.reward_manager == null:
 		Log.error("关卡脚本：主游戏 / 通关结算子管理器不存在，判胜已跳过")
 		return null

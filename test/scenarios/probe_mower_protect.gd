@@ -32,7 +32,7 @@ func run(a) -> void:
 	_check(a, "默认开启丢车保护（保护时长 > 0）", choose.mower_protect_time > 0.0,
 		"mower_protect_time=%s" % str(choose.mower_protect_time))
 
-	var row_num: int = Global.main_game.zombie_manager.all_zombie_rows.size()
+	var row_num: int = GameContext.curr_main_game.zombie_manager.all_zombie_rows.size()
 	_check(a, "关卡有多行僵尸行（可验证\"只保护本行\"）", row_num > 1, "row_num=%d" % row_num)
 	_check(a, "开局没有任何行处于保护中", not _any_protected(choose, row_num))
 	if row_num <= 1:
@@ -62,24 +62,24 @@ func _boot(a) -> bool:
 		a.log("!! 关卡资源加载失败: " + LEVEL)
 		return false
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	await a.wait(2.0)
-	if Global.main_game == null:
-		a.log("!! Global.main_game 为空")
+	if GameContext.curr_main_game == null:
+		a.log("!! GameContext.curr_main_game 为空")
 		return false
 	## 替玩家点「开始游戏」：提前 main_game_start() 会让「初始化小推车」永远跑不到
 	await ProbeUtil.click_start(a)
 	await ProbeUtil.wait_lawn_mowers(a, 20.0)
-	return Global.main_game.main_game_progress != null
+	return GameContext.curr_main_game.main_game_progress != null
 
 func _choose_row_system() -> ZombieChooseRowSystem:
-	if Global.main_game == null or Global.main_game.zombie_manager == null:
+	if GameContext.curr_main_game == null or GameContext.curr_main_game.zombie_manager == null:
 		return null
-	if Global.main_game.zombie_manager.zombie_wave_manager == null:
+	if GameContext.curr_main_game.zombie_manager.zombie_wave_manager == null:
 		return null
-	var create_mgr = Global.main_game.zombie_manager.zombie_wave_manager.zombie_wave_create_manager
+	var create_mgr = GameContext.curr_main_game.zombie_manager.zombie_wave_manager.zombie_wave_create_manager
 	if create_mgr == null:
 		return null
 	var choose: ZombieChooseRowSystem = create_mgr.zombie_choose_row_system
@@ -91,7 +91,7 @@ func _trigger_mower(a, choose) -> int:
 	if choose == null:
 		_check(a, "选行系统可用", false, "zombie_choose_row_system 为空")
 		return -1
-	var gim = Global.main_game.game_item_manager.gim_lawn_mover
+	var gim = GameContext.curr_main_game.game_item_manager.gim_lawn_mover
 	if gim == null:
 		_check(a, "小推车管理器可用", false, "gim_lawn_mover 为空")
 		return -1

@@ -14,8 +14,8 @@ class_name NetplaySession
 ## 为什么会话挂在 root 而不是挂在 `MainGameManager` 下：连线要跨场景存活 ——
 ## 双方得先在主菜单连上、再一起进关卡；挂在主游戏下会跟着关卡一起被销毁。
 ##
-## 界面在哪：**全部在控制台**（`NetplayMod.register_console_entries()` 挂的「联机」栏）——
-## 状态 / 最近流水是两行只读文本条目，会话一发信号就 `request_refresh()` 刷新。
+## 界面在哪：**全部在模组页面**（`NetplayMod.create_detail_control()` 给的那一块联机面板）——
+## 状态 / 最近流水是两行只读文本条目，会话一发信号就 `request_refresh()` 让前台重读。
 
 ## 默认端口（原版没有联机，端口随便挑一个不常用的）
 const DEFAULT_PORT := 8912
@@ -51,7 +51,7 @@ signal level_result_received(save_game_name: String, success: bool)
 signal card_selection_received(from_peer_id: int, selections: Array)
 ## 对端请你把选卡再报一遍
 signal card_selection_refresh_requested()
-## 一行流水日志（控制台那行「最近一条」显示最新的那条）
+## 一行流水日志（`_emit_log()` 已经先写进日志了，模组再借它刷一次面板）
 signal session_log(text: String)
 
 ## 主机下令：这一条操作**已经生效**（客户端照着做一遍自己的）
@@ -194,7 +194,7 @@ func request_enter_level(level_key: Dictionary) -> void:
 	room_level_id = str(level_key.get("id", ""))
 	## 新的一局：上一局"自己退了关"的那几个人重新算进来（他这次会被一起拉进这一关）
 	_level_left_peers.clear()
-	## 房间关卡那一行要跟着变（`state_changed` 是面板刷新的钩子）
+	## 房间里"现在打的是哪一关"换了（`state_changed` 是面板刷新的钩子）
 	state_changed.emit(state)
 	## 开一关换一颗随机种子：两端 `GameRng` 同源，"抽奖型"的随机才会抽到同一份结果
 	request_battle_seed(new_battle_seed())
@@ -244,7 +244,7 @@ func leave_level() -> void:
 		_emit_log("房主退出，跟着离开 [%s]" % leaving_id)
 
 
-## 房间关卡的记录清掉（`room_level_id` 一空，控制台那一行就回到占位文本）
+## 房间不再记"现在打的是哪一关"（`room_level_id` 一空，后加入的人也就没有可补发的关卡）
 func _clear_room_level() -> void:
 	_room_level_key.clear()
 	room_level_id = ""

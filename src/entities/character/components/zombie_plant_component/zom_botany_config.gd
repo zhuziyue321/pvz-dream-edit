@@ -43,9 +43,10 @@ class ZomBotanyInfo:
 	var head_scale: float
 	## 头顶植物的贴图，按数组顺序绘制（越靠后越在上层）
 	var sprites: Array[PlantSprite]
-	## 自然出怪战力（见 zm_zombie_wave_create_manager.zombie_power）
+	## 自然出怪战力：植物僵尸走本字段，普通僵尸走 `CharacterRegistry.ZombieSpawnPower`，
+	## 两边由 `zm_zombie_wave_create_manager.get_zombie_power()` 统一分派（U-02 后只有一份数据源）
 	var power: int
-	## 自然出怪初始权重（见 zm_zombie_wave_create_manager.zombie_weights_ori）
+	## 自然出怪初始权重：同上，普通僵尸走 `CharacterRegistry.ZombieSpawnWeights`
 	var weight: int
 
 	func _init(

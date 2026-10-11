@@ -24,7 +24,7 @@ var is_lightning := false
 func _ready() -> void:
 	darkness.color.a = 0.0
 	flash.color.a = 0.0
-	if is_instance_valid(Global.main_game):
+	if is_instance_valid(GameContext.curr_main_game):
 		SoundManager.play_rain_SFX()
 
 

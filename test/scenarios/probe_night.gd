@@ -186,8 +186,8 @@ func _check_level_02_01_runtime(a) -> bool:
 	Global.game_para = para
 	a.log("[场景] 进入 2-1（%s）" % para.save_game_name)
 	await a.wait(2.0)
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront)
 	)
 	if not await _wait_main_game(a, 40.0):
 		_check(a, "2-1 进入 MAIN_GAME", false, "超时")
@@ -196,7 +196,7 @@ func _check_level_02_01_runtime(a) -> bool:
 	_check(a, "2-1 开场播了戴夫对话（CRAZY_DAVE_201~207）", _dave_seen, str(_dave_seen))
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var tombstone_num: int = mg.plant_cell_manager.tomb_stone_manager.tombstone_num
 	_check(a, "2-1 关卡参数已生效（夜晚）", mg.game_para.game_BG == ConstLevelData.GameBg.FrontNight,
 		str(mg.game_para.game_BG))
@@ -228,7 +228,7 @@ func _check_level_02_01_runtime(a) -> bool:
 func _check_tombstone_plant_condition(a) -> void:
 	a.log("")
 	a.log("STEP4 墓碑种植判定（原版夜晚核心玩法）")
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var tombstone_cell: PlantCell = null
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in row_cells:
@@ -359,10 +359,10 @@ func _plant_name(plant_type: CharacterRegistry.PlantType) -> String:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null:
+		if GameContext.curr_main_game != null:
 			if _find_dave() != null and not await _skip_dave_dialog(a):
 				return false
-			if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
+			if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return true
 		await a.wait(0.5)
 		waited += 0.5
@@ -371,7 +371,7 @@ func _wait_main_game(a, timeout: float) -> bool:
 
 ## 界面上正在说话的戴夫（挂在 canvas_layer_ui 下），没有则返回 null
 func _find_dave() -> CrazyDave:
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		return null
 	for child in mg.canvas_layer_ui.get_children():

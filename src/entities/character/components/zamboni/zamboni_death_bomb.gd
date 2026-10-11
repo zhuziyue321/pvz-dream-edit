@@ -29,7 +29,12 @@ func activate_it():
 	reparent(owner.get_sibling_layer())
 	gpu_particles_2d.emitting = true
 	gpu_particles_2d_2.emitting = true
+	## 两路粒子都要等：`zombie_death_bomb.gd` 里就是两个都 await，
+	## 这里以前只等了第一个，第二个（0.6s 生命周期）会被 `queue_free()` 截掉尾巴。
+	## ⚠️ 两个 GPUParticles2D 在 `zombie_death_bomb.tscn` 里都是 `one_shot = true`、`lifetime = 0.6`，
+	##    `finished` 一定会来；若哪天改成非 one_shot，这个 await 会永远不返回（节点不销毁）。
 	await gpu_particles_2d.finished
+	await gpu_particles_2d_2.finished
 	queue_free()
 
 func explode():

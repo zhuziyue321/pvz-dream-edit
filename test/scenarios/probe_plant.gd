@@ -62,7 +62,7 @@ func _goto_level(a) -> bool:
 
 
 func _dump_canvas(a) -> void:
-	var vp: Viewport = Global.main_game.get_viewport()
+	var vp: Viewport = GameContext.curr_main_game.get_viewport()
 	a.log("")
 	a.log("--- 进关卡后的画布变换（这就是之前漏掉的东西）---")
 	a.log("canvas_transform = %s" % str(vp.get_canvas_transform()))
@@ -96,13 +96,13 @@ func _pick_card(a) -> void:
 
 func _to_battle(a) -> bool:
 	## 卡槽被系统自动填满时关卡已跳过选卡并进入主游戏，不要重复触发开始流程
-	if Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
-		Global.main_game.choosed_card_start_game()
+	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
+		GameContext.curr_main_game.choosed_card_start_game()
 	await a.wait(6.0)
 	a.log("阶段=%d 阳光=%d" % [
-		Global.main_game.main_game_progress,
-		Global.main_game.card_manager.card_slot_battle.sun_value])
-	if Global.main_game.main_game_progress != 3:
+		GameContext.curr_main_game.main_game_progress,
+		GameContext.curr_main_game.card_manager.card_slot_battle.sun_value])
+	if GameContext.curr_main_game.main_game_progress != 3:
 		a.log("!! 还没到 MAIN_GAME 阶段")
 		return false
 	return true
@@ -141,11 +141,11 @@ func _hover_check(a) -> void:
 			continue
 		var b: Control = cell.get_node_or_null("Button")
 		await _move(a, _screen_center(b))
-		var hm = Global.main_game.hand_manager
+		var hm = GameContext.curr_main_game.hand_manager
 		var got := "-"
 		if hm.curr_plant_cell != null:
 			got = str(hm.curr_plant_cell.get_path())
-		var vp: Viewport = Global.main_game.get_viewport()
+		var vp: Viewport = GameContext.curr_main_game.get_viewport()
 		a.log("  停%s -> hovered=%s curr=%s %s" % [
 			_v2(_screen_center(b)),
 			str(vp.gui_get_hovered_control().get_path()) if vp.gui_get_hovered_control() != null else "无",
@@ -178,8 +178,8 @@ func _click_card(a) -> void:
 func _wait_sun(a, need: int) -> void:
 	var waited := 0.0
 	var picked := 0
-	while Global.main_game.card_manager.card_slot_battle.sun_value < need and waited < 60.0:
-		var suns: Node = Global.main_game.suns
+	while GameContext.curr_main_game.card_manager.card_slot_battle.sun_value < need and waited < 60.0:
+		var suns: Node = GameContext.curr_main_game.suns
 		if suns != null:
 			for s in suns.get_children():
 				if not (s is Sun) or (s as Sun).collected:
@@ -192,12 +192,12 @@ func _wait_sun(a, need: int) -> void:
 		await a.wait(1.0)
 		waited += 1.0
 	a.log("收集阳光: 等 %.1fs 点了 %d 个,当前阳光=%d" % [
-		waited, picked, Global.main_game.card_manager.card_slot_battle.sun_value])
+		waited, picked, GameContext.curr_main_game.card_manager.card_slot_battle.sun_value])
 	await a.wait(0.8)
-	var hm = Global.main_game.hand_manager
+	var hm = GameContext.curr_main_game.hand_manager
 	a.log("点卡后 手持类型=%d 手持中=%s 阳光=%d" % [
 		hm.get_curr_hand_type(), str(hm.is_holding_hand()),
-		Global.main_game.card_manager.card_slot_battle.sun_value])
+		GameContext.curr_main_game.card_manager.card_slot_battle.sun_value])
 
 
 func _plant_test(a) -> void:
@@ -213,18 +213,18 @@ func _plant_test(a) -> void:
 		return
 	var b: Control = cell.get_node_or_null("Button")
 	var p := _screen_center(b)
-	var sun0: int = Global.main_game.card_manager.card_slot_battle.sun_value
+	var sun0: int = GameContext.curr_main_game.card_manager.card_slot_battle.sun_value
 	a.log("")
 	a.log("--- 种植：目标 %s row_col=%s 屏幕中心=%s 阳光前=%d ---" % [
 		str(cell.get_path()), str(spec), _v2(p), sun0])
 	await _click(a, p)
 	await a.wait(0.5)
-	var hm = Global.main_game.hand_manager
+	var hm = GameContext.curr_main_game.hand_manager
 	a.log("点击后 阳光=%d 手持类型=%d 手持中=%s" % [
-		Global.main_game.card_manager.card_slot_battle.sun_value,
+		GameContext.curr_main_game.card_manager.card_slot_battle.sun_value,
 		hm.get_curr_hand_type(), str(hm.is_holding_hand())])
 	await a.wait(2.0)
-	var pcm = Global.main_game.plant_cell_manager
+	var pcm = GameContext.curr_main_game.plant_cell_manager
 	var planted: Array[String] = []
 	for r in range(pcm.all_plant_cells.size()):
 		for c in range(pcm.all_plant_cells[r].size()):
@@ -236,7 +236,7 @@ func _plant_test(a) -> void:
 				if is_instance_valid(pl):
 					planted.append("数组[%d][%d]=row_col%s 类型%s" % [r, c, str(pc.row_col), str(pl.plant_type)])
 	a.log("已种槽位=%d  %s" % [planted.size(), ", ".join(planted)])
-	a.log("阳光最终=%d" % Global.main_game.card_manager.card_slot_battle.sun_value)
+	a.log("阳光最终=%d" % GameContext.curr_main_game.card_manager.card_slot_battle.sun_value)
 	a.log("[PLANT] result=%s" % ("PASS" if planted.size() > 0 else "FAIL"))
 	await a.dump("种植之后")
 

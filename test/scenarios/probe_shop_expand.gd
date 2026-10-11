@@ -39,15 +39,15 @@ func run(a) -> void:
 	var p = (load(LEVEL_PATH) as GDScript).new()
 	p.set_choose_level(ADV, 3, "0034")
 	Global.game_para = p
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[p.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(p.game_sences))
 	if not await a.wait_scene("main_game", 15.0):
 		_check(a, "进入 4-4", false, str(a.get_tree().current_scene))
 		_finish(a)
 		return
 	await a.wait(5.0)
 
-	var para = Global.main_game.game_para
+	var para = GameContext.curr_main_game.game_para
 	_check(a, "关卡 id=0034(4-4)", para.level_id == "0034", para.level_id)
 	_check(a, "配的是通关时掉落", para.drop_unlock_on_level_complete)
 	_check(a, "不再由波次携带", para.drop_unlock_wave < 0, str(para.drop_unlock_wave))
@@ -57,10 +57,10 @@ func run(a) -> void:
 		str(para.drop_unlock_icon.resource_path if para.drop_unlock_icon != null else "null"))
 
 	## 真的掉一次：走通关掉落入口后掉落容器应多出一个礼包
-	var dim = Global.main_game.drop_item_manager.dim_garden_plant
+	var dim = GameContext.curr_main_game.drop_item_manager.dim_garden_plant
 	var parent = dim.all_drop_garden_plant_parent
 	var before: int = parent.get_child_count()
-	Global.main_game.drop_item_manager.create_unlock_drop_on_level_complete(Vector2(600, 300))
+	GameContext.curr_main_game.drop_item_manager.create_unlock_drop_on_level_complete(Vector2(600, 300))
 	await a.wait(1.0)
 	var after: int = parent.get_child_count()
 	_check(a, "4-4 掉出了玉米卷礼包", after == before + 1, str(before) + " -> " + str(after))
@@ -68,8 +68,8 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP2 通关 4-4 应直接进商店
 	a.log("STEP2 通关 4-4（走 Ctrl+D 的通关入口）")
 	a.log("  通关前扩展阶段=%d 进度=%d" % [
-		state.get_shop_expand_stage(), Global.main_game.main_game_progress])
-	Global.main_game.shortcut_win_main_game()
+		state.get_shop_expand_stage(), GameContext.curr_main_game.main_game_progress])
+	GameContext.curr_main_game.shortcut_win_main_game()
 	if not await a.wait_scene("store", 15.0):
 		_check(a, "通关 4-4 后进入商店", false, str(a.get_tree().current_scene.scene_file_path))
 		_finish(a)
@@ -106,14 +106,14 @@ func run(a) -> void:
 	var p2 = (load(LEVEL_PATH) as GDScript).new()
 	p2.set_choose_level(ADV, 3, "0034")
 	Global.game_para = p2
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[p2.game_sences])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(p2.game_sences))
 	if not await a.wait_scene("main_game", 15.0):
 		_check(a, "重打进入 4-4", false, str(a.get_tree().current_scene))
 		_finish(a)
 		return
 	await a.wait(5.0)
-	Global.main_game.shortcut_win_main_game()
+	GameContext.curr_main_game.shortcut_win_main_game()
 	await a.wait(3.0)
 	var path2: String = str(a.get_tree().current_scene.scene_file_path)
 	_check(a, "重打 4-4 后回选关界面(不跳商店)", "adventure_choose_level" in path2, path2)

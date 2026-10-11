@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://7y86ib4sacu4"]
+
+[ext_resource type="PackedScene" uid="uid://cktksmdbn2nmn" path="res://src/entities/character/zombie/zombie_base.tscn" id="1_bu51k"]
+[ext_resource type="Script" path="res://src/entities/character/zombie_boss/zb_base.gd" id="2_gwo2k"]
+
+; 僵王是正式僵尸：这里实例 Zombie000Base 的底座场景，一次性继承
+; Move / Attack / Charred / Swim / DropItem / CriticalValue 等组件。
+; ZB000Base 会在 ready_norm() 里把用不到的那一套永久禁用（见 zb_base.gd）。
+
+[node name="ZombieBoss000Base" unique_id=1135427569 instance=ExtResource("1_bu51k")]
+script = ExtResource("2_gwo2k")
+; zombie_type = Z999ZombossDoctor
+zombie_type = 999
+; init_be_attack_status = 64 即 E_BeAttackStatusZombie.IsBossInvulnerable：
+; 出场即为抬头免疫态，低头窗口由状态机的 hurt_enable 关键帧打开（见 ZB000Base.set_hurt_window）。
+init_be_attack_status = 64
+
+; 底座场景默认只有 270 血；这里回写成关卡未指定 boss_hp 时的默认值。
+; 关卡配了 boss_hp 时由 ZB000Base.set_boss_hp() 在入树前覆盖（破损阈值同步等比缩放）。
+[node name="HpComponent" parent="."]
+max_hp = 40000
+
+[node name="HurtBoxDetection" parent="HurtBoxComponent"]
+collision_layer = 4
+
+[node name="HurtBoxReal" parent="HurtBoxComponent"]
+collision_layer = 512

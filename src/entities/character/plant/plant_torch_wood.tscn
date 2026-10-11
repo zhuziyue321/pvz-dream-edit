@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://5cwbr83ymfog"]
+[gd_scene load_steps=21 format=3 uid="uid://5cwbr83ymfog"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_t46j5"]
 [ext_resource type="Texture2D" uid="uid://bxf2w1rk7r03s" path="res://assets/reanim/Torchwood_spark.png" id="2_f3mgj"]
@@ -28,14 +28,22 @@ animation = &"Torchwood_idle"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_x6pvl"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_7d34a"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_7d34a"]
+states/Torchwood_idle/node = SubResource("AnimationNodeAnimation_j55gq")
+states/Torchwood_idle/position = Vector2(300, 100)
+transitions = ["Start", "Torchwood_idle", SubResource("AnimationNodeStateMachineTransition_7d34a")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_7d34a"]
 graph_offset = Vector2(-41, 37)
 nodes/output/position = Vector2(460, 120)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_j55gq")
-nodes/Animation/position = Vector2(40, 120)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_7d34a")
+nodes/StateMachine/position = Vector2(40, 120)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_x6pvl")
 nodes/TimeScale/position = Vector2(260, 100)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_f3mgj"]
 size = Vector2(45, 50)

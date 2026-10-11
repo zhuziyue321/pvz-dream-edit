@@ -30,13 +30,13 @@ func _probe_scene(a, path: String) -> void:
 		a.log("!! 关卡加载失败: " + path)
 		return
 	Global.game_para = para
-	var scene_path: String = Global.main_scene_registry.MainScenesMap[para.game_sences]
+	var scene_path: String = Global.main_scene_registry.get_scene_path(para.game_sences)
 	a.log("[MAP][SCENE] %s -> %s" % [path.get_file(), scene_path])
-	a.get_tree().change_scene_to_file(scene_path)
+	GlobalUtils.change_scene(scene_path)
 	await a.wait(3.0)
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
-		a.log("   !! Global.main_game 为空")
+		a.log("   !! GameContext.curr_main_game 为空")
 		return
 	## 推车是关卡流程里的一项（「准备-安放-植物」之前登场，见 LevelTimelineEventLawnMover），
 	## 这里替玩家点「开始游戏」并等推车到位，否则下面打出来的一定是「没有推车」

@@ -27,8 +27,8 @@ const TOOL_ICON: Dictionary = {
 ## 目前只有蜗牛:TOOL_ICON 里的 Stinky_shell 只是个壳,没有身体 / 触角 / 尾巴,
 ## 取 Stinky_idle 的一帧才是完整一只蜗牛
 ## 没配进来的工具照旧用 TOOL_ICON 的贴图
-const FRAME_ICON_SCENE: Dictionary = {
-	GardenManager.E_GardenTool.Snail: preload("res://src/garden/stinky.tscn"),
+var FRAME_ICON_SCENE: Dictionary = {
+	GardenManager.E_GardenTool.Snail: SceneRegistry.STINKY,
 }
 ## 与 FRAME_ICON_SCENE 一一对应:取哪个动画的第几帧
 const FRAME_ICON_ANIM: Dictionary = {
@@ -36,6 +36,11 @@ const FRAME_ICON_ANIM: Dictionary = {
 }
 ## 取帧图标四周的留白(像素)
 const FRAME_ICON_MARGIN := 2.0
+## 注:这里用 `var` 而不是 `const` —— `SceneRegistry` 是**单例节点**(没有 `class_name`),
+## 而 `const` 的右值必须是编译期常量,写 `SceneRegistry.STINKY` 会编译报错
+## "Cannot use a non-constant value in a constant expression"。走注册表是为了让蜗牛场景
+## 只有 `SceneRegistry.STINKY` 一个入口(花园侧 `GardenManager._init_stinky` 也走它),
+## 不在这里再抄一遍路径。
 
 ## 各工具的戴夫话术(场景里没配 dialog_detail 时的兜底,与 GoodsWallNutFirstAid 同一套做法)
 ## 数据来源: data/strings/lawn_strings.txt 的 CRAZY_DAVE_2019~2023

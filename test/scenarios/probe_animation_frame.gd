@@ -66,7 +66,7 @@ func run(a) -> void:
 func _check_store(a) -> void:
 	a.log("STEP3 商店里的水路 / 屋顶小推车图标")
 	_mark_cleared(Global.global_game_state, 50)
-	a.get_tree().change_scene_to_file(STORE_SCENE)
+	GlobalUtils.change_scene(STORE_SCENE)
 	if not await a.wait_scene("store", 15.0):
 		_check(a, "进入商店", false, str(a.get_tree().current_scene))
 		return

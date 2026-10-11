@@ -13,7 +13,8 @@ class_name HpComponent
 ## `_ready()` 改名 `component_ready()` 时漏了 `super()`（见 ComponentNormBase 那条注释），
 ## 与本类接入无关 —— 回退本类后症状并未消失。详见 2026-10-07 的工作记录。
 
-@onready var owner_character: Character000Base = owner
+## 宿主角色走基类 `ComponentNormBase.owner_character`（U-06 统一后的唯一写法），
+## 这里不再自己 `@onready var owner_character = owner` —— 自己定义会遮蔽基类同名访问器
 
 @onready var progress_bar_hp: ProgressBar = %ProgressBarHp
 @onready var label_hp: Label = %LabelHp

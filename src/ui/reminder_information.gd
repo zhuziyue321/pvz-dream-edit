@@ -1,7 +1,5 @@
 extends CanvasLayer
 class_name ReminderInformation
-## 是否消失
-@export var is_fade := true
 ## 每句话存在时间
 @export var exist_time :float= 5
 

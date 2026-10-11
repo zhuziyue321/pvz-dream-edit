@@ -137,16 +137,16 @@ func _boot(a, level_path: String, main_scene):
 		a.log("!! 关卡资源加载失败: " + level_path)
 		return null
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[main_scene])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(main_scene))
 	await a.wait(3.0)
-	var mg := Global.main_game
-	_check(a, "已进入主游戏（%s）" % level_path.get_file(), mg != null, "Global.main_game 为空")
+	var mg := GameContext.curr_main_game
+	_check(a, "已进入主游戏（%s）" % level_path.get_file(), mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return null
 	if mg.main_game_progress == MainGameManager.E_MainGameProgress.CHOOSE_CARD:
 		mg.main_game_start()
 	await a.wait(2.0)
-	return Global.main_game
+	return GameContext.curr_main_game
 #endregion
 
 

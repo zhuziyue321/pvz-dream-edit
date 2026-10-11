@@ -28,14 +28,14 @@ func run(a) -> void:
 	await a.wait(4.0)
 
 	# ------------------------------------------------ STEP1 1-1 锁槽
-	var para = Global.main_game.game_para
+	var para = GameContext.curr_main_game.game_para
 	a.log("STEP1 关卡=%s 卡槽=%d 拥有卡数=%d" % [
 		para.level_id, para.get_max_choosed_card_num(), state.curr_plant.size()])
 	_check(a, "1-1 触发锁槽", para.is_locked_card_slot == true, str(para.is_locked_card_slot))
 	var prechosen_ids: Array = para.prechosen_cards.map(func(r): return r.content_id)
 	_check(a, "1-1 预选卡=拥有的卡", _first_n(prechosen_ids, state.curr_plant.size()) == state.curr_plant,
 		str(prechosen_ids))
-	var battle = Global.main_game.card_manager.card_slot_battle
+	var battle = GameContext.curr_main_game.card_manager.card_slot_battle
 	## 卡槽数由存档决定（基准 6 + 已购扩充）：1-1 只有 1 张已拥有卡，出战卡槽只填这一张，其余为空槽
 	_check(a, "1-1 卡槽数=6", para.get_max_choosed_card_num() == 6, str(para.get_max_choosed_card_num()))
 	_check(a, "1-1 出战卡槽只放已拥有的卡", battle.curr_cards.size() == state.curr_plant.size(),
@@ -59,7 +59,7 @@ func run(a) -> void:
 	_check(a, "模仿者不在已解锁列表", not state.curr_plant.has(CharacterRegistry.PlantType.P999Imitater))
 
 	## 金钱未解锁时不应掉落金币
-	var dim = Global.main_game.drop_item_manager.dim_coin
+	var dim = GameContext.curr_main_game.drop_item_manager.dim_coin
 	if dim == null:
 		_check(a, "找到 DIM_Coin 节点", false, "null")
 	else:
@@ -89,8 +89,8 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP4 商店商品
 	a.log("STEP4 进入商店")
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.Store])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store))
 	if not await a.wait_scene("store", 12.0):
 		a.log("!! 进不了商店")
 		_finish(a)
@@ -150,10 +150,10 @@ func run(a) -> void:
 	var p2 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 	p2.set_choose_level(ADV, 0, "0002")
 	Global.game_para = p2
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront])
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront))
 	await a.wait(3.0)
-	var para2 = Global.main_game.game_para
+	var para2 = GameContext.curr_main_game.game_para
 	a.log("  1-2 卡槽=%d 拥有卡数=%d" % [para2.get_max_choosed_card_num(), state.curr_plant.size()])
 	_check(a, "槽数<拥有卡数时不锁槽", para2.is_locked_card_slot == false, str(para2.is_locked_card_slot))
 	_check(a, "槽数<拥有卡数时无预选卡(玩家自由选卡)",
@@ -171,7 +171,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP8 模仿者入口显隐
 	a.log("STEP8 模仿者入口显隐")
-	var seed_candidate = Global.main_game.card_manager.card_slot_norm.card_slot_candidate
+	var seed_candidate = GameContext.curr_main_game.card_manager.card_slot_norm.card_slot_candidate
 	if seed_candidate == null:
 		_check(a, "找到待选卡槽", false, "null")
 	else:
@@ -183,10 +183,10 @@ func run(a) -> void:
 		var p3 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 		p3.set_choose_level(ADV, 0, "0002")
 		Global.game_para = p3
-		a.get_tree().change_scene_to_file(
-			Global.main_scene_registry.MainScenesMap[MainSceneRegistry.MainScenes.MainGameFront])
+		GlobalUtils.change_scene(
+			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.MainGameFront))
 		await a.wait(3.0)
-		var cand2 = Global.main_game.card_manager.card_slot_norm.card_slot_candidate
+		var cand2 = GameContext.curr_main_game.card_manager.card_slot_norm.card_slot_candidate
 		if cand2 == null:
 			_check(a, "重新进关卡后找到待选卡槽", false, "null")
 		else:

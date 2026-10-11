@@ -35,9 +35,9 @@ func _gen_one(a, entry: Dictionary) -> void:
 		a.log("!! 关卡加载失败: " + str(entry["level"]))
 		return
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(Global.main_scene_registry.MainScenesMap[para.game_sences])
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
 	await a.wait(3.0)
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	if mg == null:
 		a.log("!! 进不了关卡: " + str(entry["name"]))
 		return

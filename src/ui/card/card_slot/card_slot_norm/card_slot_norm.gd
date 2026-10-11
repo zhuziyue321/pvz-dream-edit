@@ -156,8 +156,8 @@ func _get_candidate_container(card_reference: ResourceCardReference) -> CardCand
 ## 游戏选卡阶段时，卡片被点击
 func _on_card_click(card:Card):
 	## 非选卡阶段直接返回
-	if Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.CHOOSE_CARD\
-		and Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.RE_CHOOSE_CARD:
+	if GameContext.curr_main_game.main_game_progress != MainGameManager.E_MainGameProgress.CHOOSE_CARD\
+		and GameContext.curr_main_game.main_game_progress != MainGameManager.E_MainGameProgress.RE_CHOOSE_CARD:
 		return
 	## 本关禁选的卡（待选区整张不出现）：「重选上次卡片」是直接模拟点击的，绕过了界面，
 	## 上次带过向日葵也不该在这一关被重新选进来
@@ -186,8 +186,8 @@ func _on_card_click(card:Card):
 ## 游戏选卡阶段时，模仿者卡片被点击
 func _on_imitater_card_click(card:Card):
 	## 非选卡阶段直接返回
-	if Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.CHOOSE_CARD\
-		and Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.RE_CHOOSE_CARD:
+	if GameContext.curr_main_game.main_game_progress != MainGameManager.E_MainGameProgress.CHOOSE_CARD\
+		and GameContext.curr_main_game.main_game_progress != MainGameManager.E_MainGameProgress.RE_CHOOSE_CARD:
 		return
 	## 同上：被本关禁掉的植物，它的模仿者版本一样选不进来
 	if is_instance_valid(card.card_candidate_container) and card.card_candidate_container.is_banned:
@@ -244,7 +244,7 @@ func pre_choosed_card(card: Card, target_parent: CanvasItem) -> void:
 	#card.card_change_cool_time(0)
 
 	## 罐子模式下系统预选卡无冷却
-	if Global.main_game.game_para.is_pot_mode:
+	if GameContext.curr_main_game.game_para.is_pot_mode:
 		if card.card_plant_type != CharacterRegistry.PlantType.Null:
 			if Global.global_read_data.zero_cd_plnat_card_type_on_pot_mode.has(card.card_plant_type):
 				card.card_change_cool_time(0)

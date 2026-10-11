@@ -22,8 +22,8 @@ func run(a) -> void:
 		return
 	para.set_choose_level(MainSceneRegistry.MainScenes.ChooseLevelMiniGame, 0, "0001")
 	Global.game_para = para
-	a.get_tree().change_scene_to_file(
-		Global.main_scene_registry.MainScenesMap[para.game_sences]
+	GlobalUtils.change_scene(
+		Global.main_scene_registry.get_scene_path(para.game_sences)
 	)
 	if not await _wait_main_game(a, 40.0):
 		a.log("!! 进不了关卡")
@@ -31,7 +31,7 @@ func run(a) -> void:
 		return
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 
 	# ------------------------------------------------ STEP1 关卡配置
 	a.log("STEP1 关卡配置了保龄球红线")
@@ -122,7 +122,7 @@ func _finish(a) -> void:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null and Global.main_game.main_game_progress == 3:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game.main_game_progress == 3:
 			return true
 		await a.wait(0.5)
 		waited += 0.5

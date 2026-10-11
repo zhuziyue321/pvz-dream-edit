@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://ble8u0ri6sy6"]
+[gd_scene load_steps=22 format=3 uid="uid://ble8u0ri6sy6"]
 
 [ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://src/entities/character/plant/plant_base.tscn" id="1_dvvog"]
 [ext_resource type="Script" uid="uid://br2u6pu5d68b8" path="res://src/entities/character/plant/plant_pumpkin.gd" id="2_scv1d"]
@@ -28,14 +28,22 @@ animation = &"ALL_ANIMS"
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_n8b18"]
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bbrx8"]
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_bbrx8"]
+states/ALL_ANIMS/node = SubResource("AnimationNodeAnimation_rab88")
+states/ALL_ANIMS/position = Vector2(300, 100)
+transitions = ["Start", "ALL_ANIMS", SubResource("AnimationNodeStateMachineTransition_bbrx8")]
+
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_bbrx8"]
 graph_offset = Vector2(-118, 33)
 nodes/output/position = Vector2(460, 160)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_rab88")
-nodes/Animation/position = Vector2(60, 100)
+nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_bbrx8")
+nodes/StateMachine/position = Vector2(60, 100)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_n8b18")
 nodes/TimeScale/position = Vector2(260, 120)
-node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="Resource" id="Resource_sum7j"]
 script = ExtResource("6_4j68l")

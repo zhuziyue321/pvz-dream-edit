@@ -15,6 +15,19 @@ const INIT_PLANT_TYPES: Array[CharacterRegistry.PlantType] = [
 	CharacterRegistry.PlantType.P001PeaShooterSingle,
 ]
 
+## 控制台「调试模式」打开才解锁的植物：三种保龄球
+## （坚果保龄球 / 爆炸坚果保龄球 / 巨型坚果墙保龄球）
+##
+## 这三株的本体与卡片都是现成的：既有行为（`src/entities/character/plant/plant_wall_nut_bowling*.tscn`），
+## 也有卡片（AllCards 第二页的前三张，也就是选卡界面第 2 页的前三张）。
+## 但正常流程不解锁它们 —— 玩家只有「坚果保龄球」两个关卡里由传送带发货。
+## 想随手把保龄球当普通植物玩，就去控制台开「调试模式」（同步逻辑见 GlobalGameState.apply_debug_mode）。
+const DEBUG_MODE_PLANT_TYPES: Array[CharacterRegistry.PlantType] = [
+	CharacterRegistry.PlantType.P1001WallNutBowling,
+	CharacterRegistry.PlantType.P1002WallNutBowlingBomb,
+	CharacterRegistry.PlantType.P1003WallNutBowlingBig,
+]
+
 ## 紫卡植物与模仿者: 不通关直接获得,需通关对应关卡后在疯狂戴夫商店花钱购买
 ## 键为植物类型,值为"通关该关卡后开放购买"的关卡序号
 const PURPLE_CARD_CAN_BUY_LEVEL: Dictionary = {

@@ -20,9 +20,16 @@ class_name NetplayCardSpawnSync
 
 const SELF_NODE_NAME := "NetplayCardSpawnSync"
 
+## 传送带卡槽由关卡脚本**现场 instantiate**，挂上来的时刻不保证在帧末之前 ⇒
+## `_install()` 那一次没接到就轮询等它出现（见 `_retry_install_async()`）。
+## 等不到 = 本关没有传送带，什么都不用做。
+const INSTALL_RETRY_TIMES := 20
+const INSTALL_RETRY_INTERVAL := 0.25
+
 var _session: NetplaySession = null
 var _main_game: MainGameManager = null
 var _notice: Callable = Callable()
+var _retrying := false
 
 
 ## 挂上来之后要先接线：[param notice] `func(text: String) -> void`
@@ -44,7 +51,16 @@ func _install() -> void:
 		return
 	var belt := _conveyor()
 	if belt == null:
+		## ⚠️ 帧末这一刻还没有传送带 ⇒ 不能就此放弃：晚挂上来的话，客户端就永远
+		## 接不到闸门、定时器也停不掉 —— 那局面是"客户端照自己随机池出卡"，
+		## 出的是主机没有的卡，点下去主机认不出，这一下操作凭空消失（整关玩不了）。
+		_retry_install_async()
 		return
+	_bind(belt)
+
+
+## 真正接线（只有拿到传送带卡槽之后才会走到这里）
+func _bind(belt: CardSlotConveyorBelt) -> void:
 	if _session.is_host():
 		if not belt.card_created.is_connected(_on_card_created):
 			belt.card_created.connect(_on_card_created)
@@ -56,6 +72,23 @@ func _install() -> void:
 			belt.create_new_card_timer.stop()
 	if not _session.battle_op_received.is_connected(_on_battle_op_received):
 		_session.battle_op_received.connect(_on_battle_op_received)
+
+
+## 轮询等传送带卡槽出现，出现了立刻接线；等不到就放弃（本关没有传送带）
+func _retry_install_async() -> void:
+	if _retrying:
+		return
+	_retrying = true
+	for _i in INSTALL_RETRY_TIMES:
+		await get_tree().create_timer(INSTALL_RETRY_INTERVAL).timeout
+		## 换关 / 退出房间时自己已经不在树上：`get_tree()` 随后就用不了了
+		if not is_instance_valid(self) or _session == null or not _session.is_linked():
+			break
+		var belt := _conveyor()
+		if belt != null:
+			_bind(belt)
+			break
+	_retrying = false
 
 
 func _exit_tree() -> void:

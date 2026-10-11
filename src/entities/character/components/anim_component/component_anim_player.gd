@@ -8,6 +8,17 @@ func component_ready() -> void:
 	animation_origin_speed = animation_player.speed_scale
 	animation_player.animation_finished.connect(_on_animation_finished)
 
+
+## 刷新当前动画：这类角色直接用 AnimationPlayer 播，`current_animation` 是准的
+## （只有动画树驱动的那条路才读不到，见 `AnimComponentNorm`）
+func update_current_anim() -> void:
+	if _anim_probe_frame == Engine.get_frames_drawn():
+		return
+	_anim_probe_frame = Engine.get_frames_drawn()
+	anim_name_now = animation_player.current_animation
+	## ⚠️ 没在播时读 `current_animation_position` 会刷一行 ERROR，必须先判空
+	anim_position_now = animation_player.current_animation_position if anim_name_now != &"" else -1.0
+
 ## 直接按动画名播放（僵王博士这类「行为由管理器逐段编排」的角色使用，不走 AnimationTree 状态机）
 func play_anim(anim_name:StringName, custom_speed:float = -1.0):
 	if not animation_player.has_animation(anim_name):

@@ -14,11 +14,10 @@ class_name Bullet000Base
 ## 两端必须对得上同一颗，否则会按编号重复造一遍。单机不涉及，行为不变。
 ##
 ## ⚠️ 领号在 `BulletRegistry.create_bullet()` 里做，**不要**挪到 `_ready()`：
-## 本类有 **7 个子类重写 `_ready()`**（bowling / cactus / cob_cannon / norm_base /
-## parabola_base / pea_fire / track_base / winter_melon），基类 `_ready()` 里的自动领号
-## 对没调 `super()` 的那一批会**静默失效** —— 它们拿不到编号、进不了快照，**且没有任何报错**。
-## 这与"闸门装了但没人读"是同一种坑（见 `GlobalUtils.sun_spawn_gate` 的注释），
-## 放在唯一的创建口上就没有这个隐患。
+## 本类**自己没有 `_ready()`**，而 **8 个子类各写了一份**（bowling / cactus / cob_cannon /
+## norm_base / parabola_base / pea_fire / track_base / winter_melon）。
+## 领号放在唯一的创建口上，子类怎么重写都不会漏号、也不必记得调 `super()`；
+## 这与"闸门装了但没人读"是同一种坑（见 `GlobalUtils.sun_spawn_gate` 的注释）。
 var entity_id:int = 0
 
 ## 指定实体编号：客户端收到主机的快照后、入树**之前**调用（覆盖自动领到的那个号）
@@ -53,12 +52,12 @@ func apply_bullet_camp() -> void:
 	pass
 
 
-## 主场景访问器：子弹需要的主场景能力一律走这里，**不要**直接写 Global.main_game。
+## 主场景访问器：子弹需要的主场景能力一律走这里，**不要**直接取 GameContext.curr_main_game（旧称 Global.main_game，已删除）。
 ##
 ## 为什么：直接取全局单例等于让子弹隐式依赖「当前一定有一局主游戏」。收进本方法之后，
 ## 子弹代码里不再出现全局单例名，将来主场景改成注入式上下文只改这一处
 ## （角色侧对应 Character000Base.get_main_game，组件侧见 ComponentNormBase）。
-## 「当前这一局」的真相源在 GameContext（Global.main_game 只是它的转发，见 global.gd）。
+## 「当前这一局」的真相源在 GameContext（见 global.gd 里那段「当前局上下文不在 Global 里」的说明）。
 func get_main_game() -> MainGameManager:
 	return GameContext.curr_main_game
 

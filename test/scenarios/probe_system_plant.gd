@@ -37,7 +37,7 @@ func run(a) -> void:
 		return
 	await a.wait(1.0)
 
-	var mg = Global.main_game
+	var mg = GameContext.curr_main_game
 	var pcm = mg.plant_cell_manager
 	a.log("  场地 %d 行 x %d 列" % [pcm.all_plant_cells.size(), pcm.all_plant_cells[0].size()])
 
@@ -92,7 +92,7 @@ func _finish(a) -> void:
 func _wait_main_game(a, timeout: float) -> bool:
 	var waited := 0.0
 	while waited < timeout:
-		if Global.main_game != null and Global.main_game.main_game_progress == 3:
+		if GameContext.curr_main_game != null and GameContext.curr_main_game.main_game_progress == 3:
 			return true
 		await a.wait(0.5)
 		waited += 0.5

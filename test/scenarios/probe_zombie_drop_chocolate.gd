@@ -30,7 +30,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP1 拿到掉落节点与一只僵尸
 	a.log("STEP1 准备：掉落节点 + 一只僵尸")
-	var dim = Global.main_game.drop_item_manager.dim_chocolate
+	var dim = GameContext.curr_main_game.drop_item_manager.dim_chocolate
 	if dim == null:
 		_check(a, "找到 DIM_Chocolate 节点", false, "null")
 		_finish(a)
@@ -115,7 +115,7 @@ func _finish(a) -> void:
 
 ## 在当前关卡里生成一只普通僵尸（走 ZombieManager，与波次刷新同一条路）
 func _create_zombie() -> Zombie000Base:
-	var zombie_manager = Global.main_game.zombie_manager
+	var zombie_manager = GameContext.curr_main_game.zombie_manager
 	var init_para := {
 		Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
 		Zombie000Base.E_ZInitAttr.Lane: 0,

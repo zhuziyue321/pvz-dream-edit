@@ -3,8 +3,9 @@ extends RefCounted
 ##
 ## 无头可跑，不写用户存档（只动内存里的值，不调 save_config）。
 ## 校验：
-##   1. 注册表在 Global 上可用，内置 11 条 + 每个模组 1 个开关都在
-##   2. 分组齐全（自动 / 显示 / 调试 / 模组）
+##   1. 注册表在 Global 上可用，内置 12 条都在
+##   2. 分组齐全（自动 / 显示 / 调试）；**没有「模组」那一组** ——
+##      模组的列表与开 / 关已经搬到「模组页面」，控制台不再替模组挂开关
 ##   3. 内置条目真的读写到了 ConfigService（勾一下「开放所有关卡」）
 ##   4. 运行期登记一条 toggle(button/slider) → 面板立刻多出对应控件 → 值落到通用键值区
 ##   5. 撤销登记方后，面板上的控件与注册表里的条目一起消失
@@ -30,15 +31,23 @@ func run(a) -> void:
 			ConsoleBuiltinEntries.CATEGORY_DEBUG]:
 		builtin_count += registry.get_entries(category).size()
 	a.log("[CONSOLE] 内置条目=%d 分组=%s" % [builtin_count, str(registry.get_categories())])
-	if builtin_count != 11:
+	if builtin_count != 12:
 		ok = false
-		a.log("[CONSOLE] !! 内置条目数应为 11，实际 %d" % builtin_count)
+		a.log("[CONSOLE] !! 内置条目数应为 12，实际 %d" % builtin_count)
 
-	var mod_switches := registry.get_entries(ConsoleRegistry.CATEGORY_MOD)
-	a.log("[CONSOLE] 模组开关=%d" % mod_switches.size())
-	if mod_switches.is_empty():
+	## 模组开关已经搬到「模组页面」（主菜单 → 选项 → 控制台 →「模组」）：控制台里不该再留任何模组条目，
+	## 模组的名单与详情由 `ModManager.all_mods` + `ModBase.create_detail_control()` 供货
+	var leftover_entries := registry.get_entries("模组")
+	a.log("[CONSOLE] 控制台里的「模组」条目=%d（应为 0）" % leftover_entries.size())
+	if not leftover_entries.is_empty():
 		ok = false
-		a.log("[CONSOLE] !! 没有给任何模组登记开关")
+		a.log("[CONSOLE] !! 控制台里仍有模组条目：%s" % str(leftover_entries.map(
+			func(item) -> String: return str((item as ConsoleEntry).id))))
+	var mod_count := ModManager.all_mods.size()
+	a.log("[CONSOLE] 模组管理器里的模组=%d" % mod_count)
+	if mod_count == 0:
+		ok = false
+		a.log("[CONSOLE] !! 一个模组都没有，模组页面会空着")
 	#endregion
 
 	#region 3 内置条目读写到 ConfigService
