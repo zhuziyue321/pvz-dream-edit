@@ -98,7 +98,6 @@ func pogo_start():
 
 ## 更新速度时同时修改弹跳的tween
 func _on_update_speed(speed_factor_product:float):
-	#Log.debug(str("更新速度:") + str(speed_factor_product))
 	#time_pogo_once = time_pogo_once_default * speed_factor_product
 	speed_scale_pogo = speed_factor_product
 

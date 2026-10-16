@@ -92,9 +92,6 @@ func init_zombiquarium(main_game: MainGameManager) -> void:
 		_create_pet(_random_point_in_rect(swim_rect))
 	_refresh_hud()
 	_emit_sun_changed()
-	Log.debug("僵尸水族馆：开局 %d 阳光、%d 只潜水僵尸，攒够 %d 阳光买奖杯通关" % [
-		get_sun_value(), _pets.size(), ConstZombiquarium.TROPHY_SUN_COST
-	])
 
 
 ## 藏掉草坪那一套 UI：本关没有选卡、没有铲子、没有待选区，出战卡槽上只留下两样东西
@@ -146,7 +143,6 @@ func _unhandled_input(event: InputEvent) -> void:
 ## 造一个脑子：花一份阳光，脑子从落点往下沉（沉到缸底还没被吃就白花）
 func create_brain(local_pos: Vector2) -> void:
 	if _brains.size() >= ConstZombiquarium.BRAIN_MAX_NUM:
-		Log.debug("僵尸水族馆：水缸里已经有 %d 个脑子了" % ConstZombiquarium.BRAIN_MAX_NUM)
 		SoundManager.play_other_SFX("buzzer")
 		return
 	if not spend_sun(ConstZombiquarium.BRAIN_SUN_COST):
@@ -327,7 +323,6 @@ func try_buy_pet() -> bool:
 		return false
 	_create_pet(_random_point_in_rect(swim_rect))
 	SoundManager.play_other_SFX("points")
-	Log.debug("僵尸水族馆：买了一只潜水僵尸，当前 %d 只" % _pets.size())
 	return true
 
 
@@ -339,7 +334,7 @@ func try_buy_trophy(trophy_screen_pos: Vector2) -> bool:
 		return false
 	if not spend_sun(ConstZombiquarium.TROPHY_SUN_COST):
 		return false
-	Log.debug("僵尸水族馆：买下奖杯，通关")
+	Log.info("僵尸水族馆：买下奖杯，通关")
 	_finish(true)
 	EventBus.push_event(ConstEventName.CREATE_TROPHY, [trophy_screen_pos])
 	return true
@@ -372,7 +367,7 @@ func _finish(is_win: bool) -> void:
 ## 宠物僵尸全死光：走与「僵尸进家」同一套失败流程（重开存档 + 失败音乐 + 红字）
 ## 原版本关的失败提示是 lawn_strings 的 [ZOMBIQUARIUM_DEATH_MESSAGE]「你的宠物僵尸已经全部死亡了！」
 func _lose_game() -> void:
-	Log.debug("僵尸水族馆：宠物僵尸全部死亡，判负")
+	Log.info("僵尸水族馆：宠物僵尸全部死亡，判负")
 	_set_advice(ADVICE_DEATH, 0.0)
 	if _mg == null:
 		## 独立预览：没有存档与失败演出，只给出结论

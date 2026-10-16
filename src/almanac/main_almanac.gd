@@ -5,6 +5,7 @@ class_name MainAlmanac
 @onready var start_page: TextureRect = $StartPage
 @onready var plant_page: AlmanacPlantPage = $PlantPage
 @onready var zombie_page: AlmanacZombiePage = $ZombiePage
+@onready var extra_plant_page: AlmanacExtraPlantPage = $ExtraPlantPage
 
 #endregion
 
@@ -16,6 +17,7 @@ func _ready() -> void:
 
 	plant_page.init_almanac_page()
 	zombie_page.init_almanac_page()
+	extra_plant_page.init_almanac_page()
 
 ## 返回开始菜单
 func _on_exit_button_pressed() -> void:
@@ -31,16 +33,26 @@ func _on_plant_button_pressed() -> void:
 	start_page.visible = false
 	plant_page.visible = true
 	zombie_page.visible = false
+	extra_plant_page.visible = false
 
 ## 查看僵尸图鉴
 func _on_zombie_button_pressed() -> void:
 	start_page.visible = false
 	plant_page.visible = false
 	zombie_page.visible = true
+	extra_plant_page.visible = false
+
+## 查看扩展植物图鉴（调试模式专属植物 + 模组新增植物）
+func _on_extra_plant_button_pressed() -> void:
+	start_page.visible = false
+	plant_page.visible = false
+	zombie_page.visible = false
+	extra_plant_page.visible = true
 
 ## 返回图鉴索引
 func _on_return_button_pressed() -> void:
 	start_page.visible = true
 	plant_page.visible = false
 	zombie_page.visible = false
+	extra_plant_page.visible = false
 

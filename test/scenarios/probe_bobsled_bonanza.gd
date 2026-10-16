@@ -131,7 +131,7 @@ func run(a) -> void:
 			melt_cell_ok = false
 	_check(a, "融冰后该行所有格子恢复能种植", melt_cell_ok)
 	var lanes_after_melt: Array[int] = []
-	for i in range(30):
+	for _i in range(30):
 		lanes_after_melt.append(wcm.select_bobsled_spawn_row())
 	_check(a, "融掉的行不再被选作雪橇队的出怪行",
 		not lanes_after_melt.has(melt_lane) and not lanes_after_melt.has(-1),
@@ -150,14 +150,14 @@ func run(a) -> void:
 	## 等它铺上再验，读到的就是「已复冰」，密度自然是 1.0（这个坑踩过一次）。
 	## 这里把出怪表临时改成只有普僵：这一波生成普僵，不会再有东西去铺冰。
 	a.log("STEP6.5 全图无冰 → 普通僵尸的出怪密度提高")
-	zm.zombie_refresh_types = [CharacterRegistry.ZombieType.Z001Norm]
+	zm.zombie_refresh_types = [ZombieIds.NORM]
 	wcm.update_zombie_refresh_types()
 	## 走一次完整的波次生成：会先经过关卡脚本的 before_wave_spawn（它按有没有冰调密度）
 	wcm.create_curr_wave_all_zombies(1, false)
-	var norm_density: float = wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm)
+	var norm_density: float = wcm.get_zombie_density(ZombieIds.NORM)
 	_check(a, "全图无冰时普僵密度倍率被调高（> 1.0）", norm_density > 1.0, "实际=%s" % str(norm_density))
 	_check(a, "密度倍率 = 关卡脚本写的 3.0", is_equal_approx(norm_density, 3.0), "实际=%s" % str(norm_density))
-	var norm_weight: int = wcm.get_zombie_weight(CharacterRegistry.ZombieType.Z001Norm)
+	var norm_weight: int = wcm.get_zombie_weight(ZombieIds.NORM)
 	_check(a, "普僵权重按倍率放大：4000 → 12000", norm_weight == 12000, "实际=%d" % norm_weight)
 
 	var zamboni_wave: Array = _spawn_a_wave(a, zm, wcm)
@@ -167,7 +167,7 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP7 洗冰车把冰铺回来
 	a.log("STEP7 洗冰车往前开：这一行的冰面重新铺回来")
 	var zamboni: Zombie013Zamboni = zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z013Zamboni,
+		ZombieIds.ZAMBONI,
 		zm.all_zombie_rows[melt_lane],
 		{
 			Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
@@ -191,8 +191,8 @@ func run(a) -> void:
 	a.log("STEP7.5 冰面铺回来 → 普僵密度退回原版（密度是跟着局势来回切的，不是一次性的）")
 	wcm.create_curr_wave_all_zombies(1, false)
 	_check(a, "又有冰之后普僵密度回到 1.0",
-		is_equal_approx(wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm), 1.0),
-		"实际=%s" % str(wcm.get_zombie_density(CharacterRegistry.ZombieType.Z001Norm)))
+		is_equal_approx(wcm.get_zombie_density(ZombieIds.NORM), 1.0),
+		"实际=%s" % str(wcm.get_zombie_density(ZombieIds.NORM)))
 
 	# ------------------------------------------------ STEP8 波数：四面旗帜 40 波
 	## max_wave 是「开战」事件写到关卡数据上的（此时流程还没跑到那里的话读到的还是默认值），
@@ -205,7 +205,7 @@ func run(a) -> void:
 
 ## 把本关出怪表临时改成「只有雪橇队」并刷一波，返回这一波真的生成的僵尸
 func _spawn_a_wave(a, zm, wcm) -> Array:
-	zm.zombie_refresh_types = [CharacterRegistry.ZombieType.Z014Bobsled]
+	zm.zombie_refresh_types = [ZombieIds.BOBSLED]
 	wcm.update_zombie_refresh_types()
 	var zombies: Array = wcm.create_curr_wave_all_zombies(1, false)
 	a.log("  本波生成 %d 只：%s" % [zombies.size(), _type_names(zombies)])

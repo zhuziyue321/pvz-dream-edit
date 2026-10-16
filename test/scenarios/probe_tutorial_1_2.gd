@@ -39,8 +39,8 @@ func run(a) -> void:
 	var state = Global.global_game_state
 	## 已通关 1-1：拥有豌豆射手 + 向日葵；没有任何通关记录
 	state.curr_plant.assign([
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
-		CharacterRegistry.PlantType.P002SunFlower,
+		PlantIds.PEA_SHOOTER_SINGLE,
+		PlantIds.SUN_FLOWER,
 	])
 	state.curr_all_level_state_data = {}
 
@@ -109,15 +109,15 @@ func run(a) -> void:
 	a.log("STEP4 收集阳光，种满三棵向日葵（教学收尾）")
 	if not await _grow_sunflowers_to_end(a, 120.0):
 		_check(a, "种满三棵向日葵后教学收尾", false,
-			"advice=" + _hint_text() + " 向日葵=" + str(_count_plant(mg, CharacterRegistry.PlantType.P002SunFlower)))
+			"advice=" + _hint_text() + " 向日葵=" + str(_count_plant(mg, PlantIds.SUN_FLOWER)))
 		_finish(a)
 		return
 	_check(a, "教学收尾后提示条已关掉", not _hint().is_advice_visible(),
 		str(_hint().is_advice_visible()))
 	_check(a, "教学收尾后箭头已收起", not _hint().is_pointer_visible(),
 		str(_hint().is_pointer_visible()))
-	_check(a, "场上已种下 3 株向日葵", _count_plant(mg, CharacterRegistry.PlantType.P002SunFlower) >= 3,
-		str(_count_plant(mg, CharacterRegistry.PlantType.P002SunFlower)))
+	_check(a, "场上已种下 3 株向日葵", _count_plant(mg, PlantIds.SUN_FLOWER) >= 3,
+		str(_count_plant(mg, PlantIds.SUN_FLOWER)))
 	## 教学收尾即开战：第一波由开战（ZombieManager.start_game()）统一开。
 	## 开战那一步自己还要先播 BGM / 推进阶段，所以这里等第一波真的落下来再断言
 	if await _wait_wave_started(a, 40.0):
@@ -304,7 +304,7 @@ func _get_sunflower_card(battle) -> Card:
 	if battle == null:
 		return null
 	for card: Card in battle.curr_cards:
-		if card.card_plant_type == CharacterRegistry.PlantType.P002SunFlower:
+		if card.card_plant_type == PlantIds.SUN_FLOWER:
 			return card
 	return null
 
@@ -312,7 +312,7 @@ func _get_sunflower_card(battle) -> Card:
 ## 找一行真的能种下向日葵的草坪（1-2 只有中间 3 行铺了草皮）
 func _find_plant_row(mg) -> int:
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
-		CharacterRegistry.PlantType.P002SunFlower,
+		PlantIds.SUN_FLOWER,
 		CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 	)
 	var cell_rows: Array[Array] = mg.plant_cell_manager.all_plant_cells
@@ -320,7 +320,7 @@ func _find_plant_row(mg) -> int:
 		var cells: Array = cell_rows[row_index]
 		if cells.is_empty():
 			continue
-		if cond.judge_is_can_plant(cells[1], CharacterRegistry.PlantType.P002SunFlower):
+		if cond.judge_is_can_plant(cells[1], PlantIds.SUN_FLOWER):
 			return row_index
 	return -1
 
@@ -330,7 +330,7 @@ func _find_free_cell_in_row(mg, row_index: int) -> PlantCell:
 	if row_index < 0:
 		return null
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
-		CharacterRegistry.PlantType.P002SunFlower,
+		PlantIds.SUN_FLOWER,
 		CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 	)
 	var cells: Array = mg.plant_cell_manager.all_plant_cells[row_index]
@@ -338,7 +338,7 @@ func _find_free_cell_in_row(mg, row_index: int) -> PlantCell:
 		var plant_cell := cell as PlantCell
 		if plant_cell == null:
 			continue
-		if not cond.judge_is_can_plant(plant_cell, CharacterRegistry.PlantType.P002SunFlower):
+		if not cond.judge_is_can_plant(plant_cell, PlantIds.SUN_FLOWER):
 			continue
 		if plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm) == null:
 			return plant_cell
@@ -346,7 +346,7 @@ func _find_free_cell_in_row(mg, row_index: int) -> PlantCell:
 
 
 ## 场上某种植物的数量
-func _count_plant(mg, plant_type: CharacterRegistry.PlantType) -> int:
+func _count_plant(mg, plant_type: StringName) -> int:
 	var num := 0
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in row_cells:

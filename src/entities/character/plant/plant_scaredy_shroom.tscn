@@ -133,7 +133,7 @@ height = 378.0
 [node name="Plant014ScaredyShroom" node_paths=PackedStringArray("node_no_change_direction", "node2d_detect_in_slope") instance=ExtResource("1_rixsb")]
 script = ExtResource("2_esfqn")
 is_scared = false
-plant_type = 14
+plant_type = &"scaredy_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent"), NodePath("ScaredyComponent")]
 
@@ -248,7 +248,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("20_wh8am")
-attack_bullet_type = 5
+attack_bullet_type = &"puff_long_time"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

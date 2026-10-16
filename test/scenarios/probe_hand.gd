@@ -1,8 +1,11 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const HandComponentGlove := preload("res://mods_builtin/glove/hand_component_glove.gd")
 ## 探针 PROBE4：手持物组件机制
 ## 覆盖：
 ##   1. 组件注册与「手持 ⇄ 空手」状态流转（组件类型、is_holding_hand）
-##   0. 解锁进度：铲子（未通关 1-4 卡槽不出现）、手套（未通关 4-5 卡槽不出现，戴夫在 4-6 交给你）
+##   0. 解锁：铲子（未通关 1-4 卡槽不出现）、手套（未买商店的园艺手套卡槽不出现，两者同时获取）
 ##   2. 反复点同一张卡不会在 TemporaryCharacter 下堆积节点（手持虚影泄漏回归）
 ##   3. 种植成功会放下手持物并扣阳光；点到不能种的格子会继续手持（不再丢卡）
 ##   4. 铲子：拿到手上时卡槽只留背景（不再出现两把铲子）、铲完自动放回、右键取消
@@ -21,8 +24,7 @@ var _cell := Vector2i(1, 1)
 var _cell_dst := Vector2i(1, 2)
 ## 冒险模式 1-4 的关卡存档名（game_mode_level_page_level_id）
 const LEVEL_1_4_SAVE_KEY := "%d_0_0004" % MainSceneRegistry.MainScenes.ChooseLevelAdventure
-## 冒险模式 4-5 的关卡存档名：通关它之后戴夫才把手套交给玩家（手套模组的 GloveMod.UNLOCK_ADVENTURE_LEVEL）
-const LEVEL_4_5_SAVE_KEY := "%d_0_0035" % MainSceneRegistry.MainScenes.ChooseLevelAdventure
+## 关卡内手套与商店的园艺手套同时获取：买断记录就是解锁记录（见 GloveMod.is_unlocked）
 ## 反复点卡次数（泄漏回归用）
 const REPEAT_TIMES := 6
 
@@ -138,14 +140,19 @@ func _set_shovel_unlocked(a, unlocked: bool) -> void:
 	await a.frames(2)
 
 
-## 直接改 4-5 的通关状态，并按新的解锁结果重算手套组件的启用状态
-## 手套有解锁进度门槛（通关 4-5 后戴夫才给），探针进的是 1-1，不模拟就永远拿不到手套
+## 直接改存档里的园艺手套买断记录（等价于在商店买下 / 撤掉它），
+## 并按新的解锁结果重算手套组件的启用状态
+## 手套有解锁门槛（买了商店的园艺手套才有），探针进的是 1-1，不模拟就永远拿不到手套
 func _set_glove_unlocked(a, unlocked: bool) -> void:
 	var state := Global.global_game_state
 	if unlocked:
-		state.curr_all_level_state_data[LEVEL_4_5_SAVE_KEY] = {"IsSuccess": true}
+		state.buy_garden_tool(GardenManager.E_GardenTool.GardeningGlove)
 	else:
-		state.curr_all_level_state_data.erase(LEVEL_4_5_SAVE_KEY)
+		var tools: Array = state.garden_data.get(GlobalGameState.BOUGHT_GARDEN_TOOLS_KEY, [])
+		for i in range(tools.size() - 1, -1, -1):
+			if int(tools[i]) == int(GardenManager.E_GardenTool.GardeningGlove):
+				tools.remove_at(i)
+		state.garden_data[GlobalGameState.BOUGHT_GARDEN_TOOLS_KEY] = tools
 	var comp := _glove_comp()
 	if comp != null:
 		comp.change_is_enabling(comp.is_can_has_glove(), HandComponentBase.E_IsEnableFactor.HandItem)
@@ -159,8 +166,8 @@ func _glove_comp() -> HandComponentGlove:
 
 
 ## 挑两个格子：第一个当前卡片能种下的作为种植点，同一行里再挑一个作为手套搬运目标
-func _pick_cells(a, card: Control) -> void:
-	var plant_type: int = card.get("card_plant_type")
+func _pick_cells(_a, card: Control) -> void:
+	var plant_type: StringName = card.card_plant_type
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 	)
@@ -246,7 +253,7 @@ func _check_no_leak(a) -> void:
 	a.log("--- 3. 反复点卡不堆积节点（共 %d 次）---" % REPEAT_TIMES)
 	var base_hand := _hand_node_count()
 	var base_all: int = a.get_tree().get_node_count()
-	for i in range(REPEAT_TIMES):
+	for _i in range(REPEAT_TIMES):
 		await a.click_node(_card_path)
 		await a.wait(0.15)
 	await a.frames(5)
@@ -323,12 +330,12 @@ func _check_glove(a) -> void:
 	if ui_glove == null or icon == null:
 		_check(a, "（前置）手套界面节点齐全", false)
 		return
-	## 手套有解锁进度门槛：未通关 4-5 时禁用，通关 4-5 后才启用（与铲子的 1-4 同一套口径）
+	## 手套有解锁门槛：没买商店的园艺手套时禁用，买下之后才启用（两者同时获取）
 	await _set_glove_unlocked(a, false)
-	_check(a, "未通关 4-5 时手套组件被禁用", not glove_comp.is_enabling, "is_enabling=%s" % str(glove_comp.is_enabling))
-	_check(a, "未通关 4-5 时不显示手套卡槽", not ui_glove.visible, "visible=%s" % str(ui_glove.visible))
+	_check(a, "未买园艺手套时手套组件被禁用", not glove_comp.is_enabling, "is_enabling=%s" % str(glove_comp.is_enabling))
+	_check(a, "未买园艺手套时不显示手套卡槽", not ui_glove.visible, "visible=%s" % str(ui_glove.visible))
 	await _set_glove_unlocked(a, true)
-	_check(a, "通关 4-5 后手套组件启用", glove_comp.is_enabling, "is_enabling=%s" % str(glove_comp.is_enabling))
+	_check(a, "买下园艺手套后手套组件启用", glove_comp.is_enabling, "is_enabling=%s" % str(glove_comp.is_enabling))
 	_check(a, "游玩阶段显示手套卡槽", ui_glove.visible)
 
 	await a.click_node(GLOVE + "/Button")

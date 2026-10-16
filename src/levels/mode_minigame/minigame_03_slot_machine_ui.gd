@@ -33,14 +33,14 @@ enum Symbol {
 
 const SYMBOL_FRAMES: Array[int] = [2, 1, 3, 4, 0, 5, 6]
 const SYMBOL_NAMES: Array[String] = ["豌豆", "向日葵", "坚果", "冰豆", "大嘴", "", ""]
-const SYMBOL_PLANTS: Array[CharacterRegistry.PlantType] = [
-	CharacterRegistry.PlantType.P001PeaShooterSingle,
-	CharacterRegistry.PlantType.P002SunFlower,
-	CharacterRegistry.PlantType.P004WallNut,
-	CharacterRegistry.PlantType.P006SnowPea,
-	CharacterRegistry.PlantType.P007Chomper,
-	CharacterRegistry.PlantType.Null,
-	CharacterRegistry.PlantType.Null,
+const SYMBOL_PLANTS: Array[StringName] = [
+	PlantIds.PEA_SHOOTER_SINGLE,
+	PlantIds.SUN_FLOWER,
+	PlantIds.WALL_NUT,
+	PlantIds.SNOW_PEA,
+	PlantIds.CHOMPER,
+	PlantIds.NULL,
+	PlantIds.NULL,
 ]
 
 const JACKPOT_SUN := 500
@@ -320,7 +320,7 @@ func _add_sun(amount: int) -> void:
 	_update_sun_label()
 
 
-func _place_plants(plant_type: CharacterRegistry.PlantType, count: int) -> void:
+func _place_plants(plant_type: StringName, count: int) -> void:
 	if not is_instance_valid(_mg) or _mg.plant_cell_manager == null:
 		return
 	var all_cells: Array = _mg.plant_cell_manager.all_plant_cells
@@ -334,13 +334,8 @@ func _place_plants(plant_type: CharacterRegistry.PlantType, count: int) -> void:
 				candidates.append(cell)
 
 	candidates.shuffle()
-	var placed := 0
 	for i in range(mini(count, candidates.size())):
 		candidates[i].create_plant(plant_type)
-		placed += 1
-
-	if placed < count:
-		Log.debug("拉霸：格子不足，%d 株 %s 只种下 %d 株" % [count, SYMBOL_NAMES[SYMBOL_PLANTS.find(plant_type)], placed])
 
 
 func _check_win() -> void:

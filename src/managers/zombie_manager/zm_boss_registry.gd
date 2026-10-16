@@ -20,7 +20,7 @@ var _registered_bosses: Dictionary[int, WeakRef] = {}
 ## 仍计入敌方数量的僵王 ID；死亡和离树共用此集合，保证只扣一次。
 var _counted_boss_ids: Dictionary[int, bool] = {}
 ## 实例对应的注册类型，用于保存存活僵王，不依赖节点名称。
-var _boss_types: Dictionary[int, CharacterRegistry.ZombieBossType] = {}
+var _boss_types: Dictionary[int, StringName] = {}
 ## 自动生成入口是否已经成功出场；卡牌召唤不占用此记录。
 var _auto_boss_spawned := false
 ## 自动生成实例的 ID，仅用于自动入口重复调用时返回原实例。
@@ -66,7 +66,7 @@ func create_boss() -> ZB000Base:
 
 ## 僵王出场坐标由 ZB000Base 硬编码，关卡不再配置出生点。[br]
 ## [param boss_type] 已注册的僵王类型；正式战斗、有效根节点及注册表允许时返回 true。
-func can_summon_boss(boss_type: CharacterRegistry.ZombieBossType) -> bool:
+func can_summon_boss(boss_type: StringName) -> bool:
 	if not manager.is_game_running() or not is_instance_valid(manager.zombie_boss_root) \
 		or not manager.zombie_boss_root.is_inside_tree() or manager.zombie_boss_root.is_queued_for_deletion() \
 		or not Global.character_registry.ZombieBossInfo.has(boss_type):
@@ -78,12 +78,12 @@ func can_summon_boss(boss_type: CharacterRegistry.ZombieBossType) -> bool:
 
 
 ## [param boss_type] 卡牌引用中的僵王类型；每次成功返回新实例，失败返回 null。
-func try_create_boss_from_card(boss_type: CharacterRegistry.ZombieBossType) -> ZB000Base:
+func try_create_boss_from_card(boss_type: StringName) -> ZB000Base:
 	return _create_boss_instance(boss_type, ZB000Base.FIXED_SPAWN_POSITION)
 
 
 ## [param count_as_new] 恢复存档时为 false；[param restored_hp] 为正数时恢复存活血量。
-func _create_boss_instance(boss_type: CharacterRegistry.ZombieBossType, spawn_position: Vector2,
+func _create_boss_instance(boss_type: StringName, spawn_position: Vector2,
 	count_as_new: bool = true, restored_hp: int = -1) -> ZB000Base:
 	if not can_summon_boss(boss_type) or not spawn_position.is_finite():
 		return null
@@ -115,14 +115,20 @@ func _create_boss_instance(boss_type: CharacterRegistry.ZombieBossType, spawn_po
 		return null
 	manager.zombie_boss_root.add_child(boss)
 	if restored_hp > 0:
-		boss_hp.Hp_loss(boss_hp.max_hp - mini(restored_hp, boss_hp.max_hp),
-			BulletRegistry.AttackMode.Norm, false, false, false)
+		## 续关 / 读档把僵王扣到「已恢复的血量」：语义上仍是"一次伤害"，
+		## 走伤害管线（不掉落、不播音效），不要直接调血量组件的结算函数
+		var damage := DamageInfo.create(boss, boss_hp.max_hp - mini(restored_hp, boss_hp.max_hp),
+			ConstDamage.E_DamageMode.Norm, ConstDamage.E_DamageCause.Script)
+		damage.is_drop_on_death = false
+		damage.trigger_sfx = false
+		damage.is_drop_2 = false
+		DamageSystem.apply(damage)
 	manager.signal_living_bosses_changed.emit()
 	return boss
 
 
 ## 登记僵王实例并接入敌方计数；同一实例重复登记只返回 true。
-func register_boss(boss: ZB000Base, boss_type: CharacterRegistry.ZombieBossType, count_as_new: bool = true) -> bool:
+func register_boss(boss: ZB000Base, boss_type: StringName, count_as_new: bool = true) -> bool:
 	if not is_instance_valid(boss) or boss.is_queued_for_deletion():
 		return false
 	var instance_id: int = boss.get_instance_id()
@@ -274,7 +280,7 @@ func restore_saved_bosses() -> void:
 	_boss_dead_total = clampi(int(data.get("dead_total", 0)), 0, _boss_spawn_total)
 	_auto_boss_spawned = bool(data.get("auto_spawned", false))
 	for snapshot: Dictionary in data.get("living_bosses", []):
-		var boss_type: CharacterRegistry.ZombieBossType = snapshot.get("boss_type", CharacterRegistry.ZombieBossType.Null)
+		var boss_type: StringName = snapshot.get("boss_type", ZombieBossIds.NULL)
 		var hp: int = snapshot.get("hp", 0)
 		if hp <= 0:
 			continue

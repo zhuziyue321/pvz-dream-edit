@@ -80,5 +80,4 @@ func stop_anim():
 ## 动画结束时发射信号
 func _on_animation_finished(anim_name:StringName):
 	signal_animation_finished.emit(anim_name)
-	#Log.debug("当前动画结束")
 

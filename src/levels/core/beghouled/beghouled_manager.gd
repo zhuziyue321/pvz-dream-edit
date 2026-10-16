@@ -63,6 +63,15 @@ var purchased_upgrades: Array[bool] = []
 ## 本管理器自己正在移除植物：区分「被三消消除」与「被僵尸啃掉」（后者要留弹坑）
 var _self_removing := false
 
+## 本关自己那条随机流（摆场 / 补位 / 重排都走它）
+##
+## ★ 为什么不用全局随机（也不共用 `GameRng` 那条）：两端（联机）必须在**同一份盘面**上
+##   跑同一次交换 —— 主机跑成之后把"交换了哪两格"下发，客户端照着跑一遍；两边盘面只要
+##   差一格，同样的交换就会消掉不同的植物，盘面从此越走越远且收不回来。
+##   而 `GameRng` 是全项目共用的一条序列，僵尸那一族也在抽，谁多抽一次后面就全串位 ——
+##   所以本关自己持一条，种子取联机那一颗（两端同源），没联机时照旧每次不同。
+var _board_rng := RandomNumberGenerator.new()
+
 var ui: BeghouledUI = null
 ## 选中格子的高亮框（挂在格子下，跟着格子走）
 var _highlight: ColorRect = null
@@ -80,14 +89,16 @@ func init_manager() -> void:
 	board_row_num = pcm.row_col.x
 	board_col_num = maxi(1, pcm.row_col.y - ConstBeghouled.EMPTY_COL_NUM_ON_RIGHT)
 	_init_plant_pool()
+	_init_board_rng()
 	_connect_board_cells()
 	_create_ui()
+	## 「交换这两格」的外部入口（联机：主机跑成后下发，本端照着跑同一串，见 _on_swap_cell_command）
+	EventBus.subscribe(ConstEventName.MAIN_GAME_SWAP_CELL, _on_swap_cell_command)
 	## 进度条不用管：本关的口径（配对次数 / 75）由 `BeghouledProgressProvider` 报，
 	## 它每帧读本管理器的 match_num（关卡脚本 create_progress_provider() 里装上）
 	## 玩家的操作入口（三档升级 / 刷新 / 填坑）全在出战卡槽的种子包上，
 	## 阳光够不够由卡片自己判（卡槽的 sun_value 一变就重算），这里不再跟阳光挂钩
 	is_running = true
-	Log.debug("僵尸迷阵：棋盘 %d 行 × %d 列" % [board_row_num, board_col_num])
 
 
 ## 摆场：清空棋盘后重新铺满植物
@@ -104,13 +115,31 @@ func setup_board() -> void:
 
 ## 开战并等到达标：关卡脚本 `await beghouled.start_beghouled(出怪表)`（beghouled 是脚本自己持有的实例）
 ## 不走时间轴的「开战」事件：本关的结束条件是配对次数，不是「最后一波刷完 + 僵尸清空」
-func start_beghouled(zombie_refresh_types: Array[CharacterRegistry.ZombieType] = []) -> void:
+func start_beghouled(zombie_refresh_types: Array[StringName] = []) -> void:
 	if not is_running:
 		return
 	if not zombie_refresh_types.is_empty():
 		main_game.apply_level_zombie_refresh_types(zombie_refresh_types)
 	main_game.main_game_start()
 	await signal_beghouled_win
+
+
+## 本关那条随机流播种：联机时两端要摆出**同一份盘面**，种子取联机那一颗
+## （没联机就照旧 `randomize()`，单机每次开局都是新盘面）
+func _init_board_rng() -> void:
+	if GameRng.is_seeded():
+		_board_rng.seed = GameRng.get_seed()
+	else:
+		_board_rng.randomize()
+
+
+## 用本关那条随机流洗牌（`Array.shuffle()` 走的是**全局随机**，两端洗不出同一份）
+func _shuffle_with(array: Array) -> void:
+	for i in range(array.size() - 1, 0, -1):
+		var j := _board_rng.randi_range(0, i)
+		var tmp = array[i]
+		array[i] = array[j]
+		array[j] = tmp
 
 
 ## 随机池：开局是六种基础植物，买了升级就把池里的旧植物换成升级后的
@@ -175,12 +204,12 @@ func get_cell_plant(cell: PlantCell) -> Plant000Base:
 
 
 ## 格子当前的植物类型：弹坑 / 空格都算「没有」（不参与连线）
-func get_cell_type(cell: PlantCell) -> CharacterRegistry.PlantType:
+func get_cell_type(cell: PlantCell) -> StringName:
 	if is_crater(cell):
-		return CharacterRegistry.PlantType.Null
+		return PlantIds.NULL
 	var plant := get_cell_plant(cell)
 	if plant == null:
-		return CharacterRegistry.PlantType.Null
+		return PlantIds.NULL
 	return plant.plant_type
 
 
@@ -192,7 +221,7 @@ func is_crater(cell: PlantCell) -> bool:
 func _build_type_grid() -> Array[Array]:
 	var grid: Array[Array] = []
 	for row in range(board_row_num):
-		var line: Array[CharacterRegistry.PlantType] = []
+		var line: Array[StringName] = []
 		for col in range(board_col_num):
 			line.append(get_cell_type(get_cell(row, col)))
 		grid.append(line)
@@ -289,8 +318,25 @@ func _drag_target_cell(from_cell: PlantCell, delta: Vector2) -> PlantCell:
 	return to_cell
 
 
-## 交换两格里的植物；凑不成连线就换回去（原版：会听到一声「不行」的音效）
+## 玩家发起一次交换：先过**玩家操作的统一上报口**
+##
+## ★ 联机时（客户端）这一下只是**请求**：上行给主机，主机在自己那一局跑成了才把
+##   「交换这两格」下发回来，本端这时才真的动（`_on_swap_cell_command`）。
+##   不这么做的话，客户端会在自己那份盘面上独自换一遍 —— 主机那一局毫无变化，
+##   两端的盘面从此各走各的（表现就是「拖了没反应 / 换回去 / 后面全乱」）。
+## 单机（以及主机自己）没人接管 ⇒ 直接本地跑，与原来一模一样。
 func _try_swap(cell_a: PlantCell, cell_b: PlantCell) -> void:
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.SwapCell, [cell_a, cell_b]):
+		return
+	_do_swap(cell_a, cell_b)
+
+
+## 真的换这两格（**执行口**，不再问上报口 —— 它本身就是被下发的事实，再问一次会递归）；
+## 凑不成连线就换回去（原版：会听到一声「不行」的音效）
+func _do_swap(cell_a: PlantCell, cell_b: PlantCell) -> void:
+	## 盘面正在结算 / 换场时这一笔作废：主机与客户端同一套判据，两端才会一起拒绝
+	if not _can_operate():
+		return
 	is_resolving = true
 	_cancel_drag()
 	_swap_plants(cell_a, cell_b)
@@ -299,9 +345,29 @@ func _try_swap(cell_a: PlantCell, cell_b: PlantCell) -> void:
 		_swap_plants(cell_a, cell_b)
 		await _wait(SWAP_WAIT)
 		is_resolving = false
-		Log.debug("僵尸迷阵：交换没有凑成连线，已换回")
 		return
 	await _resolve_board()
+
+
+## 外部（联机主机）下发了「交换这两格」：在本端跑**同一串**
+##
+## ⚠️ 只认棋盘内的两格，且两格都得有植物 —— 越界 / 空的那一笔在主机上本来就跑不动，
+##    这一端同样只是"没发生"，不该留下半截状态。
+func _on_swap_cell_command(row_a: int, col_a: int, row_b: int, col_b: int) -> void:
+	if not is_running:
+		return
+	if not is_board_row_col(row_a, col_a) or not is_board_row_col(row_b, col_b):
+		return
+	var cell_a := get_cell(row_a, col_a)
+	var cell_b := get_cell(row_b, col_b)
+	if get_cell_plant(cell_a) == null or get_cell_plant(cell_b) == null:
+		return
+	_do_swap(cell_a, cell_b)
+
+
+func _exit_tree() -> void:
+	## 换关时本节点会先灭：订阅要撤掉，别把下一局的交换也接过来
+	EventBus.unsubscribe(ConstEventName.MAIN_GAME_SWAP_CELL, _on_swap_cell_command)
 
 
 ## 两株植物互换格子：用搬运 API，植物实例与状态（血量 / 冷却）都跟着走
@@ -356,8 +422,8 @@ func _find_match_groups(grid: Array[Array]) -> Array[Array]:
 	for row in range(grid.size()):
 		var col := 0
 		while col < col_num:
-			var plant_type: CharacterRegistry.PlantType = grid[row][col]
-			if plant_type == CharacterRegistry.PlantType.Null:
+			var plant_type: StringName = grid[row][col]
+			if plant_type == PlantIds.NULL:
 				col += 1
 				continue
 			var end_col := col + 1
@@ -371,8 +437,8 @@ func _find_match_groups(grid: Array[Array]) -> Array[Array]:
 	for col in range(col_num):
 		var row := 0
 		while row < grid.size():
-			var type_v: CharacterRegistry.PlantType = grid[row][col]
-			if type_v == CharacterRegistry.PlantType.Null:
+			var type_v: StringName = grid[row][col]
+			if type_v == PlantIds.NULL:
 				row += 1
 				continue
 			var end_row := row + 1
@@ -399,10 +465,8 @@ func _resolve_board() -> void:
 		var groups := _find_match_groups(_build_type_grid())
 		if groups.is_empty():
 			break
-		var sun_sum := 0
 		var to_remove: Array[Vector2i] = []
 		for group in groups:
-			sun_sum += ConstBeghouled.get_sun_by_chain_len(group.size())
 			for coord in group:
 				if not to_remove.has(coord):
 					to_remove.append(coord)
@@ -412,9 +476,6 @@ func _resolve_board() -> void:
 		for group in groups:
 			_drop_match_sun(group)
 		_refresh_ui()
-		Log.debug("僵尸迷阵：消除 %d 组（阳光 +%d），累计 %d/%d 次配对" % [
-			groups.size(), sun_sum, match_num, ConstBeghouled.TARGET_MATCH_NUM
-		])
 		if match_num >= ConstBeghouled.TARGET_MATCH_NUM:
 			break
 		await _wait(REMOVE_WAIT)
@@ -519,12 +580,12 @@ func _clear_board_only_plants() -> void:
 
 
 ## 挑一个不会与左边两个 / 上方两个凑成连线的种类（保证铺完就没有现成的连线）
-func _pick_type_without_match(row: int, col: int) -> CharacterRegistry.PlantType:
-	var candidates: Array[CharacterRegistry.PlantType] = []
+func _pick_type_without_match(row: int, col: int) -> StringName:
+	var candidates: Array[StringName] = []
 	for plant_type in ConstBeghouled.BASE_PLANT_TYPES:
 		if _is_type_in_pool(plant_type):
 			candidates.append(plant_type)
-	candidates.shuffle()
+	_shuffle_with(candidates)
 	for candidate in candidates:
 		if col >= 2 \
 				and get_cell_type(get_cell(row, col - 1)) == candidate \
@@ -535,20 +596,22 @@ func _pick_type_without_match(row: int, col: int) -> CharacterRegistry.PlantType
 				and get_cell_type(get_cell(row - 2, col)) == candidate:
 			continue
 		return candidate
-	return candidates[0] if not candidates.is_empty() else (ConstBeghouled.BASE_PLANT_TYPES[0] as CharacterRegistry.PlantType)
+	## `StringName(x)` 不是构造函数；`BASE_PLANT_TYPES` 里存的就是 id，直接用
+	return candidates[0] if not candidates.is_empty() else ConstBeghouled.BASE_PLANT_TYPES[0]
 
 
-func _is_type_in_pool(plant_type: CharacterRegistry.PlantType) -> bool:
+func _is_type_in_pool(plant_type: StringName) -> bool:
 	return plant_pool != null and plant_pool.get_item_weight(plant_type) > 0
 
 
-func _random_plant_type() -> CharacterRegistry.PlantType:
+func _random_plant_type() -> StringName:
 	if plant_pool == null:
-		return ConstBeghouled.BASE_PLANT_TYPES[0] as CharacterRegistry.PlantType
-	var picked = plant_pool.get_random_item()
+		return ConstBeghouled.BASE_PLANT_TYPES[0]
+	var picked = plant_pool.get_random_item(false, _board_rng)
 	if picked == null:
-		return ConstBeghouled.BASE_PLANT_TYPES[0] as CharacterRegistry.PlantType
-	return picked as CharacterRegistry.PlantType
+		return ConstBeghouled.BASE_PLANT_TYPES[0]
+	## 抽出来的是 Variant（权重表自己不标类型），交 String 让返回类型转成 id
+	return str(picked)
 
 
 ## 保证棋盘「没有现成的连线 + 至少还有一步可走」：不满足就先提示、再免费把整盘重排一遍
@@ -570,7 +633,6 @@ func _ensure_board_playable() -> void:
 	## 这 4 秒里关卡可能已经结束（失败 / 通关），那时候棋盘不能再动
 	if not is_running or not _is_playable():
 		return
-	Log.debug("僵尸迷阵：盘面没有可以走的步了，自动重置")
 	_shuffle_plants()
 
 
@@ -592,7 +654,7 @@ func _shuffle_plants() -> void:
 	var guard := 0
 	while guard < 40:
 		guard += 1
-		plants.shuffle()
+		_shuffle_with(plants)
 		for plant in plants:
 			var from_cell: PlantCell = plant.plant_cell
 			if from_cell != null:
@@ -614,16 +676,16 @@ func _has_possible_move() -> bool:
 	var neighbor_offsets: Array[Vector2i] = [Vector2i(0, 1), Vector2i(1, 0)]
 	for row in range(board_row_num):
 		for col in range(board_col_num):
-			var plant_type: CharacterRegistry.PlantType = grid[row][col]
-			if plant_type == CharacterRegistry.PlantType.Null:
+			var plant_type: StringName = grid[row][col]
+			if plant_type == PlantIds.NULL:
 				continue
 			for offset in neighbor_offsets:
 				var row2 := row + offset.x
 				var col2 := col + offset.y
 				if row2 >= board_row_num or col2 >= board_col_num:
 					continue
-				var other: CharacterRegistry.PlantType = grid[row2][col2]
-				if other == CharacterRegistry.PlantType.Null or other == plant_type:
+				var other: StringName = grid[row2][col2]
+				if other == PlantIds.NULL or other == plant_type:
 					continue
 				grid[row][col] = other
 				grid[row2][col2] = plant_type
@@ -637,8 +699,8 @@ func _has_possible_move() -> bool:
 
 ## grid 里 (row,col) 这个位置是否处在一条「三个及以上」的连线上
 func _has_match_at(grid: Array[Array], row: int, col: int) -> bool:
-	var plant_type: CharacterRegistry.PlantType = grid[row][col]
-	if plant_type == CharacterRegistry.PlantType.Null:
+	var plant_type: StringName = grid[row][col]
+	if plant_type == PlantIds.NULL:
 		return false
 	var length := 1
 	var c := col - 1
@@ -699,6 +761,10 @@ func _drop_one_sun(cell: PlantCell, sun_value: int) -> void:
 		return
 	if main_game.suns == null:
 		return
+	## 闸门被占住时（联机客户端）这一颗不长：消一次掉哪几颗由**主机**下发，
+	## 本地再长一份就会变成「一次消除两份阳光」（与天降 / 向日葵同一个闸门，见 GlobalUtils）
+	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
+		return
 	var sun: Sun = SceneRegistry.SUN.instantiate()
 	sun.init_sun(sun_value, main_game.suns.to_local(cell.global_position))
 	main_game.suns.add_child(sun)
@@ -746,12 +812,11 @@ func try_buy_upgrade(index: int) -> bool:
 	if not plant_pool.has_item(info["to"]):
 		plant_pool.add_item(info["to"], 1.0)
 	_refresh_ui()
-	Log.debug("僵尸迷阵：已购买升级 %s" % str(info["name"]))
 	return true
 
 
 ## 把场上所有 from 植物换成 to（换的是实例：先移除旧的，等槽位空出来再种新的）
-func _replace_all_plants(from_type: CharacterRegistry.PlantType, to_type: CharacterRegistry.PlantType) -> void:
+func _replace_all_plants(from_type: StringName, to_type: StringName) -> void:
 	var targets: Array[PlantCell] = []
 	for row in range(board_row_num):
 		for col in range(board_col_num):
@@ -785,7 +850,6 @@ func _replace_all_plants(from_type: CharacterRegistry.PlantType, to_type: Charac
 	await _ensure_board_playable()
 	_is_replacing = false
 	_refresh_ui()
-	Log.debug("僵尸迷阵：%d 株植物已换成升级版" % targets.size())
 
 
 ## 手动重置植物（洗牌）
@@ -822,7 +886,7 @@ func try_fill_crater() -> bool:
 #region 弹坑：植物被僵尸啃掉
 
 ## 棋盘上的植物没了：不是本管理器消除的，就当作被僵尸啃掉，原地留一个弹坑
-func _on_plant_free(cell: PlantCell, _plant_type: CharacterRegistry.PlantType) -> void:
+func _on_plant_free(cell: PlantCell, _plant_type: StringName) -> void:
 	if not is_running or _self_removing or _is_replacing:
 		return
 	if not is_board_cell(cell):
@@ -832,7 +896,6 @@ func _on_plant_free(cell: PlantCell, _plant_type: CharacterRegistry.PlantType) -
 	if is_crater(cell):
 		return
 	cell.create_crater_permanent()
-	Log.debug("僵尸迷阵：%s 的植物被啃掉了，留下弹坑" % str(cell.row_col))
 	## 报一次：填坑种子包这时该点亮
 	_refresh_ui()
 #endregion

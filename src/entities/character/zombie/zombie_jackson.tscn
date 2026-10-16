@@ -1101,7 +1101,7 @@ _data = {
 [node name="Zombie009Jackson" instance=ExtResource("1_y18o3")]
 script = ExtResource("2_fumvv")
 num_moon_walk = 2
-zombie_type = 9
+zombie_type = &"jackson"
 sfx_enter_name = &"Dancer"
 metadata/_edit_pinned_properties_ = [&"zombie_type"]
 

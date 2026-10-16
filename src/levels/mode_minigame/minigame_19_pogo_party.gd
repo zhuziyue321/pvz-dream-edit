@@ -33,13 +33,16 @@ func _init() -> void:
 	first_wave_delay = 55.0
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 屋顶要花盆才能种：先给左侧 4 列铺上（与 survival_flag_05_roof 同一套写法）
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版除旗帜波外**全是蹦蹦僵尸**，所以这里只有一种 —— 预览僵尸也是清一色蹦蹦
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z019Pogo,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.POGO,
 	]
 
 	## 展示僵尸

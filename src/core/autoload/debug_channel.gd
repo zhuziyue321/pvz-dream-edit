@@ -84,11 +84,12 @@ func _ready() -> void:
 
 ## 把 autopilot 挂进场景树，由它自己解析 --scenario 决定跑哪个脚本
 func _spawn_autopilot() -> void:
-	var script: GDScript = load("res://test/autopilot.gd")
-	if script == null:
+	## 局部变量不叫 script：本类继承 Node，`script` 是 Object 的属性，同名会触发 SHADOWED_VARIABLE_BASE_CLASS
+	var ap_script: GDScript = load("res://test/autopilot.gd")
+	if ap_script == null:
 		Log.error("[调试通道] 注入失败：autopilot.gd 加载不了")
 		return
-	var ap: Node = script.new()
+	var ap: Node = ap_script.new()
 	ap.name = "InjectedAutopilot"
 	add_child(ap)
 	var why := _cli_scenario()
@@ -243,13 +244,12 @@ func _collect_logger() -> void:
 	if Log == null:
 		_report.line("!! Log 单例不存在")
 		return
-	## 这四行是回归用例：曾经 _write() 里误用 Log.debug() 造成无限递归爆栈。
-	## 只要报告里能看到「日志四级调用: 正常」，就说明没有递归。
-	Log.debug("[调试通道] debug 级自检")
+	## 这三行是回归用例：曾经 _write() 里误用 Log.debug() 造成无限递归爆栈。
+	## 只要报告里能看到「日志三级调用: 正常」，就说明没有递归。
 	Log.info("[调试通道] info 级自检")
 	Log.warn("[调试通道] warn 级自检")
 	Log.error("[调试通道] error 级自检（应出现在 stderr）")
-	_report.line("日志四级调用: 正常（无递归爆栈）")
+	_report.line("日志三级调用: 正常（无递归爆栈）")
 	_report.line("当前日志级别: %d  带级别前缀: %s  带时间戳: %s" % [Log.level, Log.with_level_prefix, Log.with_timestamp])
 
 

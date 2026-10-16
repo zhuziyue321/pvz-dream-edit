@@ -27,7 +27,6 @@ var create_card_gate: Callable = Callable()
 
 ## 管理器初始化调用
 func init_card_slot_seed_rain(game_para:ResourceLevelData):
-	Log.debug("种子雨卡槽初始化随机卡片生成器")
 	card_random_pool.init_card_random_pool(game_para.seed_rain_weights)
 
 	self.seed_rain_order = game_para.seed_rain_order

@@ -47,6 +47,7 @@
 [ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/items/drop_body/zombie_arm1_drop.gd" id="28_yocpx"]
 [ext_resource type="Animation" uid="uid://6mti0jciaeke" path="res://animation/character/zombie/zombie_digger/zombie_digger_up.res" id="43_24p33"]
 [ext_resource type="Texture2D" uid="uid://dhawpqhvsxd83" path="res://assets/image/particles/dirtsmall.png" id="47_e2y74"]
+[ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_o2wdo"]
 script = ExtResource("19_sgrki")
@@ -2096,7 +2097,7 @@ digger_target_pos_x = 60.0
 is_dig = true
 is_norm_end = true
 is_up_end = false
-zombie_type = 18
+zombie_type = &"digger"
 iron_type = 3
 iron_node = NodePath("Body/BodyCorrect/IronNode")
 init_be_attack_status = 16
@@ -2363,12 +2364,15 @@ scale = Vector2(0.799, 0.799)
 texture = ExtResource("23_mjmg8")
 centered = false
 
+[node name="ArmorComponent" type="Node2D" parent="."]
+script = ExtResource("9_armor")
+armor_type = 8
+armor_class = 1
+max_hp = 100
+body_change = Array[ExtResource("19_sgrki")]([SubResource("Resource_oy7xl"), SubResource("Resource_l8fa3"), SubResource("Resource_g4wth")])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("19_sgrki")]([SubResource("Resource_o2wdo"), SubResource("Resource_v8xbl")])
-body_change_armor1 = Array[ExtResource("19_sgrki")]([SubResource("Resource_oy7xl"), SubResource("Resource_l8fa3"), SubResource("Resource_g4wth")])
-
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor1 = 100
 
 [node name="CharredCorrect" parent="CharredComponent/ZombieCharred" index="0"]
 position = Vector2(-54, -124)

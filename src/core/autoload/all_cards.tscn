@@ -901,324 +901,324 @@ anim_offset_max = 1.0
 [sub_resource type="Resource" id="CardRef_1"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 999
+content_id = &"imitater"
 [sub_resource type="Resource" id="CardRef_2"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 1
+content_id = &"pea_shooter_single"
 [sub_resource type="Resource" id="CardRef_3"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 2
+content_id = &"sun_flower"
 [sub_resource type="Resource" id="CardRef_4"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 3
+content_id = &"cherry_bomb"
 [sub_resource type="Resource" id="CardRef_5"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 4
+content_id = &"wall_nut"
 [sub_resource type="Resource" id="CardRef_6"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 5
+content_id = &"potato_mine"
 [sub_resource type="Resource" id="CardRef_7"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 6
+content_id = &"snow_pea"
 [sub_resource type="Resource" id="CardRef_8"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 7
+content_id = &"chomper"
 [sub_resource type="Resource" id="CardRef_9"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 8
+content_id = &"pea_shooter_double"
 [sub_resource type="Resource" id="CardRef_10"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 9
+content_id = &"puff_shroom"
 [sub_resource type="Resource" id="CardRef_11"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 10
+content_id = &"sun_shroom"
 [sub_resource type="Resource" id="CardRef_12"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 11
+content_id = &"fume_shroom"
 [sub_resource type="Resource" id="CardRef_13"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 12
+content_id = &"grave_buster"
 [sub_resource type="Resource" id="CardRef_14"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 13
+content_id = &"hypno_shroom"
 [sub_resource type="Resource" id="CardRef_15"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 14
+content_id = &"scaredy_shroom"
 [sub_resource type="Resource" id="CardRef_16"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 15
+content_id = &"ice_shroom"
 [sub_resource type="Resource" id="CardRef_17"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 16
+content_id = &"doom_shroom"
 [sub_resource type="Resource" id="CardRef_18"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 17
+content_id = &"lily_pad"
 [sub_resource type="Resource" id="CardRef_19"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 18
+content_id = &"squash"
 [sub_resource type="Resource" id="CardRef_20"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 19
+content_id = &"three_peater"
 [sub_resource type="Resource" id="CardRef_21"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 20
+content_id = &"tangle_kelp"
 [sub_resource type="Resource" id="CardRef_22"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 21
+content_id = &"jalapeno"
 [sub_resource type="Resource" id="CardRef_23"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 22
+content_id = &"caltrop"
 [sub_resource type="Resource" id="CardRef_24"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 23
+content_id = &"torch_wood"
 [sub_resource type="Resource" id="CardRef_25"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 24
+content_id = &"tall_nut"
 [sub_resource type="Resource" id="CardRef_26"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 25
+content_id = &"sea_shroom"
 [sub_resource type="Resource" id="CardRef_27"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 26
+content_id = &"plantern"
 [sub_resource type="Resource" id="CardRef_28"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 27
+content_id = &"cactus"
 [sub_resource type="Resource" id="CardRef_29"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 28
+content_id = &"blover"
 [sub_resource type="Resource" id="CardRef_30"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 29
+content_id = &"split_pea"
 [sub_resource type="Resource" id="CardRef_31"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 30
+content_id = &"star_fruit"
 [sub_resource type="Resource" id="CardRef_32"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 31
+content_id = &"pumpkin"
 [sub_resource type="Resource" id="CardRef_33"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 32
+content_id = &"magnet_shroom"
 [sub_resource type="Resource" id="CardRef_34"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 33
+content_id = &"cabbage_pult"
 [sub_resource type="Resource" id="CardRef_35"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 34
+content_id = &"flower_pot"
 [sub_resource type="Resource" id="CardRef_36"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 35
+content_id = &"corn_pult"
 [sub_resource type="Resource" id="CardRef_37"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 36
+content_id = &"coffee_bean"
 [sub_resource type="Resource" id="CardRef_38"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 37
+content_id = &"garlic"
 [sub_resource type="Resource" id="CardRef_39"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 38
+content_id = &"umbrella_leaf"
 [sub_resource type="Resource" id="CardRef_40"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 39
+content_id = &"mari_gold"
 [sub_resource type="Resource" id="CardRef_41"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 40
+content_id = &"melon_pult"
 [sub_resource type="Resource" id="CardRef_42"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 41
+content_id = &"gatling_pea"
 [sub_resource type="Resource" id="CardRef_43"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 42
+content_id = &"twin_sun_flower"
 [sub_resource type="Resource" id="CardRef_44"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 43
+content_id = &"gloom_shroom"
 [sub_resource type="Resource" id="CardRef_45"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 44
+content_id = &"cattail"
 [sub_resource type="Resource" id="CardRef_46"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 45
+content_id = &"winter_melon"
 [sub_resource type="Resource" id="CardRef_47"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 46
+content_id = &"gold_magnet"
 [sub_resource type="Resource" id="CardRef_48"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 47
+content_id = &"spike_rock"
 [sub_resource type="Resource" id="CardRef_49"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 48
+content_id = &"cob_cannon"
 [sub_resource type="Resource" id="CardRef_50"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 1001
+content_id = &"wall_nut_bowling"
 [sub_resource type="Resource" id="CardRef_51"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 1002
+content_id = &"wall_nut_bowling_bomb"
 [sub_resource type="Resource" id="CardRef_52"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 1003
+content_id = &"wall_nut_bowling_big"
 [sub_resource type="Resource" id="CardRef_53"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 49
+content_id = &"pea_shooter_double_reverse"
 [sub_resource type="Resource" id="CardRef_54"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 1
+content_id = &"norm"
 [sub_resource type="Resource" id="CardRef_55"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 2
+content_id = &"flag"
 [sub_resource type="Resource" id="CardRef_56"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 3
+content_id = &"cone"
 [sub_resource type="Resource" id="CardRef_57"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 4
+content_id = &"pole_vaulter"
 [sub_resource type="Resource" id="CardRef_58"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 5
+content_id = &"bucket"
 [sub_resource type="Resource" id="CardRef_59"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 6
+content_id = &"paper"
 [sub_resource type="Resource" id="CardRef_60"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 7
+content_id = &"screen_door"
 [sub_resource type="Resource" id="CardRef_61"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 8
+content_id = &"football"
 [sub_resource type="Resource" id="CardRef_62"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 9
+content_id = &"jackson"
 [sub_resource type="Resource" id="CardRef_63"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 10
+content_id = &"dancer"
 [sub_resource type="Resource" id="CardRef_64"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 11
+content_id = &"duckytube"
 [sub_resource type="Resource" id="CardRef_65"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 12
+content_id = &"snorkle"
 [sub_resource type="Resource" id="CardRef_66"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 13
+content_id = &"zamboni"
 [sub_resource type="Resource" id="CardRef_67"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 14
+content_id = &"bobsled"
 [sub_resource type="Resource" id="CardRef_68"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 15
+content_id = &"dolphinrider"
 [sub_resource type="Resource" id="CardRef_69"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 16
+content_id = &"jackbox"
 [sub_resource type="Resource" id="CardRef_70"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 17
+content_id = &"balloon"
 [sub_resource type="Resource" id="CardRef_71"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 18
+content_id = &"digger"
 [sub_resource type="Resource" id="CardRef_72"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 19
+content_id = &"pogo"
 [sub_resource type="Resource" id="CardRef_73"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 20
+content_id = &"yeti"
 [sub_resource type="Resource" id="CardRef_74"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 21
+content_id = &"bungi"
 [sub_resource type="Resource" id="CardRef_75"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 22
+content_id = &"ladder"
 [sub_resource type="Resource" id="CardRef_76"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 23
+content_id = &"catapult"
 [sub_resource type="Resource" id="CardRef_77"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 24
+content_id = &"gargantuar"
 [sub_resource type="Resource" id="CardRef_78"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 25
+content_id = &"imp"
 [sub_resource type="Resource" id="CardRef_79"]
 script = ExtResource("99_cardref")
 card_type = 2
-content_id = 1001
+content_id = &"bobsled_single"
 
 [sub_resource type="Resource" id="CardRef_Boss1"]
 script = ExtResource("99_cardref")
 card_type = 3
-content_id = 1
+content_id = &"doctor"
 
 [node name="AllCards" type="Control" node_paths=PackedStringArray("all_plant_card_prefabs", "all_zombie_card_prefabs", "all_boss_card_prefabs")]
 layout_mode = 3
@@ -1229,168 +1229,168 @@ offset_right = -883.0
 offset_bottom = 6.0
 script = ExtResource("1_qtbte")
 all_plant_card_prefabs = {
-1: NodePath("PlantCards/Card1"),
-2: NodePath("PlantCards/Card2"),
-3: NodePath("PlantCards/Card3"),
-4: NodePath("PlantCards/Card4"),
-5: NodePath("PlantCards/Card5"),
-6: NodePath("PlantCards/Card6"),
-7: NodePath("PlantCards/Card7"),
-8: NodePath("PlantCards/Card8"),
-9: NodePath("PlantCards/Card9"),
-10: NodePath("PlantCards/Card10"),
-11: NodePath("PlantCards/Card11"),
-12: NodePath("PlantCards/Card12"),
-13: NodePath("PlantCards/Card13"),
-14: NodePath("PlantCards/Card14"),
-15: NodePath("PlantCards/Card15"),
-16: NodePath("PlantCards/Card16"),
-17: NodePath("PlantCards/Card17"),
-18: NodePath("PlantCards/Card18"),
-19: NodePath("PlantCards/Card19"),
-20: NodePath("PlantCards/Card20"),
-21: NodePath("PlantCards/Card21"),
-22: NodePath("PlantCards/Card22"),
-23: NodePath("PlantCards/Card23"),
-24: NodePath("PlantCards/Card24"),
-25: NodePath("PlantCards/Card25"),
-26: NodePath("PlantCards/Card26"),
-27: NodePath("PlantCards/Card27"),
-28: NodePath("PlantCards/Card28"),
-29: NodePath("PlantCards/Card29"),
-30: NodePath("PlantCards/Card30"),
-31: NodePath("PlantCards/Card31"),
-32: NodePath("PlantCards/Card32"),
-33: NodePath("PlantCards/Card33"),
-34: NodePath("PlantCards/Card34"),
-35: NodePath("PlantCards/Card35"),
-36: NodePath("PlantCards/Card36"),
-37: NodePath("PlantCards/Card37"),
-38: NodePath("PlantCards/Card38"),
-39: NodePath("PlantCards/Card39"),
-40: NodePath("PlantCards/Card40"),
-41: NodePath("PlantCards/Card41"),
-42: NodePath("PlantCards/Card42"),
-43: NodePath("PlantCards/Card43"),
-44: NodePath("PlantCards/Card44"),
-45: NodePath("PlantCards/Card45"),
-46: NodePath("PlantCards/Card46"),
-47: NodePath("PlantCards/Card47"),
-48: NodePath("PlantCards/Card48"),
-49: NodePath("PlantCards2/Card4"),
-1001: NodePath("PlantCards2/Card"),
-1002: NodePath("PlantCards2/Card2"),
-1003: NodePath("PlantCards2/Card3")
+&"pea_shooter_single": NodePath("PlantCards/Card1"),
+&"sun_flower": NodePath("PlantCards/Card2"),
+&"cherry_bomb": NodePath("PlantCards/Card3"),
+&"wall_nut": NodePath("PlantCards/Card4"),
+&"potato_mine": NodePath("PlantCards/Card5"),
+&"snow_pea": NodePath("PlantCards/Card6"),
+&"chomper": NodePath("PlantCards/Card7"),
+&"pea_shooter_double": NodePath("PlantCards/Card8"),
+&"puff_shroom": NodePath("PlantCards/Card9"),
+&"sun_shroom": NodePath("PlantCards/Card10"),
+&"fume_shroom": NodePath("PlantCards/Card11"),
+&"grave_buster": NodePath("PlantCards/Card12"),
+&"hypno_shroom": NodePath("PlantCards/Card13"),
+&"scaredy_shroom": NodePath("PlantCards/Card14"),
+&"ice_shroom": NodePath("PlantCards/Card15"),
+&"doom_shroom": NodePath("PlantCards/Card16"),
+&"lily_pad": NodePath("PlantCards/Card17"),
+&"squash": NodePath("PlantCards/Card18"),
+&"three_peater": NodePath("PlantCards/Card19"),
+&"tangle_kelp": NodePath("PlantCards/Card20"),
+&"jalapeno": NodePath("PlantCards/Card21"),
+&"caltrop": NodePath("PlantCards/Card22"),
+&"torch_wood": NodePath("PlantCards/Card23"),
+&"tall_nut": NodePath("PlantCards/Card24"),
+&"sea_shroom": NodePath("PlantCards/Card25"),
+&"plantern": NodePath("PlantCards/Card26"),
+&"cactus": NodePath("PlantCards/Card27"),
+&"blover": NodePath("PlantCards/Card28"),
+&"split_pea": NodePath("PlantCards/Card29"),
+&"star_fruit": NodePath("PlantCards/Card30"),
+&"pumpkin": NodePath("PlantCards/Card31"),
+&"magnet_shroom": NodePath("PlantCards/Card32"),
+&"cabbage_pult": NodePath("PlantCards/Card33"),
+&"flower_pot": NodePath("PlantCards/Card34"),
+&"corn_pult": NodePath("PlantCards/Card35"),
+&"coffee_bean": NodePath("PlantCards/Card36"),
+&"garlic": NodePath("PlantCards/Card37"),
+&"umbrella_leaf": NodePath("PlantCards/Card38"),
+&"mari_gold": NodePath("PlantCards/Card39"),
+&"melon_pult": NodePath("PlantCards/Card40"),
+&"gatling_pea": NodePath("PlantCards/Card41"),
+&"twin_sun_flower": NodePath("PlantCards/Card42"),
+&"gloom_shroom": NodePath("PlantCards/Card43"),
+&"cattail": NodePath("PlantCards/Card44"),
+&"winter_melon": NodePath("PlantCards/Card45"),
+&"gold_magnet": NodePath("PlantCards/Card46"),
+&"spike_rock": NodePath("PlantCards/Card47"),
+&"cob_cannon": NodePath("PlantCards/Card48"),
+&"pea_shooter_double_reverse": NodePath("PlantCards2/Card4"),
+&"wall_nut_bowling": NodePath("PlantCards2/Card"),
+&"wall_nut_bowling_bomb": NodePath("PlantCards2/Card2"),
+&"wall_nut_bowling_big": NodePath("PlantCards2/Card3")
 }
 all_zombie_card_prefabs = {
-1: NodePath("ZombieCards/Card1"),
-2: NodePath("ZombieCards/Card2"),
-3: NodePath("ZombieCards/Card3"),
-4: NodePath("ZombieCards/Card4"),
-5: NodePath("ZombieCards/Card5"),
-6: NodePath("ZombieCards/Card6"),
-7: NodePath("ZombieCards/Card7"),
-8: NodePath("ZombieCards/Card8"),
-9: NodePath("ZombieCards/Card9"),
-10: NodePath("ZombieCards/Card10"),
-11: NodePath("ZombieCards/Card11"),
-12: NodePath("ZombieCards/Card12"),
-13: NodePath("ZombieCards/Card13"),
-14: NodePath("ZombieCards/Card14"),
-15: NodePath("ZombieCards/Card15"),
-16: NodePath("ZombieCards/Card16"),
-17: NodePath("ZombieCards/Card17"),
-18: NodePath("ZombieCards/Card18"),
-19: NodePath("ZombieCards/Card19"),
-20: NodePath("ZombieCards/Card20"),
-21: NodePath("ZombieCards/Card21"),
-22: NodePath("ZombieCards/Card22"),
-23: NodePath("ZombieCards/Card23"),
-24: NodePath("ZombieCards/Card24"),
-25: NodePath("ZombieCards/Card25"),
-1001: NodePath("ZombieCards2/Card1")
+&"norm": NodePath("ZombieCards/Card1"),
+&"flag": NodePath("ZombieCards/Card2"),
+&"cone": NodePath("ZombieCards/Card3"),
+&"pole_vaulter": NodePath("ZombieCards/Card4"),
+&"bucket": NodePath("ZombieCards/Card5"),
+&"paper": NodePath("ZombieCards/Card6"),
+&"screen_door": NodePath("ZombieCards/Card7"),
+&"football": NodePath("ZombieCards/Card8"),
+&"jackson": NodePath("ZombieCards/Card9"),
+&"dancer": NodePath("ZombieCards/Card10"),
+&"duckytube": NodePath("ZombieCards/Card11"),
+&"snorkle": NodePath("ZombieCards/Card12"),
+&"zamboni": NodePath("ZombieCards/Card13"),
+&"bobsled": NodePath("ZombieCards/Card14"),
+&"dolphinrider": NodePath("ZombieCards/Card15"),
+&"jackbox": NodePath("ZombieCards/Card16"),
+&"balloon": NodePath("ZombieCards/Card17"),
+&"digger": NodePath("ZombieCards/Card18"),
+&"pogo": NodePath("ZombieCards/Card19"),
+&"yeti": NodePath("ZombieCards/Card20"),
+&"bungi": NodePath("ZombieCards/Card21"),
+&"ladder": NodePath("ZombieCards/Card22"),
+&"catapult": NodePath("ZombieCards/Card23"),
+&"gargantuar": NodePath("ZombieCards/Card24"),
+&"imp": NodePath("ZombieCards/Card25"),
+&"bobsled_single": NodePath("ZombieCards2/Card1")
 }
-plant_card_ids = Dictionary[int, int]({
-1: 0,
-2: 1,
-3: 2,
-4: 3,
-5: 4,
-6: 5,
-7: 6,
-8: 7,
-9: 8,
-10: 9,
-11: 10,
-12: 11,
-13: 12,
-14: 13,
-15: 14,
-16: 15,
-17: 16,
-18: 17,
-19: 18,
-20: 19,
-21: 20,
-22: 21,
-23: 22,
-24: 23,
-25: 24,
-26: 25,
-27: 26,
-28: 27,
-29: 28,
-30: 29,
-31: 30,
-32: 31,
-33: 32,
-34: 33,
-35: 34,
-36: 35,
-37: 36,
-38: 37,
-39: 38,
-40: 39,
-41: 40,
-42: 41,
-43: 42,
-44: 43,
-45: 44,
-46: 45,
-47: 46,
-48: 47,
-49: 51,
-1001: 48,
-1002: 49,
-1003: 50
+plant_card_ids = Dictionary[StringName, int]({
+&"pea_shooter_single": 0,
+&"sun_flower": 1,
+&"cherry_bomb": 2,
+&"wall_nut": 3,
+&"potato_mine": 4,
+&"snow_pea": 5,
+&"chomper": 6,
+&"pea_shooter_double": 7,
+&"puff_shroom": 8,
+&"sun_shroom": 9,
+&"fume_shroom": 10,
+&"grave_buster": 11,
+&"hypno_shroom": 12,
+&"scaredy_shroom": 13,
+&"ice_shroom": 14,
+&"doom_shroom": 15,
+&"lily_pad": 16,
+&"squash": 17,
+&"three_peater": 18,
+&"tangle_kelp": 19,
+&"jalapeno": 20,
+&"caltrop": 21,
+&"torch_wood": 22,
+&"tall_nut": 23,
+&"sea_shroom": 24,
+&"plantern": 25,
+&"cactus": 26,
+&"blover": 27,
+&"split_pea": 28,
+&"star_fruit": 29,
+&"pumpkin": 30,
+&"magnet_shroom": 31,
+&"cabbage_pult": 32,
+&"flower_pot": 33,
+&"corn_pult": 34,
+&"coffee_bean": 35,
+&"garlic": 36,
+&"umbrella_leaf": 37,
+&"mari_gold": 38,
+&"melon_pult": 39,
+&"gatling_pea": 40,
+&"twin_sun_flower": 41,
+&"gloom_shroom": 42,
+&"cattail": 43,
+&"winter_melon": 44,
+&"gold_magnet": 45,
+&"spike_rock": 46,
+&"cob_cannon": 47,
+&"pea_shooter_double_reverse": 51,
+&"wall_nut_bowling": 48,
+&"wall_nut_bowling_bomb": 49,
+&"wall_nut_bowling_big": 50
 })
-zombie_card_ids = Dictionary[int, int]({
-1: 0,
-2: 1,
-3: 2,
-4: 3,
-5: 4,
-6: 5,
-7: 6,
-8: 7,
-9: 8,
-10: 9,
-11: 10,
-12: 11,
-13: 12,
-14: 13,
-15: 14,
-16: 15,
-17: 16,
-18: 17,
-19: 18,
-20: 19,
-21: 20,
-22: 21,
-23: 22,
-24: 23,
-25: 24,
-1001: 25
+zombie_card_ids = Dictionary[StringName, int]({
+&"norm": 0,
+&"flag": 1,
+&"cone": 2,
+&"pole_vaulter": 3,
+&"bucket": 4,
+&"paper": 5,
+&"screen_door": 6,
+&"football": 7,
+&"jackson": 8,
+&"dancer": 9,
+&"duckytube": 10,
+&"snorkle": 11,
+&"zamboni": 12,
+&"bobsled": 13,
+&"dolphinrider": 14,
+&"jackbox": 15,
+&"balloon": 16,
+&"digger": 17,
+&"pogo": 18,
+&"yeti": 19,
+&"bungi": 20,
+&"ladder": 21,
+&"catapult": 22,
+&"gargantuar": 23,
+&"imp": 24,
+&"bobsled_single": 25
 })
 
 [node name="CardImitater" parent="." instance=ExtResource("2_5pqky")]

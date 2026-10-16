@@ -99,7 +99,7 @@ height = 495.001
 [node name="Plant032MagnetShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_la5fr")]
 script = ExtResource("2_fmi46")
 is_attack = false
-plant_type = 32
+plant_type = &"magnet_shroom"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("MagnetComponent/Area2D")]
 
 [node name="BodyCorrect" parent="Body" index="0"]

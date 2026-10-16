@@ -5,11 +5,12 @@ extends LevelScriptBase
 ## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
-## 本关开场戴夫对话（戴夫送手套）：台词与手持物在数据层，
-## 见 res://data/dave/dialog/adventure_04_06_glove.tres
-## ★ 手套本身是**模组**（src/mods/glove/），所以这段赠礼演出只在手套模组启用时才播：
-## 对话内容属于本关的演出资源，播不播由模组开关决定（本体不 import 模组里的任何类）
-const DAVE_GLOVE := preload("res://data/dave/dialog/adventure_04_06_glove.tres")
+## 注：本关开场原本有一段「戴夫送手套」的赠礼对话（台词在
+## res://data/dave/dialog/adventure_04_06_glove.tres，手上举的手套是
+## res://src/dave/hand_item/hand_glove.tscn）。
+## 手套的获取已改为**与商店里的园艺手套同时获取**（买下商店的园艺手套才有，
+## 见 mods_builtin/glove/glove_settings.gd），4-6 不再送手套，这段演出因此不再播 ——
+## 资源文件留在 data/ 下没有删，要挂回来把它接在 run_flow() 开头即可。
 
 
 func _init() -> void:
@@ -22,17 +23,17 @@ func _init() -> void:
 	level_complete_loot = "star_fruit_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z018Digger,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.DIGGER,
 	]
 
-	## 关卡戴夫对话：整段是「戴夫送手套」的赠礼演出，手套模组没启用时不播
-	if ModManager.is_mod_enabled(ModIds.GLOVE):
-		await dave_dialog(DAVE_GLOVE)
 	## 展示僵尸
 	await show_zombie(zombie_list)
 	## 选卡

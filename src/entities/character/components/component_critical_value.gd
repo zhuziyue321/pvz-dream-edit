@@ -5,7 +5,8 @@ class_name CriticalValueComponent
 ## 角色本体血量到达临界值时触发事件，并按配置自动掉血（残血流失）。
 ## - 状态（是否已进入临界值、掉血计时、"只掉一次"标记）全部由本组件自己维护，宿主不得复制一份（《项目规范.md》K-01）
 ## - 对外提供 is_below_critical() / is_hp_below_critical() / get_critical_value() 查询接口
-## - 掉血一律走血量组件的公开接口 Hp_loss()，不绕过血量组件直接删角色（docs/参考存档/创建新角色.md（角色一节））
+## - 掉血一律走伤害管线 `DamageSystem.apply()`（结算仍在血量组件里），不绕过血量组件直接删角色
+##   （docs/参考存档/创建新角色.md（角色一节）、docs/参考存档/伤害系统.md）
 ## - 启停复用 ComponentNormBase 的多因子机制（K-08），宿主用 E_IsEnableFactor.Death 在死亡时禁用
 ##
 ## 临界值默认取 DeathBoundary —— 跟随角色自身的死亡临界值（hp_component.death_hp）：
@@ -173,12 +174,16 @@ func update_critical_value_state() -> void:
 		signal_leave_critical.emit(hp_component.curr_hp)
 
 
-## 自动掉血：走血量组件公开接口，死亡仍由血量组件处理（signal_hp_component_death）
+## 自动掉血：走伤害管线，死亡仍由血量组件处理（signal_hp_component_death）
 ## 伤害类型用 Real：无视二类防具，与项目其他非子弹伤害（雪橇僵尸、冰道）一致；
 ## 不播放受击音效（残血流失不是受击），掉手 / 掉头仍按正常流程走
 func drain_hp() -> void:
 	var hp_before := hp_component.curr_hp
-	hp_component.Hp_loss(drain_hp_value, BulletRegistry.AttackMode.Real, true, false)
+	## 残血流失是"一次伤害"（只是来源是流失而不是挨打），走管线保证修饰器与统计一致
+	var info := DamageInfo.create(owner_character, drain_hp_value,
+		ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Drain)
+	info.trigger_sfx = false
+	DamageSystem.apply(info)
 	is_drained_once = true
 	signal_drain_hp.emit(hp_component.curr_hp, hp_before - hp_component.curr_hp)
 #endregion

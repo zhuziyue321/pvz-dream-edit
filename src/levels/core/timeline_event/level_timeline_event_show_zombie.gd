@@ -7,7 +7,7 @@ class_name LevelTimelineEventShowZombie
 ##              空 = 沿用关卡数据。**预览僵尸跑在开战之前**，本关出怪表要跟着一起给，
 ##              否则预览里出现的会是关卡数据上那份默认出怪表（见 MainGameManager.apply_level_zombie_refresh_types）
 
-@export var zombie_refresh_types: Array[CharacterRegistry.ZombieType] = []
+@export var zombie_refresh_types: Array[StringName] = []
 
 
 func run(main_game: MainGameManager) -> void:

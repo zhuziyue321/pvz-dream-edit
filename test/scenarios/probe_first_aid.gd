@@ -11,11 +11,11 @@ extends RefCounted
 const ADV := MainSceneRegistry.MainScenes.ChooseLevelAdventure
 const LEVEL_01_01 := "res://src/levels/mode_adventure/adventure_01_01.gd"
 const STORE_SCENE := "res://src/store/store.tscn"
-const P004 := CharacterRegistry.PlantType.P004WallNut
-const P024 := CharacterRegistry.PlantType.P024TallNut
-const P031 := CharacterRegistry.PlantType.P031Pumpkin
-const P047 := CharacterRegistry.PlantType.P047SpikeRock
-const P999 := CharacterRegistry.PlantType.P999Imitater
+const P004 := PlantIds.WALL_NUT
+const P024 := PlantIds.TALL_NUT
+const P031 := PlantIds.PUMPKIN
+const P047 := PlantIds.SPIKE_ROCK
+const P999 := PlantIds.IMITATER
 
 var _failed := 0
 

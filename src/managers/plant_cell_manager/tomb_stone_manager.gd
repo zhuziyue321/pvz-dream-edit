@@ -72,7 +72,6 @@ func _reandom_tombstone_pos(new_num:int) ->  Array[Vector2i]:
 
 	# 构建可选位置列表
 	var candidates = _candidates_position(rows, usable_cols)
-	Log.debug(str("待选位置") + str(candidates))
 	# 取前n个作为随机选择位置
 	var selected_positions = candidates.slice(0, min(new_num, candidates.size()))
 
@@ -83,7 +82,6 @@ func _reandom_tombstone_pos(new_num:int) ->  Array[Vector2i]:
 
 		selected_positions.append_array(add_pos)
 
-	Log.debug(str("墓碑生成位置：") + str(selected_positions))
 
 	return selected_positions
 
@@ -116,10 +114,8 @@ func create_tombstone(new_num:int):
 	await get_tree().process_frame
 	## 最大数量： 最大可生成列数 * 行数
 	## 生成随机位置
-	Log.debug(str("墓碑生成数量") + str(new_num))
 	var selected_positions :Array[Vector2i]= _reandom_tombstone_pos(new_num)
 
-	Log.debug(str("墓碑生成位置") + str(selected_positions))
 	for pos in selected_positions:
 		var plant_cell:PlantCell = plant_cell_manager.all_plant_cells[pos.x][pos.y]
 

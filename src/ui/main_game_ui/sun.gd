@@ -78,7 +78,6 @@ func collect() -> void:
 		if is_instance_valid(GameContext.curr_main_game.marker_2d_sun_target):
 			## 出战卡槽在canvaslayer中，位置和摄像头位置有偏移
 			target_position = GameContext.curr_main_game.marker_2d_sun_target.global_position + GameContext.curr_main_game.camera_2d.global_position
-			#Log.debug(GameContext.curr_main_game.marker_2d_sun_target.get_canvas_layer_node().get_final_transform())
 		else:
 			target_position = GameContext.curr_main_game.marker_2d_sun_target_default.global_position
 

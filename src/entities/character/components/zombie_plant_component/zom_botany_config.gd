@@ -32,9 +32,9 @@ class PlantSprite:
 ## 一种植物僵尸的全部数据
 class ZomBotanyInfo:
 	## 僵尸类型
-	var zombie_type: CharacterRegistry.ZombieType
+	var zombie_type: StringName
 	## 头顶的植物类型（原版对应关系，图鉴 / 提示文本用）
-	var plant_type: CharacterRegistry.PlantType
+	var plant_type: StringName
 	## 头顶植物的耐久（映射成僵尸的一类防具血量；打掉后僵尸变回普通僵尸）
 	var plant_hp: int
 	## 头顶植物挂点的位置（相对 Body/BodyCorrect，僵尸头部上方）
@@ -50,8 +50,8 @@ class ZomBotanyInfo:
 	var weight: int
 
 	func _init(
-		p_zombie_type: CharacterRegistry.ZombieType,
-		p_plant_type: CharacterRegistry.PlantType,
+		p_zombie_type: StringName,
+		p_plant_type: StringName,
 		p_plant_hp: int,
 		p_sprites: Array[PlantSprite],
 		p_power: int,
@@ -80,13 +80,13 @@ const C_PLANT_HP_TALL_NUT := 2200
 
 ## 全部植物僵尸的数据，键是僵尸类型
 ## 用 static var 而不是 const：GDScript 的 const 初始值里不允许 new 内部类实例
-static var C_ZOM_BOTANY_INFO: Dictionary[CharacterRegistry.ZombieType, ZomBotanyInfo] = {}
+static var C_ZOM_BOTANY_INFO: Dictionary[StringName, ZomBotanyInfo] = {}
 
 static func _static_init() -> void:
 	C_ZOM_BOTANY_INFO = {
-	CharacterRegistry.ZombieType.Z031PeaShooterZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z031PeaShooterZombie,
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
+	ZombieIds.PEA_SHOOTER_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.PEA_SHOOTER_ZOMBIE,
+		PlantIds.PEA_SHOOTER_SINGLE,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
@@ -95,9 +95,9 @@ static func _static_init() -> void:
 		],
 		2, 2000
 	),
-	CharacterRegistry.ZombieType.Z032WallNutZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z032WallNutZombie,
-		CharacterRegistry.PlantType.P004WallNut,
+	ZombieIds.WALL_NUT_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.WALL_NUT_ZOMBIE,
+		PlantIds.WALL_NUT,
 		C_PLANT_HP_SHELL,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Wallnut_body.png")),
@@ -105,9 +105,9 @@ static func _static_init() -> void:
 		3, 1500,
 		Vector2(24, -30), 0.6
 	),
-	CharacterRegistry.ZombieType.Z033SquashZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z033SquashZombie,
-		CharacterRegistry.PlantType.P018Squash,
+	ZombieIds.SQUASH_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.SQUASH_ZOMBIE,
+		PlantIds.SQUASH,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Squash_body.png"), Vector2(0, 6)),
@@ -116,9 +116,9 @@ static func _static_init() -> void:
 		],
 		3, 800
 	),
-	CharacterRegistry.ZombieType.Z034JalapenoZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z034JalapenoZombie,
-		CharacterRegistry.PlantType.P021Jalapeno,
+	ZombieIds.JALAPENO_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.JALAPENO_ZOMBIE,
+		PlantIds.JALAPENO,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Jalapeno_body.png")),
@@ -127,9 +127,9 @@ static func _static_init() -> void:
 		],
 		3, 600
 	),
-	CharacterRegistry.ZombieType.Z035GatlingZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z035GatlingZombie,
-		CharacterRegistry.PlantType.P041GatlingPea,
+	ZombieIds.GATLING_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.GATLING_ZOMBIE,
+		PlantIds.GATLING_PEA,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
@@ -138,9 +138,9 @@ static func _static_init() -> void:
 		],
 		4, 500
 	),
-	CharacterRegistry.ZombieType.Z036SnowPeaZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z036SnowPeaZombie,
-		CharacterRegistry.PlantType.P006SnowPea,
+	ZombieIds.SNOW_PEA_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.SNOW_PEA_ZOMBIE,
+		PlantIds.SNOW_PEA,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
@@ -149,9 +149,9 @@ static func _static_init() -> void:
 		],
 		3, 1200
 	),
-	CharacterRegistry.ZombieType.Z037TorchwoodZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z037TorchwoodZombie,
-		CharacterRegistry.PlantType.P023TorchWood,
+	ZombieIds.TORCHWOOD_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.TORCHWOOD_ZOMBIE,
+		PlantIds.TORCH_WOOD,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Torchwood_body.png"), Vector2(0, 4), 0.9),
@@ -159,9 +159,9 @@ static func _static_init() -> void:
 		],
 		3, 800
 	),
-	CharacterRegistry.ZombieType.Z038MagnetShroomZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z038MagnetShroomZombie,
-		CharacterRegistry.PlantType.P032MagnetShroom,
+	ZombieIds.MAGNET_SHROOM_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.MAGNET_SHROOM_ZOMBIE,
+		PlantIds.MAGNET_SHROOM,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Magnetshroom_stem.png"), Vector2(0, 24), 0.9),
@@ -169,9 +169,9 @@ static func _static_init() -> void:
 		],
 		3, 600
 	),
-	CharacterRegistry.ZombieType.Z039PumpkinZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z039PumpkinZombie,
-		CharacterRegistry.PlantType.P031Pumpkin,
+	ZombieIds.PUMPKIN_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.PUMPKIN_ZOMBIE,
+		PlantIds.PUMPKIN,
 		C_PLANT_HP_SHELL,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Pumpkin_front.png")),
@@ -179,9 +179,9 @@ static func _static_init() -> void:
 		3, 1000,
 		Vector2(24, -28), 0.6
 	),
-	CharacterRegistry.ZombieType.Z040CabbagePultZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z040CabbagePultZombie,
-		CharacterRegistry.PlantType.P033CabbagePult,
+	ZombieIds.CABBAGE_PULT_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.CABBAGE_PULT_ZOMBIE,
+		PlantIds.CABBAGE_PULT,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Cabbagepult_stalk1.png"), Vector2(0, 26), 0.9),
@@ -189,9 +189,9 @@ static func _static_init() -> void:
 		],
 		3, 1200
 	),
-	CharacterRegistry.ZombieType.Z041CobCannonZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z041CobCannonZombie,
-		CharacterRegistry.PlantType.P048CobCannon,
+	ZombieIds.COB_CANNON_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.COB_CANNON_ZOMBIE,
+		PlantIds.COB_CANNON,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/CobCannon_husk1.png"), Vector2(0, 12), 0.8),
@@ -199,9 +199,9 @@ static func _static_init() -> void:
 		],
 		5, 400
 	),
-	CharacterRegistry.ZombieType.Z042MelonPultZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z042MelonPultZombie,
-		CharacterRegistry.PlantType.P040MelonPult,
+	ZombieIds.MELON_PULT_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.MELON_PULT_ZOMBIE,
+		PlantIds.MELON_PULT,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Melonpult_stalk.png"), Vector2(0, 26), 0.9),
@@ -209,9 +209,9 @@ static func _static_init() -> void:
 		],
 		4, 700
 	),
-	CharacterRegistry.ZombieType.Z043WinterMelonZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z043WinterMelonZombie,
-		CharacterRegistry.PlantType.P045WinterMelon,
+	ZombieIds.WINTER_MELON_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.WINTER_MELON_ZOMBIE,
+		PlantIds.WINTER_MELON,
 		C_PLANT_HP_DEFAULT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/WinterMelon_stalk.png"), Vector2(0, 26), 0.9),
@@ -219,9 +219,9 @@ static func _static_init() -> void:
 		],
 		5, 500
 	),
-	CharacterRegistry.ZombieType.Z044TallNutZombie: ZomBotanyInfo.new(
-		CharacterRegistry.ZombieType.Z044TallNutZombie,
-		CharacterRegistry.PlantType.P024TallNut,
+	ZombieIds.TALL_NUT_ZOMBIE: ZomBotanyInfo.new(
+		ZombieIds.TALL_NUT_ZOMBIE,
+		PlantIds.TALL_NUT,
 		C_PLANT_HP_TALL_NUT,
 		[
 			PlantSprite.new(preload("res://assets/reanim/Tallnut_body.png")),
@@ -233,10 +233,10 @@ static func _static_init() -> void:
 
 
 ## 取一种植物僵尸的数据；不是植物僵尸（或没配）时返回 null
-static func get_info(zombie_type: CharacterRegistry.ZombieType) -> ZomBotanyInfo:
+static func get_info(zombie_type: StringName) -> ZomBotanyInfo:
 	return C_ZOM_BOTANY_INFO.get(zombie_type)
 
 
 ## 是否属于植物僵尸
-static func is_zom_botany(zombie_type: CharacterRegistry.ZombieType) -> bool:
+static func is_zom_botany(zombie_type: StringName) -> bool:
 	return C_ZOM_BOTANY_INFO.has(zombie_type)

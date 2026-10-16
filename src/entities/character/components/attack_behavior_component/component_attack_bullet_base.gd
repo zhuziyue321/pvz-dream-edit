@@ -18,8 +18,22 @@ var is_lane:=true
 ## 例如寒冰射手与豌豆射手共用攻击组件但伤害不同、或僵尸方子弹伤害由关卡倍率决定
 @export var attack_value_bullet:int = -1
 @export var attack_cd:float = 1.5
+## 一次攻击**连发几颗**（默认 1 = 一颗，原版植物的口径）
+##
+## ★ 连发能力放在基类：机枪射手（植物）与机枪僵尸（僵尸）都要用，
+##   默认 1 时行为与改造前**完全一致**（一次攻击 = 一次 `_shoot_bullet_once()`）。
+@export var burst_num: int = 1
+## 连发的间隔（秒）
+@export var burst_interval: float = 0.12
+## 动画之外**再补发几颗**（默认 0 = 只发动画里那些）
+##
+## 为什么要有第二个连发数：原版机枪射手的「4 连发」是**写在动画里**的
+## （`gatling_pea_shooting.tres` 有 4 个 `_shoot_bullet` 方法轨道），动画是原版资源不能改，
+## 想让一次攻击打出比动画轨道更多的子弹（如 6 发），只能在动画那几次之外再补几颗。
+## 默认 0 时本字段完全不参与，行为与改造前一致。
+@export var burst_extra_num: int = 0
 ## 攻击子弹类型
-@export var attack_bullet_type:BulletRegistry.BulletType = BulletRegistry.BulletType.Bullet001Pea
+@export var attack_bullet_type: StringName = BulletIds.PEA
 ## 子弹生产位置
 @export var markers_2d_bullet: Array[Marker2D]
 @export_group("发射子弹音效")
@@ -89,6 +103,26 @@ func set_cancel_attack():
 
 ## 发射子弹（动画调用）
 func _shoot_bullet():
+	shoot_burst()
+
+
+## 一次攻击的连发：连发几颗由 `burst_num` 决定（默认 1 = 只发一颗）
+##
+## ★ 抽成独立入口是因为「谁触发发射」有两条路：
+##   · 植物 —— 攻击**动画**里的方法轨道调 `_shoot_bullet()`，动画没有轨道的组件（植物僵尸）
+##     走 `_on_bullet_attack_cd_timer_timeout()` 直接调本方法；
+##   两条路都统一到本方法，连发只在这里循环一次，避免「连发里再套连发」。
+func shoot_burst() -> void:
+	for i in range(maxi(burst_num, 1)):
+		if not is_instance_valid(self) or not is_attack_res:
+			return
+		_shoot_bullet_once()
+		if i < burst_num - 1:
+			await get_tree().create_timer(burst_interval).timeout
+
+
+## 发射**一颗**（一次攻击里的单次发射）：所有发射位置各出一颗
+func _shoot_bullet_once():
 	signal_shoot_bullet.emit()
 	for i in range(markers_2d_bullet.size()):
 		var bullet:Bullet000Base = Global.bullet_registry.create_bullet(attack_bullet_type)
@@ -96,7 +130,6 @@ func _shoot_bullet():
 		if bullet == null:
 			return
 		var bullet_paras = get_bullet_paras(markers_2d_bullet[i].global_position, detect_component.ray_area_direction[i])
-		#Log.debug(bullet_paras)
 		bullet.init_bullet(bullet_paras)
 		bullets.add_child(bullet)
 		play_throw_sfx()

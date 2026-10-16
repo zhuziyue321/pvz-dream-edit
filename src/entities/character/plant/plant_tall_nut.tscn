@@ -77,7 +77,7 @@ size = Vector2(50, 50)
 
 [node name="Plant024TallNut" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_qbo1e")]
 script = ExtResource("2_lgypc")
-plant_type = 24
+plant_type = &"tall_nut"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("Area2DStopJump")]
 
 [node name="LadderComponent" type="Node2D" parent="." index="9"]

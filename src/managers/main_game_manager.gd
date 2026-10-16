@@ -12,7 +12,6 @@ class_name MainGameManager
 ## 所有僵尸死亡
 @export var test_death_all_zombie:=false:
 	set(value):
-		Log.debug("设置值")
 		EventBus.push_event(ConstEventName.TEST_DEATH_ALL_ZOMBIE)
 
 ## 游戏速度
@@ -95,7 +94,6 @@ func is_skip_level_dave_dialog() -> bool:
 	## 关卡资源显式声明「只播一次」时，本关已经有通关记录就不再播
 	## （原版：进入夜晚场景 2-1 的这段开场白只在第一次进夜晚时说）
 	if game_para.dave_dialog_only_first_playthrough and is_curr_level_success():
-		Log.debug("本关已通关，跳过开场戴夫对话")
 		return true
 	return false
 
@@ -163,7 +161,6 @@ func _on_first_coin_drop(coin: Coin) -> void:
 		return
 	game_state.is_first_coin_advice_shown = true
 	Global.save_service.save_now()
-	Log.debug("第一次掉落钱，弹出金钱提示")
 	var advice_ui: TutorialAdviceUI = SceneRegistry.TUTORIAL_ADVICE.instantiate()
 	canvas_layer_ui.add_child(advice_ui)
 	advice_ui.show_advice_once(ADVICE_FIRST_COIN, coin, ADVICE_FIRST_COIN_SHOW_TIME)
@@ -408,7 +405,6 @@ func init_manager():
 	## 关卡脚本自己注册的初始化回调（一关专属玩法在这里接入，本体不认识任何玩法名）
 	_run_level_init_callbacks()
 	validate_map_consistency()
-	Log.debug("info:管理器初始化完成")
 
 
 ## 跑一遍关卡脚本注册的初始化回调；跑完清空，避免重开一局时把同一条注册两遍
@@ -482,7 +478,6 @@ func signal_connect():
 
 ## 初始化游戏bgm
 func _init_game_BGM():
-	#Log.debug(game_para.game_BGM)
 	## 路径为空表示该关不放 BGM(如冒险 4-10),此时保持 bgm_main_game 为 null
 	var path_bgm_game: String = ConstLevelData.GameBGMMap.get(game_para.game_BGM, "")
 	if path_bgm_game.is_empty():
@@ -496,9 +491,6 @@ func _init_game_BGM():
 ## 选卡界面没有任何可操作空间,直接跳过选卡阶段
 func enter_choose_card_progress() -> void:
 	if game_para.is_no_choose_permission():
-		Log.debug(str("种子包不足,跳过选卡阶段: 卡槽数") + str(game_para.get_max_choosed_card_num()) \
-			+ str(", 拥有植物卡数") + str(Global.global_game_state.curr_plant.size()) \
-			+ str(", 系统预选卡数") + str(game_para.get_valid_pre_choosed_card_num()))
 		await skip_choose_card_start_game()
 		return
 	card_manager.card_slot_appear_choose()
@@ -533,8 +525,7 @@ func start_next_round_game():
 	## 多轮游戏僵尸管理器计时器触发时，判断是否为最后一轮
 	if curr_game_round == game_para.game_round:
 		return
-	Log.debug("-----------------开始下一轮游戏---------------")
-	Log.debug(str("下一轮次：") + str(curr_game_round + 1))
+	Log.info(str("下一轮次：") + str(curr_game_round + 1))
 	## 先存档（不支持续玩的多轮关卡不存：存了下次进关会直接跳到这一轮，见 is_save_multi_round_data）
 	if game_para.is_save_multi_round_data:
 		save_manager.save_game_main_game()
@@ -544,7 +535,6 @@ func start_next_round_game():
 	if game_para.look_show_zombie:
 		## 重新选卡阶段暂停游戏
 		start_pause_on_re_choose_card_progress()
-		Log.debug(str("----------------播放选卡bgm") + str(bgm_choose_card))
 		SoundManager.play_bgm(bgm_choose_card)
 	curr_game_round += 1
 	await start_curr_round_game()
@@ -602,7 +592,6 @@ func end_pause_on_re_choose_card_progress():
 
 ## 选卡结束：收起待选卡槽、相机归位，并通知时间轴的「选卡」事件
 func choose_card_finish():
-	Log.debug("选卡完成")
 	## 主游戏进程阶段
 	main_game_progress = E_MainGameProgress.PREPARE
 	## 隐藏待选卡槽
@@ -639,7 +628,6 @@ func allow_lawn_operation() -> void:
 	if is_lawn_operation_allowed:
 		return
 	is_lawn_operation_allowed = true
-	Log.debug("允许玩家操作草坪")
 	## 主游戏进程阶段：这一步同时会刷一次铲子 / 手套的显隐（见 HandManager）
 	main_game_progress = E_MainGameProgress.MAIN_GAME
 	## 出战卡槽进场（原本在 main_game_start() 里，教程阶段就要能看到种子包）
@@ -661,7 +649,7 @@ func main_game_start():
 	## 不走 choose_card_finish，相机还停在进关时的 CAM_POS_INIT（背景最左，只拍到房子）。
 	## 正常流程走到这里时早已归位，snap_to 不动它，也不改变时序（用 await 会把开战推迟一轮位移）。
 	camera_2d.snap_to(MainGameCamera.CAM_POS_ORI)
-	Log.debug("主游戏开始")
+	Log.info("主游戏开始")
 	## 主游戏进程阶段
 	main_game_progress = E_MainGameProgress.PREPARE
 	## 背景表现（浓雾进场等）交给地图动画脚本
@@ -674,7 +662,6 @@ func main_game_start():
 	## 开始天降阳光
 	if game_para.is_day_sun:
 		day_suns_manager.start_day_sun()
-	Log.debug(str("生成墓碑") + str(game_para.init_tombstone_num))
 	## 生成墓碑
 	if game_para.init_tombstone_num > 0:
 		plant_cell_manager.create_tombstone(game_para.init_tombstone_num)
@@ -697,7 +684,7 @@ func main_game_start():
 ## （见 LevelTimelineEventShowZombie / LevelTimelineEventStartBattle）
 ## 关卡流程跑在各子管理器 init_manager() 之后，所以这里改完关卡数据还要把已经读进
 ## 僵尸管理器的那一份一起改掉（随机池要按新表重建），否则本关还是按旧表出怪 / 预览
-func apply_level_zombie_refresh_types(types: Array[CharacterRegistry.ZombieType]) -> void:
+func apply_level_zombie_refresh_types(types: Array[StringName]) -> void:
 	if types.is_empty() or game_para == null:
 		return
 	## 与 init_para() 同一道过滤：表外的僵尸类型会被剔掉（白名单为空的本关不滤，免得滤成空表）
@@ -736,7 +723,6 @@ func shortcut_win_main_game() -> void:
 		return
 	if main_game_progress == E_MainGameProgress.NONE or main_game_progress == E_MainGameProgress.GAME_OVER:
 		return
-	Log.debug("快捷键 Ctrl+D + 0：直接通关本关")
 	reward_manager.win_main_game()
 
 
@@ -756,7 +742,6 @@ func shortcut_kill_all_zombie() -> void:
 	var num := zombie_manager.curr_zombie_num
 	if num <= 0:
 		return
-	Log.debug("快捷键 Ctrl+K：杀死场上所有僵尸（%d 只）" % num)
 	zombie_manager.death_all_zombie()
 #endregion
 

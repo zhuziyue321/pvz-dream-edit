@@ -49,14 +49,14 @@ const STAR_CELLS: Array[Vector2i] = [
 	Vector2i(4, 3), Vector2i(4, 6),
 ]
 ## 轮廓点上允许种的植物（原版：杨桃 + 南瓜头；模仿者是「同一张卡换个壳」，card_plant_type 不变）
-const STAR_CELL_ALLOW_PLANT_TYPES: Array[CharacterRegistry.PlantType] = [
-	CharacterRegistry.PlantType.P030StarFruit,
-	CharacterRegistry.PlantType.P031Pumpkin,
+const STAR_CELL_ALLOW_PLANT_TYPES: Array[StringName] = [
+	PlantIds.STAR_FRUIT,
+	PlantIds.PUMPKIN,
 ]
 ## 轮廓点之外禁止种的植物：杨桃只能种在轮廓点上（避免在别处白扔 125 阳光）
 ## 南瓜头不受此限 —— 它是正常防守植物，别处该用还得用
-const OUTSIDE_FORBIDDEN_PLANT_TYPES: Array[CharacterRegistry.PlantType] = [
-	CharacterRegistry.PlantType.P030StarFruit,
+const OUTSIDE_FORBIDDEN_PLANT_TYPES: Array[StringName] = [
+	PlantIds.STAR_FRUIT,
 ]
 
 ## 原版手机版：4 面旗帜内种满，第 4 面旗帜升起时还没种满算输
@@ -83,14 +83,14 @@ func _init() -> void:
 	max_wave = MAX_FLAG * WAVE_EVERY_FLAG
 	## 出怪表：预览僵尸和开战共用同一份（也在 _init 里给，开战不走 start_battle 预制体）
 	zombie_refresh_types.assign([
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
 	])
 	## 杨桃是通关必需品：预选进卡槽，玩家在选卡界面摘不掉
 	## （原版：默认选中，硬摘掉会弹警告 —— 没杨桃这关永远打不完）
-	prechosen_cards = ResourceCardReference.create_plant_list([CharacterRegistry.PlantType.P030StarFruit])
+	prechosen_cards = ResourceCardReference.create_plant_list([PlantIds.STAR_FRUIT])
 
 
 #region 进关打点：轮廓点 + 限种 + 绘制层
@@ -106,7 +106,6 @@ func init_level_items(mg: MainGameManager, item_root: Node2D) -> void:
 	item_root.add_child(star_overlay)
 	star_overlay.init_item(star_cells, _get_star_fruit_scene(), STAR_FRUIT_IDLE_ANIM,
 		Callable(self, "_is_cell_has_star_fruit"))
-	Log.debug(str("观星：共 ") + str(star_cells.size()) + str(" 个星星轮廓点"))
 
 
 ## 清掉绘制层（引用自己留一份就是为了能自己收拾）—— **可重复调用**
@@ -121,7 +120,7 @@ func _free_star_overlay() -> void:
 
 ## 虚影用的杨桃场景：从注册表取（类型映射一律走注册表，不在业务代码里散落 preload）
 func _get_star_fruit_scene() -> PackedScene:
-	return Global.character_registry.get_plant_info(CharacterRegistry.PlantType.P030StarFruit,
+	return Global.character_registry.get_plant_info(PlantIds.STAR_FRUIT,
 		CharacterRegistry.PlantInfoAttribute.PlantScenes)
 
 
@@ -182,7 +181,7 @@ func _is_cell_has_star_fruit(plant_cell: PlantCell) -> bool:
 	var plant := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	if not is_instance_valid(plant):
 		return false
-	return plant.plant_type == CharacterRegistry.PlantType.P030StarFruit
+	return plant.plant_type == PlantIds.STAR_FRUIT
 
 
 ## 奖杯掉在哪：星星的几何中心
@@ -227,11 +226,11 @@ func _wait_seeing_stars_result(mg: MainGameManager) -> void:
 
 	while is_instance_valid(mg) and mg.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 		if is_all_star_cells_planted():
-			Log.debug(str("观星：") + str(star_cells.size()) + str(" 个轮廓点全部种上杨桃，通关"))
+			Log.info(str("观星：") + str(star_cells.size()) + str(" 个轮廓点全部种上杨桃，通关"))
 			EventBus.push_event(ConstEventName.CREATE_TROPHY, [get_star_center_global_position()])
 			return
 		if _get_passed_flag_num(mg) >= MAX_FLAG:
-			Log.debug(str("观星：第 ") + str(MAX_FLAG) + str(" 面旗帜已升起，还剩 ")
+			Log.info(str("观星：第 ") + str(MAX_FLAG) + str(" 面旗帜已升起，还剩 ")
 				+ str(get_unplanted_num()) + str(" 个轮廓点没种满，判负"))
 			## 与「僵尸进家」同一套失败流程（重开存档 + 失败音乐 + 红字），本身与僵尸模式无关
 			mg.lose_manager.on_zombie_mode_lose()

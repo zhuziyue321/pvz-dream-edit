@@ -40,7 +40,6 @@ static func set_seed(seed_value: int) -> void:
 	_seed_value = seed_value
 	_is_seeded = true
 	_ensure().seed = seed_value
-	Log.info("GameRng: 已播种 seed=%d，之后的随机可复现" % seed_value)
 
 
 ## 撤销播种：回到「每次运行不同」的默认行为（单机 / 退出联机时调）

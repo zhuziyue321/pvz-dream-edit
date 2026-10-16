@@ -89,7 +89,7 @@ size = Vector2(1000, 5)
 
 [node name="Plant006SnowPea" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_ntefj")]
 script = ExtResource("2_6otjv")
-plant_type = 6
+plant_type = &"snow_pea"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -235,7 +235,7 @@ parameters/TimeScale/scale = 1.2
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("3_4556a")
-attack_bullet_type = 2
+attack_bullet_type = &"pea_snow"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Anim_stem/stem_correct/Marker2DBullet")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

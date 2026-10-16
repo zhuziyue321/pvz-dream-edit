@@ -39,7 +39,6 @@ func change_zombie_position(zombie:Zombie000Base):
 
 
 func roof_zombie_go_home(zombie:Zombie000Base):
-	Log.debug("禁用僵尸移动组件")
 	zombie.move_component.disable_component(ComponentNormBase.E_IsEnableFactor.GameMode)
 	await get_tree().create_timer(3).timeout
 	var tween = zombie.create_tween()
@@ -112,7 +111,7 @@ func get_can_use_sun_on_zombie_mode() -> int:
 func get_min_zombie_sun_cost() -> int:
 	var min_cost := 0
 	for card: Card in main_game.card_manager.card_slot_battle.curr_cards:
-		if card.card_zombie_type == CharacterRegistry.ZombieType.Null:
+		if card.card_zombie_type == ZombieIds.NULL:
 			continue
 		if min_cost == 0 or card.sun_cost < min_cost:
 			min_cost = card.sun_cost
@@ -121,7 +120,7 @@ func get_min_zombie_sun_cost() -> int:
 
 ## 我是僵尸模式失败：走与「僵尸进家」同一套失败流程（重开存档 + 失败音乐 + 红字）
 func on_zombie_mode_lose() -> void:
-	Log.debug("我是僵尸模式：僵尸全部阵亡且阳光不足，判负")
+	Log.info("我是僵尸模式：僵尸全部阵亡且阳光不足，判负")
 	if is_instance_valid(zombie_mode_lose_check_timer):
 		zombie_mode_lose_check_timer.stop()
 

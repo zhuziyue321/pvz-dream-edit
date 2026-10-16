@@ -16,7 +16,7 @@ var row_col:Vector2i = Vector2i.ZERO
 ## 生成的墓碑列表(一维)
 var tombstone_list :Array[TombStone] = []
 ## 当前植物种植的信息[植物种类:植物数量]
-var curr_plant_num:Dictionary[CharacterRegistry.PlantType, int]
+var curr_plant_num:Dictionary[StringName, int]
 ## 当前罐子数量
 var curr_pot_num = 0
 
@@ -25,7 +25,7 @@ var plant_random_pool_on_zombie_mode:RandomPicker
 ## 我是僵尸模式下所有创建植物的植物格子
 var all_plant_cells_create_plant_on_zombie_mode:Array[PlantCell] = []
 ## 我是僵尸模式必须先生成的植物
-var all_must_plants_on_zombie_mode:Dictionary[CharacterRegistry.PlantType, int] = {}
+var all_must_plants_on_zombie_mode:Dictionary[StringName, int] = {}
 
 
 func _ready() -> void:
@@ -108,12 +108,12 @@ func _get_map_data() -> ResourceMapData:
 
 #region 植物信息
 ## 更新植物信息(创建新植物)
-func update_plant_info_create(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
+func update_plant_info_create(_plant_cell:PlantCell, plant_type: StringName):
 	curr_plant_num[plant_type] = curr_plant_num.get(plant_type, 0) + 1
 	EventBus.push_event(ConstEventName.UPDATE_CARD_PURPLE_SUN_COST)
 
 ## 更新植物信息(植物死亡)
-func update_plant_info_free(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
+func update_plant_info_free(_plant_cell:PlantCell, plant_type: StringName):
 	## 用 get() 兜底：植物可能在记录创建前就被销毁（例如读档先删后建），
 	## 直接 curr_plant_num[plant_type] -= 1 在键不存在时会报错
 	curr_plant_num[plant_type] = curr_plant_num.get(plant_type, 0) - 1
@@ -128,7 +128,7 @@ func update_plant_info_free(_plant_cell:PlantCell, plant_type:CharacterRegistry.
 ## PlantCell 只按 row_col 转发（见 PlantCell.get_plant_surrounding / get_plant_cell_surrounding）
 
 ## 获取某个格子周围一圈(包括本身格子)的某种植物
-func get_plant_surrounding(plant_cell:PlantCell, p_t:CharacterRegistry.PlantType) -> Array[Plant000Base]:
+func get_plant_surrounding(plant_cell:PlantCell, p_t: StringName) -> Array[Plant000Base]:
 	var all_plant:Array[Plant000Base] = []
 	## 植物种植条件
 	var plant_condition:ResourcePlantCondition = Global.character_registry.get_plant_info(p_t, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
@@ -139,6 +139,24 @@ func get_plant_surrounding(plant_cell:PlantCell, p_t:CharacterRegistry.PlantType
 			if is_instance_valid(p_c_plant) and p_c_plant.plant_type == p_t:
 				all_plant.append(p_c_plant)
 	return all_plant
+
+## 获取某个格子**正十字**四邻的格子（上下左右，不含自身；越界自动跳过）
+##
+## ★ 与 `get_plant_cell_surrounding()`（周围一圈 8 格，含自身）是一对，都是留给模组的查询口：
+##   本体自己不用它（原版没有「只影响十字四格」的植物），调用方说要几个格子，这里就给几个。
+func get_plant_cell_cross(plant_cell: PlantCell) -> Array[PlantCell]:
+	var cross: Array[PlantCell] = []
+	var row: int = plant_cell.row_col.x
+	var col: int = plant_cell.row_col.y
+	var offsets := [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]
+	for offset in offsets:
+		var r: int = row + offset.x
+		var c: int = col + offset.y
+		if r < 0 or r >= row_col.x or c < 0 or c >= row_col.y:
+			continue
+		cross.append(all_plant_cells[r][c])
+	return cross
+
 
 ## 获取某个格子周围一圈的植物格子，包括本身
 func get_plant_cell_surrounding(plant_cell:PlantCell) -> Array[PlantCell]:
@@ -228,16 +246,15 @@ func create_plant_on_zombie_mode():
 	all_plant_cells_create_plant_on_zombie_mode_copy.shuffle()
 	for plant_type in all_must_plants_on_zombie_mode.keys():
 		## 当前种类植物的个数
-		for i in range(all_must_plants_on_zombie_mode[plant_type]):
+		for _i in range(all_must_plants_on_zombie_mode[plant_type]):
 			## 如果已经全都种植过了
 			if all_plant_cells_create_plant_on_zombie_mode_copy.is_empty():
-				Log.debug("warning: 我是僵尸模式当前选择列数已被必种植植物种植满")
 				continue
 			var plant_cell:PlantCell = all_plant_cells_create_plant_on_zombie_mode_copy.pop_back()
 			## 我是僵尸模式种的全是普通植物，模仿者材质那一档（第 4 个参数）不参与
 			plant_cell.create_plant(plant_type, false, false, false, true)
 	for plant_cell:PlantCell in all_plant_cells_create_plant_on_zombie_mode_copy:
-		var plant_type:CharacterRegistry.PlantType = plant_random_pool_on_zombie_mode.get_random_item()
+		var plant_type: StringName = plant_random_pool_on_zombie_mode.get_random_item()
 		plant_cell.create_plant(plant_type, false, false, false, true)
 
 
@@ -319,7 +336,6 @@ func start_next_game_plant_cell_manager_update():
 	var is_clear_plant:=false
 	## 如果是罐子模式：每批都从空草坪重新开始（原版冒险 4-5：3 / 4 / 5 列一批比一批宽）
 	if game_para.is_pot_mode:
-		Log.debug("开始清除植物")
 		clear_all_plant_cell_data()
 		## 上一批没砸开的罐子一起清掉，保证每批都能摆满本批的列
 		clear_all_pot()
@@ -330,16 +346,13 @@ func start_next_game_plant_cell_manager_update():
 	## 我是僵尸模式
 	if game_para.is_zombie_mode:
 		if not is_clear_plant:
-			Log.debug("开始清除植物")
 			clear_all_plant_cell_data()
 			## 等待两帧更新数据
 			await get_tree().process_frame
 			await get_tree().process_frame
 			is_clear_plant = true
-		if plant_random_pool_on_zombie_mode.get_item_weight(CharacterRegistry.PlantType.P002SunFlower) > 1:
-			Log.debug(str("我是僵尸多轮游戏模式，更新向日葵随机权重为:") + str(max(9-GameContext.curr_main_game.curr_game_round, 1)))
-			plant_random_pool_on_zombie_mode.update_item_weight(CharacterRegistry.PlantType.P002SunFlower, max(9-GameContext.curr_main_game.curr_game_round, 1))
-		Log.debug("我是僵尸模式创建植物")
+		if plant_random_pool_on_zombie_mode.get_item_weight(PlantIds.SUN_FLOWER) > 1:
+			plant_random_pool_on_zombie_mode.update_item_weight(PlantIds.SUN_FLOWER, max(9-GameContext.curr_main_game.curr_game_round, 1))
 		create_plant_on_zombie_mode()
 
 	## 多轮砸罐子关每批罐子的配置不一样（原版冒险 4-5：3 列 → 4 列 → 5 列，一批比一批难），

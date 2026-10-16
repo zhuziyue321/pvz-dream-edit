@@ -28,7 +28,7 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	monster_mode = ConstLevelData.E_MonsterMode.Null
 	## 僵王博士：与冒险 5-10 同口径，开战时自动出场，胜利条件为「打死僵王」
-	boss_type = CharacterRegistry.ZombieBossType.ZB001Doctor
+	boss_type = ZombieBossIds.DOCTOR
 	boss_spawn_wave = 0
 	## 原版复仇版僵王血量 = 冒险 5-10 的 1.5 倍：40000 × 1.5 = 60000
 	## （**不是** 2 倍 —— wiki 原文写的是 1.5x，不要照“翻倍”的直觉改成 80000）
@@ -42,12 +42,12 @@ func _init() -> void:
 	## 没有预览这段镜头，进关就停在归位位（否则整段登场都在拍左侧房子）
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	33: 2,
-	34: 2,
-	35: 2,
-	40: 2,
-	21: 2,
-	15: 2
+	&"cabbage_pult": 2,
+	&"flower_pot": 2,
+	&"corn_pult": 2,
+	&"melon_pult": 2,
+	&"jalapeno": 2,
+	&"ice_shroom": 2
 	})
 
 
@@ -55,19 +55,19 @@ func run_flow(mg: MainGameManager) -> void:
 	## 夜屋顶要花盆才能种：先给左侧 4 列铺上（与 adventure_05_10 同一套写法）
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关的僵尸全部由僵王投放，这里列出的是它手里的牌
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z022Ladder,
-		CharacterRegistry.ZombieType.Z023Catapult,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKSON,
+		ZombieIds.JACKBOX,
+		ZombieIds.LADDER,
+		ZombieIds.CATAPULT,
+		ZombieIds.GARGANTUAR,
 	]
 
 	## 没有僵尸预览：本关不自然出怪，出怪预览为空（look_show_zombie = false），

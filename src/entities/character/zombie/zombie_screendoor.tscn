@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/items/drop_body/zombie_arm1_drop.gd" id="5_rjx66"]
 [ext_resource type="Texture2D" uid="uid://ddlkkrp74v64f" path="res://assets/reanim/Zombie_outerarm_upper2.png" id="5_w3rtv"]
 [ext_resource type="Texture2D" uid="uid://d4avxxg7q7cl2" path="res://assets/reanim/Zombie_screendoor2.png" id="6_g6fjw"]
+[ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_g6fjw"]
 script = ExtResource("2_w3rtv")
@@ -50,10 +51,8 @@ size = Vector2(48, 5)
 radius = 20.0
 height = 100.0
 
-[node name="Zombie007Screendoor" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_qj1pj")]
-zombie_type = 7
-iron_type = 2
-iron_node = NodePath("Body/BodyCorrect/IronNode")
+[node name="Zombie007Screendoor" instance=ExtResource("1_qj1pj")]
+zombie_type = &"screen_door"
 
 [node name="Anim_innerarm" parent="Body/BodyCorrect" index="1"]
 visible = false
@@ -257,13 +256,17 @@ rotation = 0.142591
 scale = Vector2(0.824584, 0.785515)
 texture = ExtResource("4_asigi")
 
+[node name="ArmorComponent" type="Node2D" parent="." node_paths=PackedStringArray("iron_node")]
+script = ExtResource("9_armor")
+armor_type = 4
+armor_class = 2
+max_hp = 1100
+sfx_be_attack = 2
+iron_node = NodePath("../Body/BodyCorrect/IronNode")
+body_change = Array[ExtResource("2_w3rtv")]([SubResource("Resource_0pwdr"), SubResource("Resource_5804l"), SubResource("Resource_h2eet")])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("2_w3rtv")]([SubResource("Resource_g6fjw"), SubResource("Resource_q6va3")])
-body_change_armor2 = Array[ExtResource("2_w3rtv")]([SubResource("Resource_0pwdr"), SubResource("Resource_5804l"), SubResource("Resource_h2eet")])
-
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor2 = 1100
-sfx_be_attack_armor2 = 2
 
 [node name="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2d" index="0"]
 position = Vector2(-12, 0)

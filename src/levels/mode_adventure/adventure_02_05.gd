@@ -36,6 +36,9 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 	LevelRuleHammerZombie.install(mg)
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 关卡戴夫对话
 	await dave_dialog(DAVE_OPENING)
@@ -45,9 +48,9 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(10, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
 	])
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():

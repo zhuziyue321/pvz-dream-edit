@@ -20,7 +20,6 @@ func judge_is_run():
 
 		return
 	var p = randf()
-	#Log.debug(str("逃跑概率:") + str(p) + str("阈值:") + str(probability_run))
 	if p < probability_run:
 		update_direction_x_root(-1)
 		is_run_end = true

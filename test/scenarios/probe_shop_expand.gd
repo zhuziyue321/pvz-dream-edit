@@ -10,8 +10,8 @@ extends RefCounted
 var _failed := 0
 const ADV := MainSceneRegistry.MainScenes.ChooseLevelAdventure
 const LEVEL_PATH := "res://src/levels/mode_adventure/adventure_04_04.gd"
-const P043 := CharacterRegistry.PlantType.P043GloomShroom
-const P044 := CharacterRegistry.PlantType.P044Cattail
+const P043 := PlantIds.GLOOM_SHROOM
+const P044 := PlantIds.CATTAIL
 
 
 func run(a) -> void:

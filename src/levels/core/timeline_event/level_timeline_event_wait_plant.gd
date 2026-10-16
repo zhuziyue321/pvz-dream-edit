@@ -10,7 +10,7 @@ class_name LevelTimelineEventWaitPlant
 ## 结果在 is_planted 里（关卡流程据此决定要不要补一句教学，见 LevelScriptBase.wait_plant_timeout）。
 
 ## 指定要种的植物；留 Null 表示任意植物
-@export var plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+@export var plant_type: StringName = PlantIds.NULL
 ## 要种几株才算过（同一种植物可以连种几株）
 @export var count: int = 1
 ## 最多等几秒；0 = 一直等到玩家种下为止

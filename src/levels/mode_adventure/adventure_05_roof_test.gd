@@ -12,43 +12,46 @@ func _init() -> void:
 	is_bungi = true
 	start_sun = 50000
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	3: 1,
-	7: 1,
-	18: 1,
-	21: 1,
-	33: 1,
-	34: 1,
-	35: 1,
-	40: 1
+	&"cherry_bomb": 1,
+	&"chomper": 1,
+	&"squash": 1,
+	&"jalapeno": 1,
+	&"cabbage_pult": 1,
+	&"flower_pot": 1,
+	&"corn_pult": 1,
+	&"melon_pult": 1
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
-	0: 5,
-	1: 24,
-	2: 40,
-	3: 32,
-	4: 36,
+	0: &"potato_mine",
+	1: &"tall_nut",
+	2: &"melon_pult",
+	3: &"magnet_shroom",
+	4: &"coffee_bean",
 	9: 45
 	})
 	create_new_card_speed = 1.5
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 本关是屋顶测试关：第 1 列走模仿者材质（灰花盆），顺手验「系统种植」的模仿者分支
 	var pots := SystemPlantResource.create_flower_pot_columns(2)
 	pots[0].is_imitater_plant = true
 	await system_plant(pots)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
-		CharacterRegistry.ZombieType.Z022Ladder,
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z015Dolphinrider,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.FOOTBALL,
+		ZombieIds.GARGANTUAR,
+		ZombieIds.LADDER,
+		ZombieIds.JACKSON,
+		ZombieIds.DOLPHINRIDER,
 	]
 
 	## 展示僵尸

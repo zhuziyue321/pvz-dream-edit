@@ -25,7 +25,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP2 进 1-1
 	var state = Global.global_game_state
-	state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	state.curr_all_level_state_data = {}
 	if not await _goto_level(a):
 		a.log("!! 进不了关卡")
@@ -43,13 +43,13 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP3 配一次事件并跑
 	var single := SystemPlantResource.new()
-	single.plant_type = CharacterRegistry.PlantType.P002SunFlower
+	single.plant_type = PlantIds.SUN_FLOWER
 	single.plant_cell_pos = Vector2i(1, 1)			## 第 1 行第 1 列
 	var whole_row := SystemPlantResource.new()
-	whole_row.plant_type = CharacterRegistry.PlantType.P004WallNut
+	whole_row.plant_type = PlantIds.WALL_NUT
 	whole_row.plant_cell_pos = Vector2i(2, 0)		## 第 2 行整行
 	var out_of_range := SystemPlantResource.new()	## 越界：应当被跳过
-	out_of_range.plant_type = CharacterRegistry.PlantType.P001PeaShooterSingle
+	out_of_range.plant_type = PlantIds.PEA_SHOOTER_SINGLE
 	out_of_range.plant_cell_pos = Vector2i(99, 99)
 	var plants: Array[SystemPlantResource] = [single, whole_row, out_of_range]
 	event.plants = plants
@@ -60,14 +60,14 @@ func run(a) -> void:
 	var plant_00 = cell_00.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	_check(a, "第1行第1列长出植物", plant_00 != null and is_instance_valid(plant_00))
 	if plant_00 != null and is_instance_valid(plant_00):
-		_check(a, "第1行第1列是向日葵", plant_00.plant_type == CharacterRegistry.PlantType.P002SunFlower,
+		_check(a, "第1行第1列是向日葵", plant_00.plant_type == PlantIds.SUN_FLOWER,
 			"实际类型=%d" % plant_00.plant_type)
 
 	var row_2: Array = pcm.all_plant_cells[1]
 	var row_ok := true
 	for c in row_2:
 		var p = (c as PlantCell).get_plant(CharacterRegistry.PlacePlantInCell.Norm)
-		if p == null or not is_instance_valid(p) or p.plant_type != CharacterRegistry.PlantType.P004WallNut:
+		if p == null or not is_instance_valid(p) or p.plant_type != PlantIds.WALL_NUT:
 			row_ok = false
 	_check(a, "第2行整行都是坚果", row_ok, "第2行 %d 格" % row_2.size())
 

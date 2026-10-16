@@ -111,7 +111,7 @@ alpha_curve = SubResource("CurveTexture_fdqap")
 
 [node name="Plant043GloomShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_185k3")]
 script = ExtResource("2_52sk1")
-plant_type = 43
+plant_type = &"gloom_shroom"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -263,7 +263,7 @@ parameters/TimeScale/scale = 1.0
 script = ExtResource("17_fdqap")
 is_lane = false
 attack_cd = 2.0
-attack_bullet_type = 4
+attack_bullet_type = &"fume"
 attack_sfx = &"Fume"
 
 [node name="DetectComponent" type="Node2D" parent="AttackComponent" index="0"]

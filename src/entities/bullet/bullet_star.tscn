@@ -31,7 +31,7 @@ anim_offset_max = 1.0
 
 [node name="Bullet008Star" instance=ExtResource("1_db74q")]
 script = ExtResource("2_cyj1w")
-bullet_type = 8
+bullet_type = &"star"
 is_rotate = true
 
 [node name="BulletBody" parent="Body" index="0"]

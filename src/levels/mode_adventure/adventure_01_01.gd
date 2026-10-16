@@ -30,7 +30,7 @@ func _init() -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z001Norm]
+	var zombie_list: Array[StringName] = [ZombieIds.NORM]
 
 	## 预览：镜头拉到草坪右侧，让玩家先看一眼马上要面对的是什么
 	await show_zombie(zombie_list)
@@ -63,7 +63,7 @@ func run_flow(mg: MainGameManager) -> void:
 ## [mg] 主游戏管理器：「选择植物」那一步要拿它接草坪格子的「植物种下」信号
 func _tutorial_flow(mg: MainGameManager) -> void:
 	## 箭头指到豌豆射手的种子包上
-	await arrow_card(CharacterRegistry.PlantType.P001PeaShooterSingle)
+	await arrow_card(PlantIds.PEA_SHOOTER_SINGLE)
 	## 教玩家把种子包捡起来
 	await hint("点击种子包，把它捡起来！")
 	## 等「选择植物」完成：捡起种子包 / 已经种下去了，谁先到都算过
@@ -72,7 +72,7 @@ func _tutorial_flow(mg: MainGameManager) -> void:
 	await hide_arrow()
 	## 教玩家把植物种下去
 	await hint("点击草地种下你的种子！")
-	await wait_plant(1, CharacterRegistry.PlantType.P001PeaShooterSingle)
+	await wait_plant(1, PlantIds.PEA_SHOOTER_SINGLE)
 	## 夸一句，停一停让玩家看清发生了什么
 	await hint("干得漂亮！")
 	await wait(4.0)
@@ -87,10 +87,10 @@ func _tutorial_flow(mg: MainGameManager) -> void:
 	await wait_sun_enough(100)
 	## 阳光够了，先让玩家自己动手：4 秒内种下了就往下走
 	await hint("太好了！你已经收集到了足够\n进行下一次种植的阳光！")
-	if not await wait_plant_timeout(1, CharacterRegistry.PlantType.P001PeaShooterSingle, 4.0):
+	if not await wait_plant_timeout(1, PlantIds.PEA_SHOOTER_SINGLE, 4.0):
 		## 等了 4 秒还没动手，才补这一句教学（卡片要玩家自己捡，不给箭头）
 		await hint("点击豌豆射手，再种一棵！")
-		await wait_plant(1, CharacterRegistry.PlantType.P001PeaShooterSingle)
+		await wait_plant(1, PlantIds.PEA_SHOOTER_SINGLE)
 	await hint("别让僵尸靠近你的房子！")
 	await wait(4.0)
 	## 收尾：关掉提示条与箭头（没有「教程收尾」会替你收，用完自己关）
@@ -113,11 +113,11 @@ signal select_plant_done
 func _wait_select_plant(mg: MainGameManager) -> void:
 	## 先看看这一步是不是**已经完成**了 —— 是就不用等信号：
 	##   1. 手上已经拿着豌豆射手的种子包（提示还没出完玩家就把卡点了）
-	if LevelWaitCondition.is_holding_card(mg, CharacterRegistry.PlantType.P001PeaShooterSingle):
+	if LevelWaitCondition.is_holding_card(mg, PlantIds.PEA_SHOOTER_SINGLE):
 		return
 	##   2. 草坪上已经有豌豆射手（玩家手快，「拿卡 → 种下」连着点完了 ——
 	##      下一步的种植都做完了，选择植物当然也算完成；本关开局草坪是空的，有就是玩家种的）
-	if LevelWaitCondition.count_lawn_plants(mg, CharacterRegistry.PlantType.P001PeaShooterSingle) > 0:
+	if LevelWaitCondition.count_lawn_plants(mg, PlantIds.PEA_SHOOTER_SINGLE) > 0:
 		return
 	## 信号一：草坪上种下了豌豆射手（每个格子各有一个信号，逐个接上）
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
@@ -141,15 +141,15 @@ func _wait_select_plant(mg: MainGameManager) -> void:
 
 
 ## 草坪上种下了豌豆射手 —— 「选择植物」这一步算过了
-func _on_peashooter_planted(_cell: PlantCell, plant_type: CharacterRegistry.PlantType) -> void:
-	if plant_type != CharacterRegistry.PlantType.P001PeaShooterSingle:
+func _on_peashooter_planted(_cell: PlantCell, plant_type: StringName) -> void:
+	if plant_type != PlantIds.PEA_SHOOTER_SINGLE:
 		return
 	select_plant_done.emit()
 
 
 ## 玩家把豌豆射手的种子包捡到了手上 —— 「选择植物」这一步算过了
 func _on_peashooter_taken(card: Card) -> void:
-	if card == null or card.card_plant_type != CharacterRegistry.PlantType.P001PeaShooterSingle:
+	if card == null or card.card_plant_type != PlantIds.PEA_SHOOTER_SINGLE:
 		return
 	select_plant_done.emit()
 #endregion

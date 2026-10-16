@@ -50,6 +50,7 @@
 [ext_resource type="Texture2D" uid="uid://yj0oi6qioc7a" path="res://assets/reanim/Zombie_charred_pile1.png" id="41_4ynrp"]
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="42_7jfjs"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="43_pgkln"]
+[ext_resource type="Script" uid="uid://p11f1vpofwms" path="res://src/entities/character/components/armor_component/component_armor_balloon.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_b3tuq"]
 script = ExtResource("24_38yut")
@@ -1198,7 +1199,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 script = ExtResource("2_jxd4q")
 balloon_pop_glo_pos_x_in_zombie_mode = 50.0
 is_pop = false
-zombie_type = 17
+zombie_type = &"balloon"
 init_be_attack_status = 8
 sfx_enter_name = &"ballooninflate"
 
@@ -1397,13 +1398,16 @@ centered = false
 
 [node name="ZombieDeathBomb" parent="Body" index="2" instance=ExtResource("25_litao")]
 
+[node name="ArmorComponent" type="Node2D" parent="."]
+script = ExtResource("9_armor")
+armor_type = 7
+armor_class = 1
+max_hp = 20
+boundary_value_hp = Array[int]([0])
+body_change = Array[ExtResource("24_38yut")]([null])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("24_38yut")]([SubResource("Resource_b3tuq"), SubResource("Resource_3tcol")])
-boundary_value_hp_armor1 = Array[int]([0])
-body_change_armor1 = Array[ExtResource("24_38yut")]([null])
-
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor1 = 20
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]
 centered = false

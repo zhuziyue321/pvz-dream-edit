@@ -90,7 +90,7 @@ size = Vector2(249, 5)
 
 [node name="Plant009Puff" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_o8j4c")]
 script = ExtResource("2_wddx6")
-plant_type = 9
+plant_type = &"puff_shroom"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="Shadow" parent="." index="0"]
@@ -192,7 +192,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("12_wddx6")
-attack_bullet_type = 3
+attack_bullet_type = &"puff"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

@@ -13,7 +13,7 @@ func activate_it():
 	visible = true
 	# 让它从当前按钮位置开始掉落
 	random_init_vase(vase_chunks)
-	for i in range(randi_range(8,12)):
+	for _i in range(randi_range(8,12)):
 		copy_and_random_init()
 	await get_tree().create_timer(5.0).timeout
 	queue_free()

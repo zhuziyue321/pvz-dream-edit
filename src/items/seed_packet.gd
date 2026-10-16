@@ -56,7 +56,7 @@ func _ready() -> void:
 
 ## 在种子包上放一株展示态植物，并在底部写上它的阳光花费（与出战卡片一致）
 ## 必须在加入场景树之后调用（要用到 @onready 的挂点）
-func set_plant(plant_type:int) -> void:
+func set_plant(plant_type: StringName) -> void:
 	cost_label.text = str(int(Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.SunCost)))
 	var plant_scene = Global.character_registry.get_plant_info(

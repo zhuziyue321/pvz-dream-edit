@@ -45,7 +45,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Plant017LilyPad" instance=ExtResource("1_fjhlc")]
 script = ExtResource("2_13n6p")
 plant_up_position = Vector2(0, 10)
-plant_type = 17
+plant_type = &"lily_pad"
 is_float_anim = true
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]

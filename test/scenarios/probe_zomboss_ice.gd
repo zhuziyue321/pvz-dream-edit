@@ -53,7 +53,7 @@ func _check_snow_pea_decelerate(a, mg, boss, hp) -> void:
 	if area == null:
 		_check(a, "取到僵王受击区域", false, "受击组件下没有 Area2D")
 		return
-	var scene: PackedScene = Global.bullet_registry.get_bullet_scenes(BulletRegistry.BulletType.Bullet002PeaSnow)
+	var scene: PackedScene = Global.bullet_registry.get_bullet_scenes(BulletIds.PEA_SNOW)
 	if scene == null:
 		_check(a, "注册表里有寒冰豌豆", false, "取不到 Bullet002PeaSnow")
 		return

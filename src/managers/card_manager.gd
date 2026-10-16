@@ -86,14 +86,14 @@ func add_conveyor_weight_rule(rule: ConveyorWeightRule) -> void:
 
 
 ## 查询传送带上的植物种类（去重）；没有传送带时返回空数组
-func get_conveyor_card_plant_types() -> Array[CharacterRegistry.PlantType]:
+func get_conveyor_card_plant_types() -> Array[StringName]:
 	if conveyor_controller == null:
 		return []
 	return conveyor_controller.get_card_plant_types()
 
 
 ## 查询传送带上某种植物的张数
-func count_conveyor_card(plant_type: CharacterRegistry.PlantType) -> int:
+func count_conveyor_card(plant_type: StringName) -> int:
 	if conveyor_controller == null:
 		return 0
 	return conveyor_controller.count_card(plant_type)
@@ -194,10 +194,10 @@ func add_card_front_node(node:Node) -> void:
 func create_temp_card(temp_card_para:Dictionary) -> Card:
 	var card_reference: ResourceCardReference = temp_card_para.get(E_TempCardParaAttr.CardReference, null) as ResourceCardReference
 	if card_reference == null:
-		if temp_card_para.has(E_TempCardParaAttr.PlantType) and temp_card_para[E_TempCardParaAttr.PlantType] != CharacterRegistry.PlantType.Null:
+		if temp_card_para.has(E_TempCardParaAttr.PlantType) and temp_card_para[E_TempCardParaAttr.PlantType] != PlantIds.NULL:
 			card_reference = ResourceCardReference.create(ResourceCardReference.CardType.Plant,
 				temp_card_para[E_TempCardParaAttr.PlantType])
-		elif temp_card_para.has(E_TempCardParaAttr.ZombieType) and temp_card_para[E_TempCardParaAttr.ZombieType] != CharacterRegistry.ZombieType.Null:
+		elif temp_card_para.has(E_TempCardParaAttr.ZombieType) and temp_card_para[E_TempCardParaAttr.ZombieType] != ZombieIds.NULL:
 			card_reference = ResourceCardReference.create(ResourceCardReference.CardType.Zombie,
 				temp_card_para[E_TempCardParaAttr.ZombieType])
 	if card_reference == null:

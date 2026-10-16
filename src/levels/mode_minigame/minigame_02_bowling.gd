@@ -20,11 +20,11 @@ func _init() -> void:
 	## 本关传送带只出普通坚果(1001) / 爆炸坚果(1002)，不出巨型坚果保龄球(1003)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1001: 2,
-	1002: 1
+	&"wall_nut_bowling": 2,
+	&"wall_nut_bowling_bomb": 1
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
-	0: 1001,
+	0: &"wall_nut_bowling",
 	1: 1002
 	})
 	is_bowling_stripe = true

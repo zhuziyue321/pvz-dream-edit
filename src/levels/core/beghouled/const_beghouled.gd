@@ -25,33 +25,33 @@ const SUN_UNIT_VALUE := 25
 
 ## 三消棋盘上的基础植物（原版六种，见 wiki「The six plants are all different colors」；
 ## 策略段提到的植物即这六种：豌豆射手 / 坚果 / 寒冰射手 / 小喷菇 / 星星果 / 磁力菇）
-const BASE_PLANT_TYPES: Array[CharacterRegistry.PlantType] = [
-	CharacterRegistry.PlantType.P001PeaShooterSingle,
-	CharacterRegistry.PlantType.P004WallNut,
-	CharacterRegistry.PlantType.P006SnowPea,
-	CharacterRegistry.PlantType.P009PuffShroom,
-	CharacterRegistry.PlantType.P030StarFruit,
-	CharacterRegistry.PlantType.P032MagnetShroom,
+const BASE_PLANT_TYPES: Array[StringName] = [
+	PlantIds.PEA_SHOOTER_SINGLE,
+	PlantIds.WALL_NUT,
+	PlantIds.SNOW_PEA,
+	PlantIds.PUFF_SHROOM,
+	PlantIds.STAR_FRUIT,
+	PlantIds.MAGNET_SHROOM,
 ]
 
 ## 升级项：把场上所有 from 换成 to（原版三档，价格见文件头来源注释）
 ## sun —— 购买价格；name —— 按钮上显示的升级目标名
 const UPGRADE_LIST: Array[Dictionary] = [
 	{
-		"from": CharacterRegistry.PlantType.P001PeaShooterSingle,
-		"to": CharacterRegistry.PlantType.P008PeaShooterDouble,
+		"from": PlantIds.PEA_SHOOTER_SINGLE,
+		"to": PlantIds.PEA_SHOOTER_DOUBLE,
 		"sun": 1000,
 		"name": "双重射手",
 	},
 	{
-		"from": CharacterRegistry.PlantType.P009PuffShroom,
-		"to": CharacterRegistry.PlantType.P011FumeShroom,
+		"from": PlantIds.PUFF_SHROOM,
+		"to": PlantIds.FUME_SHROOM,
 		"sun": 500,
 		"name": "大喷菇",
 	},
 	{
-		"from": CharacterRegistry.PlantType.P004WallNut,
-		"to": CharacterRegistry.PlantType.P024TallNut,
+		"from": PlantIds.WALL_NUT,
+		"to": PlantIds.TALL_NUT,
 		"sun": 250,
 		"name": "高坚果",
 	},

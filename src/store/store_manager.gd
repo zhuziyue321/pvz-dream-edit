@@ -41,15 +41,15 @@ const GOODS_PLANT_CARD_SCENE := preload("res://src/store/goods_plant_card.tscn")
 ## 紫卡与模仿者的落位:下表第 i 项写在 plant_card_rows[i] 这一行,顺序即行内槽位顺序
 ## 上架关卡见 ConstPlantUnlock.PURPLE_CARD_CAN_BUY_LEVEL
 const PLANT_CARD_ROWS: Array[Array] = [
-	[CharacterRegistry.PlantType.P041GatlingPea,
-	 CharacterRegistry.PlantType.P042TwinSunFlower,
-	 CharacterRegistry.PlantType.P043GloomShroom,
-	 CharacterRegistry.PlantType.P044Cattail,],		## 3-4 / 4-4 上架序(机枪、双子、忧郁菇、猫尾草)
-	[CharacterRegistry.PlantType.P047SpikeRock,
-	 CharacterRegistry.PlantType.P046GoldMagnet,
-	 CharacterRegistry.PlantType.P045WinterMelon,
-	 CharacterRegistry.PlantType.P048CobCannon,],	## 5-1 / 通关后上架序(地刺王、吸金磁、冰西瓜、玉米加农炮)
-	[CharacterRegistry.PlantType.P999Imitater,],	## 模仿者;同行还有坚果包扎术,它不是植物卡片,直接摆在场景里(见 goods_wall_nut_first_aid)
+	[PlantIds.GATLING_PEA,
+	 PlantIds.TWIN_SUN_FLOWER,
+	 PlantIds.GLOOM_SHROOM,
+	 PlantIds.CATTAIL,],		## 3-4 / 4-4 上架序(机枪、双子、忧郁菇、猫尾草)
+	[PlantIds.SPIKE_ROCK,
+	 PlantIds.GOLD_MAGNET,
+	 PlantIds.WINTER_MELON,
+	 PlantIds.COB_CANNON,],	## 5-1 / 通关后上架序(地刺王、吸金磁、冰西瓜、玉米加农炮)
+	[PlantIds.IMITATER,],	## 模仿者;同行还有坚果包扎术,它不是植物卡片,直接摆在场景里(见 goods_wall_nut_first_aid)
 ]
 
 ## 每一页 = [第一行, 第二行];第二行暂缺时装 null(这一页就只摆一行)
@@ -85,7 +85,6 @@ func _ready() -> void:
 		goods.look_end_goods_signal.connect(crazy_dave.external_trigger_dialog_end)
 		## 确认购买页面
 		goods.signal_pressed_this_goods.connect(confirm_goods.appear_canvas_layer.bind(goods))
-	Log.debug(str("商店已扩展次数:") + str(Global.global_game_state.get_shop_expand_stage()))
 
 ## 生成商店出售的植物卡片商品(紫卡与模仿者),按 PLANT_CARD_ROWS 落到对应的行
 func _create_plant_card_goods() -> void:
@@ -93,7 +92,7 @@ func _create_plant_card_goods() -> void:
 		var row: Control = plant_card_rows[row_index]
 		for plant_type in PLANT_CARD_ROWS[row_index]:
 			var goods: GoodsPlantCard = GOODS_PLANT_CARD_SCENE.instantiate()
-			goods.plant_type = plant_type as CharacterRegistry.PlantType
+			goods.plant_type = plant_type
 			row.add_child(goods)
 
 ## 植物盆摆满 3 个:原版货架前 3 格都是盆(金盏花幼苗每天限购 3 个,

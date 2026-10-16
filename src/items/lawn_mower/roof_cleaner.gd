@@ -12,7 +12,6 @@ func _ready() -> void:
 		## 获取对应位置的斜面y相对位置
 		var slope_y_first = GameContext.curr_main_game.main_game_slope.get_all_slope_y(global_position.x)
 		position.y += slope_y_first
-		Log.debug(str("x位置：") + str(global_position.x) + str("修正位置：") + str(slope_y_first))
 
 
 func _process(delta: float) -> void:
@@ -30,7 +29,6 @@ func _process(delta: float) -> void:
 
 ## 更新移动方向修正(斜面时使用)
 func update_move_dir_y_correct(curr_move_dir_y_correct_slope:Vector2):
-	#Log.debug(str("更新移动方向:") + str(move_dir))
 	self.move_dir_y_correct_slope = curr_move_dir_y_correct_slope
 
 

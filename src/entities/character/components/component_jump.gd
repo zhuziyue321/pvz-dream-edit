@@ -102,7 +102,6 @@ func jump_end():
 	var offset_x: float = jump_x * absf(owner_zombie.scale.x)
 	owner.global_position.x -= offset_x
 	signal_jump_end_end.emit()
-	#Log.debug("跳跃结束修改完成位置")
 
 ## 跳跃被高坚果强行停止
 func jump_be_stop(plant:Plant000Base):

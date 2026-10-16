@@ -35,22 +35,6 @@ var _full_hp_hidden_nodes: Array[Node2D] = []
 ## 满血时应当显示的精灵(掉手 / 裂纹阶段才消失)
 var _full_hp_shown_nodes: Array[Node2D] = []
 
-@export_subgroup("一类防具(血量临界值数组默认为空（3个）即可)")
-## 血量临界值数组，从满血到死亡顺序,默认为空即可
-@export var boundary_value_hp_armor1:Array[int]
-## 每阶段血量改变的精灵节点（默认有两个阶段：掉手、掉头）
-@export var body_change_armor1:Array[ResourceBodyChange]
-## 当前血量阶段
-var curr_hp_armor1_stage := -1
-
-@export_subgroup("二类防具(血量临界值数组默认为空（3个）即可)")
-## 血量临界值数组，从满血到死亡顺序,默认为空即可
-@export var boundary_value_hp_armor2:Array[int]
-## 每阶段血量改变的精灵节点（默认有两个阶段：掉手、掉头）
-@export var body_change_armor2:Array[ResourceBodyChange]
-## 当前血量阶段
-var curr_hp_armor2_stage := -1
-
 func component_ready() -> void:
 	## 初始化参数
 	if boundary_value_hp.is_empty():
@@ -64,19 +48,6 @@ func component_ready() -> void:
 	## 修改死亡临界值
 	if boundary_value_hp[-1] != 0:
 		hp_component.set_death_hp(boundary_value_hp[-1])
-
-	## 只有僵尸血量组件会初始化防具参数
-	if hp_component is HpComponentZombie:
-		## 初始化防具参数
-		if boundary_value_hp_armor1.is_empty() and hp_component.max_hp_armor1 != 0:
-			boundary_value_hp_armor1.append(hp_component.max_hp_armor1 * 2 / 3 - 1)
-			boundary_value_hp_armor1.append(hp_component.max_hp_armor1 * 1 / 3 - 1)
-			boundary_value_hp_armor1.append(0)
-
-		if boundary_value_hp_armor2.is_empty() and hp_component.max_hp_armor2 != 0:
-			boundary_value_hp_armor2.append(hp_component.max_hp_armor2 * 2 / 3 - 1)
-			boundary_value_hp_armor2.append(hp_component.max_hp_armor2 * 1 / 3 - 1)
-			boundary_value_hp_armor2.append(0)
 
 	## 快照必须在任何掉手 / 裂纹发生之前取,放在 _ready 末尾即可
 	_record_full_hp_body()
@@ -119,7 +90,7 @@ func _record_full_hp_body() -> void:
 
 
 ## 复原满血外观(坚果包扎术):血量阶段与 body 外观一起退回未受损状态
-## 只复原本体,防具(僵尸的报纸 / 铁桶一类)没有"包扎"这回事,不处理
+## 只复原本体;防具的破损外观由 `ArmorComponent` 自己管,不在这里处理
 func reset_hp_stage() -> void:
 	if curr_hp_stage < 0:
 		return
@@ -146,52 +117,12 @@ func get_all_body_change()->Array[ZombieDropBase]:
 
 #endregion
 
-#region 防具body变化
-## 防具血量变化判断,判断body是否需要变化
-## curr_hp: 当前剩余血量
-func judge_body_change_armor(curr_hp_arm:int, _curr_hp:int, is_drop:bool=true, is_armor1:bool=true):
-	## 角色不存在  or 不掉落
-	if not is_instance_valid(owner_character) or not is_drop:
-		return
-
-	if is_armor1:
-		curr_hp_armor1_stage = update_hp_armor_stage(curr_hp_arm, curr_hp_armor1_stage, boundary_value_hp_armor1, body_change_armor1)
-	else:
-		curr_hp_armor2_stage = update_hp_armor_stage(curr_hp_arm, curr_hp_armor2_stage, boundary_value_hp_armor2, body_change_armor2)
-
-func update_hp_armor_stage(curr_hp_arm:int, curr_hp_armor_stage:int, boundary_value_hp_armor:Array[int], body_change_armor:Array[ResourceBodyChange]):
-	## 最后血量状态
-	if curr_hp_armor_stage == boundary_value_hp_armor.size() - 1 :
-		return curr_hp_armor_stage
-
-	## 循环数组
-	for i in range(boundary_value_hp_armor.size()):
-		if curr_hp_armor_stage < i and curr_hp_arm <= boundary_value_hp_armor[i]:
-			#Log.debug(str("当前血量状态：") + str(curr_hp_stage) + str("小于状态：") + str(i))
-			#Log.debug(str("当前血量：") + str(curr_hp_stage) + str("小于状态：") + str(i))
-			curr_hp_armor_stage = i
-
-			if body_change_armor[i] == null:
-				continue
-			body_change_armor[i].update_body(self)
-
-	return curr_hp_armor_stage
-#endregion
-
 ## 小僵尸大麻烦更新僵尸血量变化临界值
+## 只管本体;防具那几层由 `HpComponentZombie.update_mini_zombie_hp()` 转给各自的防具组件
 func update_mini_zombie_hp_stage_change():
 	for i in range(boundary_value_hp.size()):
 		boundary_value_hp[i] /= 2
 	## 修改死亡临界值
 	if boundary_value_hp[-1] != 0:
 		hp_component.set_death_hp(boundary_value_hp[-1])
-
-	## 初始化防具参数
-	if hp_component.max_hp_armor1 != 0:
-		for i in range(boundary_value_hp_armor1.size()):
-			boundary_value_hp_armor1[i] /= 2
-
-	if hp_component.max_hp_armor2 != 0:
-		for i in range(boundary_value_hp_armor2.size()):
-			boundary_value_hp_armor2[i] /= 2
 

@@ -78,8 +78,8 @@ func run(a) -> void:
 	_check(a, "玩家已拿到铲子（已通关 1-4）", Global.global_game_state.is_shovel_unlocked(),
 		str(Global.global_game_state.get_max_success_adventure_level()))
 	_check(a, "开局草坪上有 3 株豌豆射手",
-		_count_plant(mg, CharacterRegistry.PlantType.P001PeaShooterSingle) == 3,
-		str(_count_plant(mg, CharacterRegistry.PlantType.P001PeaShooterSingle)))
+		_count_plant(mg, PlantIds.PEA_SHOOTER_SINGLE) == 3,
+		str(_count_plant(mg, PlantIds.PEA_SHOOTER_SINGLE)))
 	var pre_pos := _pre_plant_positions(mg)
 	_check(a, "三株豌豆射手落在原版位置 (2,6)(3,8)(4,7)", pre_pos == EXPECT_PRE_PLANT_POS,
 		str(pre_pos))
@@ -481,7 +481,7 @@ func _count_lawn_plants(mg) -> int:
 
 
 ## 场上某种植物的数量
-func _count_plant(mg, plant_type: CharacterRegistry.PlantType) -> int:
+func _count_plant(mg, plant_type: StringName) -> int:
 	var num := 0
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in row_cells:

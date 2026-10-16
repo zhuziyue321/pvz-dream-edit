@@ -28,7 +28,6 @@ func add_item(item_data: Variant, item_weight: float, rebuild: bool = true, chec
 		return false
 	if check_repeat:
 		if has_item(item_data):
-			Log.debug(str("要添加的物品已存在，无法添加") + str({"item_data": item_data}))
 			return false
 	_item_pool.append({"data": item_data, "weight": item_weight})
 	if rebuild:
@@ -61,7 +60,6 @@ func remove_item(item_data: Variant, rebuild: bool = true) -> bool:
 			if rebuild:
 				_build_alias_table()
 			return true
-	Log.debug(str("要删除的物品不存在") + str({"item_data": item_data}))
 	return false
 
 ## 批量删除指定物品
@@ -91,7 +89,6 @@ func update_item_weight(item_data: Variant, new_weight: float, rebuild: bool = t
 			if rebuild:
 				_build_alias_table()
 			return true
-	Log.debug("要更新的物品不存在：%s" % str(item_data))
 	return false
 
 ## 批量更新物品权重
@@ -115,7 +112,6 @@ func get_item_weight(item_data: Variant) -> float:
 	for item in _item_pool:
 		if item.data == item_data:
 			return item.weight
-	Log.debug(str("要获取权重的物品不存在") + str({"item_data": item_data}))
 	return -1.0
 
 ## 获取多个物品的权重数据
@@ -132,22 +128,24 @@ func get_items_weights(item_datas: Array) -> Dictionary:
 			result[item.data] = item.weight
 			# 移除以避免重复处理
 			target_set.erase(item.data)
-	# 记录未找到项的警告（每个缺失项仅记录一次）
-	for missing in target_set:
-		Log.debug(str("要获取权重的物品不存在") + str({"item_data": missing}))
 	return result
 
 ## 获取随机物品
 ## [param should_remove] 是否在获取后移除该物品（默认false）
+## [param rng] 用哪一条随机流抽（默认 `GameRng` 那条全局可播种的）
+##
+## ★ 为什么要能换流：`GameRng` 是**全项目共用**的一条序列，谁多抽一次后面全串位。
+##   有自己的一整套随机、且要求两端一致的玩法（比如三消要摆出同一份盘面）应当自己持一条
+##   私有流传进来 —— 那样它抽多少次都不会挤到别人的序列上。
 ## [return] 随机物品数据（池为空时返回null）
-func get_random_item(should_remove: bool = false) -> Variant:
+func get_random_item(should_remove: bool = false, rng: RandomNumberGenerator = null) -> Variant:
 	if _item_pool.is_empty():
 		return null
 
 	var n := _item_pool.size()
 	## 走 GameRng 而不是全局随机：抽怪类型必须两端一致（未播种时行为与原来相同，见 GameRng）
-	var index := GameRng.randi() % n
-	var r := GameRng.randf()
+	var index := (rng.randi() if rng != null else GameRng.randi()) % n
+	var r := rng.randf() if rng != null else GameRng.randf()
 
 	if r >= _prob[index]:
 		index = _alias[index]

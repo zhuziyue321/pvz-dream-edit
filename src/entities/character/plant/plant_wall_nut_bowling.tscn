@@ -11,7 +11,7 @@
 [node name="Plant1001WallNutBowling" instance=ExtResource("1_86o3g")]
 script = ExtResource("2_3smdn")
 bowling_bullet_scene = ExtResource("3_61jto")
-plant_type = 1001
+plant_type = &"wall_nut_bowling"
 
 [node name="_ground" type="Sprite2D" parent="Body/BodyCorrect" index="0"]
 position = Vector2(-42, -71)

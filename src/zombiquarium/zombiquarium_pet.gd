@@ -236,7 +236,6 @@ func die() -> void:
 	## 原版是本关专属的「僵尸溺死」音效（wiki: Zombaquarium die.ogg），仓库里没有这个素材，
 	## 先用僵尸入水的水花音效顶上（音效缺素材不影响玩法）
 	SoundManager.play_other_SFX("zombie_entering_water")
-	Log.debug("僵尸水族馆：一只潜水僵尸饿死了")
 #endregion
 
 

@@ -28,39 +28,39 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.Null
 	is_seed_rain = true
 	seed_rain_weights = ResourceCardWeight.create_plant_weights({
-	1: 2,
-	3: 1,
-	4: 2,
-	6: 2,
-	8: 2,
-	17: 8,
-	18: 1,
-	19: 2,
-	21: 1,
-	23: 2,
-	26: 1,
-	28: 2,
-	44: 1
+	&"pea_shooter_single": 2,
+	&"cherry_bomb": 1,
+	&"wall_nut": 2,
+	&"snow_pea": 2,
+	&"pea_shooter_double": 2,
+	&"lily_pad": 8,
+	&"squash": 1,
+	&"three_peater": 2,
+	&"jalapeno": 1,
+	&"torch_wood": 2,
+	&"plantern": 1,
+	&"blover": 2,
+	&"cattail": 1
 	})
 	seed_rain_order = ResourceCardReference.create_plant_order({
-	0: 17,
+	0: &"lily_pad",
 	5: 44
 	})
 
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z015Dolphinrider,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.JACKSON,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKBOX,
+		ZombieIds.DOLPHINRIDER,
+		ZombieIds.POLE_VAULTER,
 	]
 
 	## 展示僵尸

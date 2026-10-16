@@ -10,19 +10,22 @@ func _init() -> void:
 	scene_name = SceneSettingRegistry.SCENE_FOG
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z002Flag,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z012Snorkle,
-		CharacterRegistry.ZombieType.Z015Dolphinrider,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z017Balloon,
-		CharacterRegistry.ZombieType.Z018Digger,
-		CharacterRegistry.ZombieType.Z019Pogo,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.FLAG,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.SNORKLE,
+		ZombieIds.DOLPHINRIDER,
+		ZombieIds.JACKBOX,
+		ZombieIds.BALLOON,
+		ZombieIds.DIGGER,
+		ZombieIds.POGO,
 	]
 
 	## 展示僵尸

@@ -38,6 +38,5 @@ func _refresh_goods_state() -> void:
 func get_one_goods():
 	Global.global_game_state.buy_tree_of_wisdom()
 	Global.save_service.save_now()
-	Log.debug("购买智慧树,戴夫送了 %d 袋树肥料" % ConstTreeOfWisdom.TREE_FOOD_START_NUM)
 	_refresh_goods_state()
 	judge_can_get_goods()

@@ -8,7 +8,7 @@ class_name Zombie038MagnetShroom
 ## 吸的间隔（秒）
 @export var magnet_cd: float = 15.0
 ## 被吸走的植物类型（原版：磁力菇）
-@export var magnet_plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.P032MagnetShroom
+@export var magnet_plant_type: StringName = PlantIds.MAGNET_SHROOM
 
 var magnet_timer: Timer
 
@@ -24,8 +24,12 @@ func ready_norm() -> void:
 
 func ready_norm_signal_connect() -> void:
 	super()
-	## 头顶植物被打掉后就没有磁力了（和原版表现一致：植物掉了能力也跟着没了）
-	hp_component.signal_armor1_death.connect(_on_plant_head_broken)
+	## 头顶植物（一类防具）被打掉后就没有磁力了（和原版表现一致：植物掉了能力也跟着没了）
+	var head_armor := get_armor(ConstArmor.E_ArmorType.PlantHead)
+	if head_armor == null:
+		Log.error("磁力菇僵尸缺少 PlantHead 防具组件，头顶植物掉了不会停止吸磁力菇")
+	else:
+		head_armor.signal_armor_death.connect(_on_plant_head_broken)
 
 
 ## 头顶植物被打掉：停止吸磁力菇
@@ -42,7 +46,7 @@ func _on_magnet_timer_timeout() -> void:
 	if not is_instance_valid(target):
 		return
 	SoundManager.play_character_SFX(&"magnetshroom")
-	target.be_attacked_bullet(9999, BulletRegistry.AttackMode.Penetration, false, false)
+	target.be_attacked_bullet(9999, ConstDamage.E_DamageMode.Penetration, false, false)
 
 
 ## 找到本行玩家的磁力菇（没有返回 null）

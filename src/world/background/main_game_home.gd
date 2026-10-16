@@ -38,7 +38,7 @@ func init_home(game_BG: ConstLevelData.GameBg):
 
 ## 僵尸进房
 func _on_area_2d_home_area_entered(area: Area2D) -> void:
-	Log.debug("僵尸进家")
+	Log.info("僵尸进家")
 	var zombie :Zombie000Base = area.owner
 	EventBus.push_event(ConstEventName.ZOMBIE_GO_HOME, [zombie])
 

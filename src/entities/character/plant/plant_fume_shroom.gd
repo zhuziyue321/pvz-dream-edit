@@ -21,7 +21,6 @@ func _start_shoot():
 		gpu_particles_2d.emitting = true
 
 func _end_shoot():
-	#Log.debug("结束")
 	for gpu_particles_2d in all_bullet_fx:
 		gpu_particles_2d.emitting = false
 

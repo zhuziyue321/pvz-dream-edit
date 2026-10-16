@@ -50,5 +50,5 @@ const PET_SUN_FIRST_SCALE := 0.6
 
 
 ## 水族馆里的僵尸类型（原版只有潜水僵尸）
-static func get_pet_zombie_type() -> CharacterRegistry.ZombieType:
-	return CharacterRegistry.ZombieType.Z012Snorkle
+static func get_pet_zombie_type() -> StringName:
+	return ZombieIds.SNORKLE

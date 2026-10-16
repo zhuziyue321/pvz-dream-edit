@@ -10,10 +10,9 @@ class_name AttackComponentZomBotany
 ## 子弹阵营由 AttackComponentBulletBase.get_bullet_camp() 决定（owner 是僵尸 → 僵尸方子弹，打玩家的植物），
 ## 所以这些僵尸和玩家的植物**共用同一份子弹场景**（豌豆 / 卷心菜 / 西瓜 …），不用复制一套僵尸版。
 
-## 一次攻击连发几颗（原版机枪僵尸一次 4 发，其余 1 发）
-@export var burst_num: int = 1
-## 连发间隔（秒）
-@export var burst_interval: float = 0.12
+## 连发用的是基类 `AttackComponentBulletBase` 的 `burst_num` / `burst_interval` / `shoot_burst()`
+## （与玩家的机枪射手同一套，原先本文件自己有一份，上移后删掉避免重复声明）。
+## 这里只补「头顶植物的发射表现」—— 每发之后向后一顿再弹回，代替没有的发射动画。
 ## 子弹方向：僵尸朝房子走，子弹朝**左**飞。
 ## 不能沿用 detect_component.ray_area_direction —— 那是按检测区 rotation 算的，
 ## 僵尸的啃咬检测区 rotation 是 0（等于朝右），直接拿来用子弹会往僵尸身后飞
@@ -34,18 +33,13 @@ func _on_bullet_attack_cd_timer_timeout() -> void:
 	last_target_enemy = detect_component.update_first_enemy()
 	if is_instance_valid(last_target_enemy):
 		last_target_enemy_global_pos = last_target_enemy.global_position
-	await _shoot_burst()
+	await shoot_burst()
 
 
-## 连发
-func _shoot_burst() -> void:
-	for i in range(maxi(burst_num, 1)):
-		if not is_instance_valid(self) or not is_attack_res:
-			return
-		_shoot_bullet()
-		_play_head_shoot_anim()
-		if i < burst_num - 1:
-			await get_tree().create_timer(burst_interval).timeout
+## 单发之后补一个「发射」表现（连发循环在基类的 `shoot_burst()` 里，这里只管表现）
+func _shoot_bullet_once() -> void:
+	super()
+	_play_head_shoot_anim()
 
 
 ## 头顶植物的「发射」表现：向后一顿再弹回，代替没有的发射动画

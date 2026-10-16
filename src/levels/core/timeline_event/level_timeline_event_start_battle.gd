@@ -15,7 +15,7 @@ class_name LevelTimelineEventStartBattle
 
 @export var timeout: float = 0.0
 @export var max_wave: int = -1
-@export var zombie_refresh_types: Array[CharacterRegistry.ZombieType] = []
+@export var zombie_refresh_types: Array[StringName] = []
 
 
 func run(main_game: MainGameManager) -> void:

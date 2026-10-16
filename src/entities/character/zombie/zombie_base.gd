@@ -17,8 +17,21 @@ var is_below_critical_value: bool:
 	get:
 		return is_instance_valid(critical_value_component) and critical_value_component.is_below_critical()
 
+## 是否免疫减速（寒冰豌豆 / 冰冻）。**哪件防具免疫由防具组件自己回答**
+## （`ArmorComponent.is_immune_slow()`），这里只做转发，角色不存一份（K-01）
+var is_slow_immune: bool:
+	get:
+		var zombie_hp := hp_component as HpComponentZombie
+		return zombie_hp != null and zombie_hp.is_immune_slow()
+
+## 是否免疫黄油定身（同上，由防具组件自己回答）
+var is_butter_immune: bool:
+	get:
+		var zombie_hp := hp_component as HpComponentZombie
+		return zombie_hp != null and zombie_hp.is_immune_butter()
+
 #region 僵尸类基础属性
-@export var zombie_type:CharacterRegistry.ZombieType
+@export var zombie_type: StringName
 ## 僵尸基础属性参数，_ready初始化
 @export_group("僵尸基础属性")
 ## 是否忽略梯子,即可以攻击梯子下的植物
@@ -34,16 +47,18 @@ var participates_natural_refresh: bool = true
 
 @export_subgroup("僵尸铁器")
 ## 铁器种类
+##
+## ⚠️ 原先的「一类 / 二类铁器**防具**」两个值已并入 `ArmorComponent`（防具自带 `iron_node`，
+## 磁力菇走 `HpComponentZombie.get_magnet_armor()` 找它），这里只剩**不是防具**的铁器道具
+## （跳跳棒 / 小丑盒 / 矿工镐）。`IronItem` 显式写成 3 是为了让存量 `.tscn` 里存的数字继续有效。
 enum IronType{
 	Null,		## 没有铁器
-	IronArmor1,	## 一类铁器防具
-	IronArmor2,	## 二类铁器防具
-	IronItem,	## 铁器道具
+	IronItem = 3,	## 铁器道具（跳跳棒 / 小丑盒 / 矿工镐）
 }
 
 ## 僵尸铁器类型
 @export var iron_type:IronType = IronType.Null
-## 僵尸铁器节点
+## 僵尸铁器节点（铁器**道具**用；防具的铁器节点挂在 `ArmorComponent` 上）
 @export var iron_node:IronNode
 @export_subgroup("僵尸初始化状态")
 ## 僵尸初始化状态（从1[is_norm] 开始，被攻击时是否能被攻击到的属性）
@@ -187,9 +202,11 @@ func ready_norm():
 	head_node = ZombieButterUtil.find_head_node(self)
 	curr_be_attack_status = init_be_attack_status
 	## 若生成位置在斜面中,生成时修正斜面位置
-	if is_instance_valid(get_main_game().main_game_slope):
+	## （关卡之外创建的僵尸 —— 图鉴预览、探针 —— 没有主游戏，这里要挡一下）
+	var main_game := get_main_game()
+	if main_game != null and is_instance_valid(main_game.main_game_slope):
 		## 获取对应位置的斜面y相对位置
-		var slope_y_first = get_main_game().main_game_slope.get_all_slope_y(global_position.x)
+		var slope_y_first = main_game.main_game_slope.get_all_slope_y(global_position.x)
 		move_y_zombie(slope_y_first)
 	## 僵尸普通攻击组件连接信号
 	#if attack_component is AttackComponentZombieNorm:
@@ -201,6 +218,84 @@ func ready_norm():
 	if Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) == CharacterRegistry.ZombieRowType.Both:
 		if body_change_on_pool != null:
 			zombie_row_type_both_body_update()
+
+	## 运行期热注册的僵尸在这一步把自己的防具挂上来（见 build_runtime_parts），
+	## 挂完立刻走装备钩子，与场景里本来就带着防具的内置僵尸完全一致
+	build_runtime_parts()
+	## 防具存在时的特殊效果（浮空、免疫…）**由防具组件自己定义**，这里只负责在
+	## 所有子节点都 ready 之后触发一次装备钩子（见 ArmorComponent.on_armor_equip）
+	activate_armor_effects()
+
+#region 运行期热注册（防具装配）
+## 【热注册】装配钩子：本体已就位、组件都已就绪、防具的装备效果还没触发时调用一次。
+## 运行期热注册的僵尸（见 `CharacterRegistry.register_runtime_zombie`）在**自己的脚本**里
+## 重写它，用 `add_armor()` 想挂几层挂几层 —— 防具这条路由脚本自己说了算，
+## 热注册的入口只认「本体 + 脚本」两样（防具的特殊效果照旧由防具组件自己定义）。
+## 内置僵尸不用重写：它们的防具本来就写在 `.tscn` 里。
+func build_runtime_parts() -> void:
+	pass
+
+
+## 【热注册】给本体挂一层防具，返回这一层（还要改更多字段就在返回值上接着改）
+##
+## ```gdscript
+## ## 热注册僵尸脚本里
+## func build_runtime_parts() -> void:
+## 	super()
+## 	add_armor(ConstArmor.E_ArmorType.Cone, 370)                ## 一类（头顶）
+## 	add_armor(ConstArmor.E_ArmorType.ScreenDoor, 1100,
+## 		ConstArmor.E_ArmorClass.Armor2)                        ## 二类（举在身前，先挨打）
+## ```
+##
+## [param armor_type] 防具类型（只做标识与查找，见 `ConstArmor.E_ArmorType`）
+## [param max_hp] 本层血量（0 = 这不是一件防具）
+## [param armor_class] 防具类别，二类在外、先挨打
+## [param armor_script] 防具脚本；留空用基类 `ArmorComponent`，
+##                      要"防具存在 / 破损时的特殊效果"就传它的子类（如 `ArmorComponentBalloon`）
+## [param absorb_priority] 同类防具之间的挨打顺序，数值越大越外层
+## [return] 挂上去的那层防具；本体没有血量组件等异常情况下返回 null
+func add_armor(
+	armor_type: ConstArmor.E_ArmorType,
+	max_hp: int,
+	armor_class: ConstArmor.E_ArmorClass = ConstArmor.E_ArmorClass.Armor1,
+	armor_script: Script = null,
+	absorb_priority: int = 0
+) -> ArmorComponent:
+	var armor: ArmorComponent
+	if armor_script == null:
+		armor = ArmorComponent.new()
+	else:
+		armor = armor_script.new() as ArmorComponent
+	if armor == null:
+		Log.error("%s：add_armor 无法用脚本 %s 创建防具，已跳过这一层" % [name, armor_script])
+		return null
+	## 名字按"已有几层防具"编号，保证多层防具不会重名
+	var armor_index := 0
+	for child in get_children():
+		if child is ArmorComponent:
+			armor_index += 1
+	armor.name = "ArmorComponentRuntime%d" % armor_index
+	armor.armor_type = armor_type
+	armor.armor_class = armor_class
+	armor.absorb_priority = absorb_priority
+	armor.max_hp = max_hp
+	add_child(armor)
+	## 防具表是血量组件在 `component_ready()` 里一次性收集的，而组件比宿主先 ready
+	## —— 运行期才挂上来的这一层不在那张表里，挂完要让它重新收一遍
+	var zombie_hp := hp_component as HpComponentZombie
+	if zombie_hp != null:
+		zombie_hp.collect_armors()
+	return armor
+#endregion
+
+## 让每件还在的防具触发一次装备效果钩子
+func activate_armor_effects():
+	var zombie_hp := hp_component as HpComponentZombie
+	if zombie_hp == null:
+		return
+	for armor in zombie_hp.get_all_armors():
+		if armor.is_alive():
+			armor.on_armor_equip()
 
 
 ## 两栖类僵尸body变化
@@ -252,11 +347,8 @@ func ready_norm_signal_connect():
 	## 死亡时取消黄油
 	hp_component.signal_hp_component_death.connect(death_stop_butter)
 
-	## 血量状态变化组件
+	## 血量状态变化组件（只管本体；防具的破损外观由 `ArmorComponent` 自己管）
 	hp_component.signal_hp_loss.connect(hp_stage_change_component.judge_body_change)
-	## 防具血量状态变化组件
-	hp_component.signal_hp_armor1_loss.connect(hp_stage_change_component.judge_body_change_armor.bind(true))
-	hp_component.signal_hp_armor2_loss.connect(hp_stage_change_component.judge_body_change_armor.bind(false))
 
 	## 当前动画结束时，移动组件改变移动状态
 	anim_component.signal_animation_finished.connect(move_component._on_animation_finished)
@@ -267,13 +359,6 @@ func ready_norm_signal_connect():
 
 	## 游泳信号
 	swim_box_component.signal_change_is_swimming.connect(change_is_swimming)
-
-	## 铁器防具
-	match iron_type:
-		IronType.IronArmor1:
-			hp_component.signal_armor1_death.connect(func():iron_type=IronType.Null)
-		IronType.IronArmor2:
-			hp_component.signal_armor2_death.connect(func():iron_type=IronType.Null)
 
 	## 掉落战利品
 	hp_component.signal_hp_component_death.connect(drop_item_component.drop_coin)
@@ -291,6 +376,8 @@ func ready_norm_signal_connect():
 ## 初始化展示角色
 func ready_show():
 	super()
+	## 展示态（图鉴 / 开局预览）也要装配：热注册的僵尸在图鉴里得戴着它的防具
+	build_runtime_parts()
 	move_component.disable_component(ComponentNormBase.E_IsEnableFactor.InitType)
 
 ## 改变攻击状态攻击
@@ -299,7 +386,6 @@ func change_is_attack(value:bool):
 
 ## 更新移动方向修正(斜面时使用)
 func update_move_dir_y_correct(move_dir_y_correct_slope:Vector2):
-	#Log.debug(str("更新移动方向:") + str(move_dir))
 	move_component.move_dir_y_correct_slope = move_dir_y_correct_slope
 
 
@@ -333,13 +419,13 @@ func _fade_and_remove():
 
 ## 死亡不消失(海草\TODO:小推车)
 func character_death_not_disappear():
-	hp_component.Hp_loss_death(false)
+	hp_component.hp_loss_to_death(false)
 
 ## 死亡直接消失
 func character_death_disappear():
 	is_death = true
 	is_can_death_language = false
-	hp_component.Hp_loss_death(false)
+	hp_component.hp_loss_to_death(false)
 	queue_free()
 
 ## 被小推车碾压（表现编排见 ZombieMowerRunUtil）
@@ -364,7 +450,7 @@ func be_grap_in_pool():
 ## is_cherry_bomb:bool = false ：是否灰烬炸弹(非土豆雷)
 func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 	is_can_death_language = false
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, false, false)
+	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Bomb, false)
 	## 如果角色死亡
 	if is_death:
 		## 在在灰烬动画条件下
@@ -379,7 +465,7 @@ func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 ## 被大嘴花吃
 func be_chomper_eat(attack_value:int):
 	is_can_death_language = false
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, false, false)
+	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Eat, false)
 	if is_death:
 		queue_free()
 	#await get_tree().process_frame
@@ -391,29 +477,65 @@ func be_chomper_eat(attack_value:int):
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Garden_Rake) —— 原版 1800 伤害
 func be_rake_attack(attack_value:int=ConstShop.RAKE_ATTACK_VALUE):
 	is_can_death_language = false
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, false, false)
+	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
 	set_deferred("is_can_death_language", true)
 
 ## 被倭瓜压
 func be_squash(attack_value:int=1800):
 	is_can_death_language = false
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, false, false)
+	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
 	if is_death:
 		queue_free()
 	#await get_tree().process_frame
 	set_deferred("is_can_death_language", true)
 
+## 【伤害系统】穿透伤害的便捷入口：僵尸这边的"必杀类"伤害（爆炸 / 吞噬 / 碾压）都是同一套参数，
+## 差别只在语义标记 `cause`，收成一个私有函数免得每个入口各抄一遍 DamageInfo 组装。
+## [param attack_value] 伤害值
+## [param cause] 伤害来源语义（见 `ConstDamage.E_DamageCause`）
+## [param is_drop_on_death] 死亡时是否掉落
+func _apply_penetration_damage(attack_value:int, cause:ConstDamage.E_DamageCause, is_drop_on_death:bool) -> DamageResult:
+	var info := DamageInfo.create(self, attack_value, ConstDamage.E_DamageMode.Penetration, cause)
+	info.is_drop_on_death = is_drop_on_death
+	info.trigger_sfx = false
+	return apply_damage(info)
+
 #endregion
-## 铁器被吸走
-## 非一类防具和非二类防具需重写该函数
+## 铁器被吸走（磁力菇）
+##
+## 铁器**防具**走 `HpComponentZombie.get_magnet_armor()` → `break_armor()`，由磁力菇组件自己挑；
+## 这里只处理不是防具的铁器道具（跳跳棒 / 小丑盒 / 矿工镐），具体表现由子类重写 `loss_iron_item()`。
 func be_magnet_iron():
-	match iron_type:
-		IronType.IronArmor1:
-			hp_component.Hp_loss(hp_component.curr_hp_armor1,BulletRegistry.AttackMode.Norm, false, false)
-		IronType.IronArmor2:
-			hp_component.Hp_loss(hp_component.curr_hp_armor2,BulletRegistry.AttackMode.Norm, false, false)
-		IronType.IronItem:
-			loss_iron_item()
+	if iron_type == IronType.IronItem:
+		loss_iron_item()
+
+## 打掉指定的一层防具（走伤害管线，破损信号 / 外观 / 掉落都会按正常流程触发）
+##
+## 磁力菇吸铁器、气球被门框挤破、梯子搭到植物上都是这一条路。
+## [param armor] 要打掉的那一层（用 `get_armor()` 按类型取）
+## [param is_drop_on_death] 死亡时是否掉落（磁力菇吸走铁器不掉落）
+## [param is_drop_2] 掉落的额外条件（两个条件都满足才掉）
+## [param is_trigger_sfx] 是否播受击音效（气球被挤破算"受击"，磁力菇吸走铁器不算）
+func break_armor(armor:ArmorComponent, is_drop_on_death:bool = true,
+		is_drop_2:bool = true, is_trigger_sfx:bool = false) -> void:
+	var zombie_hp := hp_component as HpComponentZombie
+	if zombie_hp == null:
+		return
+	zombie_hp.break_armor(armor, is_drop_on_death, is_drop_2, is_trigger_sfx)
+
+## 按类型取本角色身上的一件防具（没有返回 null）
+func get_armor(armor_type:ConstArmor.E_ArmorType) -> ArmorComponent:
+	var zombie_hp := hp_component as HpComponentZombie
+	if zombie_hp == null:
+		return null
+	return zombie_hp.get_armor_by_type(armor_type)
+
+## 取一件还没被吸走的铁器防具（磁力菇用）；没有返回 null
+func get_magnet_armor() -> ArmorComponent:
+	var zombie_hp := hp_component as HpComponentZombie
+	if zombie_hp == null:
+		return null
+	return zombie_hp.get_magnet_armor()
 
 ## 失去铁器道具的影响,对应子类继承重写
 func loss_iron_item():

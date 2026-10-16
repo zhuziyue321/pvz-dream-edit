@@ -79,7 +79,7 @@ func run(a) -> void:
 	## ③ 卡片可用：点一下拿到手上 → 点草坪种下去
 	var card: Card = null
 	for temp_card in mg.card_manager.curr_temp_cards:
-		if is_instance_valid(temp_card) and temp_card.card_plant_type != CharacterRegistry.PlantType.Null:
+		if is_instance_valid(temp_card) and temp_card.card_plant_type != PlantIds.NULL:
 			card = temp_card
 			break
 	_check(a, "场上有一张植物类的天降卡片", card != null, "没有找到植物卡")

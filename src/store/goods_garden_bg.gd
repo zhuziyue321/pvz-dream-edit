@@ -37,8 +37,6 @@ func _refresh_goods_state() -> void:
 func get_one_goods():
 	if Global.global_game_state.buy_garden_bg(curr_goods_garden_bg):
 		Global.save_service.save_now()
-		Log.debug(str("购买花园背景,当前页数:") + str(
-			Global.global_game_state.get_garden_bg_page_num(curr_goods_garden_bg)))
 	else:
 		Log.warn("购买花园背景失败:该背景已拥有")
 	_refresh_goods_state()

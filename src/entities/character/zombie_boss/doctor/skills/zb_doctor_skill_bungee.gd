@@ -263,7 +263,7 @@ func _collect_ranges() -> Array[RangeCandidate]:
 			# 当前列各行的格子，按蹦极自身的偷取规则和水陆限制筛选。
 			for cell: PlantCell in column_cells:
 				if cell.get_bungi_target() != null \
-					and manager.main_game.zombie_manager.can_spawn_skill_zombie(CharacterRegistry.ZombieType.Z021Bungi, cell.row_col.x):
+					and manager.main_game.zombie_manager.can_spawn_skill_zombie(ZombieIds.BUNGI, cell.row_col.x):
 					cells.append(cell)
 			has_target = has_target or not cells.is_empty()
 			columns.append(ColumnCandidates.new(cells))

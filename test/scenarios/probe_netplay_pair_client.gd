@@ -1,4 +1,8 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const NetplayMod := preload("res://mods_builtin/netplay/netplay_mod.gd")
+const NetplaySession := preload("res://mods_builtin/netplay/netplay_session.gd")
 ## 双进程联机实测 —— **客户端这一端**（另一端见 `probe_netplay_pair_host.gd`）
 ##
 ## 这一端要证的三件事（都是单进程探针**原理上证不到**的）：
@@ -37,7 +41,9 @@ func run(a) -> void:
 	if not ModManager.is_mod_enabled(ModIds.NETPLAY):
 		ModManager.set_mod_enabled(ModIds.NETPLAY, true)
 	await a.frames(5)
-	_session = a.get_node_or_null(SESSION_PATH) as NetplaySession
+	## ★ 会话是**懒加载**的（没开房间就没有它）：这里走的就是「加入房间」那一侧的那一步
+	var mod := ModManager.get_mod(ModIds.NETPLAY) as NetplayMod
+	_session = mod._ensure_session() if mod != null else null
 	if _session == null:
 		a.log("!! 拿不到会话节点")
 		a.quit_game()

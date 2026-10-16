@@ -82,10 +82,8 @@ func comfirm_get_this_goods():
 	## 已售罄(原版商店里除卡槽扩充外都是一次性商品)或买不起时都不扣钱
 	## 正常情况下按钮已被禁用走不到这里,这里只是兜底,避免重复购买同一件商品
 	if not is_have_goods:
-		Log.debug("该商品已售罄，不应该出现该语句，因为按钮已经被禁用")
 		return
 	if Global.global_game_state.coin_value < price:
-		Log.debug("买不起，不应该出现该语句，因为按钮已经被禁用")
 		return
 	else:
 		Global.global_game_state.coin_value -= price

@@ -15,7 +15,7 @@ script = ExtResource("2_8mtcf")
 max_attack_num = -1
 speed = 188.0
 type_bullet_SFX = 1001
-bullet_type = 1003
+bullet_type = &"bowling_big"
 
 [node name="CanAttackStatusComponent" parent="."]
 can_attack_plant_status = 1

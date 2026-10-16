@@ -50,7 +50,7 @@ func run(a) -> void:
 
 	var state = Global.global_game_state
 	## 新档：只有豌豆射手，没有任何通关记录
-	state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	state.curr_all_level_state_data = {}
 
 	if not await _goto_level(a):
@@ -171,8 +171,8 @@ func run(a) -> void:
 		str(_hint().is_advice_visible()))
 	_check(a, "教学收尾后箭头已收起", not _hint().is_pointer_visible(),
 		str(_hint().is_pointer_visible()))
-	_check(a, "场上已种下 2 株豌豆射手", _count_plant(mg, CharacterRegistry.PlantType.P001PeaShooterSingle) >= 2,
-		str(_count_plant(mg, CharacterRegistry.PlantType.P001PeaShooterSingle)))
+	_check(a, "场上已种下 2 株豌豆射手", _count_plant(mg, PlantIds.PEA_SHOOTER_SINGLE) >= 2,
+		str(_count_plant(mg, PlantIds.PEA_SHOOTER_SINGLE)))
 	_check(a, "教程提示顺序与关卡流程一致", _advice_seq == EXPECT_ADVICE, str(_advice_seq))
 
 	# ------------------------------------------------ STEP7 教学跑完接着开战
@@ -219,7 +219,7 @@ func run(a) -> void:
 		Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu))
 	await a.wait(2.0)
 	state.curr_all_level_state_data = {}
-	state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	if not await _goto_level(a):
 		_check(a, "重进 1-1（准备中途退场）", false, "进不了关卡")
 		_finish(a)
@@ -386,7 +386,7 @@ func _wait_card_ready(a, card: Card, timeout: float) -> bool:
 ## 找一行真的能种下豌豆射手的草坪（1-1 只有部分行铺了草皮）
 func _find_plant_row(mg) -> int:
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
+		PlantIds.PEA_SHOOTER_SINGLE,
 		CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 	)
 	var cell_rows: Array[Array] = mg.plant_cell_manager.all_plant_cells
@@ -394,13 +394,13 @@ func _find_plant_row(mg) -> int:
 		var cells: Array = cell_rows[row_index]
 		if cells.is_empty():
 			continue
-		if cond.judge_is_can_plant(cells[1], CharacterRegistry.PlantType.P001PeaShooterSingle):
+		if cond.judge_is_can_plant(cells[1], PlantIds.PEA_SHOOTER_SINGLE):
 			return row_index
 	return -1
 
 
 ## 场上某种植物的数量
-func _count_plant(mg, plant_type: CharacterRegistry.PlantType) -> int:
+func _count_plant(mg, plant_type: StringName) -> int:
 	var num := 0
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in row_cells:

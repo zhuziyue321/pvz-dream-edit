@@ -19,7 +19,7 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	monster_mode = ConstLevelData.E_MonsterMode.Null
 	## 僵王博士：开战（boss_spawn_wave = 0）由 ZombieManager 自动出场，胜利条件为「打死僵王」
-	boss_type = CharacterRegistry.ZombieBossType.ZB001Doctor
+	boss_type = ZombieBossIds.DOCTOR
 	boss_spawn_wave = 0
 	## 原版僵王血量 40000（机甲破损阈值 20000 / 10000，即 50% / 25%）
 	boss_hp = 40000
@@ -32,31 +32,31 @@ func _init() -> void:
 	## 没有预览这段镜头，进关就停在归位位（否则整个登场过程都在拍左侧的房子）
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	33: 2,
-	34: 2,
-	35: 2,
-	40: 2,
-	21: 2,
-	15: 2
+	&"cabbage_pult": 2,
+	&"flower_pot": 2,
+	&"corn_pult": 2,
+	&"melon_pult": 2,
+	&"jalapeno": 2,
+	&"ice_shroom": 2
 	})
 
 
 func run_flow(mg: MainGameManager) -> void:
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关的僵尸全部由僵王投放，开战时要带上这一份
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z022Ladder,
-		CharacterRegistry.ZombieType.Z023Catapult,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKSON,
+		ZombieIds.JACKBOX,
+		ZombieIds.LADDER,
+		ZombieIds.CATAPULT,
+		ZombieIds.GARGANTUAR,
 	]
 
 	## 没有僵尸预览：本关不自然出怪，出怪预览为空（look_show_zombie = false），

@@ -158,7 +158,7 @@ func _check_trigger(a, rake: Rake) -> void:
 		Zombie000Base.E_ZInitAttr.CurrWave: 1,
 	}
 	var zombie := zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm,
+		ZombieIds.NORM,
 		zm.all_zombie_rows[lane],
 		zombie_init_para,
 		rake.global_position + Vector2(10, 0)

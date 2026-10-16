@@ -25,7 +25,6 @@ func component_ready() -> void:
 
 ## 修改攻击速度,通过修改攻击值实现
 func owner_update_speed(speed_product:float):
-	#Log.debug("攻击组件修改攻击速度")
 	update_attack_value(speed_product, E_AttackValueFactor.Speed)
 
 ## 修改攻击值

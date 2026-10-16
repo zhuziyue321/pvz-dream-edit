@@ -78,8 +78,8 @@ func _check_both_mode(a) -> void:
 	var plant_types: Array = belt_ctrl.get_card_plant_types()
 	a.log("  传送带上的植物种类 = " + str(plant_types))
 	_check(a, "传送带上只有关卡配的那几种植物",
-		_not_in(plant_types, CharacterRegistry.PlantType.P015IceShroom)
-		and _not_in(plant_types, CharacterRegistry.PlantType.P034FlowerPot),
+		_not_in(plant_types, PlantIds.ICE_SHROOM)
+		and _not_in(plant_types, PlantIds.FLOWER_POT),
 		"出现了没配过的卡")
 	var plant_type_sum := 0
 	for plant_type in plant_types:
@@ -125,20 +125,20 @@ func _check_zomboss_weight_rule(a) -> void:
 	belt_ctrl.refresh_weights()
 	var empty_pot_num := _count_empty_flower_pot(mg)
 	a.log("  开局空花盆 = " + str(empty_pot_num))
-	var pot_weight := belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P034FlowerPot)
+	var pot_weight := belt_ctrl.get_plant_weight(PlantIds.FLOWER_POT)
 	_check(a, "空花盆 %d > 5：花盆权重保持初始值" % empty_pot_num, pot_weight == pot_weight_full,
 		"权重 = " + str(pot_weight))
-	if belt_ctrl.count_card(CharacterRegistry.PlantType.P034FlowerPot) < 4:
+	if belt_ctrl.count_card(PlantIds.FLOWER_POT) < 4:
 		_check(a, "带上花盆不够 4 个时寒冰菇权重不变",
-			belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P015IceShroom) == pot_weight_full,
-			"寒冰菇权重 = " + str(belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P015IceShroom)))
+			belt_ctrl.get_plant_weight(PlantIds.ICE_SHROOM) == pot_weight_full,
+			"寒冰菇权重 = " + str(belt_ctrl.get_plant_weight(PlantIds.ICE_SHROOM)))
 
 	## 在花盆里种满植物，把空花盆压到 <= 5 → 花盆权重下降
 	var planted := _plant_into_flower_pots(mg, empty_pot_num - 5)
 	_check(a, "把空花盆压到 <= 5", _count_empty_flower_pot(mg) <= 5,
 		"还有 %d 个空花盆" % _count_empty_flower_pot(mg))
 	belt_ctrl.refresh_weights()
-	var pot_weight_down := belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P034FlowerPot)
+	var pot_weight_down := belt_ctrl.get_plant_weight(PlantIds.FLOWER_POT)
 	a.log("  种下 %d 株后（空花盆 %d）花盆权重 = %d" % [planted, _count_empty_flower_pot(mg), pot_weight_down])
 	_check(a, "空花盆 <= 5：花盆权重下降", pot_weight_down < pot_weight_full,
 		"权重没降（%d）" % pot_weight_down)
@@ -147,7 +147,7 @@ func _check_zomboss_weight_rule(a) -> void:
 	belt_ctrl.add_weight_rule(ForcePotRule.new())
 	var pot_num := 0
 	for _i in 30:
-		pot_num = belt_ctrl.count_card(CharacterRegistry.PlantType.P034FlowerPot)
+		pot_num = belt_ctrl.count_card(PlantIds.FLOWER_POT)
 		if pot_num >= 4:
 			break
 		await a.wait(1.0)
@@ -156,8 +156,8 @@ func _check_zomboss_weight_rule(a) -> void:
 	_check(a, "传送带上攒够 4 个花盆", pot_num >= 4, "只有 %d 个" % pot_num)
 	if pot_num < 4:
 		return
-	var ice_weight := belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P015IceShroom)
-	var jalapeno_weight := belt_ctrl.get_plant_weight(CharacterRegistry.PlantType.P021Jalapeno)
+	var ice_weight := belt_ctrl.get_plant_weight(PlantIds.ICE_SHROOM)
+	var jalapeno_weight := belt_ctrl.get_plant_weight(PlantIds.JALAPENO)
 	a.log("  带上 4 花盆时：寒冰菇 = " + str(ice_weight) + "  辣椒 = " + str(jalapeno_weight))
 	_check(a, "带上花盆 >= 4：寒冰菇权重上升", ice_weight > pot_weight_full, "权重 = " + str(ice_weight))
 	_check(a, "带上花盆 >= 4：辣椒权重上升", jalapeno_weight > pot_weight_full, "权重 = " + str(jalapeno_weight))
@@ -166,7 +166,7 @@ func _check_zomboss_weight_rule(a) -> void:
 ## 探针自带的规则：把花盆权重拉满，好让传送带快速攒够花盆（验证「带上花盆数」那条）
 class ForcePotRule extends ConveyorWeightRule:
 	func apply_weights(conveyor: ConveyorBeltController) -> void:
-		conveyor.set_plant_weight(CharacterRegistry.PlantType.P034FlowerPot, 100)
+		conveyor.set_plant_weight(PlantIds.FLOWER_POT, 100)
 
 
 ## 场上的空花盆数（与 ZombossConveyorWeightRule 同一个口径：有花盆且花盆上没种东西）
@@ -177,7 +177,7 @@ func _count_empty_flower_pot(mg: MainGameManager) -> int:
 	for plant_cell_lane in mg.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in plant_cell_lane:
 			var pot := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Down)
-			if pot == null or pot.plant_type != CharacterRegistry.PlantType.P034FlowerPot:
+			if pot == null or pot.plant_type != PlantIds.FLOWER_POT:
 				continue
 			if plant_cell.get_curr_plant_num() > 1:
 				continue
@@ -197,9 +197,9 @@ func _plant_into_flower_pots(mg: MainGameManager, num: int) -> int:
 			if plant_cell.get_curr_plant_num() != 1:
 				continue
 			var pot := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Down)
-			if pot == null or pot.plant_type != CharacterRegistry.PlantType.P034FlowerPot:
+			if pot == null or pot.plant_type != PlantIds.FLOWER_POT:
 				continue
-			plant_cell.create_plant(CharacterRegistry.PlantType.P001PeaShooterSingle)
+			plant_cell.create_plant(PlantIds.PEA_SHOOTER_SINGLE)
 			planted += 1
 	return planted
 #endregion

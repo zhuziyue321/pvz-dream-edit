@@ -27,11 +27,11 @@ func _init() -> void:
 	## 本关传送带只出普通坚果(1001) / 爆炸坚果(1002)，不出巨型坚果保龄球(1003)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1001: 2,
-	1002: 1
+	&"wall_nut_bowling": 2,
+	&"wall_nut_bowling_bomb": 1
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
-	0: 1001,
+	0: &"wall_nut_bowling",
 	1: 1002
 	})
 	is_bowling_stripe = true
@@ -47,9 +47,9 @@ func _init() -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
 	]
 
 	## 开场演出（戴夫让你清草坪 → 铲子教学 → 戴夫介绍保龄球）只在首次进本关时播：
@@ -62,7 +62,7 @@ func run_flow(mg: MainGameManager) -> void:
 		var peashooters: Array[SystemPlantResource] = []
 		for cell_pos in peashooter_cells:
 			var peashooter := SystemPlantResource.new()
-			peashooter.plant_type = CharacterRegistry.PlantType.P001PeaShooterSingle
+			peashooter.plant_type = PlantIds.PEA_SHOOTER_SINGLE
 			peashooter.plant_cell_pos = cell_pos
 			peashooters.append(peashooter)
 		await system_plant(peashooters)

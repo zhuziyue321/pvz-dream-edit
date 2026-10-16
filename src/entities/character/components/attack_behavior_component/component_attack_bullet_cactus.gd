@@ -33,4 +33,3 @@ func update_bullet_can_attack_zombie_status(value:bool):
 		can_attack_status_component.can_attack_zombie_status = 8
 	else:
 		can_attack_status_component.can_attack_zombie_status = ~8
-	Log.debug(can_attack_status_component.can_attack_zombie_status)

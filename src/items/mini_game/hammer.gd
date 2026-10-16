@@ -145,7 +145,7 @@ func hammer_zombie():
 		var curr_pred_value = randi_range(1,100)
 
 		if curr_pred_value <= pred_sun:
-			for i in range(3):
+			for _i in range(3):
 				spawn_sun(global_position_zombie_be_choosed)
 
 	## 锤击僵尸特效

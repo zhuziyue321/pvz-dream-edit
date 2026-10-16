@@ -14,7 +14,7 @@ const TARGET_MOVE_Y_RANGE := Vector2(80.0, 90.0)
 
 ## 掉落种子包，返回实例化出来的种子包（调用方可以等它被拾取 / 自动消失后再继续出奖杯）
 ## drop_global_position：最后一只僵尸的死亡处（世界坐标，已收进可视范围）
-func create_seed_packet(plant_type:int, tip_text:String, drop_global_position:Vector2,
+func create_seed_packet(plant_type: StringName, tip_text:String, drop_global_position:Vector2,
 		exist_time:float, tip_time:float) -> SeedPacket:
 	if all_drop_seed_packet_parent == null:
 		Log.error("掉落种子包但没有配置 all_drop_seed_packet_parent")

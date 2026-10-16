@@ -30,7 +30,7 @@ func _ready() -> void:
 ## 初始化出战卡槽，管理器调用
 func init_card_slot_battle(max_choosed_card_num:int, sun:int):
 	self.sun_value = sun
-	for i in range(max_choosed_card_num):
+	for _i in range(max_choosed_card_num):
 		var cloned_card_placeholder = card_placeholder_ori.duplicate()
 		card_ui_list.add_child(cloned_card_placeholder)
 

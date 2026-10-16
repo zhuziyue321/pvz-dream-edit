@@ -143,6 +143,9 @@ static func make_page_save_key(page: int) -> String:
 
 static func make_cell_save_key(cell_index: int) -> String:
 	return "第%d个植物格子" % cell_index
+## 独轮车里那株植物在 garden_data 里的键（**单点定义**：
+## garden_manager.gd 读写两处 + global_garden_state.gd 读档归一化一处）
+const WHEEL_BARROW_SAVE_KEY := "WheelBarrow"
 #endregion
 
 ## 阳光房场景
@@ -169,7 +172,7 @@ func _ready() -> void:
 		item.is_clone = false
 
 	## 独轮车植物数据
-	var wheel_barrow_plant_data = Global.global_game_state.garden_data.get("WheelBarrow", {})
+	var wheel_barrow_plant_data = Global.global_game_state.garden_data.get(WHEEL_BARROW_SAVE_KEY, {})
 	if wheel_barrow_plant_data:
 		wheel_barrow.init_from_data(wheel_barrow_plant_data)
 
@@ -266,7 +269,7 @@ func save_curr_page_data():
 		Global.global_game_state.garden_data[make_bg_save_key(curr_bg_type)] = {}
 	Global.global_game_state.garden_data[make_bg_save_key(curr_bg_type)][make_page_save_key(curr_page)] = curr_bg_page_data
 	## 独轮车信息
-	Global.global_game_state.garden_data["WheelBarrow"] = wheel_barrow.choosed_plant_data
+	Global.global_game_state.garden_data[WHEEL_BARROW_SAVE_KEY] = wheel_barrow.choosed_plant_data
 	Global.save_service.save_now()
 
 #region 按钮信号连接函数

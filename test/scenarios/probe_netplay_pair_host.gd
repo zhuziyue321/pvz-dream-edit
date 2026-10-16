@@ -1,4 +1,9 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const NetplayMod := preload("res://mods_builtin/netplay/netplay_mod.gd")
+const NetplayReadyFlow := preload("res://mods_builtin/netplay/netplay_ready_flow.gd")
+const NetplaySession := preload("res://mods_builtin/netplay/netplay_session.gd")
 ## 双进程联机实测 —— **主机这一端**（另一端见 `probe_netplay_pair_client.gd`）
 ##
 ## 为什么非得两个进程：单进程探针里 `rpc()` **没有对端时不本地回调**，
@@ -65,7 +70,9 @@ func run(a) -> void:
 	if not ModManager.is_mod_enabled(ModIds.NETPLAY):
 		ModManager.set_mod_enabled(ModIds.NETPLAY, true)
 	await a.frames(5)
-	var session := a.get_node_or_null(SESSION_PATH) as NetplaySession
+	## ★ 会话是**懒加载**的（没开房间就没有它）：这里走的就是「开启房间」那一侧的那一步
+	var mod := ModManager.get_mod(ModIds.NETPLAY) as NetplayMod
+	var session = mod._ensure_session() if mod != null else null
 	if session == null:
 		a.log("!! 拿不到会话节点")
 		a.quit_game()
@@ -185,7 +192,7 @@ func _seed_plants(a) -> void:
 		if not is_instance_valid(cell):
 			continue
 		## ⚠️ `cell` 是 Variant，`var plant := ...` 会**推断不出类型**而整份脚本解析失败
-		var plant: Plant000Base = cell.create_plant(CharacterRegistry.PlantType.P001PeaShooterSingle)
+		var plant: Plant000Base = cell.create_plant(PlantIds.PEA_SHOOTER_SINGLE)
 		if plant != null:
 			made += 1
 	a.log("  已在主机上摆了 %d 株豌豆射手（只为造出子弹）" % made)

@@ -21,7 +21,7 @@ node_drop = NodePath("../Body/NodeDrop/Node2D_Head_Drop")
 metadata/_custom_type_script = "uid://jl0nl4a234bc"
 
 [node name="Zombie002Flag" instance=ExtResource("1_14ilb")]
-zombie_type = 2
+zombie_type = &"flag"
 
 [node name="_ground" parent="Body/BodyCorrect" index="0"]
 position = Vector2(-9.7039995, 40)

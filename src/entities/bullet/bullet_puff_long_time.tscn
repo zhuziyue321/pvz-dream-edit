@@ -40,7 +40,7 @@ gravity = Vector3(0, 0, 0)
 scale_curve = SubResource("CurveTexture_hp3op")
 
 [node name="Bullet005PuffLongTime" instance=ExtResource("1_0vx1j")]
-bullet_type = 5
+bullet_type = &"puff_long_time"
 type_bullet_SFX = 0
 
 [node name="BulletBody" parent="Body" index="0"]

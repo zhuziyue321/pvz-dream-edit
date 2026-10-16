@@ -1581,7 +1581,7 @@ _data = {
 
 [node name="Plant016DoomShroom" node_paths=PackedStringArray("node_no_change_direction", "node2d_detect_in_slope") instance=ExtResource("1_uubea")]
 script = ExtResource("2_tjrwq")
-plant_type = 16
+plant_type = &"doom_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("BombComponent/Area2DBomb")]
 

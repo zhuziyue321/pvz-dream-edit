@@ -1161,7 +1161,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant012GraveBuster" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_kxqnt")]
 script = ExtResource("2_2a3ft")
-plant_type = 12
+plant_type = &"grave_buster"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="BodyCorrect" parent="Body" index="0"]

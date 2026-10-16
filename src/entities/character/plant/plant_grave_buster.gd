@@ -15,7 +15,6 @@ func character_death():
 	## 角色死亡时是否已经吞噬墓碑完成
 	if not is_end_eat_grave:
 		if not is_instance_valid(plant_cell.tombstone):
-			Log.debug(str("当前植物格子") + str(plant_cell.row_col) + str("没有墓碑"))
 			return
 		plant_cell.tombstone.failure_eat_tombstone()
 
@@ -28,7 +27,6 @@ func _start_eat_grave():
 	gpu_particles_2d_grave_buster.emitting = true
 	gpu_particles_2d_grave_buster.visible = true
 	if not is_instance_valid(plant_cell.tombstone):
-		Log.debug(str("当前植物格子") + str(plant_cell.row_col) + str("没有墓碑"))
 		return
 	plant_cell.tombstone.start_be_grave_buster_eat()
 
@@ -42,7 +40,6 @@ func _end_eat_grave():
 	gpu_particles_2d_grave_buster.free_self_after_two_sec()
 
 	if not is_instance_valid(plant_cell.tombstone):
-		Log.debug(str("当前植物格子") + str(plant_cell.row_col) + str("没有墓碑"))
 		return
 	plant_cell.tombstone.tombstone_death()
 

@@ -37,11 +37,12 @@ func run(a) -> void:
 	var slot = mg.card_manager.card_slot_battle
 	var got := {}
 	for card in slot.curr_cards:
-		got[int(card.card_zombie_type)] = int(card.sun_cost)
+		## 僵尸类型现在是字符串 id，直接拿它当键（不再 int() 转编号）
+		got[card.card_zombie_type] = int(card.sun_cost)
 	a.log("[IZOMBIE] 僵尸卡费用=%s" % str(got))
-	_check(a, "普僵 = 50", got.get(1, -1) == 50)
-	_check(a, "铁桶 = 125（原版）", got.get(5, -1) == 125)
-	_check(a, "橄榄球 = 175（原版）", got.get(8, -1) == 175)
+	_check(a, "普僵 = 50", got.get(ZombieIds.NORM, -1) == 50)
+	_check(a, "铁桶 = 125（原版）", got.get(ZombieIds.BUCKET, -1) == 125)
+	_check(a, "橄榄球 = 175（原版）", got.get(ZombieIds.FOOTBALL, -1) == 175)
 
 	## 2. 开局 50 阳光：够放最便宜的僵尸，不该判负
 	await a.wait(2.0)

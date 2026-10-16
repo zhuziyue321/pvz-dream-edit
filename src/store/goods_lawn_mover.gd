@@ -54,7 +54,6 @@ func _refresh_goods_state() -> void:
 func get_one_goods():
 	if Global.global_game_state.buy_lawn_mover(lawn_mover_type):
 		Global.save_service.save_now()
-		Log.debug(str("购买小推车,类型:") + str(int(lawn_mover_type)))
 	else:
 		Log.warn("购买小推车失败:该类型已购买或不需要购买")
 	_refresh_goods_state()

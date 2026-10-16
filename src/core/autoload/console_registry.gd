@@ -56,8 +56,6 @@ func register_entry(entry: ConsoleEntry, default_source: StringName = &"") -> vo
 		entry.source = default_source
 	if entry.category.is_empty():
 		entry.category = CATEGORY_DEFAULT
-	if _entries.has(entry.id):
-		Log.debug("ConsoleRegistry: 控制台条目 %s 被覆盖" % str(entry.id))
 	_entries[entry.id] = entry
 	entries_changed.emit()
 

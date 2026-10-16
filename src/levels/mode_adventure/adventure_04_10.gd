@@ -15,28 +15,31 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	## 传送带卡池(原版 4-10): 莲叶17 / 海蘑菇25 / 仙人掌27 / 裂荚29 / 杨桃30 / 南瓜头31 / 磁力菇32
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	17: 2,
-	25: 2,
-	27: 2,
-	29: 2,
-	30: 2,
-	31: 2,
-	32: 2
+	&"lily_pad": 2,
+	&"sea_shroom": 2,
+	&"cactus": 2,
+	&"split_pea": 2,
+	&"star_fruit": 2,
+	&"pumpkin": 2,
+	&"magnet_shroom": 2
 	})
 	## 本关通关掉落：卷心菜投手（种子包）
 	level_complete_loot = "cabbage_pult_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z017Balloon,
-		CharacterRegistry.ZombieType.Z018Digger,
-		CharacterRegistry.ZombieType.Z019Pogo,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.JACKBOX,
+		ZombieIds.BALLOON,
+		ZombieIds.DIGGER,
+		ZombieIds.POGO,
 	]
 
 	## 展示僵尸

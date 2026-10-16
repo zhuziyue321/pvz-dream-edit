@@ -12,7 +12,7 @@ var garden_speech_bubble : GardenSpeehBubble
 ## 该植物下的花盆
 var flower_pot:GardenFlowerPot
 ## 当前植物类型
-var curr_plant_type : CharacterRegistry.PlantType
+var curr_plant_type : StringName
 ## 是否为花园水族馆背景（动画变化）
 var is_garden_aquarium := false
 ## 植物朝向x
@@ -78,11 +78,14 @@ func init_garden_component(garden_date_init:Dictionary):
 
 	var garden_plant_data = garden_date_init["curr_garden_plant_data"]
 	direction_x = garden_plant_data.get("direction_x",  direction_x)
-	curr_plant_type = garden_plant_data.get("curr_plant_type", curr_plant_type)
-	curr_growth_stage = garden_plant_data.get("curr_growth_stage", curr_growth_stage)
-	curr_need_item = garden_plant_data.get("curr_need_item", curr_need_item)
-	curr_water_time = garden_plant_data.get("curr_water_time", curr_water_time)
-	max_water_time = garden_plant_data.get("max_water_time", max_water_time)
+	## JSON 里没有整数:枚举 / 计数读回来是 float,直接赋给 int 变量会报类型错,这里一律 int()
+	## (正常读档已经由 GlobalGardenState.normalize_garden_plant_cell_data() 转干净了,
+	##  这里是给没走那道口的调用兜底 —— 例如直接拿别的植物的数据重建)
+	curr_plant_type = PlantIds.from_legacy(garden_plant_data.get("curr_plant_type", curr_plant_type))
+	curr_growth_stage = int(garden_plant_data.get("curr_growth_stage", curr_growth_stage))
+	curr_need_item = int(garden_plant_data.get("curr_need_item", curr_need_item))
+	curr_water_time = int(garden_plant_data.get("curr_water_time", curr_water_time))
+	max_water_time = int(garden_plant_data.get("max_water_time", max_water_time))
 	next_update_time = garden_plant_data.get("next_update_time", next_update_time)
 	update_growth_stage()
 	_check_if_need_should_trigger()
@@ -132,7 +135,6 @@ func _calculate_next_need_time(time_range:Vector2):
 func update_growth_stage():
 	match curr_growth_stage:
 		GardenManager.E_GrowthStage.Sprout:
-			#Log.debug("发芽状态")
 			pass
 		GardenManager.E_GrowthStage.Small:
 			change_body_scale(Vector2(0.33 * direction_x, 0.33))
@@ -161,8 +163,6 @@ func satisfy_need(item: GardenManager.E_NeedItem):
 		GardenManager.E_NeedItem.Fertilizer, GardenManager.E_NeedItem.BugSpray, GardenManager.E_NeedItem.Phonograph:
 			if curr_growth_stage < GardenManager.E_GrowthStage.Perfect:
 				up_growth_stage()
-			else:
-				Log.debug("不应该出现该语句，当前满足完美状态需求，")
 			EventBus.push_event(ConstEventName.CREATE_COIN, [[0.0, 0.95, 0.05], global_position_create_coin])
 			EventBus.push_event(ConstEventName.CREATE_COIN, [[0.0, 0.95, 0.05], global_position_create_coin])
 
@@ -239,4 +239,3 @@ func get_curr_plant_data() -> Dictionary:
 		"curr_plant_condition": curr_plant_condition
 	}
 	return data
-

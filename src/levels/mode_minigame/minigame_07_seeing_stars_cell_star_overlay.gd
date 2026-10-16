@@ -132,5 +132,5 @@ func _refresh_alpha() -> void:
 
 ## 格子上的植物种上 / 掉光时重刷（PlantCell 的信号带参数，这里不需要）
 func _on_cell_plant_changed(_plant_cell: PlantCell = null,
-		_plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+		_plant_type: StringName = PlantIds.NULL) -> void:
 	_refresh_alpha()

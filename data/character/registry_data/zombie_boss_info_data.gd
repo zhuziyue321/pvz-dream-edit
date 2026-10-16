@@ -5,7 +5,7 @@ extends RefCounted
 ## 只放常量数据，查询入口见 CharacterRegistry.get_zombie_boss_info()。
 
 const ZOMBIE_BOSS_INFO = {
-	CharacterRegistry.ZombieBossType.ZB001Doctor: {
+	ZombieBossIds.DOCTOR: {
 		CharacterRegistry.ZombieBossInfoAttribute.BossName: "ZB001Doctor",
 		CharacterRegistry.ZombieBossInfoAttribute.BossScenes: preload("res://src/entities/character/zombie_boss/zombie_boss_doctor.tscn"),
 		CharacterRegistry.ZombieBossInfoAttribute.SunCost: 10000,

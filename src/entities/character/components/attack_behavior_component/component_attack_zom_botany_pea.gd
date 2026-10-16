@@ -27,7 +27,7 @@ class_name AttackComponentZomBotanyPea
 ## 发射间隔（与玩家的豌豆射手一致）
 @export var attack_cd: float = 1.5
 ## 发射的子弹类型
-@export var attack_bullet_type: BulletRegistry.BulletType = BulletRegistry.BulletType.Bullet001Pea
+@export var attack_bullet_type: StringName = BulletIds.PEA
 ## 子弹发射点（场景里存的是 NodePath，节点头必须写 node_paths=PackedStringArray("markers_2d_bullet")）
 @export var markers_2d_bullet: Array[Marker2D]
 @export_group("发射子弹音效")
@@ -61,18 +61,19 @@ func component_ready() -> void:
 	bullet_attack_cd_timer.start()
 
 
-## 连「头顶植物被打掉」的信号（一类防具血量归零）
+## 连「头顶植物被打掉」的信号
+## 头顶植物是挂在僵尸身上的 `ArmorComponentPlantHead`（一类防具），按类型取它
 func _connect_head_plant_broken() -> void:
 	var zombie := owner as Zombie000Base
 	if zombie == null:
 		return
-	var hp_component := zombie.hp_component as HpComponent
-	if not is_instance_valid(hp_component):
-		Log.error("豌豆僵尸拿不到 HpComponent，头顶植物被打掉后不会停止发射")
+	var head_armor := zombie.get_armor(ConstArmor.E_ArmorType.PlantHead)
+	if head_armor == null:
+		Log.error("豌豆僵尸缺少 PlantHead 防具组件，头顶植物被打掉后不会停止发射")
 		return
-	if hp_component.signal_armor1_death.is_connected(_on_head_plant_broken):
+	if head_armor.signal_armor_death.is_connected(_on_head_plant_broken):
 		return
-	hp_component.signal_armor1_death.connect(_on_head_plant_broken)
+	head_armor.signal_armor_death.connect(_on_head_plant_broken)
 
 
 ## 头顶植物被打掉：僵尸变回普通僵尸，不再发射

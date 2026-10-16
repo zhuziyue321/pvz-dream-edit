@@ -190,7 +190,9 @@ func _connect_nav_to_category(button: Button, category_name: String) -> void:
 
 
 ## 分组页：该组控件铺成一个网格 + 底部「返回」回入口页
-func _build_category_page(category: String, entries: Array) -> Control:
+## `_category` 用不上：组名已经写在入口页那个导航按钮上了，这一页只负责摆条目；
+## 形参留着是为了对齐调用方的「(分组名, 条目表)」成对顺序。
+func _build_category_page(_category: String, entries: Array) -> Control:
 	if entries.is_empty():
 		return null
 	var page := VBoxContainer.new()

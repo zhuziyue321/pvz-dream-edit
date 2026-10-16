@@ -31,7 +31,6 @@ func ready_norm_signal_connect():
 
 ## 开始跳跃,跳跃组件信号发射调用
 func jump_start():
-	Log.debug("开始跳跃")
 	is_jumping = true
 	is_ride = false
 	curr_be_attack_status = E_BeAttackStatusZombie.IsJump
@@ -49,7 +48,6 @@ func jump_end_end():
 	move_component.update_move_mode(MoveComponent.E_MoveMode.Ground)
 	is_trigger_squash_pos_judge = false
 	is_trigger_tall_nut_stop_jump = false
-	Log.debug("是否触发倭瓜位置判断修改")
 
 ## 跳跃被强行停止,高坚果调用
 func jump_be_stop(plant:Plant000Base):
@@ -63,7 +61,6 @@ func change_is_swimming(value:bool):
 	## 如果是跳入泳池
 	if is_swimming:
 		curr_be_attack_status = E_BeAttackStatusZombie.IsJumpInPool
-		#Log.debug(str("当前状态:") + str(curr_be_attack_status))
 		signal_status_update.emit()
 	else:
 		move_component.update_move_mode(MoveComponent.E_MoveMode.Ground)

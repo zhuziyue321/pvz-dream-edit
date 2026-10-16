@@ -92,7 +92,6 @@ func create_rake(map_data: ResourceMapData, lane: int) -> Rake:
 	rake.position = _get_rake_global_pos(map_data, lane) - rakes.global_position
 	rakes.add_child(rake)
 	all_rakes.append(rake)
-	Log.debug(str("生成钉耙, 行:") + str(lane) + str(" 全局位置:") + str(rake.global_position))
 	return rake
 
 
@@ -107,4 +106,4 @@ func consume_rake_use_on_level_success() -> void:
 	if not is_have_rake():
 		return
 	if Global.global_game_state.consume_rake_use():
-		Log.debug(str("通关消耗一次钉耙,剩余可用关数:") + str(Global.global_game_state.get_rake_use_num()))
+		pass

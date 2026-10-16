@@ -67,11 +67,9 @@ func _ready() -> void:
 func _init_card_position_x():
 	for i in range(num_card_max):
 		all_card_pos_x_target.append(0 + i * 50)
-	Log.debug(str("传送带每张卡片的位置：") + str(all_card_pos_x_target))
 
 ## 管理器初始化调用
 func init_card_slot_conveyor_belt(game_para:ResourceLevelData):
-	Log.debug("传送带卡槽初始化随机卡片生成器")
 	card_random_pool.init_card_random_pool(game_para.conveyor_weights)
 
 	self.conveyor_order = game_para.conveyor_order

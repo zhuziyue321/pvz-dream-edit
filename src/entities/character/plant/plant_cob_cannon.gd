@@ -88,7 +88,7 @@ func shoot_bullet():
 	is_attack = false
 
 	var bullet_cob_cannon :Bullet016CobCannon = Global.bullet_registry.create_bullet(
-		BulletRegistry.BulletType.Bullet016CobCannon
+		BulletIds.COB_CANNON
 	)
 	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
 	if bullet_cob_cannon == null:

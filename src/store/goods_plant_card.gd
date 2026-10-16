@@ -5,29 +5,29 @@ class_name GoodsPlantCard
 ## 上架关卡见 ConstPlantUnlock.PURPLE_CARD_CAN_BUY_LEVEL,售价见 ConstPlantUnlock.PURPLE_CARD_PRICE
 
 ## 售卖的植物类型(紫卡或模仿者)
-@export var plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+@export var plant_type: StringName = PlantIds.NULL
 
 ## 各商品的戴夫话术(鼠标移到商品上时戴夫念这一句)
 ## 数据来源: data/strings/lawn_strings.txt 的 CRAZY_DAVE_2000~2008
 ## 口径: 原版一代 PC;紫卡的话术是"种在某某植物上升级成某某"的用法说明,模仿者是 CRAZY_DAVE_2008
 const PLANT_CARD_DIALOG_TEXT: Dictionary = {
-	CharacterRegistry.PlantType.P041GatlingPea:
+	PlantIds.GATLING_PEA:
 		"把这些种在你的双重射手上，把它变成机枪射手！机枪射手一次能射出4颗豌豆！",
-	CharacterRegistry.PlantType.P042TwinSunFlower:
+	PlantIds.TWIN_SUN_FLOWER:
 		"把这些种在你的向日葵上，把它变成双胞向日葵！双胞向日葵提供的阳光是向日葵的2倍！",
-	CharacterRegistry.PlantType.P043GloomShroom:
+	PlantIds.GLOOM_SHROOM:
 		"把这些种在你的大喷菇上，把它变成多嘴小蘑菇！它能在小范围内做迅速的攻击！",
-	CharacterRegistry.PlantType.P044Cattail:
+	PlantIds.CATTAIL:
 		"把这些种在你的莲叶上，把它变成猫尾草！猫尾草能攻击任何一条线路，而且能打下气球僵尸！",
-	CharacterRegistry.PlantType.P045WinterMelon:
+	PlantIds.WINTER_MELON:
 		"把这些种在你的西瓜投手上，把它变成冰西瓜！冰西瓜有很高的攻击力，而且能让被击中的僵尸慢下来！",
-	CharacterRegistry.PlantType.P046GoldMagnet:
+	PlantIds.GOLD_MAGNET:
 		"把这些种在你的磁力菇上，把它变成吸金菇！吸金菇会帮助你收集金币和钻石！",
-	CharacterRegistry.PlantType.P047SpikeRock:
+	PlantIds.SPIKE_ROCK:
 		"把这些种在你的地刺上，把它变成钢地刺！钢地刺有着2倍的攻击力，且非常耐用！",
-	CharacterRegistry.PlantType.P048CobCannon:
+	PlantIds.COB_CANNON:
 		"把这些种在你的玉米投手上，把它变成玉米加农炮！点击一个玉米加农炮，发动致命的攻击！",
-	CharacterRegistry.PlantType.P999Imitater:
+	PlantIds.IMITATER:
 		"这个变身茄子让你在游戏中拥有两个相同的植物！",
 }
 
@@ -53,7 +53,7 @@ func _ready() -> void:
 
 ## 该商品当前是否上架(需通关对应关卡)
 func is_on_sale() -> bool:
-	if plant_type == CharacterRegistry.PlantType.Null:
+	if plant_type == PlantIds.NULL:
 		return false
 	if not ConstPlantUnlock.is_shop_plant(plant_type):
 		return false
@@ -112,7 +112,7 @@ func _get_card_prefab() -> Card:
 	var card: Card = AllCards.all_plant_card_prefabs.get(plant_type)
 	if card != null:
 		return card
-	if plant_type == CharacterRegistry.PlantType.P999Imitater:
+	if plant_type == PlantIds.IMITATER:
 		return AllCards.imitater_card
 	return null
 
@@ -121,8 +121,6 @@ func _get_card_prefab() -> Card:
 func get_one_goods():
 	if Global.global_game_state.unlock_plant(plant_type):
 		Global.save_service.save_now()
-		Log.debug(str("购买植物卡片:") + str(Global.character_registry.get_plant_info(
-			plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)))
 	else:
 		Log.warn("购买植物卡片失败:该植物已经拥有")
 	_refresh_goods_state()

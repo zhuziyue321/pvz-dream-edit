@@ -33,12 +33,12 @@ func _init() -> void:
 	## 原版本关传送带只给这 6 种：豌豆射手 / 坚果墙 / 冰蘑菇 / 荷叶 / 窝瓜 / 玉米投手
 	## 冰蘑菇和玉米投手是玩家唯一能主动让僵尸现形的两张牌，权重给低一点
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1: 3,	## 豌豆射手
-	4: 3,	## 坚果墙
-	15: 1,	## 冰蘑菇：冰冻现形
-	17: 2,	## 荷叶：水路才能种
-	18: 2,	## 窝瓜
-	35: 2,	## 玉米投手：黄油现形
+	&"pea_shooter_single": 3,	## 豌豆射手
+	&"wall_nut": 3,	## 坚果墙
+	&"ice_shroom": 1,	## 冰蘑菇：冰冻现形
+	&"lily_pad": 2,	## 荷叶：水路才能种
+	&"squash": 2,	## 窝瓜
+	&"corn_pult": 2,	## 玉米投手：黄油现形
 	})
 
 
@@ -52,21 +52,24 @@ func get_zombie_init_para_extra() -> Dictionary:
 	}
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版本关的僵尸：普僵 / 路障 / 铁桶 / 铁门 / 潜水 / 洗冰车 / 海豚骑士 / 玩偶匣
 	## （洗冰车的冰道与音效、海豚骑士与玩偶匣的入场音效是原版留给玩家的行踪线索）
 	## 不写 Z011Duckytube：它在自然刷怪黑名单里（写了也只会被 init_para 滤掉并打 warning），
 	## 水面行的鸭子泳圈由两栖僵尸（普僵等）入水时自动套上，见 docs/参考存档/植物僵尸.md §4 坑 2
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z012Snorkle,
-		CharacterRegistry.ZombieType.Z013Zamboni,
-		CharacterRegistry.ZombieType.Z015Dolphinrider,
-		CharacterRegistry.ZombieType.Z016Jackbox,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.SNORKLE,
+		ZombieIds.ZAMBONI,
+		ZombieIds.DOLPHINRIDER,
+		ZombieIds.JACKBOX,
 	]
 
 	## 展示僵尸（展示僵尸走 IsShow 初始化，不隐形，玩家能看到本关有哪些僵尸）

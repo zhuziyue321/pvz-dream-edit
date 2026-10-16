@@ -192,7 +192,7 @@ func _check_level_runtime(a) -> bool:
 		str(mg.game_para.game_BG))
 	## 夜屋顶是裸屋顶：没有花盆就种不下任何植物 —— 花盆由 run_flow() 开头「系统种植」铺出来
 	var pot_num := 0
-	for i in range(20):
+	for _i in range(20):
 		pot_num = _count_pots(mg, 4)
 		if pot_num > 0:
 			break
@@ -303,7 +303,7 @@ func _count_pots(mg, col_count: int) -> int:
 	for row_cells in mg.plant_cell_manager.all_plant_cells:
 		for col in range(mini(col_count, row_cells.size())):
 			var pot = (row_cells[col] as PlantCell).get_plant(CharacterRegistry.PlacePlantInCell.Down)
-			if is_instance_valid(pot) and pot.plant_type == CharacterRegistry.PlantType.P034FlowerPot:
+			if is_instance_valid(pot) and pot.plant_type == PlantIds.FLOWER_POT:
 				num += 1
 	return num
 

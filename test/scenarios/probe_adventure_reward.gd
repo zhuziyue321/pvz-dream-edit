@@ -200,7 +200,7 @@ func _check_seed_packet(a, new_drop) -> void:
 		str(seed_packet.texture_button.size))
 
 	## 与樱桃炸弹的出战卡片逐项对照：卡片 50x70，种子包整包放大 2 倍
-	var card = AllCards.all_plant_card_prefabs.get(CharacterRegistry.PlantType.P003CherryBomb, null)
+	var card = AllCards.all_plant_card_prefabs.get(PlantIds.CHERRY_BOMB, null)
 	if card == null:
 		_check(a, "取到樱桃炸弹的出战卡片", false, str(AllCards.all_plant_card_prefabs.keys()))
 		return

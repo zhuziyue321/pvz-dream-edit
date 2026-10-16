@@ -91,8 +91,8 @@ func run(a) -> void:
 			var p = mgr.get_cell_plant(mgr.get_cell(row, col))
 			if p == null:
 				continue
-			if p.plant_type == CharacterRegistry.PlantType.P009PuffShroom \
-				or p.plant_type == CharacterRegistry.PlantType.P032MagnetShroom:
+			if p.plant_type == PlantIds.PUFF_SHROOM \
+				or p.plant_type == PlantIds.MAGNET_SHROOM:
 				mushroom_num += 1
 				if p.is_sleeping:
 					sleeping_num += 1
@@ -211,9 +211,9 @@ func run(a) -> void:
 	for row in range(mgr.board_row_num):
 		for col in range(mgr.board_col_num):
 			var t = mgr.get_cell_type(mgr.get_cell(row, col))
-			if t == CharacterRegistry.PlantType.P001PeaShooterSingle:
+			if t == PlantIds.PEA_SHOOTER_SINGLE:
 				old_num += 1
-			elif t == CharacterRegistry.PlantType.P008PeaShooterDouble:
+			elif t == PlantIds.PEA_SHOOTER_DOUBLE:
 				new_num += 1
 	_check(a, "场上不再有豌豆射手", old_num == 0, "剩余=" + str(old_num))
 	_check(a, "场上出现了双重射手", new_num > 0, "数量=" + str(new_num))
@@ -370,7 +370,7 @@ func _find_valid_swap(mgr) -> Array:
 					continue
 				var t1 = grid[row][col]
 				var t2 = grid[row2][col2]
-				if t1 == CharacterRegistry.PlantType.Null or t2 == CharacterRegistry.PlantType.Null:
+				if t1 == PlantIds.NULL or t2 == PlantIds.NULL:
 					continue
 				grid[row][col] = t2
 				grid[row2][col2] = t1

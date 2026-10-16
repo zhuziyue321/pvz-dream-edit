@@ -71,7 +71,6 @@ func play_pickup(pickup: Node2D) -> void:
 	if pickup == null or not is_instance_valid(pickup):
 		return
 	reset_perform()
-	Log.debug("通关掉落物收尾表演开始：" + pickup.name)
 
 	var move_tween := create_tween()
 	move_tween.set_parallel()
@@ -120,7 +119,6 @@ func finish_perform(pickup: Node2D) -> void:
 	if is_instance_valid(pickup) and not pickup.is_queued_for_deletion():
 		pickup.queue_free()
 	award_light.visible = false
-	Log.debug("通关掉落物收尾表演结束，屏幕已全白")
 	EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP_FINISHED)
 
 

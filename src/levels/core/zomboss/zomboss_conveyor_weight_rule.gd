@@ -26,11 +26,11 @@ func apply_weights(conveyor: ConveyorBeltController) -> void:
 	if conveyor == null:
 		return
 	if _count_empty_flower_pot() <= EMPTY_POT_DOWN_THRESHOLD:
-		conveyor.set_plant_weight_scale(CharacterRegistry.PlantType.P034FlowerPot, POT_WEIGHT_SCALE)
+		conveyor.set_plant_weight_scale(PlantIds.FLOWER_POT, POT_WEIGHT_SCALE)
 	## 花盆堆在传送带上：把位置让给打僵王的两张卡
-	if conveyor.count_card(CharacterRegistry.PlantType.P034FlowerPot) >= POT_CARD_UP_THRESHOLD:
-		conveyor.set_plant_weight_scale(CharacterRegistry.PlantType.P015IceShroom, COUNTER_WEIGHT_SCALE)
-		conveyor.set_plant_weight_scale(CharacterRegistry.PlantType.P021Jalapeno, COUNTER_WEIGHT_SCALE)
+	if conveyor.count_card(PlantIds.FLOWER_POT) >= POT_CARD_UP_THRESHOLD:
+		conveyor.set_plant_weight_scale(PlantIds.ICE_SHROOM, COUNTER_WEIGHT_SCALE)
+		conveyor.set_plant_weight_scale(PlantIds.JALAPENO, COUNTER_WEIGHT_SCALE)
 
 
 ## 场上的空花盆数：有花盆且花盆上没种东西的格子数
@@ -43,7 +43,7 @@ func _count_empty_flower_pot() -> int:
 	for plant_cell_lane in main_game.plant_cell_manager.all_plant_cells:
 		for plant_cell: PlantCell in plant_cell_lane:
 			var pot := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Down)
-			if pot == null or pot.plant_type != CharacterRegistry.PlantType.P034FlowerPot:
+			if pot == null or pot.plant_type != PlantIds.FLOWER_POT:
 				continue
 			if plant_cell.get_curr_plant_num() > 1:
 				continue

@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://is2g44uxfgvp" path="res://assets/reanim/Zombie_bucket1.png" id="3_5vx42"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="4_2lc55"]
 [ext_resource type="Texture2D" uid="uid://wcoa5tcaei3u" path="res://assets/reanim/Zombie_bucket2.png" id="5_1q4fh"]
+[ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_1q4fh"]
 script = ExtResource("4_2lc55")
@@ -26,10 +27,8 @@ sprite_disappear = Array[NodePath]([NodePath("../Body/BodyCorrect/Anim_bucket")]
 node_drop = NodePath("../Body/NodeDrop/Node2D_Arm1_Drop")
 metadata/_custom_type_script = "uid://jl0nl4a234bc"
 
-[node name="Zombie005Bucket" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_a6swv")]
-zombie_type = 5
-iron_type = 1
-iron_node = NodePath("Body/BodyCorrect/IronNode")
+[node name="Zombie005Bucket" instance=ExtResource("1_a6swv")]
+zombie_type = &"bucket"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 unique_name_in_owner = false
@@ -218,13 +217,17 @@ scale = Vector2(0.794647, 0.794647)
 texture = ExtResource("3_4trg0")
 centered = false
 
-[node name="HpStageChangeComponent" parent="." index="3"]
-body_change_armor1 = Array[ExtResource("4_2lc55")]([SubResource("Resource_1q4fh"), SubResource("Resource_4trg0"), SubResource("Resource_2lc55")])
+[node name="ArmorComponent" type="Node2D" parent="." node_paths=PackedStringArray("iron_node")]
+script = ExtResource("9_armor")
+armor_type = 2
+armor_class = 1
+max_hp = 1100
+sfx_be_attack = 2
+iron_node = NodePath("../Body/BodyCorrect/IronNode")
+body_change = Array[ExtResource("4_2lc55")]([SubResource("Resource_1q4fh"), SubResource("Resource_4trg0"), SubResource("Resource_2lc55")])
 
 [node name="HpComponent" parent="." index="4"]
 position = Vector2(0, -38)
-max_hp_armor1 = 1100
-sfx_be_attack_armor1 = 2
 
 [node name="VBoxContainer" parent="HpComponent" index="0"]
 offset_top = -24.0

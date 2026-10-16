@@ -1,5 +1,10 @@
 extends RefCounted
-## 探针：自制关卡**模组**（`src/mods/custom_level/`）
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const ChooseLevelButtonCustomize := preload("res://mods_builtin/custom_level/choose_level_button_customize.gd")
+const CustomChooseLevel := preload("res://mods_builtin/custom_level/custom_choose_level.gd")
+const CustomLevelEntryButton := preload("res://mods_builtin/custom_level/custom_level_entry_button.gd")
+## 探针：自制关卡**模组**（`mods_builtin/custom_level/`）
 ##
 ## 自制关卡是原版没有的功能，整条链路都在模组里，默认关闭。本探针验两端：
 ##   关闭 → `MainSceneMap` 里没有 `ChooseLevelCustom`、主菜单没有入口按钮（本体零节点）

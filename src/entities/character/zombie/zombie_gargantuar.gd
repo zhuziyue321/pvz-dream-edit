@@ -60,7 +60,7 @@ func create_imp():
 		Zombie000Base.E_ZInitAttr.IsPotZombie: is_pot_zombie,
 	}
 	get_main_game().zombie_manager.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z025Imp,
+		ZombieIds.IMP,
 		get_main_game().zombie_manager.all_zombie_rows[lane],
 		zombie_init_para,
 		_get_imp_throw_glo_pos(),
@@ -81,12 +81,16 @@ func _get_imp_throw_glo_pos()->Vector2:
 func update_imp_throw_pos(zombie_imp:Zombie025Imp):
 	zombie_imp.is_thrown = true
 	zombie_imp.target_pos_anim_head_to_body = zombie_imp_head.global_position - glo_pos_imp_be_thrown
-	Log.debug(str("位置:") + str(zombie_imp.target_pos_anim_head_to_body))
 
 
-## 压扁地刺时被地刺反击无效果
-func be_caltrop():
-	pass
+## 【受击方加工包】巨人无视地刺：整包取消，一点血都不掉（原版行为）。
+##
+## 与洗冰车"翻译成秒杀"的区别是本类直接 `return false` —— 地刺那张便条对巨人无效，
+## 连附带的伤害一起挡掉，而不是先挨伤害再免疫。
+func process_damage(info: DamageInfo) -> bool:
+	if info.has_effect(ConstDamage.EFFECT_CALTROP):
+		return false
+	return super(info)
 
 ## 死亡时播放音效,动画调用
 func play_gargantuar_death_sfx():

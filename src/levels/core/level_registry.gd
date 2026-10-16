@@ -4,7 +4,7 @@ class_name LevelRegistry
 ##
 ## **id = 关卡脚本的文件名 basename**（`adventure_01_01` / `puzzle_pot_10` / `survival_flag_06_day` …）
 ## 选这个规则是因为它跟**自制关卡的现有约定已经一致**：
-## 自制关卡模组（`src/mods/custom_level/custom_choose_level.gd`）扫目录时用的 level_id
+## 自制关卡模组（`mods_builtin/custom_level/custom_choose_level.gd`）扫目录时用的 level_id
 ## 也是文件名 basename，内置关与自制关因此共用一套 id 规则，不用为自制关再发明一套。
 ##
 ## 为什么要有注册表：
@@ -53,7 +53,6 @@ static func rescan() -> void:
 	_mode_by_id.clear()
 	_scan_dir(LEVEL_DIR, MainSceneRegistry.MainScenes.Null)
 	_is_scanned = true
-	Log.debug("LevelRegistry: 扫到 %d 个内置关卡" % _path_by_id.size())
 
 
 static func _scan_dir(dir_path: String, mode: MainSceneRegistry.MainScenes) -> void:
@@ -199,11 +198,11 @@ static func get_adventure_level_data(adventure_level: int) -> ResourceLevelData:
 ## 本关 `_init()` 里声明的通关奖励植物（本关不给植物返回 Null）
 ## 这是「冒险第 N 关给哪株植物」的**唯一答案源**：改某一关给什么就改那一关的脚本
 ## （那一关写的是战利品名字 `level_complete_loot`，名字 -> 植物编号那张表在 LootRegistry）。
-static func get_adventure_level_reward_plant(adventure_level: int) -> CharacterRegistry.PlantType:
+static func get_adventure_level_reward_plant(adventure_level: int) -> StringName:
 	var data := get_adventure_level_data(adventure_level)
 	if data == null:
-		return CharacterRegistry.PlantType.Null
-	return LootRegistry.get_plant_type(data.level_complete_loot) as CharacterRegistry.PlantType
+		return PlantIds.NULL
+	return LootRegistry.get_plant_type(data.level_complete_loot)
 
 
 ## 首次取用时扫一遍冒险模式目录，之后只查缓存（关卡有状态，缓存的是专供查声明的副本）
@@ -220,7 +219,6 @@ static func _ensure_adventure_level_scanned() -> void:
 		if data == null:
 			continue
 		_data_by_adventure_level[adventure_level] = data
-	Log.debug("LevelRegistry: 读到 %d 关的冒险通关掉落声明" % _data_by_adventure_level.size())
 
 
 ## 关卡 id -> 冒险关卡序号：id 形如 `adventure_<大关>_<小关>`；不合这一套的一律返回 0

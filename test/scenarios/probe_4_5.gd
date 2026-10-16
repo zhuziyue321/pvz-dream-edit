@@ -49,7 +49,7 @@ func run(a) -> void:
 		_hint_num(pcm), para.pot_hint_num, pcm.curr_pot_num - _hint_num(pcm)])
 
 	## 种一株植物后切到第 2 批：植物要被清掉，罐子数 / 列数 / 提示罐要跟着换
-	pcm.all_plant_cells[0][0].create_plant(CharacterRegistry.PlantType.P001PeaShooterSingle)
+	pcm.all_plant_cells[0][0].create_plant(PlantIds.PEA_SHOOTER_SINGLE)
 	a.log("[4-5] 切批次前 已种植物=%d" % _plant_num(pcm))
 	GameContext.curr_main_game.curr_game_round = 2
 	await pcm.start_next_game_plant_cell_manager_update()

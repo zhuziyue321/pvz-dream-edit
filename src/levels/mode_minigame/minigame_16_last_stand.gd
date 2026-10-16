@@ -33,24 +33,24 @@ func _init() -> void:
 	## 禁选：阳光生产类（向日葵 / 阳光菇 / 双子向日葵）与免费植物（小喷菇 / 海蘑菇）
 	## 模仿者是同种植物换壳（card_plant_type 不变），一并禁掉，见 ResourceLevelData.banned_plant_types_in_choose_card
 	banned_plant_types_in_choose_card.assign([
-		CharacterRegistry.PlantType.P002SunFlower,
-		CharacterRegistry.PlantType.P010SunShroom,
-		CharacterRegistry.PlantType.P042TwinSunFlower,
-		CharacterRegistry.PlantType.P009PuffShroom,
-		CharacterRegistry.PlantType.P025SeaShroom,
+		PlantIds.SUN_FLOWER,
+		PlantIds.SUN_SHROOM,
+		PlantIds.TWIN_SUN_FLOWER,
+		PlantIds.PUFF_SHROOM,
+		PlantIds.SEA_SHROOM,
 	])
 
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z011Duckytube,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.DUCKYTUBE,
 	]
 
 	## 展示僵尸

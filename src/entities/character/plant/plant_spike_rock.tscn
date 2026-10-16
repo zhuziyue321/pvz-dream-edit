@@ -78,7 +78,7 @@ metadata/_custom_type_script = "uid://jl0nl4a234bc"
 script = ExtResource("2_4en4w")
 attack_value = 20
 is_attack = false
-plant_type = 47
+plant_type = &"spike_rock"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]

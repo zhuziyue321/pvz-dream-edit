@@ -3,11 +3,11 @@ extends RefCounted
 class_name ZB001DoctorSpawnEntry
 
 ## 已解析雪橇替换后的实际生成类型。
-var zombie_type: CharacterRegistry.ZombieType
+var zombie_type: StringName
 ## 零起始目标行，同时决定生成 Y 和放置动画。
 var lane: int
 
 ## [param type] 实际僵尸类型；[param target_lane] 零起始目标行。
-func _init(type: CharacterRegistry.ZombieType, target_lane: int) -> void:
+func _init(type: StringName, target_lane: int) -> void:
 	zombie_type = type
 	lane = target_lane

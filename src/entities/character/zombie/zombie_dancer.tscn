@@ -4248,7 +4248,7 @@ _data = {
 [node name="Zombie010Dancer" instance=ExtResource("1_h22tp")]
 script = ExtResource("2_82atn")
 num_moon_walk = 2
-zombie_type = 10
+zombie_type = &"dancer"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-54, -124)

@@ -36,7 +36,7 @@ func init_bullet(bullet_paras:Dictionary[E_InitParasAttr,Variant]):
 	target_enemy = bullet_paras.get(E_InitParasAttr.Enemy, null)
 
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	## 如果敌人存在并且没有死亡
 	if is_instance_valid(target_enemy) and not target_enemy.is_death:
 		movement_component.reset_track_movement(true, false, target_enemy.hurt_box_component.global_position)

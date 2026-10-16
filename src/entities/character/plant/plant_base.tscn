@@ -157,7 +157,7 @@ size = Vector2(40, 80)
 
 [node name="Plant000Base" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_e772o")]
 script = ExtResource("2_4jr4d")
-plant_type = 0
+plant_type = &""
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), NodePath("GardenComponent")]
 
 [node name="HpComponent" parent="." index="3"]

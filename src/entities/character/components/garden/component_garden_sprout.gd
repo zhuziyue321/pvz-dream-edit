@@ -9,17 +9,7 @@ func update_growth_stage():
 		GardenManager.E_GrowthStage.Sprout:
 			pass
 		GardenManager.E_GrowthStage.Small:
-			Log.debug("发芽成长为新植物")
 			plant_cell.sprout_up_new_plant()
-
-		GardenManager.E_GrowthStage.Medium:
-			Log.debug("发芽中级状态，不应出现")
-
-		GardenManager.E_GrowthStage.Large:
-			Log.debug("发芽高级状态，不应出现")
-
-		GardenManager.E_GrowthStage.Perfect:
-			Log.debug("发芽完美状态，不应出现")
 
 	flower_pot.plant_change_profect(curr_growth_stage == GardenManager.E_GrowthStage.Perfect)
 

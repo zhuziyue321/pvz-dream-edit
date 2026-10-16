@@ -958,7 +958,7 @@ RangeXImpThrow = Vector2(200, 360)
 XThrow = 350.0
 RangeRandomXThrow = Vector2(-50, 50)
 is_throw = false
-zombie_type = 24
+zombie_type = &"gargantuar"
 is_ignore_ladder = true
 
 [node name="BodyCorrect" parent="Body" index="0"]

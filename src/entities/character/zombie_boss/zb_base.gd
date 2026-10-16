@@ -92,9 +92,9 @@ func ready_norm() -> void:
 ## 僵王免疫小推车 / 屋顶清洁车：车体从它脚下开过去不做任何结算。[br]
 ## 普通僵尸走 [code]ZombieMowerRunUtil[/code] 的碾压流程（扣血 + 倒地 + 删除），
 ## 僵王体型过大且始终站在草坪外的 [constant FIXED_SPAWN_POSITION]，
-## 既不会被车体检测到，也不应被一次触发带走 —— 这里直接忽略并记录一次调试日志。
+## 既不会被车体检测到，也不应被一次触发带走 —— 这里直接忽略（不做任何结算）。
 func be_mowered_run(_lawn_mover: LawnMover) -> void:
-	Log.debug("ZB000Base：僵王免疫小推车碾压，已忽略本次触发。")
+	pass
 
 
 ## 只读检查普通伤害、冰冻和辣椒共用的受击资格，不扣血、不修改状态或发出信号。[br]
@@ -112,10 +112,11 @@ func _can_receive_damage() -> bool:
 ## [param attack_value] 本次伤害；[param bullet_mode] 伤害类型。[br]
 ## [param is_drop] 是否允许掉落表现；[param trigger_be_attack_SFX] 是否播放受击音效。
 ## 致死伤害仅通过血量组件启动僵王死亡状态机，不套用普通僵尸的直接删除逻辑。
-func be_attacked_bullet(attack_value: int, bullet_mode: BulletRegistry.AttackMode = BulletRegistry.AttackMode.Norm, is_drop: bool = true, trigger_be_attack_SFX := true):
+func be_attacked_bullet(attack_value: int, bullet_mode: ConstDamage.E_DamageMode = ConstDamage.E_DamageMode.Norm, is_drop: bool = true, trigger_be_attack_SFX := true, source_node: Node = null, attacker_node: Node = null) -> DamageResult:
+	## 受击窗口没开时整次伤害丢弃（含伤害事件），与"打到但被免疫"区分开：这里连管线都不进
 	if not _can_receive_damage():
-		return
-	super.be_attacked_bullet(attack_value, bullet_mode, is_drop, trigger_be_attack_SFX)
+		return null
+	return super.be_attacked_bullet(attack_value, bullet_mode, is_drop, trigger_be_attack_SFX, source_node, attacker_node)
 
 
 ## 先发出原有死亡信号供管理器扣数，再关闭受击；重复调用不重复触发亡语或计数。
@@ -134,7 +135,7 @@ func character_death_disappear() -> void:
 	if is_queued_for_deletion():
 		return
 	if not is_death:
-		hp_component.Hp_loss_death(false)
+		hp_component.hp_loss_to_death(false)
 	# 请求必须先于 queue_free，角色进入待删除状态后奖杯入口会拒绝请求。
 	request_trophy()
 	queue_free()
@@ -196,7 +197,13 @@ func be_jalapeno(attack_value: int) -> void:
 		return
 	# 先解除控制再结算伤害，避免解冻回调覆盖随后启动的死亡演出速度。
 	cancel_ice()
-	hp_component.Hp_loss(attack_value, BulletRegistry.AttackMode.Penetration, false, false)
+	## 辣椒是「灼烧」语义：走伤害管线而不是直接调血量组件，
+	## 这样修饰器与伤害统计对僵王同样生效（见 docs/参考存档/伤害系统.md）
+	var info := DamageInfo.create(self, attack_value,
+		ConstDamage.E_DamageMode.Penetration, ConstDamage.E_DamageCause.Burn)
+	info.is_drop_on_death = false
+	info.trigger_sfx = false
+	apply_damage(info)
 
 
 ## 死亡动画和直接消失共用请求入口，不直接创建奖杯；存活、展示和正在卸载的角色不能请求奖励。

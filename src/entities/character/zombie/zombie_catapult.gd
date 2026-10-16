@@ -112,11 +112,35 @@ func update_bullet_data():
 		if num_real_bullet_node_bullet == 0:
 			return
 		if curr_num_shoot_bullet % num_real_bullet_node_bullet == 0:
-			Log.debug(str("当前数量") + str(curr_num_shoot_bullet) + str("当前为第几颗代表") + str(int(float(curr_num_shoot_bullet)/num_real_bullet_node_bullet)))
 			node_bullet[int(float(curr_num_shoot_bullet)/num_real_bullet_node_bullet)].visible = false
 
-## 被地刺扎
-func be_caltrop():
-	is_caltrop = true
-	character_death_not_disappear()
-	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsAnimGap)
+## 【受击方加工包】地刺扎我 = 当场报废（同洗冰车，见 Zombie013Zamboni 的同名方法）
+func process_damage(info: DamageInfo) -> bool:
+	if info.has_effect(ConstDamage.EFFECT_CALTROP):
+		info.is_instant_kill = true
+	return super(info)
+
+## 报废表现放在管线末端（同洗冰车，见 Zombie013Zamboni 的同名方法）
+func take_damage(info: DamageInfo) -> int:
+	if info.has_effect(ConstDamage.EFFECT_CALTROP):
+		is_caltrop = true
+		move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsAnimGap)
+		_be_vehicle_backlash(info)
+	return super(info)
+
+
+## 【载具反伤】同洗冰车：对**发起方**打一下 0 伤害 + 一张便条，后果由它自己翻译
+## （见 `Zombie013Zamboni._be_vehicle_backlash()` 的注释）
+func _be_vehicle_backlash(info: DamageInfo) -> void:
+	if not is_instance_valid(info.attacker):
+		return
+	## 显式转角色：`DamageInfo.attacker` 声明成 `Node`（它可能不是角色，也可能已经 free）
+	var attacker_character := info.attacker as Character000Base
+	if attacker_character == null:
+		return
+	var backlash := DamageInfo.create(attacker_character, 0,
+		ConstDamage.E_DamageMode.Norm, ConstDamage.E_DamageCause.Crush)
+	backlash.attacker = self
+	backlash.trigger_sfx = false
+	backlash.set_effect(ConstDamage.EFFECT_VEHICLE_BACKLASH, true)
+	attacker_character.apply_damage(backlash)

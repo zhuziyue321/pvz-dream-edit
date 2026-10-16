@@ -15,10 +15,10 @@ func _init() -> void:
 	can_choosed_card = false
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1: 2,
-	3: 1,
-	4: 2,
-	17: 2
+	&"pea_shooter_single": 2,
+	&"cherry_bomb": 1,
+	&"wall_nut": 2,
+	&"lily_pad": 2
 	})
 	## 本关通关掉落：火爆辣椒（种子包）
 	level_complete_loot = "jalapeno_seed_packet"
@@ -31,13 +31,16 @@ func get_zombie_init_para_extra() -> Dictionary:
 	}
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z012Snorkle,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.FOOTBALL,
+		ZombieIds.SNORKLE,
 	]
 
 	## 展示僵尸

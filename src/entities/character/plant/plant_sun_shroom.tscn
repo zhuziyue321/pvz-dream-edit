@@ -101,7 +101,7 @@ time_grow = 100.0
 mini_sun_value = 15
 norm_sun_value = 25
 is_grow = false
-plant_type = 10
+plant_type = &"sun_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="Shadow" parent="." index="0"]

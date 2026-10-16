@@ -53,7 +53,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant034FlowerPot" instance=ExtResource("1_k4p72")]
 plant_up_position = Vector2(0, 10)
-plant_type = 34
+plant_type = &"flower_pot"
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]
 init_be_attack_status = 8

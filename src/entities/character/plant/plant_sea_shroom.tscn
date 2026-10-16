@@ -109,7 +109,7 @@ size = Vector2(249, 5)
 
 [node name="Plant025SeaShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_trumw")]
 script = ExtResource("2_y3aiw")
-plant_type = 25
+plant_type = &"sea_shroom"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="Shadow" parent="." index="0"]
@@ -203,7 +203,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("14_x4qhn")
-attack_bullet_type = 3
+attack_bullet_type = &"puff"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

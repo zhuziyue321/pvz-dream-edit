@@ -65,7 +65,7 @@ metadata/_custom_type_script = "uid://jl0nl4a234bc"
 
 [node name="Plant031Pumpkin" instance=ExtResource("1_dvvog")]
 script = ExtResource("2_scv1d")
-plant_type = 31
+plant_type = &"pumpkin"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-43, -66)

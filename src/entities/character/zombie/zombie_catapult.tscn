@@ -1448,7 +1448,7 @@ body_change_1 = Dictionary[StringName, ExtResource("37_hkdva")]({
 &"have_bullet": SubResource("Resource_dw13o"),
 &"no_bullet": SubResource("Resource_8bhc0")
 })
-zombie_type = 23
+zombie_type = &"catapult"
 is_ignore_ladder = true
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent"), NodePath("AttackComponent2/DetectComponent")]
 
@@ -1953,7 +1953,7 @@ libraries = {
 script = ExtResource("60_5b35i")
 attack_para = &"parameters/StateMachine/BlendTree/OneShot/request"
 attack_cd = 4.0
-attack_bullet_type = 13
+attack_bullet_type = &"basketball"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
 attack_sfx = &"basketball"
 
@@ -2001,7 +2001,7 @@ is_detect_items = 1
 
 [node name="CanAttackStatusComponent" type="Node2D" parent="AttackComponent2/DetectComponent"]
 script = ExtResource("90_canas01")
-can_attack_plant_status = 5
+can_attack_plant_status = 1
 can_attack_zombie_status = 1
 
 [node name="Area2d" type="Area2D" parent="AttackComponent2/DetectComponent" index="0"]

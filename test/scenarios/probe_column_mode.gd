@@ -59,7 +59,7 @@ func run(a) -> void:
 		_check(a, "传送带发出了一张卡片", false, "超时 30s")
 		_finish(a)
 		return
-	var plant_type: int = card.card_plant_type
+	var plant_type: StringName = card.card_plant_type
 	a.log("  拿到卡片：%s（植物类型 %d）" % [str(card.get_path()), plant_type])
 
 	var target := _pick_column(mg, plant_type)
@@ -216,7 +216,7 @@ func _wait_conveyor_card(a, mg, timeout: float) -> Card:
 	var waited := 0.0
 	while waited < timeout:
 		for c in slot.curr_cards:
-			if is_instance_valid(c) and c.card_plant_type != CharacterRegistry.PlantType.Null:
+			if is_instance_valid(c) and c.card_plant_type != PlantIds.NULL:
 				return c
 		await a.wait(0.5)
 		waited += 0.5
@@ -224,7 +224,7 @@ func _wait_conveyor_card(a, mg, timeout: float) -> Card:
 
 
 ## 挑一列「至少两行能种」的格子：返回 (点哪一行, 哪一列)
-func _pick_column(mg, plant_type: int) -> Vector2i:
+func _pick_column(mg, plant_type: StringName) -> Vector2i:
 	var col_num: int = mg.plant_cell_manager.row_col.y
 	for col in col_num:
 		var rows := _plantable_rows(mg, plant_type, col)
@@ -234,7 +234,7 @@ func _pick_column(mg, plant_type: int) -> Vector2i:
 
 
 ## 某一列里能种 plant_type 的行号（升序）
-func _plantable_rows(mg, plant_type: int, col: int) -> Array[int]:
+func _plantable_rows(mg, plant_type: StringName, col: int) -> Array[int]:
 	var out: Array[int] = []
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
@@ -248,7 +248,7 @@ func _plantable_rows(mg, plant_type: int, col: int) -> Array[int]:
 
 
 ## 某一列里已经种了 plant_type 的行号（升序）
-func _planted_rows(mg, plant_type: int, col: int) -> Array[int]:
+func _planted_rows(mg, plant_type: StringName, col: int) -> Array[int]:
 	var out: Array[int] = []
 	for row in mg.plant_cell_manager.row_col.x:
 		var cell: PlantCell = mg.plant_cell_manager.all_plant_cells[row][col]
@@ -257,7 +257,7 @@ func _planted_rows(mg, plant_type: int, col: int) -> Array[int]:
 	return out
 
 
-func _cell_has_plant(cell: PlantCell, plant_type: int) -> bool:
+func _cell_has_plant(cell: PlantCell, plant_type: StringName) -> bool:
 	for place in cell.plant_in_cell:
 		var p = cell.get_plant(place)
 		if is_instance_valid(p) and p.plant_type == plant_type:
@@ -287,7 +287,7 @@ func _get_planted_num(mg) -> int:
 
 
 ## 可见虚影的每一行都是真的能种（反例：种不进去的行也出了虚影）
-func _all_rows_plantable(rows: Array[int], mg, plant_type: int, col: int) -> bool:
+func _all_rows_plantable(rows: Array[int], mg, plant_type: StringName, col: int) -> bool:
 	var plantable := _plantable_rows(mg, plant_type, col)
 	for row in rows:
 		if not plantable.has(row):

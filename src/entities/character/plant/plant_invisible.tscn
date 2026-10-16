@@ -1,0 +1,15 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://src/entities/character/plant/plant_invisible.gd" id="2_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="3_anim"]
+
+[node name="PlantInvisible" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+plant_type = &"invisible_plant"
+
+[node name="Shadow" parent="." index="0"]
+visible = false
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("3_anim")

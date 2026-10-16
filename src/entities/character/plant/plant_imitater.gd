@@ -2,7 +2,7 @@ extends Plant000Base
 class_name Plant999Imitater
 
 ## 模仿的植物类型
-var imitater_plant_type :CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+var imitater_plant_type : StringName = PlantIds.NULL
 @onready var imitater_effect: Node2D = $ImitaterEffect
 
 

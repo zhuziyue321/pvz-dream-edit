@@ -39,6 +39,13 @@ const DISABLED_HINT_TEXT := "（这个模组现在是关的：先按上面的开
 ## 禁用时整块压暗一点，让人一眼看出「现在改不了」
 const DISABLED_MODULATE := Color(1, 1, 1, 0.6)
 
+## 「模组自己那一块」挂刷新回调用的 meta 键 —— 与 `mods_builtin/mod_base.gd` 的
+## `DETAIL_REFRESH_META` 必须一致。这里不能写 `DETAIL_REFRESH_META`：
+## 模组（含 `ModBase`）不写 `class_name`（它可能在 `user://mods/` 下加载，那里
+## `class_name` 不注册为全局类，内置源那一份照同一口径写），本体（本文件在 `res://`）
+## 引用不到 —— 见 [模组机制](../../../docs/参考存档/模组机制.md) §二。
+const DETAIL_REFRESH_META := &"mod_detail_refresh"
+
 
 ## 左列（场景里是个空 VBoxContainer，列表运行时往里塞按钮）
 @onready var list_box: VBoxContainer = $OptionBG/ListScroll/List
@@ -47,7 +54,7 @@ const DISABLED_MODULATE := Color(1, 1, 1, 0.6)
 
 ## 当前选中的模组 id（空 = 还没选）
 var _selected_mod_id: StringName = &""
-## 当前详情控件挂的刷新回调（`ModBase.DETAIL_REFRESH_META`）：值在外面变了就调它一次
+## 当前详情控件挂的刷新回调（`DETAIL_REFRESH_META`）：值在外面变了就调它一次
 var _detail_refresh: Callable = Callable()
 ## 当前详情里「模组自己那一块」的根节点（刷新之后要照着它再禁用一遍）
 var _detail_control: Control = null
@@ -92,7 +99,7 @@ func _build_list() -> void:
 		list_box.add_child(_create_label(EMPTY_LIST_TEXT))
 		return
 	for mod_id in ModManager.all_mods:
-		var mod: ModBase = ModManager.all_mods[mod_id]
+		var mod = ModManager.all_mods[mod_id]
 		if mod == null:
 			continue
 		list_box.add_child(_create_list_button(mod_id, mod))
@@ -103,7 +110,7 @@ func _build_detail() -> void:
 	_clear_children(detail_box)
 	_detail_refresh = Callable()
 	_detail_control = null
-	var mod := ModManager.get_mod(_selected_mod_id)
+	var mod = ModManager.get_mod(_selected_mod_id)
 	if mod == null:
 		detail_box.add_child(_create_label(EMPTY_LIST_TEXT))
 		return
@@ -114,7 +121,9 @@ func _build_detail() -> void:
 	detail_box.add_child(_create_toggle_button(mod))
 	detail_box.add_child(_create_label(mod.get_mod_description()))
 
-	var detail := mod.create_detail_control()
+	## `mod` 只能是 Variant（模组脚本的类本体引用不到，见上面的 meta 注释），
+	## 所以这里要显式标类型，`:=` 推不出来
+	var detail: Control = mod.create_detail_control()
 	if detail == null:
 		detail_box.add_child(_create_label(EMPTY_DETAIL_TEXT))
 		return
@@ -126,15 +135,15 @@ func _build_detail() -> void:
 		_set_controls_enabled(detail, false)
 	detail_box.add_child(detail)
 	_detail_control = detail
-	## 模组想让自己那块能刷新，就在控件上挂一个回调（见 `ModBase.DETAIL_REFRESH_META`）
-	if detail.has_meta(ModBase.DETAIL_REFRESH_META):
-		_detail_refresh = detail.get_meta(ModBase.DETAIL_REFRESH_META)
+	## 模组想让自己那块能刷新，就在控件上挂一个回调（见 `DETAIL_REFRESH_META`）
+	if detail.has_meta(DETAIL_REFRESH_META):
+		_detail_refresh = detail.get_meta(DETAIL_REFRESH_META)
 #endregion
 
 
 #region 造控件
 ## 左列的一个按钮：点了就选中这个模组
-func _create_list_button(mod_id: StringName, mod: ModBase) -> Button:
+func _create_list_button(mod_id: StringName, mod) -> Button:
 	var button := Button.new()
 	var state_tag := ENABLED_TAG if ModManager.is_mod_enabled(mod_id) else DISABLED_TAG
 	button.text = (SELECTED_MARK if mod_id == _selected_mod_id else "") \
@@ -151,8 +160,8 @@ func _create_list_button(mod_id: StringName, mod: ModBase) -> Button:
 
 
 ## 详情里的开关按钮：点了就开 / 关这个模组，然后整体重建（模组自己那块也会跟着换）
-func _create_toggle_button(mod: ModBase) -> Button:
-	var mod_id := mod.get_mod_id()
+func _create_toggle_button(mod) -> Button:
+	var mod_id: StringName = mod.get_mod_id()
 	var enabled := ModManager.is_mod_enabled(mod_id)
 	var button := Button.new()
 	button.text = TURN_OFF_TEXT if enabled else TURN_ON_TEXT

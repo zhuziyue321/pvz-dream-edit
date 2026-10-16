@@ -60,7 +60,7 @@ func _run_one(a, title: String, level_path: String, expect_invisible: bool) -> v
 		Zombie000Base.E_ZInitAttr.CurrZombieRowType: CharacterRegistry.ZombieRowType.Land,
 	}
 	var z: Zombie000Base = zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm, row_node, init_para, Vector2(900, 100))
+		ZombieIds.NORM, row_node, init_para, Vector2(900, 100))
 	await a.wait(0.5)
 	if not is_instance_valid(z):
 		_check(a, title + ": 僵尸创建成功", false, "实例无效")

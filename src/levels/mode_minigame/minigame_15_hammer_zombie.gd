@@ -51,6 +51,9 @@ func init_level_items(mg: MainGameManager, _item_root: Node2D) -> void:
 	LevelRuleHammerZombie.install(mg)
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 准备安放植物
 	## 初始化小推车

@@ -2,7 +2,13 @@ extends Resource
 class_name ResourcePlantCondition
 
 @export_group("植物种植")
-@export_flags("1 无", "2 草地", "4 花盆", "8 水", "16 睡莲", "32 屋顶/裸地")
+## 位值的名字写在 `PlantConditionBits`（`src/core/consts/plant_condition_bits.gd`）里，
+## 代码里**按名字取位**（`PlantConditionBits.GRASS | PlantConditionBits.ROOF`），别写裸数字。
+## 加一位要同时改这两处（这里是编辑器里的勾选项，那里是代码里的常量）。
+##
+## 64 水盆是留给模组「水盆」的：原版没有这只底部植物，它的地形位由本体空出来，
+## 谁给格子加这一位由底部植物自己声明（见 `Plant000DownBase.own_condition_bit`）
+@export_flags("1 无", "2 草地", "4 花盆", "8 水", "16 睡莲", "32 屋顶/裸地", "64 水盆")
 ## 植物种植地形条件（满足一个即可），默认（草地2+花盆4+睡莲16 = 22）
 var plant_condition:int = 22
 
@@ -19,7 +25,7 @@ var plant_condition:int = 22
 
 
 ## 判断是否可以种植
-func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.PlantType) -> bool:
+func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type: StringName) -> bool:
 	## 格子限种（观星的星星轮廓点只收杨桃 / 南瓜头，别处不让种杨桃）：
 	## 放在最前面，所有植物（普通 / 紫卡 / 特殊）都要先过这一关
 	if not plant_cell.is_plant_type_allowed(curr_plant_type):
@@ -34,7 +40,7 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.
 			## 如果是壳类植物,若当前植物格子中Norm为玉米加农炮
 			if place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Shell \
 			and is_instance_valid(plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm))\
-			and plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm).plant_type == CharacterRegistry.PlantType.P048CobCannon:
+			and plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm).plant_type == PlantIds.COB_CANNON:
 				return false
 
 			return true
@@ -48,7 +54,7 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.
 
 
 ## 判断当前场上是否有紫卡预种植植物,紫卡是否可以种植
-func judge_purple_card_can_plant(all_plant_cells: Array[Array], curr_plant_type: CharacterRegistry.PlantType) -> bool:
+func judge_purple_card_can_plant(all_plant_cells: Array[Array], curr_plant_type: StringName) -> bool:
 	for plant_cells_row in all_plant_cells:
 		for plant_cell in plant_cells_row:
 			if get_preplant_purple(plant_cell, curr_plant_type) != null:
@@ -57,9 +63,9 @@ func judge_purple_card_can_plant(all_plant_cells: Array[Array], curr_plant_type:
 
 ## 获取当前格子紫卡预种植植物
 ## 返回预种植植物,若当前植物格子可以种植紫卡,返回预种植紫卡,
-func get_preplant_purple(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.PlantType) ->Plant000Base:
+func get_preplant_purple(plant_cell:PlantCell, curr_plant_type: StringName) ->Plant000Base:
 	## 紫卡前置植物
-	var precondition_plant:CharacterRegistry.PlantType = Global.character_registry.AllPrePlantPurple[curr_plant_type]
+	var precondition_plant: StringName = Global.character_registry.AllPrePlantPurple[curr_plant_type]
 	## 当前格子存在前置种植植物
 	var condition_precondition_plant :ResourcePlantCondition = Global.character_registry.get_plant_info(precondition_plant, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	var place_precondition_plant:CharacterRegistry.PlacePlantInCell = condition_precondition_plant.place_plant_in_cell
@@ -75,7 +81,7 @@ func get_preplant_purple(plant_cell:PlantCell, curr_plant_type:CharacterRegistry
 
 
 ## 获取当前场上所有的紫卡植物的对应预种植植物
-func get_all_preplant_purple(all_plant_cells: Array[Array], curr_plant_type: CharacterRegistry.PlantType) -> Array[Plant000Base]:
+func get_all_preplant_purple(all_plant_cells: Array[Array], curr_plant_type: StringName) -> Array[Plant000Base]:
 	var all_preplant_purple:Array[Plant000Base]
 	for plant_cells_row in all_plant_cells:
 		for plant_cell in plant_cells_row:

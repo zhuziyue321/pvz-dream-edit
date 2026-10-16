@@ -31,6 +31,7 @@ func _ready() -> void:
 	user_manager.ensure_default_user()
 	if not user_manager.curr_user_name.is_empty():
 		reload_session_for_current_user()
+	_spawn_debug_window()
 	## 不再起定时自动存档：存档一律由业务节点在关键时机调 SaveService.save_now()
 
 
@@ -59,12 +60,41 @@ var game_para:ResourceLevelData
 var time_scale := 1.0
 
 
+#region 调试窗口
+## 调试窗口（`DebugWindow`）：Ctrl+Q（输入映射 ShortcutKeys_DebugWindow）呼出 / 隐藏，
+## 半透明贴在屏幕右侧，里面是一组调试动作与实时状态行（条目在 `DebugWindowEntries`）。
+##
+## 只在「调试模式」开着时才会弹出来，判定见 `DebugWindow.is_debug_mode_on()`。
+##
+## 这里只负责 new 出来并常驻在 Global 下 —— **它自己认 Ctrl+Q**，因为 Global 继承到
+## `PROCESS_MODE_PAUSABLE`，树一被菜单暂停就收不到按键了，而调试窗口恰要在暂停时也能呼出来。
+var debug_window: DebugWindow = null
+
+
+## 延到本帧末再造窗口：`Global` 是第 2 个 autoload，而 `EventBus` 是第 7 个 ——
+## 在 `Global._ready()` 里直接 new，`DebugWindow._ready()` 里的 `EventBus.subscribe()` 会撞上
+## 还没进树的 EventBus。挂在同一帧的末尾就没有这个先后顺序问题了。
+func _spawn_debug_window() -> void:
+	if is_instance_valid(debug_window):
+		return
+	debug_window = DebugWindow.new()
+	add_child.call_deferred(debug_window)
+
+
+## 「调试模式」开关是否开着（控制台 → 调试 → 调试模式）
+func is_debug_mode_on() -> bool:
+	return bool(config_service.get_console_value(
+		ConsoleBuiltinEntries.DEBUG_MODE_KEY, false))
+#endregion
+
+
 #region 调试快捷键
 ## 调试快捷键总开关：Ctrl+D（输入映射 ShortcutKeys_WinLevel）
 ## 按下后进入「等下一个按键」的状态，由**下一个按键**决定要做什么：
 ##   0 —— 立刻通关本关（走 MgmRewardManager.win_main_game()，不用打完所有波次就能结算本关）
 ##   1 —— 通关所有冒险关卡（1-1 ~ 5-10 一次全写成已通关 + 解锁沿途植物）
 ##   2 —— 打开存档文件夹（系统文件管理器定位到当前用户的存档目录）
+##   3 —— 解锁所有商品（商店货架上的商品全部置为已拥有：紫卡 / 卡槽 / 小推车 / 花园 …）
 ## 拆成两段是因为调试功能会越加越多，一个组合键占一个功能迟早不够用；
 ## 顺带的好处是单按 Ctrl+D 不会误改存档，必须再补一个数字键才生效（按别的键 = 取消）。
 ##
@@ -87,7 +117,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if Input.is_action_just_pressed("ShortcutKeys_WinLevel"):
 		is_waiting_debug_follow_key = true
 		get_viewport().set_input_as_handled()
-		Log.info("调试快捷键 Ctrl+D：等待下一个按键（0 = 立刻通关本关，1 = 通关所有冒险关卡，2 = 打开存档文件夹）")
 
 
 ## 执行 Ctrl+D 之后那个按键对应的调试操作
@@ -110,23 +139,23 @@ func _run_debug_follow_key(event: InputEvent) -> bool:
 		KEY_2, KEY_KP_2:
 			debug_open_save_dir()
 			return true
+		KEY_3, KEY_KP_3:
+			debug_unlock_all_shop_goods()
+			return true
 		_:
-			Log.debug("调试快捷键 Ctrl+D + 未知按键，已取消")
 			return false
 
 
 ## 「Ctrl+D 然后按 0」：立刻通关本关（必须正在关卡里）
 func debug_win_main_game() -> void:
 	if not GameContext.is_in_main_game():
-		Log.info("调试快捷键 Ctrl+D + 0：当前不在关卡内，忽略")
 		return
 	GameContext.curr_main_game.shortcut_win_main_game()
 
 
 ## 「Ctrl+D 然后按 1」：通关所有冒险关卡（只写全局关卡数据，不结算当前这一局）
 func debug_success_all_adventure_level() -> void:
-	var num := global_game_state.success_all_adventure_level()
-	Log.info("调试快捷键 Ctrl+D + 1：已通关所有冒险关卡（%d 关），冒险进度 %d" % [num, global_game_state.get_max_success_adventure_level()])
+	global_game_state.success_all_adventure_level()
 
 
 ## 「Ctrl+D 然后按 2」：用系统文件管理器打开存档文件夹
@@ -137,7 +166,15 @@ func debug_open_save_dir() -> void:
 	if user_manager != null and not user_manager.curr_user_name.is_empty():
 		dir = "user://" + user_manager.curr_user_name + "/"
 	var abs_path := ProjectSettings.globalize_path(dir)
-	var err := OS.shell_open(abs_path)
-	Log.info("调试快捷键 Ctrl+D + 2：打开存档文件夹 %s（错误码 %d）" % [abs_path, err])
+	OS.shell_open(abs_path)
+
+
+## 「Ctrl+D 然后按 3」：解锁所有商品
+## 把商店货架上的商品全部置为已拥有（不扣金币、不动关卡进度），本体在
+## GlobalGameState.unlock_all_shop_goods() —— 与 Ctrl+D 1 一样只碰全局存档，
+## 所以选关界面 / 主菜单按也生效；商店本身还没开门时先按 1 通关所有冒险关卡。
+func debug_unlock_all_shop_goods() -> void:
+	var num := global_game_state.unlock_all_shop_goods()
+	Log.info("调试快捷键：已解锁商店全部商品，本次新拥有 %d 件" % num)
 #endregion
 

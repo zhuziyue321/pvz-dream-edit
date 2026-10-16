@@ -39,7 +39,6 @@ func _judge_need_water() -> bool:
 						var now_unix = Time.get_unix_time_from_datetime_dict(now)
 						var next_unix = Time.get_unix_time_from_datetime_string(next_update_time)
 						if now_unix >= next_unix:
-							Log.debug("存在需要浇水的植物")
 
 							return true
 

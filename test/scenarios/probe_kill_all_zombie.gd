@@ -34,7 +34,7 @@ func run(a) -> void:
 	## 干等永远不会出僵尸，这里直接调波次创建管理器摆 3 只普通僵尸上场。
 	var creator = zm.zombie_wave_manager.zombie_wave_create_manager
 	for lane in range(3):
-		creator.wave_create_zombie(CharacterRegistry.ZombieType.Z001Norm, lane, 1)
+		creator.wave_create_zombie(ZombieIds.NORM, lane, 1)
 	await a.wait(1.0)
 
 	var before := 0

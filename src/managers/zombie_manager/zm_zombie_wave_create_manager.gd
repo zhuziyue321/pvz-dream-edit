@@ -22,7 +22,8 @@ var range_num_bungi:Vector2i = Vector2i(3,5)
 ## 现在只剩注册表那一份；植物僵尸（Z031+）的战力 / 权重不在这两张表里，走 `ZomBotanyConfig`。
 
 ## 初始权重的**运行期副本**：普僵 / 路障的后期衰减直接写这里（`_update_weights`），
-## 不改动注册表里的公共基础数据
+## 不改动注册表里的公共基础数据。
+## 开局在 `init_zombie_wave_create_manager()` 里按注册表重取一次（含热注册的僵尸）
 var zombie_weights:Dictionary = CharacterRegistry.ZombieSpawnWeights.duplicate_deep()
 
 ## 僵尸随机选择池
@@ -45,6 +46,9 @@ var wave_all_zombies:Array[Zombie000Base]
 func init_zombie_wave_create_manager(game_para:ResourceLevelData):
 	zombie_multy = game_para.zombie_multy
 	range_num_bungi = game_para.range_num_bungi
+	## 权重在这里重取一次：运行期热注册的僵尸（见 `CharacterRegistry.register_runtime_zombie`）
+	## 可能是本管理器建好之后才登记进来的，成员初始化那一次取不到它们
+	zombie_weights = Global.character_registry.get_zombie_spawn_weights()
 	zombie_choose_row_system.init_zombie_choose_row_system()
 	update_zombie_refresh_types()
 
@@ -62,23 +66,22 @@ func update_zombie_refresh_types():
 		if min_power > curr_power:
 			min_power = curr_power
 		zombie_choose_random_pool_data.append([zombie_type, get_zombie_weight(zombie_type)])
-	Log.debug("更新僵尸随机选择池")
 	zombie_choose_random_pool = RandomPicker.new(zombie_choose_random_pool_data)
 
 
 ## 僵尸战力：植物僵尸（Z031+）统一在 ZomBotanyConfig 配，其余读注册表的 `ZombieSpawnPower`
 ## （唯一数据源，见文件头注释；13 只植物僵尸各写一份会让这张表翻倍，且和 zom_botany_config.gd 各演化各的）
-func get_zombie_power(zombie_type:CharacterRegistry.ZombieType) -> int:
+func get_zombie_power(zombie_type: StringName) -> int:
 	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
 	if zom_botany_info != null:
 		return zom_botany_info.power
-	return CharacterRegistry.ZombieSpawnPower.get(zombie_type, -1)
+	return Global.character_registry.get_zombie_spawn_power(zombie_type)
 
 
 ## 僵尸初始权重：植物僵尸走 ZomBotanyConfig，其余走 zombie_weights
 ## **已乘上出怪密度倍率**（见 set_zombie_density）—— 随机池与权重上限一律按
 ## 「密度生效后」这个值算，所以密度倍率对建池 / 后期普僵衰减 / 权重上限都一致生效
-func get_zombie_weight(zombie_type:CharacterRegistry.ZombieType) -> int:
+func get_zombie_weight(zombie_type: StringName) -> int:
 	var base_weight: int
 	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
 	if zom_botany_info != null:
@@ -97,7 +100,7 @@ var zombie_density_scale: Dictionary = {}
 
 ## 设置某类僵尸的出怪密度倍率（> 1 = 出得更多，1.0 = 回到原版权重）
 ## 只在倍率真的变了时才动随机池，避免每波无谓重建别名表
-func set_zombie_density(zombie_type:CharacterRegistry.ZombieType, density:float) -> void:
+func set_zombie_density(zombie_type: StringName, density:float) -> void:
 	if density <= 0.0:
 		Log.error("出怪密度倍率必须为正数: " + str(zombie_type) + " -> " + str(density))
 		return
@@ -108,7 +111,7 @@ func set_zombie_density(zombie_type:CharacterRegistry.ZombieType, density:float)
 
 
 ## 取某类僵尸当前的出怪密度倍率（没设过 = 1.0）
-func get_zombie_density(zombie_type:CharacterRegistry.ZombieType) -> float:
+func get_zombie_density(zombie_type: StringName) -> float:
 	return float(zombie_density_scale.get(zombie_type, 1.0))
 
 
@@ -123,7 +126,7 @@ func clear_zombie_density() -> void:
 
 
 ## 把某类僵尸「密度生效后的权重」写回随机池，并重建别名表、重算权重上限
-func _sync_density_to_pool(zombie_type:CharacterRegistry.ZombieType) -> void:
+func _sync_density_to_pool(zombie_type: StringName) -> void:
 	if zombie_choose_random_pool == null or zombie_manager == null:
 		return
 	if not zombie_type in zombie_manager.zombie_refresh_types:
@@ -144,7 +147,7 @@ func create_curr_wave_all_zombies(wave:int, is_big_wave:bool):
 	if level_script != null:
 		level_script.before_wave_spawn(self, wave, is_big_wave)
 	## 获取当前波僵尸生成列表
-	var wave_spawn :Array[CharacterRegistry.ZombieType] = create_curr_wave_zombie_list(wave, is_big_wave)
+	var wave_spawn :Array[StringName] = create_curr_wave_zombie_list(wave, is_big_wave)
 	## 本波僵尸「怎么进场」交给关卡脚本：默认是走进来，一关专属的进场方式（空投这类）
 	## 由脚本自己覆写 create_wave_zombies 换掉 —— 本文件不认识任何具体玩法
 	## （见 LevelScriptBase.create_wave_zombies；关卡不覆写时走通用进场）
@@ -155,20 +158,20 @@ func create_curr_wave_all_zombies(wave:int, is_big_wave:bool):
 
 ## 通用进场：僵尸按清单从场地边缘走进来
 ## 关卡脚本覆写 create_wave_zombies 时想退化成普通进场就调这里
-func create_norm_wave_zombies(wave_spawn:Array[CharacterRegistry.ZombieType], wave:int) -> Array[Zombie000Base]:
+func create_norm_wave_zombies(wave_spawn:Array[StringName], wave:int) -> Array[Zombie000Base]:
 	wave_all_zombies.clear()
 
 	for i in range(wave_spawn.size()):
-		var zombie_type : CharacterRegistry.ZombieType = wave_spawn[i]
+		var zombie_type : StringName = wave_spawn[i]
 		var lane :int = -1
 		## 雪橇队
-		if zombie_type == CharacterRegistry.ZombieType.Z014Bobsled:
+		if zombie_type == ZombieIds.BOBSLED:
 			## 挑一条「冰面还在」的行：没有冰的小队一落地就开始掉血（见 Zombie014Bobsled.judge_is_in_ice_road），
 			## 这样的班级不算有效出怪 —— 一条冰道都没有时本波改出洗冰车，由它把冰铺回来
 			## （对应原版「玩家把冰面融掉后，冰面恢复前只出洗冰车」）
 			lane = select_bobsled_spawn_row()
 			if lane < 0:
-				zombie_type = CharacterRegistry.ZombieType.Z013Zamboni
+				zombie_type = ZombieIds.ZAMBONI
 		if lane < 0:
 			lane = zombie_choose_row_system.select_spawn_row(
 				Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType
@@ -187,16 +190,15 @@ func select_bobsled_spawn_row() -> int:
 	for row_ice_road:Array[IceRoad] in zombie_manager.all_ice_roads:
 		ice_row_weight.append(0.0 if row_ice_road.is_empty() else 1.0)
 	if GlobalUtils.sum_arr(ice_row_weight) == 0:
-		Log.debug("全图没有冰道，本波雪橇队改成洗冰车")
 		return -1
 	return zombie_choose_row_system.select_spawn_row(
-		Global.character_registry.get_zombie_info(CharacterRegistry.ZombieType.Z014Bobsled, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType,
+		Global.character_registry.get_zombie_info(ZombieIds.BOBSLED, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType,
 		ice_row_weight)
 
 
 ## 生成波次僵尸
 func wave_create_zombie(
-	zombie_type:CharacterRegistry.ZombieType,
+	zombie_type: StringName,
 	lane:int, 	## 僵尸行
 	curr_wave:int,		## 僵尸波次
 	init_zombie_special:Callable = Callable(),		## 初始化僵尸特殊属性
@@ -224,7 +226,7 @@ func create_curr_wave_zombie_list(wave:int, is_big_wave:bool):
 	## 更新僵尸权重上限
 	update_curr_zombie_weight_upper_limit(wave)
 	## 获取当前波的生成僵尸列表
-	var wave_spawn :Array[CharacterRegistry.ZombieType] = get_curr_wave_zombie_list(wave, is_big_wave, curr_wave_power_limit)
+	var wave_spawn :Array[StringName] = get_curr_wave_zombie_list(wave, is_big_wave, curr_wave_power_limit)
 
 	return wave_spawn
 
@@ -281,25 +283,24 @@ func _update_weights(wave: int):
 			if is_update_weight_on_limit:
 				return
 			is_update_weight_on_limit = true
-			Log.debug("更新权重")
 			wave = 25
 
 		var norm_weight = 4000 - (wave - 5) * 180
-		zombie_weights[CharacterRegistry.ZombieType.Z001Norm] = norm_weight
-		if CharacterRegistry.ZombieType.Z001Norm in zombie_manager.zombie_refresh_types:
+		zombie_weights[ZombieIds.NORM] = norm_weight
+		if ZombieIds.NORM in zombie_manager.zombie_refresh_types:
 			## 写进池子的是「衰减后 × 密度倍率」：后期的普僵衰减和本关的密度加成要叠加，不能互相覆盖
-			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z001Norm, get_zombie_weight(CharacterRegistry.ZombieType.Z001Norm), false)
+			zombie_choose_random_pool.update_item_weight(ZombieIds.NORM, get_zombie_weight(ZombieIds.NORM), false)
 		var cone_weight = 4000 - (wave - 5) * 150
-		zombie_weights[CharacterRegistry.ZombieType.Z003Cone] = cone_weight
-		if CharacterRegistry.ZombieType.Z003Cone in zombie_manager.zombie_refresh_types:
-			zombie_choose_random_pool.update_item_weight(CharacterRegistry.ZombieType.Z003Cone, get_zombie_weight(CharacterRegistry.ZombieType.Z003Cone), false)
+		zombie_weights[ZombieIds.CONE] = cone_weight
+		if ZombieIds.CONE in zombie_manager.zombie_refresh_types:
+			zombie_choose_random_pool.update_item_weight(ZombieIds.CONE, get_zombie_weight(ZombieIds.CONE), false)
 
 		zombie_choose_random_pool.rebuild_alias_table()
 
 ## 获取当前波僵尸列表
-func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limit:int) ->Array[CharacterRegistry.ZombieType]:
+func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limit:int) ->Array[StringName]:
 	## 当前波的僵尸列表
-	var wave_spawn :Array[CharacterRegistry.ZombieType]= []
+	var wave_spawn :Array[StringName]= []
 	## 目前总战力
 	var total_power = 0
 	## 当前空隙位置
@@ -308,27 +309,27 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 	## 如果是大波，先刷新特殊僵尸
 	if is_big_wave:
 		## 第一个旗帜僵尸
-		wave_spawn.append(CharacterRegistry.ZombieType.Z002Flag)
-		total_power += get_zombie_power(CharacterRegistry.ZombieType.Z002Flag)
+		wave_spawn.append(ZombieIds.FLAG)
+		total_power += get_zombie_power(ZombieIds.FLAG)
 		curr_spare_slot -= 1
 
 		# 第一次大波（第10波），刷新4个普通僵尸
 		if wave == 9:
 			for i in range(4):
-				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
+				wave_spawn.append(ZombieIds.NORM)
+				total_power += get_zombie_power(ZombieIds.NORM)
 				curr_spare_slot -= 1
 		# 之后的大波（第20波、30波...），刷新8个普通僵尸
 		else:
 			for i in range(8):
-				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
+				wave_spawn.append(ZombieIds.NORM)
+				total_power += get_zombie_power(ZombieIds.NORM)
 				curr_spare_slot -= 1
 
 	# 生成剩余僵尸，直到总战力符合当前战力上限
 	while curr_spare_slot > 0 and total_power < curr_wave_power_limit:
 
-		var selected_zombie:CharacterRegistry.ZombieType = zombie_choose_random_pool.get_random_item()
+		var selected_zombie: StringName = zombie_choose_random_pool.get_random_item()
 		var zombie_power_value = get_zombie_power(selected_zombie)
 
 		#prints("当前剩余僵尸", curr_spare_slot, "当前战力:", total_power, "当前所选僵尸:", selected_zombie, "当前所选僵尸战力:", zombie_power_value)
@@ -340,8 +341,8 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 			curr_spare_slot -= 1
 		elif curr_wave_power_limit - total_power < min_power:
 			for i in range(curr_wave_power_limit - total_power):
-				wave_spawn.append(CharacterRegistry.ZombieType.Z001Norm)
-				total_power += get_zombie_power(CharacterRegistry.ZombieType.Z001Norm)
+				wave_spawn.append(ZombieIds.NORM)
+				total_power += get_zombie_power(ZombieIds.NORM)
 				curr_spare_slot -= 1
 			continue
 		else:
@@ -360,10 +361,7 @@ func spawn_special_zombie_in_big_wave(is_final:=false):
 	## 珊瑚僵尸,若有水路自动创建,没有则不创建
 	if is_final:
 		if not zombie_manager.is_ice:
-			Log.debug("生成珊瑚僵尸")
 			spawn_sea_weed_zombies()
-		else:
-			Log.debug("被冰冻无法生成珊瑚僵尸")
 	## 如果有蹦极僵尸
 	if zombie_manager.is_bungi:
 		spawn_bungi_zombies()
@@ -376,14 +374,13 @@ func spawn_sea_weed_zombies():
 		if zombie_manager.all_zombie_rows[i].zombie_row_type == CharacterRegistry.ZombieRowType.Pool:
 			zombie_row_pool_i.append(i)
 	if zombie_row_pool_i.is_empty():
-		Log.debug("无水路,无法生成珊瑚僵尸")
 		return
 
-	var zombie_type_sea_weed_list :Array= [CharacterRegistry.ZombieType.Z001Norm, CharacterRegistry.ZombieType.Z003Cone, CharacterRegistry.ZombieType.Z005Bucket]
+	var zombie_type_sea_weed_list :Array= [ZombieIds.NORM, ZombieIds.CONE, ZombieIds.BUCKET]
 
 	for i in range(3):
 		## 走 `GameRng`：珊瑚僵尸的种类 / 行 / 位置两端要一致
-		var zombie_type:CharacterRegistry.ZombieType = GameRng.pick_random(zombie_type_sea_weed_list)
+		var zombie_type: StringName = GameRng.pick_random(zombie_type_sea_weed_list)
 		var lane:int= GameRng.pick_random(zombie_row_pool_i)
 		var zombie_sea_weed:Zombie000Base = wave_create_zombie(zombie_type, lane, -1, _zombie_seaweed)
 
@@ -413,7 +410,7 @@ func spawn_bungi_zombies():
 		}
 
 		zombie_manager.create_norm_zombie(
-			CharacterRegistry.ZombieType.Z021Bungi,
+			ZombieIds.BUNGI,
 			zombie_manager.all_zombie_rows[plant_cell.row_col.x],
 			zombie_init_para,
 			Vector2(plant_cell.global_position.x + plant_cell.size.x/2,

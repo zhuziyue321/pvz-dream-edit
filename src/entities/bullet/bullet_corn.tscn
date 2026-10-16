@@ -6,7 +6,7 @@
 
 [node name="Bullet010Corn" instance=ExtResource("1_02pep")]
 parabola_height = -500.0
-bullet_type = 10
+bullet_type = &"corn"
 is_rotate = true
 bullet_mode = 2
 type_bullet_SFX = 3

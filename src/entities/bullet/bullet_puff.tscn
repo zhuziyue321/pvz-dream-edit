@@ -40,7 +40,7 @@ gravity = Vector3(0, 0, 0)
 scale_curve = SubResource("CurveTexture_hpcex")
 
 [node name="Bullet003Puff" instance=ExtResource("1_jeubn")]
-bullet_type = 3
+bullet_type = &"puff"
 max_distance = 250.0
 type_bullet_SFX = 0
 

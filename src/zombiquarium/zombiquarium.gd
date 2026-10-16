@@ -52,7 +52,6 @@ func init_standalone() -> void:
 	standalone_hud.visible = true
 	tip_label.text = TIP_STANDALONE
 	manager.init_zombiquarium(null)
-	Log.debug("僵尸水族馆：独立预览（没有主游戏，阳光由本体自带）")
 
 
 ## 玩法本体（探针 / 调试通道 / UI 转发用）

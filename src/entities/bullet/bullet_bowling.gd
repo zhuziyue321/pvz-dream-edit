@@ -85,7 +85,6 @@ func _on_area_2d_attack_area_entered(area: Area2D) -> void:
 		return
 	## 在当前行
 	if in_curr_lane:
-		#Log.debug(str(lane) + str(enemy.lane))
 		## 如果僵尸在子弹攻击行
 		if lane == enemy.lane:
 			## 攻击后修改为不再当前行，并已攻击
@@ -93,7 +92,7 @@ func _on_area_2d_attack_area_entered(area: Area2D) -> void:
 			attack_once(enemy)
 			_update_direction()
 			first_attack_end = true
-			bullet_mode =BulletRegistry.AttackMode.BowlingSide
+			bullet_mode =ConstDamage.E_DamageMode.BowlingSide
 	else :
 		curr_enemy = area.owner
 

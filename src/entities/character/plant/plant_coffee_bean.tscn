@@ -51,7 +51,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Plant036CoffeeBean" instance=ExtResource("1_ccail")]
 z_index = 2
 script = ExtResource("2_wi000")
-plant_type = 36
+plant_type = &"coffee_bean"
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]
 init_be_attack_status = 2

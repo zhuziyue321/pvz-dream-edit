@@ -19,10 +19,10 @@ const LEVEL_05_05 := "res://src/levels/mode_adventure/adventure_05_05.gd"
 const LEVEL_05_01 := "res://src/levels/mode_adventure/adventure_05_01.gd"
 ## 5-5 传送带卡池（原版冒险 5-5 的四种发牌植物）
 const EXPECT_POOL: Array = [
-	CharacterRegistry.PlantType.P034FlowerPot,
-	CharacterRegistry.PlantType.P031Pumpkin,
-	CharacterRegistry.PlantType.P007Chomper,
-	CharacterRegistry.PlantType.P003CherryBomb,
+	PlantIds.FLOWER_POT,
+	PlantIds.PUMPKIN,
+	PlantIds.CHOMPER,
+	PlantIds.CHERRY_BOMB,
 ]
 
 var _failed := 0
@@ -177,7 +177,7 @@ func _check_drop_wave(a) -> void:
 	## 全程应当只有一张画面：每次采样都把所有部件的位置记下来，理应只出现一种组合
 	var snap_set: Dictionary = {}
 	## 起飞只有 1 秒左右，采样要密一点才抓得到
-	for i in range(56):
+	for _i in range(56):
 		await a.wait(0.25)
 		if is_instance_valid(drop_bungi):
 			if first_seen == 0:
@@ -411,7 +411,7 @@ func _check_auto_wave(a) -> void:
 	var zm = GameContext.curr_main_game.zombie_manager
 	## 5-5 的 first_wave_delay 是 20 秒，再等几波（最短波长 6 秒）
 	var max_drop := 0
-	for i in range(100):
+	for _i in range(100):
 		await a.wait(0.6)
 		max_drop = maxi(max_drop, _num(zm, true))
 		if zm.zombie_wave_manager.curr_wave >= 2 and max_drop > 0:

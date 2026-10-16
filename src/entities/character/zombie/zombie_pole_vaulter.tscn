@@ -1223,7 +1223,7 @@ size = Vector2(48, 5)
 [node name="Zombie004PoleVaulter" instance=ExtResource("1_trtd0")]
 script = ExtResource("2_5aeas")
 is_jumping = false
-zombie_type = 4
+zombie_type = &"pole_vaulter"
 is_trigger_squash_pos_judge = true
 is_trigger_tall_nut_stop_jump = true
 

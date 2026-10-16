@@ -94,7 +94,7 @@ func _plant_targets(a) -> void:
 		return
 	var planted := 0
 	for cell in grid[0]:
-		var plant = cell.create_plant(CharacterRegistry.PlantType.P034FlowerPot)
+		var plant = cell.create_plant(PlantIds.FLOWER_POT)
 		if is_instance_valid(plant):
 			planted += 1
 	await a.wait(1.0)

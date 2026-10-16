@@ -17,7 +17,7 @@ var _failed := 0
 func run(a) -> void:
 	a.log("")
 	a.log("========== 2-5 锤僵尸关实机 ==========")
-	Global.global_game_state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	Global.global_game_state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	Global.global_game_state.curr_all_level_state_data = {}
 	var para: ResourceLevelData = (load(LEVEL_DIR + (LEVEL_FILE_FORMAT % 5)) as GDScript).new()
 	para.set_choose_level(ADV, PAGE_02, ID_02_05)

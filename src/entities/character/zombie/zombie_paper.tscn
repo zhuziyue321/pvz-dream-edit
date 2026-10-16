@@ -54,6 +54,7 @@
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="44_45lnk"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="45_17kg5"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="46_g84jt"]
+[ext_resource type="Script" uid="uid://b0qu6kemyk87d" path="res://src/entities/character/components/armor_component/component_armor_newspaper.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_6p5s8"]
 script = ExtResource("46_g84jt")
@@ -1349,7 +1350,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Zombie006Paper" instance=ExtResource("1_t5uiv")]
 script = ExtResource("2_nmsdc")
 is_gasp = false
-zombie_type = 6
+zombie_type = &"paper"
 is_idle = false
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -1599,13 +1600,16 @@ scale = Vector2(0.794647, 0.794647)
 texture = ExtResource("28_x1nb6")
 centered = false
 
+[node name="ArmorComponent" type="Node2D" parent="."]
+script = ExtResource("9_armor")
+armor_type = 5
+armor_class = 2
+max_hp = 150
+sfx_be_attack = 1
+body_change = Array[ExtResource("46_g84jt")]([SubResource("Resource_hekb6"), SubResource("Resource_rbrsd"), SubResource("Resource_7gvwh")])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("46_g84jt")]([SubResource("Resource_6p5s8"), SubResource("Resource_vig6t")])
-body_change_armor2 = Array[ExtResource("46_g84jt")]([SubResource("Resource_hekb6"), SubResource("Resource_rbrsd"), SubResource("Resource_7gvwh")])
-
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor2 = 150
-sfx_be_attack_armor2 = 1
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]
 centered = false

@@ -15,26 +15,29 @@ func _init() -> void:
 	init_tombstone_num = 13
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	9: 2,
-	11: 2,
-	12: 2,
-	13: 2,
-	14: 2,
-	15: 2,
-	16: 2
+	&"puff_shroom": 2,
+	&"fume_shroom": 2,
+	&"grave_buster": 2,
+	&"hypno_shroom": 2,
+	&"scaredy_shroom": 2,
+	&"ice_shroom": 2,
+	&"doom_shroom": 2
 	})
 	## 本关通关掉落：睡莲（种子包）
 	level_complete_loot = "lily_pad_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z009Jackson,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKSON,
 	]
 
 	## 戴夫推销卡槽扩充（2-2 ~ 3-4 这几关都有；传送带关不能选卡，本句空转）

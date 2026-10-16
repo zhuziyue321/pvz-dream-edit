@@ -1338,7 +1338,7 @@ idle_status_max = 2
 walk_status_max = 2
 death_status_max = 2
 init_sprite_random = [NodePath("Body/BodyCorrect/Zombie_tie"), NodePath("Body/BodyCorrect/Anim_tongue"), NodePath("Body/BodyCorrect/Anim_hair")]
-zombie_type = 1
+zombie_type = &"norm"
 body_change_on_pool = SubResource("Resource_vukf2")
 
 [node name="Shadow" parent="." index="0"]

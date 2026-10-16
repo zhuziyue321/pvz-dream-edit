@@ -54,7 +54,7 @@ metadata/_custom_type_script = "uid://jl0nl4a234bc"
 
 [node name="Plant037Garlic" instance=ExtResource("1_34mm5")]
 script = ExtResource("2_5vkpm")
-plant_type = 37
+plant_type = &"garlic"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-42, -66)

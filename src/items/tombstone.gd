@@ -6,7 +6,7 @@ class_name  TombStone
 @onready var mound: Sprite2D = $MoundMask/mound
 @onready var tombstone_mask: Panel = $TombstoneMask
 
-@export var zombie_candidate_list :Array[CharacterRegistry.ZombieType]
+@export var zombie_candidate_list :Array[StringName]
 
 var plant_cell:PlantCell
 var new_zombie:Zombie000Base
@@ -67,9 +67,8 @@ func is_creating_zombie() -> bool:
 ## [new_zombie_type] 僵尸种类
 ## [anim_multiply] 起身动画倍率（锤僵尸玩法用它做难度爬升）
 ## 返回是否真的放出去一只（墓碑正忙着出怪时返回 false）
-func create_new_zombie(new_zombie_type:CharacterRegistry.ZombieType, anim_multiply:float=1.0) -> bool:
+func create_new_zombie(new_zombie_type: StringName, anim_multiply:float=1.0) -> bool:
 	if is_creating_zombie():
-		Log.debug("当前墓碑正在生产僵尸")
 		return false
 
 	var zombie_init_para:Dictionary = {

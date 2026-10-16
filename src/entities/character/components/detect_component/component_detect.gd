@@ -133,6 +133,23 @@ func component_ready() -> void:
 		Log.error(owner.name + "lane == -1且为正常出战初始化类型")
 
 
+## 运行期**追加**一个检测区域（场景里配好的那些不动）
+##
+## ★ 留给模组的口子（"卷心菜投手索敌三行"这类改动）：本体自己不调它，
+##   传进来的 Area2D 挂在本组件下（跟着 owner 一起移动），检测层与信号接线
+##   按 `component_ready()` 里那一套原样补一遍 —— 少接一样就会「加了区域却测不到人」。
+## [area_2d] 调用方已配好形状与位置（相对本组件的局部坐标）
+func add_extra_ray_area(area_2d: Area2D) -> void:
+	if not is_instance_valid(area_2d):
+		return
+	add_child(area_2d)
+	area_2d.collision_mask = curr_collision_lay
+	area_2d.area_entered.connect(_on_area_2d_area_entered)
+	area_2d.area_exited.connect(_on_area_2d_area_exited)
+	all_ray_area.append(area_2d)
+	ray_area_direction.append(Vector2(cos(area_2d.rotation), sin(area_2d.rotation)))
+
+
 func _exit_tree() -> void:
 	EventBus.unsubscribe(ConstEventName.CHARACTER_BE_HYPNO, _on_character_be_hypno)
 
@@ -220,7 +237,6 @@ func _on_enemy_zombie_lane_update(zombie:Zombie000Base):
 #region 检测是否有敌人\道具
 ## 如果检测到可以被攻击的敌人\道具，发射信号,保存当前敌人，return,若到最后没有检测到敌人，发射信号，重置当前敌人，return
 func judge_is_have_enemy():
-	#Log.debug("判定敌人")
 	## 僵王是正式角色，与普通僵尸走同一条判定链（跨行由检测框几何决定）
 	for ray_area in all_ray_area:
 		var all_enemy_area = ray_area.get_overlapping_areas()
@@ -245,16 +261,13 @@ func judge_is_have_enemy():
 func _on_detect_main_game_item(curr_main_game_item:MainGameItemBase)->bool:
 	## 可以检测罐子 并且 检测到罐子
 	if is_detect_items & E_ItemType.Pot and curr_main_game_item is ScaryPot:
-		Log.debug("检测到罐子")
 		pot = curr_main_game_item
 		return true
 	## 可以检测脑子 并且 检测到脑子
 	elif is_detect_items & E_ItemType.Brain and curr_main_game_item is BrainOnZombieMode:
-		Log.debug("检测到脑子")
 		brain = curr_main_game_item
 		return true
 	else:
-		#Log.debug("未检测到道具")
 		return false
 
 ## 当检测到角色
@@ -330,7 +343,6 @@ func _judge_enemy_is_can_be_attack(enemy:Character000Base)->bool:
 
 	## 其余东西
 	else:
-		#Log.debug("检测到非角色类敌人")
 		return false
 
 #endregion

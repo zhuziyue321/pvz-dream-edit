@@ -76,7 +76,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Zombie026BungiDrop" instance=ExtResource("1_bungi")]
 script = ExtResource("2_drop")
-zombie_type = 26
+zombie_type = &"bungi_drop"
 drop_start_delay = 0.0
 grab_start_delay = 0.0
 

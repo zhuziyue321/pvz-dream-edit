@@ -16,7 +16,7 @@ func init_card_slot_norm(game_para:ResourceLevelData):
 
 	## 本关禁选的植物（原版迷你游戏「坚不可摧」：阳光生产 / 免费植物）：待选区里就不出现
 	## 必须在卡片生成完之后设置（_ready 里已经把全部卡片建好了），设置早了没有容器可改
-	for plant_type:CharacterRegistry.PlantType in game_para.banned_plant_types_in_choose_card:
+	for plant_type: StringName in game_para.banned_plant_types_in_choose_card:
 		card_slot_candidate.set_plant_card_banned(plant_type, true)
 
 	for i in card_slot_candidate.all_card_candidate_containers_plant:
@@ -24,9 +24,6 @@ func init_card_slot_norm(game_para:ResourceLevelData):
 		card.signal_card_click.connect(_on_card_click.bind(card))
 	for i in card_slot_candidate.all_card_candidate_containers_zombie:
 		var card:Card = card_slot_candidate.all_card_candidate_containers_zombie[i].card
-		card.signal_card_click.connect(_on_card_click.bind(card))
-	for i in card_slot_candidate.all_card_candidate_containers_boss:
-		var card:Card = card_slot_candidate.all_card_candidate_containers_boss[i].card
 		card.signal_card_click.connect(_on_card_click.bind(card))
 	for i in card_slot_candidate.all_card_candidate_containers_plant_imitater:
 		var card:Card = card_slot_candidate.all_card_candidate_containers_plant_imitater[i].card
@@ -42,11 +39,12 @@ func _on_re_card_button_pressed() -> void:
 	Global.save_service.load_selected_cards()
 	for card_type_data:Dictionary in Global.global_game_state.selected_cards:
 		var curr_card_type:ResourceCardReference.CardType = card_type_data.get("card_type", ResourceCardReference.CardType.Null) as ResourceCardReference.CardType
-		var content_id:int = int(card_type_data.get("content_id", 0))
+		## content_id 就是字符串 id：老存档里的数字编号已在读档时转好（见 save_service），
+		## 这里不再二次兜底 —— 上游漏转的话这里应该直接露出空卡，而不是被静默映射掉
 		var is_imitater_data:bool = bool(card_type_data.get("is_imitater", false))
 		match curr_card_type:
 			ResourceCardReference.CardType.Plant:
-				var plant_type:CharacterRegistry.PlantType = content_id as CharacterRegistry.PlantType
+				var plant_type: StringName = card_type_data.get("content_id", PlantIds.NULL)
 				if not AllCards.plant_card_ids.has(plant_type):
 					continue
 				var plant_card_id:int = AllCards.plant_card_ids[plant_type]
@@ -58,28 +56,15 @@ func _on_re_card_button_pressed() -> void:
 				else:
 					if not card_slot_candidate.all_card_candidate_containers_plant[plant_card_id].card.is_choosed_pre_card:
 						card_slot_candidate.all_card_candidate_containers_plant[plant_card_id].card._on_button_pressed()
-			ResourceCardReference.CardType.Zombie:
-				## 僵尸卡片隐藏时（ZOMBIE_CARD_ENABLED=false）跳过：待选卡槽里根本没有僵尸卡容器
-				if not ConstFeatureSwitch.ZOMBIE_CARD_ENABLED:
+			ResourceCardReference.CardType.Zombie, ResourceCardReference.CardType.ZombieBoss:
+				## 僵王卡与普通僵尸卡只差「content_id 查哪张 id 表」，查出来的 card_id 同属一个空间，
+				## 后面按同一份待选容器点即可（僵王不再有自己的候选页）
+				var enemy_card_id:int = _resolve_enemy_card_id(curr_card_type, card_type_data.get("content_id", ZombieIds.NULL))
+				## 没有卡位（没开僵尸卡 / 没这一张 / 容器整个没生成）就直接跳过
+				if not card_slot_candidate.all_card_candidate_containers_zombie.has(enemy_card_id):
 					continue
-				var zombie_type:CharacterRegistry.ZombieType = content_id as CharacterRegistry.ZombieType
-				if not AllCards.zombie_card_ids.has(zombie_type):
-					continue
-				var zombie_card_id:int = AllCards.zombie_card_ids[zombie_type]
-				if not card_slot_candidate.all_card_candidate_containers_zombie[zombie_card_id].card.is_choosed_pre_card:
-					card_slot_candidate.all_card_candidate_containers_zombie[zombie_card_id].card._on_button_pressed()
-			ResourceCardReference.CardType.ZombieBoss:
-				## 僵王卡同样只在僵尸卡开启时出现
-				if not ConstFeatureSwitch.ZOMBIE_CARD_ENABLED:
-					continue
-				var boss_type:CharacterRegistry.ZombieBossType = content_id as CharacterRegistry.ZombieBossType
-				if not AllCards.boss_card_ids.has(boss_type):
-					continue
-				var boss_card_id:int = AllCards.boss_card_ids[boss_type]
-				if not card_slot_candidate.all_card_candidate_containers_boss.has(boss_card_id):
-					continue
-				if not card_slot_candidate.all_card_candidate_containers_boss[boss_card_id].card.is_choosed_pre_card:
-					card_slot_candidate.all_card_candidate_containers_boss[boss_card_id].card._on_button_pressed()
+				if not card_slot_candidate.all_card_candidate_containers_zombie[enemy_card_id].card.is_choosed_pre_card:
+					card_slot_candidate.all_card_candidate_containers_zombie[enemy_card_id].card._on_button_pressed()
 
 
 
@@ -120,9 +105,12 @@ func init_pre_choosed_card(references: Array[ResourceCardReference]):
 		if card_reference == null or not card_reference.is_valid() or not AllCards.is_battle_card(card_reference):
 			Log.warn("预选卡：跳过未注册或不可出战的引用")
 			continue
-		## 僵尸卡片隐藏时（ZOMBIE_CARD_ENABLED=false）僵尸预选失效：待选区根本没有僵尸卡容器
-		if card_reference.card_type == ResourceCardReference.CardType.Zombie \
-			and not ConstFeatureSwitch.ZOMBIE_CARD_ENABLED:
+		## 僵尸卡片不可用时僵尸预选失效：待选区根本没有僵尸卡容器
+		## （总开关关 + 没开调试模式；开了调试模式则解谜「我是僵尸」这类关卡恢复发牌）
+		## 僵王卡与僵尸卡同一条通道（共用一个编号空间），不可用条件也一致
+		if (card_reference.card_type == ResourceCardReference.CardType.Zombie \
+			or card_reference.card_type == ResourceCardReference.CardType.ZombieBoss) \
+			and not Global.global_game_state.is_zombie_card_enabled():
 			continue
 		var candidate: CardCandidateContainer = _get_candidate_container(card_reference)
 		if candidate == null:
@@ -145,13 +133,27 @@ func _get_candidate_container(card_reference: ResourceCardReference) -> CardCand
 		ResourceCardReference.CardType.Plant:
 			return card_slot_candidate.all_card_candidate_containers_plant.get(
 				AllCards.plant_card_ids[card_reference.content_id], null)
-		ResourceCardReference.CardType.Zombie:
-			return card_slot_candidate.all_card_candidate_containers_zombie.get(
-				AllCards.zombie_card_ids[card_reference.content_id], null)
-		ResourceCardReference.CardType.ZombieBoss:
-			return card_slot_candidate.all_card_candidate_containers_boss.get(
-				AllCards.boss_card_ids[card_reference.content_id], null)
+		ResourceCardReference.CardType.Zombie, ResourceCardReference.CardType.ZombieBoss:
+			return _get_enemy_candidate_container(card_reference.card_type, card_reference.content_id)
 	return null
+
+## 敌方卡（普通僵尸 / 僵王）共用的容器查询：两者只用不同的 id 表把 content_id 换成 card_id，
+## 得到的是同一个连续编号空间里的下标 ⇒ 查同一份待选容器。没有卡位返回 null。
+func _get_enemy_candidate_container(card_type: ResourceCardReference.CardType,
+		content_id: StringName) -> CardCandidateContainer:
+	var card_id := _resolve_enemy_card_id(card_type, content_id)
+	if card_id < 0:
+		return null
+	return card_slot_candidate.all_card_candidate_containers_zombie.get(card_id, null)
+
+## 把 content_id 换成待选区的 card_id（查 ZombieIds 还是 ZombieBossIds 由类别决定）；
+## 僵尸卡没开放、或这种敌人没有卡位时返回 -1。
+func _resolve_enemy_card_id(card_type: ResourceCardReference.CardType, content_id: StringName) -> int:
+	if not Global.global_game_state.is_zombie_card_enabled():
+		return -1
+	if card_type == ResourceCardReference.CardType.Zombie:
+		return AllCards.zombie_card_ids.get(content_id, -1)
+	return AllCards.boss_card_ids.get(content_id, -1)
 
 ## 游戏选卡阶段时，卡片被点击
 func _on_card_click(card:Card):
@@ -245,11 +247,11 @@ func pre_choosed_card(card: Card, target_parent: CanvasItem) -> void:
 
 	## 罐子模式下系统预选卡无冷却
 	if GameContext.curr_main_game.game_para.is_pot_mode:
-		if card.card_plant_type != CharacterRegistry.PlantType.Null:
+		if card.card_plant_type != PlantIds.NULL:
 			if Global.global_read_data.zero_cd_plnat_card_type_on_pot_mode.has(card.card_plant_type):
 				card.card_change_cool_time(0)
 		## 僵尸卡牌都无冷却
-		elif card.card_zombie_type != CharacterRegistry.ZombieType.Null:
+		elif card.card_zombie_type != ZombieIds.NULL:
 			card.card_change_cool_time(0)
 
 ### 预选卡隐藏对应待选卡槽的卡片(植物)
@@ -278,4 +280,3 @@ func move_card_slot_battle(is_appeal:bool, appeal_time:= 0.2):
 	else:
 		tween.tween_property(card_slot_battle, "position",Vector2(0, -100.0), appeal_time)
 	await tween.finished
-

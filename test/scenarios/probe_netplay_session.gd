@@ -1,4 +1,18 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const NetplayActionGateway := preload("res://mods_builtin/netplay/netplay_action_gateway.gd")
+const NetplayBattleSync := preload("res://mods_builtin/netplay/netplay_battle_sync.gd")
+const NetplayCardSpawnSync := preload("res://mods_builtin/netplay/netplay_card_spawn_sync.gd")
+const NetplayCardSync := preload("res://mods_builtin/netplay/netplay_card_sync.gd")
+const NetplayCommand := preload("res://mods_builtin/netplay/netplay_command.gd")
+const NetplayDropSync := preload("res://mods_builtin/netplay/netplay_drop_sync.gd")
+const NetplayMod := preload("res://mods_builtin/netplay/netplay_mod.gd")
+const NetplayReadyFlow := preload("res://mods_builtin/netplay/netplay_ready_flow.gd")
+const NetplaySession := preload("res://mods_builtin/netplay/netplay_session.gd")
+const NetplayStateSync := preload("res://mods_builtin/netplay/netplay_state_sync.gd")
+const NetplaySunSync := preload("res://mods_builtin/netplay/netplay_sun_sync.gd")
+const NetplayWaveSync := preload("res://mods_builtin/netplay/netplay_wave_sync.gd")
 ## 探针：联机模组的地基（会话挂载 + 三个本体扩展点 + 联机面板）
 ## 覆盖（都是「编译门禁抓不到、只能跑起来才知道」的那类）：
 ##   1. 会话节点真的挂进了 /root（autoload 阶段直接 add_child 会被拒，已改成延迟挂）
@@ -32,9 +46,11 @@ func run(a) -> void:
 	if not ModManager.is_mod_enabled(ModIds.NETPLAY):
 		ModManager.set_mod_enabled(ModIds.NETPLAY, true)
 		a.log("  已启用联机模组（ModIds.NETPLAY）")
-	## 会话是延迟挂到 root 的（autoload 阶段 add_child 会被拒），要等几帧
-	await a.frames(5)
-	_check_session(a)
+	## 会话是**懒加载**的：启用模组 ≠ 开了房间（root 下此刻不该有它），
+	##  等到 `_check_session()` 里真的造出来之后才要给它几帧进树
+	await a.frames(2)
+	## ⚠️ 这一段里有 `await`（会话造出来之后要给它几帧进树），必须 await 调用
+	await _check_session(a)
 	_check_interceptor(a)
 	_check_game_rng(a)
 	_check_entity_id(a)
@@ -72,9 +88,25 @@ func _finish(a) -> void:
 
 
 #region 1. 会话挂载
+## ★ 纪律：**没开房间 = 零行为** —— 会话**懒加载**，只有真的开 / 加入房间（或下面那句
+##   `_ensure_session()`）才挂上 root。单机开着模组时 root 下不该有它，也不该有任何联机日志。
 func _check_session(a) -> void:
 	a.log("")
-	a.log("--- 1. 会话节点挂载 ---")
+	a.log("--- 1. 会话节点挂载（懒加载：没开房间就不该有它） ---")
+	var mod := ModManager.get_mod(ModIds.NETPLAY) as NetplayMod
+	if mod == null:
+		_check(a, "（前置）拿到模组实例", false)
+		return
+	_check(a, "★ 没开房间时 /root 下没有会话（联机零行为）",
+		a.get_node_or_null(SESSION_PATH) == null)
+	## 按「开启房间」那一侧造会话（这里不真开房：不占端口，状态留在未连接）
+	var created = mod._ensure_session()
+	if created == null:
+		_check(a, "（前置）造出会话", false)
+		return
+	_check(a, "造完之后立刻就在场景树里（RPC 靠节点路径，不能延迟挂）",
+		created.is_inside_tree())
+	await a.frames(2)
 	var session: Node = a.get_node_or_null(SESSION_PATH)
 	if session == null:
 		_check(a, "（前置）/root/NetplaySession 存在", false, "节点没挂上（add_child 被拒？）")
@@ -309,13 +341,17 @@ func _check_card_negotiation(a) -> void:
 
 	## 卡身份：只有植物卡参与协商，模仿者按同一株算
 	var sync := NetplayCardSync.new()
-	var plant_card := {"card_type": ResourceCardReference.CardType.Plant, "content_id": 2, "is_imitater": false}
-	_check(a, "认出植物卡", sync._plant_type_of(plant_card) == 2, str(sync._plant_type_of(plant_card)))
+	var plant_card := {"card_type": ResourceCardReference.CardType.Plant,
+		"content_id": PlantIds.SUN_FLOWER, "is_imitater": false}
+	_check(a, "认出植物卡", sync._plant_type_of(plant_card) == PlantIds.SUN_FLOWER,
+		str(sync._plant_type_of(plant_card)))
 	_check(a, "模仿者按同一张植物卡算",
-		sync._plant_type_of({"card_type": ResourceCardReference.CardType.Plant, "content_id": 2, "is_imitater": true}) == 2)
+		sync._plant_type_of({"card_type": ResourceCardReference.CardType.Plant,
+			"content_id": PlantIds.SUN_FLOWER, "is_imitater": true}) == PlantIds.SUN_FLOWER)
 	_check(a, "僵尸卡不参与植物去重",
-		sync._plant_type_of({"card_type": ResourceCardReference.CardType.Zombie, "content_id": 3, "is_imitater": false})
-			== CharacterRegistry.PlantType.Null)
+		sync._plant_type_of({"card_type": ResourceCardReference.CardType.Zombie,
+			"content_id": ZombieIds.CONE, "is_imitater": false})
+			== PlantIds.NULL)
 	sync.free()
 #endregion
 
@@ -597,7 +633,7 @@ func _check_card_spawn_sync(a) -> void:
 	## 命令带的是"卡的身份"，不是"你随便抽一张"
 	var ref := ResourceCardReference.new()
 	ref.card_type = ResourceCardReference.CardType.Plant
-	ref.content_id = 1
+	ref.content_id = PlantIds.PEA_SHOOTER_SINGLE
 	var cmd := NetplayCommand.build(NetplayCommand.OP_CARD_SPAWN, {
 		NetplayCommand.ARG_CARD_REF: ref.to_dict(),
 	})
@@ -606,7 +642,8 @@ func _check_card_spawn_sync(a) -> void:
 	var back := ResourceCardReference.from_dict(
 		NetplayCommand.args_of(cmd).get(NetplayCommand.ARG_CARD_REF, {}))
 	_check(a, "卡的身份过一趟网络还认得回来",
-		back != null and back.card_type == ResourceCardReference.CardType.Plant and back.content_id == 1)
+		back != null and back.card_type == ResourceCardReference.CardType.Plant \
+			and back.content_id == PlantIds.PEA_SHOOTER_SINGLE)
 
 	## 本体默认不接管：单机 / 模组没开时闸门必须是空的
 	var belt := CardSlotConveyorBelt.new()
@@ -637,7 +674,7 @@ func _check_state_sync(a) -> void:
 	_check(a, "没本局时采集不崩（给回空快照）", sync.collect_snapshot(null).is_empty())
 	## 僵王 + 玩家阳光总量（**卡片冷却刻意不同步** —— 那是本地域，两端各有各的卡槽）
 	_check(a, "没本局时僵王列表为空（补种路径不崩）", NetplayStateSync._boss_list(null).is_empty())
-	_check(a, "没本局时取不到僵王类型", NetplayStateSync._boss_type_of(null) == 0)
+	_check(a, "没本局时取不到僵王类型", NetplayStateSync._boss_type_of(null) == ZombieBossIds.NULL)
 	_check(a, "没出战卡槽时不发阳光总量（照默认值取会把钱包清零）",
 		not sync.collect_snapshot_extra(null).has(&"sv"))
 
@@ -779,9 +816,9 @@ func _check_state_sync(a) -> void:
 	## 闸门被占住时工厂造不出子弹（客户端本地不开火）；但"照主机数据重建"必须绕得过去，
 	## 否则客户端一颗都造不出来 —— 场上会完全没有豌豆
 	GlobalUtils.bullet_spawn_gate = func(): return true
-	var gated := Global.bullet_registry.create_bullet(BulletRegistry.BulletType.Bullet001Pea)
+	var gated := Global.bullet_registry.create_bullet(BulletIds.PEA)
 	_check(a, "闸门被占住时本地不造子弹", gated == null)
-	var rebuilt := Global.bullet_registry.create_bullet(BulletRegistry.BulletType.Bullet001Pea, true)
+	var rebuilt := Global.bullet_registry.create_bullet(BulletIds.PEA, true)
 	_check(a, "★ 照主机数据重建时能绕过闸门（否则客户端一颗都造不出来）", rebuilt != null)
 	if rebuilt != null:
 		_check(a, "重建出来的子弹自动领到了编号", rebuilt.entity_id != 0)
@@ -813,12 +850,14 @@ func _check_state_sync(a) -> void:
 		NetplayStateSync._cap_for(NetplayStateSync.BYTES_PER_BULLET, 32, 0) == 0)
 
 	## ★ 出战卡槽也要能照主机那一副重建：卡的身份压成数字发过来，客户端得还原得回同一张
-	## 1 = 豌豆射手、2 = 向日葵（编号口径见关卡脚本里的注释）
-	var pea_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant, 1, false)
-	var imit_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant, 1, true)
+	## 豌豆射手（模仿者是"同一张卡换个壳"，content_id 一样）
+	var pea_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant,
+		PlantIds.PEA_SHOOTER_SINGLE, false)
+	var imit_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant,
+		PlantIds.PEA_SHOOTER_SINGLE, true)
 	var card_snap := {
 		&"cd_type": PackedInt32Array([int(pea_ref.card_type), int(imit_ref.card_type)]),
-		&"cd_id": PackedInt32Array([pea_ref.content_id, imit_ref.content_id]),
+		&"cd_id": PackedStringArray([pea_ref.content_id, imit_ref.content_id]),
 		&"cd_imit": PackedByteArray([0, 1]),
 		&"cd_cool": PackedFloat32Array([0.0, 3.5]),
 	}
@@ -837,16 +876,18 @@ func _check_state_sync(a) -> void:
 	_check(a, "模仿者与普通版还原出来是两个不同身份", pea_ref.get_selection_key() != imit_ref.get_selection_key())
 	## ⚠️ 身份变了要**比得出来**：比不出来就永远停在第一次那份名单上，主机中途加的卡进不来
 	var changed_snap := card_snap.duplicate()
-	changed_snap[&"cd_id"] = PackedInt32Array([pea_ref.content_id, 2])
+	changed_snap[&"cd_id"] = PackedStringArray([pea_ref.content_id, PlantIds.SUN_FLOWER])
 	_check(a, "换了一张卡时身份序列变得出来（否则主机改了卡槽客户端不会跟着改）",
 		NetplayStateSync._card_sig_of(card_snap) != NetplayStateSync._card_sig_of(changed_snap))
 	_check(a, "没换卡时身份序列保持一致（否则卡槽会被每帧重建一次）",
 		NetplayStateSync._card_sig_of(card_snap) == NetplayStateSync._card_sig_of(card_snap.duplicate()))
-	## 非法编号（不在枚举里）要被丢掉，不能把坏引用塞进卡槽
-	var bad_snap := {&"cd_type": PackedInt32Array([1]), &"cd_id": PackedInt32Array([-7]),
+	## 非法 id（植物表里没有）要被丢掉，不能把坏引用塞进卡槽。
+	## ⚠️ `cd_id` 现在是 `PackedStringArray`：还传 PackedInt32Array 会在解包时直接报
+	##   "Trying to assign value of type 'PackedInt32Array' to a variable of type 'PackedStringArray'"
+	var bad_snap := {&"cd_type": PackedInt32Array([1]), &"cd_id": PackedStringArray([&"no_such_plant"]),
 		&"cd_imit": PackedByteArray([0]), &"cd_cool": PackedFloat32Array([0.0])}
 	var bad_cards := NetplayStateSync._cards_of(bad_snap)
-	_check(a, "编号非法的卡直接丢掉（不把坏引用塞进卡槽）",
+	_check(a, "id 非法的卡直接丢掉（不把坏引用塞进卡槽）",
 		(bad_cards[&"refs"] as Array).is_empty() and (bad_cards[&"cools"] as PackedFloat32Array).is_empty())
 
 	## 卡要能"按还剩几秒"摆冷却 —— 两端各跑各的计时器，攒下的误差靠它一次抹平

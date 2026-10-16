@@ -67,7 +67,7 @@ func _check_zombie(a, title: String, mg, expect: float) -> void:
 		Zombie000Base.E_ZInitAttr.CurrZombieRowType: CharacterRegistry.ZombieRowType.Land,
 	}
 	var z: Zombie000Base = zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm, row_node, init_para, Vector2(900, 100))
+		ZombieIds.NORM, row_node, init_para, Vector2(900, 100))
 	await a.wait(0.5)
 	if not is_instance_valid(z):
 		_check(a, title + ": 僵尸创建成功", false, "实例无效")
@@ -102,7 +102,7 @@ func _check_plant(a, title: String, mg, expect: float) -> void:
 		_check(a, title + ": 有草坪格子", false, "all_plant_cells 为空")
 		return
 	var cell: PlantCell = cells[0][0]
-	var plant: Plant000Base = cell.create_plant(CharacterRegistry.PlantType.P001PeaShooterSingle)
+	var plant: Plant000Base = cell.create_plant(PlantIds.PEA_SHOOTER_SINGLE)
 	await a.wait(0.5)
 	if not is_instance_valid(plant):
 		_check(a, title + ": 豌豆射手种下", false, "实例无效")

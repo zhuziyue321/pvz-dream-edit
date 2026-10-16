@@ -69,7 +69,6 @@ func _try_twist(block: Array[PlantCell]) -> void:
 		_rotate_block(block, false)
 		await _wait(ROTATE_WAIT)
 		is_resolving = false
-		Log.debug("僵尸迷阵旋风：旋转没有凑成连线，已转回")
 		return
 	await _resolve_board()
 
@@ -100,17 +99,17 @@ func _has_possible_move() -> bool:
 	var grid := _build_type_grid()
 	for row in range(board_row_num - 1):
 		for col in range(board_col_num - 1):
-			if grid[row][col] == CharacterRegistry.PlantType.Null \
-					or grid[row][col + 1] == CharacterRegistry.PlantType.Null \
-					or grid[row + 1][col] == CharacterRegistry.PlantType.Null \
-					or grid[row + 1][col + 1] == CharacterRegistry.PlantType.Null:
+			if grid[row][col] == PlantIds.NULL \
+					or grid[row][col + 1] == PlantIds.NULL \
+					or grid[row + 1][col] == PlantIds.NULL \
+					or grid[row + 1][col + 1] == PlantIds.NULL:
 				continue
-			var old: Array[CharacterRegistry.PlantType] = [
+			var old: Array[StringName] = [
 				grid[row][col], grid[row][col + 1],
 				grid[row + 1][col], grid[row + 1][col + 1],
 			]
 			## 顺时针旋转后的值
-			var rotated: Array[CharacterRegistry.PlantType] = [old[2], old[0], old[3], old[1]]
+			var rotated: Array[StringName] = [old[2], old[0], old[3], old[1]]
 			grid[row][col] = rotated[0]
 			grid[row][col + 1] = rotated[1]
 			grid[row + 1][col] = rotated[2]

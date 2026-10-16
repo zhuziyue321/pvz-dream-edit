@@ -100,11 +100,11 @@ func update_wave_health_data(curr_wave_total_health:int, new_curr_wave_type:Zomb
 			## 旗前波 僵尸全部死亡触发提前刷新
 		ZombieWaveManager.E_WaveType.FlagFront:
 			curr_can_refresh_type = E_RefreshType.TotalRefresh
-			Log.debug("旗前波")
+			Log.info("旗前波")
 		## 最后一波，不刷新
 		ZombieWaveManager.E_WaveType.Final:
 			curr_can_refresh_type = E_RefreshType.Null
-			Log.debug("最后一波")
+			Log.info("最后一波")
 	_update_timer()
 
 ## 更新计时器

@@ -61,7 +61,7 @@ expand_margin_bottom = 80.0
 [sub_resource type="Resource" id="CardRef_1"]
 script = ExtResource("99_cardref")
 card_type = 1
-content_id = 999
+content_id = &"imitater"
 [node name="CardSlotNorm" type="Control"]
 layout_mode = 3
 anchors_preset = 0

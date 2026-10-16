@@ -8,12 +8,12 @@ class_name BulletLinear000Base
 ## 对僵尸敌人造成伤害,直线类子弹重写
 func _attack_zombie(zombie:Zombie000Base):
 	## 从后面攻击僵尸的子弹，正常伤害类型子弹攻击类型修改为真实
-	if direction.x < 0 and bullet_mode ==BulletRegistry.AttackMode.Norm:
-		## 攻击敌人
-		zombie.be_attacked_bullet(attack_value,BulletRegistry.AttackMode.Real, true, trigger_be_attack_sfx)
+	if direction.x < 0 and bullet_mode ==ConstDamage.E_DamageMode.Norm:
+		## 攻击敌人（末尾两个参数 = 伤害载体 / 发起者，见 Character000Base.be_attacked_bullet）
+		zombie.be_attacked_bullet(attack_value,ConstDamage.E_DamageMode.Real, true, trigger_be_attack_sfx, self)
 	else:
 		## 攻击敌人
-		zombie.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx)
+		zombie.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx, self)
 
 
 func _physics_process(delta: float) -> void:
@@ -38,14 +38,13 @@ func change_y(target_y:float):
 func _on_area_2d_attack_area_entered(area: Area2D) -> void:
 	## 线性子弹判断是否攻击到斜坡,非穿透子弹
 	if area.owner is Slope:
-		#if bullet_mode !=BulletRegistry.AttackMode.Penetration:
+		#if bullet_mode !=ConstDamage.E_DamageMode.Penetration:
 		var slope:Slope = area.owner
 		## 如果方向与斜面法向量夹角小于90度
 		if direction.dot(slope.normal_vector_slope) < 0:
 			attack_once(null)
 		return
 	elif area.owner is Character000Base:
-		#Log.debug("碰撞到角色")
 		super(area)
 
 ## 直线子弹先对壳类进行攻击

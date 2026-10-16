@@ -8,23 +8,11 @@ class_name MainGameMenuOptionDialog
 @onready var time_scale_h_slider: HSlider = $Option/VBoxContainer/TimeScale/HSlider
 @onready var time_sacle_label: Label = $Option/VBoxContainer/TimeScale/Label
 @onready var canvas_layer_console: CanvasLayerConsole = %CanvasLayerConsole
-## 图鉴场景所在的画布层
-@onready var canvas_layer_almanac: CanvasLayer = %CanvasLayerAlmanac
-## 图鉴按钮(未解锁时置灰,与主菜单 StartMenuRoot.LOCKED_BUTTON_COLOR 同色)
-@onready var almanac_button: CanvasItem = $Option/Button1
-
-## 未解锁的按钮置灰色(与主菜单保持一致)
-const LOCKED_BUTTON_COLOR := Color(0.687, 0.687, 0.687, 1.0)
-## 未解锁提示的停留秒数
-const LOCK_TIP_TIME := 4.0
 
 
 func _ready() -> void:
 	## 为按钮添加音效
 	SoundManager.setup_ui_main_game_sound(self)
-	## 图鉴在通关冒险模式 2-4 拿到大图鉴后才开放
-	almanac_button.modulate = Color.WHITE if Global.global_game_state.is_almanac_unlocked() \
-		else LOCKED_BUTTON_COLOR
 	## 连接滑轨信号
 	music_sound_signal(music_h_slider, AudioServer.get_bus_index("BGM"))
 	music_sound_signal(sound_h_slider, AudioServer.get_bus_index("SFX"))
@@ -67,18 +55,6 @@ func return_button_pressed():
 	TreePauseManager.end_tree_pause(TreePauseManager.E_PauseFactor.Menu)
 	#mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-## 图鉴(原版通关冒险模式 2-4 拿到戴夫掉落的大图鉴后才开放)
-func encyclopedia():
-	if not Global.global_game_state.is_almanac_unlocked():
-		_show_almanac_lock_tip()
-		return
-	## 连点会叠出多个图鉴场景，已经打开就不再创建
-	if canvas_layer_almanac.get_child_count() > 0:
-		return
-	var almance_node = load(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Almanac)).instantiate()
-	canvas_layer_almanac.add_child(almance_node)
-
-
 ## 重新开始
 func resume_game():
 	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
@@ -103,17 +79,6 @@ func return_main_menu():
 func _unrealized():
 	dialog.appear_dialog()
 
-## 弹出"图鉴未解锁"提示(暂停菜单里没有主菜单那种对话框,用与掉落道具同一套提示条)
-func _show_almanac_lock_tip() -> void:
-	var tip_text := str("通关冒险模式 ") \
-		+ ConstUnlockLevel.get_adventure_level_name(ConstUnlockLevel.ALMANAC_UNLOCK_ADVENTURE_LEVEL) \
-		+ str(" 拿到大图鉴后才能查看图鉴")
-	var reminder_info: ReminderInformation = SceneRegistry.REMINDER_INFORMATION.instantiate()
-	get_tree().current_scene.add_child(reminder_info)
-	reminder_info._init_info([tip_text], LOCK_TIP_TIME)
-
-
 ## 出现控制台
 func _on_button_console_pressed() -> void:
 	canvas_layer_console.appear_canvas_layer_control()
-

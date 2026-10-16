@@ -25,7 +25,7 @@ func run(a) -> void:
 
 ## 直线子弹（豌豆）：场景额外带 layer1 World（判斜坡），换阵营后要保留
 func _check_linear(a) -> void:
-	var b := _make_bullet(a, BulletRegistry.BulletType.Bullet001Pea, {
+	var b := _make_bullet(a, BulletIds.PEA, {
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: CharacterRegistry.CharacterType.Plant,
 	})
 	if b == null:
@@ -43,7 +43,7 @@ func _check_linear(a) -> void:
 
 ## 抛物线子弹（篮球：场景原本手改成僵尸方），切回植物方也要能用
 func _check_parabola(a) -> void:
-	var b := _make_bullet(a, BulletRegistry.BulletType.Bullet013Basketball, {
+	var b := _make_bullet(a, BulletIds.BASKETBALL, {
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: CharacterRegistry.CharacterType.Zombie,
 	})
 	if b == null:
@@ -58,7 +58,7 @@ func _check_parabola(a) -> void:
 
 ## 保龄球：场景额外带 layer7 Bowling（撑杆跳检测），换阵营不能把它丢掉
 func _check_bowling(a) -> void:
-	var b := _make_bullet(a, BulletRegistry.BulletType.Bullet1001Bowling, {
+	var b := _make_bullet(a, BulletIds.BOWLING, {
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: CharacterRegistry.CharacterType.Plant,
 	})
 	if b == null:
@@ -81,11 +81,11 @@ func _check_pure_func(a) -> void:
 	_expect(a, "僵尸方子弹 x 更大优先", BulletCampConfig.is_nearer(CharacterRegistry.CharacterType.Zombie, 10.0, 20.0), false)
 
 
-func _make_bullet(a, bullet_type: BulletRegistry.BulletType, paras: Dictionary) -> Bullet000Base:
+func _make_bullet(a, bullet_type: StringName, paras: Dictionary) -> Bullet000Base:
 	var scene: PackedScene = Global.bullet_registry.get_bullet_scenes(bullet_type)
 	if scene == null:
 		_failed += 1
-		a.log("  FAIL 注册表里没有子弹类型 %d" % bullet_type)
+		a.log("  FAIL 注册表里没有子弹类型 %s" % bullet_type)
 		return null
 	var b: Bullet000Base = scene.instantiate()
 	## 用与攻击组件相同的类型化字典，避免踩「形参是类型化字典」的坑

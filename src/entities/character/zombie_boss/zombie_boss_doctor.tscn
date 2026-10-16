@@ -1541,7 +1541,9 @@ position = Vector2(142.5, 178)
 [node name="AnimComponent" parent="." index="3" unique_id=507004594]
 script = ExtResource("75_anim_player")
 
-[node name="HpStageChangeComponent" type="Node2D" parent="." index="4" unique_id=16482134]
+; 底座链 zombie_boss_base -> zombie_base 已经带了一个 HpStageChangeComponent，
+; 这里是对它的属性覆写（不能写 type=，否则会被判成重名新节点而被自动改名）。
+[node name="HpStageChangeComponent" parent="." index="4" unique_id=16482134]
 unique_name_in_owner = true
 script = ExtResource("58_vtygo")
 boundary_value_hp = Array[int]([20000, 10000, 0])
@@ -1606,7 +1608,8 @@ vertical_alignment = 1
 [node name="HurtBoxComponent" parent="." index="6" unique_id=35856933]
 position = Vector2(908, 339)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtBoxComponent/HurtBoxDetection" parent_id_path=PackedInt32Array(247294405) index="0" unique_id=221714381]
+; 同样是覆写：底座链的 HurtBoxComponent/HurtBoxDetection 下已有一个 CollisionShape2D。
+[node name="CollisionShape2D" parent="HurtBoxComponent/HurtBoxDetection" parent_id_path=PackedInt32Array(247294405) index="0" unique_id=221714381]
 position = Vector2(0, -40)
 shape = SubResource("CapsuleShape2D_kx48i")
 
@@ -1815,7 +1818,7 @@ script = ExtResource("74_state_dead")
 [node name="SpawnSkill" type="Node" parent="Skills" index="0" unique_id=1531831246 node_paths=PackedStringArray("spawn_marker", "part_motion")]
 script = ExtResource("effect_spawn")
 spawn_marker = NodePath("../../Body/BodyCorrect/OuterArm/Boss-outerarm_finger4/Marker2DSpawnZombie")
-zombie_types = Array[int]([1, 3, 4, 5, 6, 7, 8])
+zombie_types = Array[StringName]([&"norm", &"cone", &"pole_vaulter", &"bucket", &"paper", &"screen_door", &"football"])
 part_motion = NodePath("../../PartMotions/OuterArmMotion")
 
 [node name="SpawnChooseRowSystem" type="Node" parent="Skills/SpawnSkill" index="0" unique_id=1648364301]

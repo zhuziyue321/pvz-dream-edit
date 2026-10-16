@@ -45,7 +45,6 @@ func _create_dialog_detail() -> CrazyDaveDialogDetailResource:
 func get_one_goods():
 	if Global.global_game_state.add_card_slot_upgrade():
 		Global.save_service.save_now()
-		Log.debug(str("购买卡槽扩充,已购买次数:") + str(Global.global_game_state.get_card_slot_upgrade_num()))
 	else:
 		Log.warn("购买卡槽扩充失败:已达卡槽上限")
 	_refresh_goods_state()

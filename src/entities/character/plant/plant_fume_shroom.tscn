@@ -128,7 +128,7 @@ gravity = Vector3(0, 0, 0)
 
 [node name="Plant011FumeShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_4klhy")]
 script = ExtResource("2_47ii7")
-plant_type = 11
+plant_type = &"fume_shroom"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -203,7 +203,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("12_47ii7")
-attack_bullet_type = 4
+attack_bullet_type = &"fume"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 attack_sfx = &"Fume"
 

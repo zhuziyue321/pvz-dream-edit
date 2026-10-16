@@ -36,7 +36,7 @@ height = 300.0
 [node name="Bullet012Melon" instance=ExtResource("1_py6d0")]
 script = ExtResource("2_itde2")
 parabola_height = -500.0
-bullet_type = 12
+bullet_type = &"melon"
 is_rotate = true
 attack_value = 80
 bullet_mode = 1

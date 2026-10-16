@@ -14,7 +14,12 @@ var plant_ladder:Plant000Base
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
 	super()
-	hp_component.signal_armor2_death.connect(drop_ladder)
+	## 梯子是一件二类防具（`ArmorComponent`），掉了就播掉梯子的表现
+	var ladder_armor := get_armor(ConstArmor.E_ArmorType.Ladder)
+	if ladder_armor == null:
+		Log.error("梯子僵尸缺少 Ladder 防具组件，梯子的掉落表现不会触发")
+	else:
+		ladder_armor.signal_armor_death.connect(drop_ladder)
 	attack_component = attack_component as AttackComponentZombieLadder
 	attack_component.signal_ladder.connect(start_ladder)
 
@@ -42,7 +47,9 @@ func start_ladder(plant:Plant000Base):
 func ladder_once():
 	if is_instance_valid(plant_ladder) and not plant_ladder.plant_cell.ladder and not is_drop_ladder:
 		plant_ladder.plant_cell.be_ladder()
-		hp_component.Hp_loss(hp_component.curr_hp_armor2,BulletRegistry.AttackMode.Norm, false, false, false)
+		## 梯子（二类防具）搭到植物上就消耗掉了：走伤害管线把这一层防具打掉，
+		## 顺带触发「防具破了」的信号（掉梯子的表现挂在那个信号上）
+		break_armor(get_armor(ConstArmor.E_ArmorType.Ladder), false, false)
 	else:
 		is_fail_ladder = true
 		is_place_ladder = false

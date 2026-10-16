@@ -56,7 +56,6 @@ func dig_end():
 func loss_iron_item():
 	super()
 	if is_dig:
-		#Log.debug("掘土时失去铁器")
 		is_can_trigger_mower = true
 		signal_can_trigger_mower.emit()
 		move_component.update_move_mode(MoveComponent.E_MoveMode.Ground)

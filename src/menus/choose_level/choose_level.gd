@@ -38,7 +38,6 @@ func _ready() -> void:
 				node.update_curr_level_button_state(curr_level_state_data)
 				update_lock_level(node, curr_level_state_data)
 
-	Log.debug(str("当前模式关卡数量:") + str(next_level_number - 1))
 
 	_check_against_registry()
 

@@ -194,12 +194,12 @@ func apply_scene_setting() -> void:
 ## 关卡流程要提前开波就用 `await start_first_wave()`，不读本值）
 @export var first_wave_delay: float = 20.0
 ## 僵尸种类刷新列表 多轮游戏且自然出怪 自动更新自然出怪列表
-@export var zombie_refresh_types: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z001Norm, # 普通僵尸
-	#CharacterRegistry.ZombieType.Z002Flag, # 旗帜僵尸
-	CharacterRegistry.ZombieType.Z003Cone, # 路障僵尸
-	CharacterRegistry.ZombieType.Z004PoleVaulter, # 撑杆僵尸
-	CharacterRegistry.ZombieType.Z005Bucket, # 铁桶僵尸
+@export var zombie_refresh_types: Array[StringName] = [
+	ZombieIds.NORM, # 普通僵尸
+	#ZombieIds.FLAG, # 旗帜僵尸
+	ZombieIds.CONE, # 路障僵尸
+	ZombieIds.POLE_VAULTER, # 撑杆僵尸
+	ZombieIds.BUCKET, # 铁桶僵尸
 ]
 ## 是否有蹦极僵尸
 @export var is_bungi := false
@@ -264,7 +264,7 @@ func apply_scene_setting() -> void:
 ## 本关没有阳光收入，全靠开局那笔阳光和每波补给）。
 ## 模仿者是「同一张卡换个壳」（card_plant_type 不变），跟着一起禁掉，
 ## 消费见 CardSlotCandidate.set_plant_card_banned
-@export var banned_plant_types_in_choose_card: Array[CharacterRegistry.PlantType] = []
+@export var banned_plant_types_in_choose_card: Array[StringName] = []
 ## 卡槽是否被锁死(冒险模式:卡槽数 >= 已拥有植物卡数时,按顺序固定选卡,玩家无选择权)
 ## 运行期算出来的,不进 .tres:由 _resolve_adventure_locked_cards() 置位,
 ## 消费方是 is_no_choose_permission()(锁死 = 没有选卡权,直接跳过选卡阶段)
@@ -285,7 +285,7 @@ var is_locked_card_slot := false
 
 @export_subgroup("僵王参数")
 ## 自动出场僵王类型；Null 表示关闭自动出场，不限制卡牌召唤
-@export var boss_type: CharacterRegistry.ZombieBossType = CharacterRegistry.ZombieBossType.Null
+@export var boss_type: StringName = ZombieBossIds.NULL
 ## 自动出场波次：0 为开战生成，1..max_wave 为指定波次生成
 @export var boss_spawn_wave: int = 0
 ## 僵王初始血量；0 表示沿用僵王场景自带的上限（默认 40000）。
@@ -298,7 +298,7 @@ var is_locked_card_slot := false
 
 ## 本关是否配置了自动出场的僵王
 func has_boss() -> bool:
-	return boss_type != CharacterRegistry.ZombieBossType.Null
+	return boss_type != ZombieBossIds.NULL
 
 ## 本关有没有常规卡槽（选卡界面 / 出战卡槽）；Both 模式下也有
 func has_norm_card_slot() -> bool:
@@ -339,11 +339,11 @@ func has_conveyor_belt() -> bool:
 @export var pot_hint_num: int = 0
 
 @export_subgroup("固定生成，随机位置(从后往前随机放置罐子，满足列对齐，不足的格子使用结果随机罐子补齐)")
-@export var random_pot_plant: Dictionary[CharacterRegistry.PlantType, int]
-@export var random_pot_zombie: Dictionary[CharacterRegistry.ZombieType, int]
+@export var random_pot_plant: Dictionary[StringName, int]
+@export var random_pot_zombie: Dictionary[StringName, int]
 var random_pot_zombie_with_zombie_row_type: Dictionary[CharacterRegistry.ZombieRowType, Dictionary]
-@export var plant_pot: Dictionary[CharacterRegistry.PlantType, int]
-@export var zombie_pot: Dictionary[CharacterRegistry.ZombieType, int]
+@export var plant_pot: Dictionary[StringName, int]
+@export var zombie_pot: Dictionary[StringName, int]
 var zombie_pot_with_zombie_row_type: Dictionary[CharacterRegistry.ZombieRowType, Dictionary]
 var pot_num_on_fixed_mode: int = 0
 @export var random_pot_num_on_fixed_mode: Vector3i = Vector3i.ZERO
@@ -365,8 +365,8 @@ var pot_config_first_round: Dictionary = {}
 @export_group("我是僵尸模式")
 @export var is_zombie_mode := false
 @export var plant_col_on_zombie_mode: int = 4
-@export var all_plants_weight_on_zombie_mode: Dictionary[CharacterRegistry.PlantType, int]
-@export var all_must_plants_on_zombie_mode: Dictionary[CharacterRegistry.PlantType, int]
+@export var all_plants_weight_on_zombie_mode: Dictionary[StringName, int]
+@export var all_must_plants_on_zombie_mode: Dictionary[StringName, int]
 
 #endregion
 
@@ -417,7 +417,6 @@ func _apply_card_mode_constraints() -> void:
 			can_choosed_card = false
 			is_day_sun = false
 	if not has_norm_card_slot() and can_choosed_card:
-		Log.debug("warning: 当前卡槽模式无法选卡, 已修改选卡为false")
 		can_choosed_card = false
 
 
@@ -443,15 +442,13 @@ func _resolve_adventure_locked_cards() -> void:
 	if not can_choosed_card or not has_norm_card_slot():
 		return
 	prechosen_cards.clear()
-	var owned_cards: Array[CharacterRegistry.PlantType] = Global.global_game_state.curr_plant
+	var owned_cards: Array[StringName] = Global.global_game_state.curr_plant
 	if owned_cards.is_empty():
 		return
 	if get_max_choosed_card_num() < owned_cards.size():
 		return
 	prechosen_cards = ResourceCardReference.create_plant_list(owned_cards)
 	is_locked_card_slot = true
-	Log.debug(str("冒险关卡锁定卡槽: 卡槽数") + str(get_max_choosed_card_num()) \
-		+ str(" >= 拥有植物卡数") + str(owned_cards.size()) + str(",按顺序固定选卡"))
 
 
 ## 卡槽数在关卡运行期发生变化时(夜晚关卡开场戴夫卖出卡槽扩充)重新结算预选卡
@@ -572,7 +569,6 @@ func _normalize_pot_col_range() -> void:
 		return
 	if pot_col_range.x > pot_col_range.y:
 		pot_col_range = Vector2i(pot_col_range.y, pot_col_range.x)
-	Log.debug(str("生成罐子的列数为") + str(pot_col_range.x) + str("（含）到") + str(pot_col_range.y) + str("（不含）"))
 
 
 func _init_pot_mode() -> void:
@@ -654,18 +650,18 @@ func _apply_pot_config_on_round(config: Dictionary) -> void:
 
 
 ## 把配置里的 untyped 字典转成「植物类型 → 个数」
-func to_plant_num_dict(source: Dictionary) -> Dictionary[CharacterRegistry.PlantType, int]:
-	var out: Dictionary[CharacterRegistry.PlantType, int] = {}
+func to_plant_num_dict(source: Dictionary) -> Dictionary[StringName, int]:
+	var out: Dictionary[StringName, int] = {}
 	for key in source:
-		out[key as CharacterRegistry.PlantType] = int(source[key])
+		out[str(key)] = int(source[key])
 	return out
 
 
 ## 把配置里的 untyped 字典转成「僵尸类型 → 个数」
-func to_zombie_num_dict(source: Dictionary) -> Dictionary[CharacterRegistry.ZombieType, int]:
-	var out: Dictionary[CharacterRegistry.ZombieType, int] = {}
+func to_zombie_num_dict(source: Dictionary) -> Dictionary[StringName, int]:
+	var out: Dictionary[StringName, int] = {}
 	for key in source:
-		out[key as CharacterRegistry.ZombieType] = int(source[key])
+		out[str(key)] = int(source[key])
 	return out
 
 
@@ -674,29 +670,24 @@ func _init_pot_mode_fixed() -> void:
 	for plant_type in random_pot_plant.keys():
 		if Global.global_read_data.blacklist_plant_types_with_pot.has(plant_type):
 			random_pot_plant.erase(plant_type)
-			Log.debug(str("warning: 植物") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)) + str("在罐子刷新黑名单中，已删除该植物"))
 		else:
 			pot_num_on_fixed_mode += random_pot_plant[plant_type]
 	for plant_type in plant_pot.keys():
 		if Global.global_read_data.blacklist_plant_types_with_pot.has(plant_type):
 			plant_pot.erase(plant_type)
-			Log.debug(str("warning: 植物") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)) + str("在罐子刷新黑名单中，已删除该植物"))
 		else:
 			pot_num_on_fixed_mode += plant_pot[plant_type]
 	for zombie_type in random_pot_zombie.keys():
 		if Global.global_read_data.blacklist_zombie_types_with_pot.has(zombie_type):
 			random_pot_zombie.erase(zombie_type)
-			Log.debug(str("warning: 僵尸") + str(Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieName)) + str("在罐子刷新黑名单中，已删除该僵尸"))
 		else:
 			pot_num_on_fixed_mode += random_pot_zombie[zombie_type]
 	for zombie_type in zombie_pot.keys():
 		if Global.global_read_data.blacklist_zombie_types_with_pot.has(zombie_type):
 			zombie_pot.erase(zombie_type)
-			Log.debug(str("warning: 僵尸") + str(Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieName)) + str("在罐子刷新黑名单中，已删除该僵尸"))
 		else:
 			pot_num_on_fixed_mode += zombie_pot[zombie_type]
 	pot_num_on_fixed_mode += random_pot_num_on_fixed_mode.x + random_pot_num_on_fixed_mode.y + random_pot_num_on_fixed_mode.z
-	Log.debug(str("固定模式的罐子需求总数（包括结果固定罐子和结果随机罐子）为：") + str(pot_num_on_fixed_mode))
 	random_pot_zombie_with_zombie_row_type = get_pot_zombie_with_row_type_pot_on_fiexd_mode(random_pot_zombie)
 	zombie_pot_with_zombie_row_type = get_pot_zombie_with_row_type_pot_on_fiexd_mode(zombie_pot)
 
@@ -710,7 +701,6 @@ func _maybe_load_multi_round_save() -> void:
 	## 不支持续玩的多轮关卡（is_save_multi_round_data = false）不读存档：
 	## 读了会直接跳到第 N 轮，而本关没有可恢复的进度（罐子不进存档）
 	if game_round != 1 and is_save_multi_round_data:
-		Log.debug("更新多轮游戏存档数据")
 		update_data_with_save_game_data()
 
 
@@ -735,12 +725,10 @@ func update_data_with_save_game_data() -> void:
 		var res = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
 		if res is ResourceSaveGameMainGame:
 			save_game_data_main_game = res
-			Log.debug(str("加载关卡数据存档成功：") + str(path))
 		else:
 			Log.error("加载的资源类型不对: “%s” 不是 ResourceSaveGameMainGame" % path)
 			save_game_data_main_game = null
 	else:
-		Log.debug(str("关卡数据存档不存在：") + str(path))
 		save_game_data_main_game = null
 
 
@@ -752,7 +740,6 @@ func delete_game_data():
 	if ResourceLoader.exists(path):
 		var err = DirAccess.remove_absolute(path)
 		if err == OK:
-			Log.debug(str("删除存档成功：") + str(path))
 			return true
 		else:
 			Log.error("删除存档失败: %s 错误码 %d" % [path, err])
@@ -760,34 +747,27 @@ func delete_game_data():
 
 #region 自然刷怪过滤
 ## 当前场景可以刷新的僵尸
-var whitelist_refresh_zombie_types: Array[CharacterRegistry.ZombieType] = []
+var whitelist_refresh_zombie_types: Array[StringName] = []
 
 ## 根据白名单过滤出怪类型列表。
 ## 不修改入参 zombie_types，返回新数组。若列表中含 Z021Bungi，会将本资源的 is_bungi 设为 true。
 func filter_invalid_zombie_refresh_types(
-	zombie_types: Array[CharacterRegistry.ZombieType],
-	curr_whitelist_refresh_zombie_types: Array[CharacterRegistry.ZombieType]
-) -> Array[CharacterRegistry.ZombieType]:
-	var out: Array[CharacterRegistry.ZombieType] = []
-	var is_err := false
-	for zt: CharacterRegistry.ZombieType in zombie_types:
+	zombie_types: Array[StringName],
+	curr_whitelist_refresh_zombie_types: Array[StringName]
+) -> Array[StringName]:
+	var out: Array[StringName] = []
+	for zt: StringName in zombie_types:
 		if not curr_whitelist_refresh_zombie_types.has(zt):
 			Log.warn(
 				"warning: 出怪刷新列表中",
 				Global.character_registry.get_zombie_info(zt, CharacterRegistry.ZombieInfoAttribute.ZombieName),
 				"不在当前场景可以自然刷怪列表"
 			)
-			is_err = true
 			continue
-		if zt == CharacterRegistry.ZombieType.Z021Bungi:
-			Log.debug("warning: 出怪刷新列表禁止使用 Z021Bungi ,已修改为选择 is_bungi 参数")
+		if zt == ZombieIds.BUNGI:
 			is_bungi = true
-			is_err = true
 			continue
 		out.append(zt)
-
-	if is_err:
-		Log.debug("将上述出怪刷新列表错误僵尸删除")
 
 	return out
 

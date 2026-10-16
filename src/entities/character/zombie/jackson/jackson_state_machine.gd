@@ -44,7 +44,7 @@ func init_state(init_status:E_JacksonStatus):
 		allow_dance()
 	## 舞王
 	if not owner is Zombie010Dancer:
-		for i in range(zombie_009_jackson.num_moon_walk):
+		for _i in range(zombie_009_jackson.num_moon_walk):
 			## 入场状态（还未死亡）
 			if curr_jackson_status == E_JacksonStatus.Enter:
 				animation_player.play("moonwalk")
@@ -77,7 +77,6 @@ func change_jackson_anim_status(ori_value:E_JacksonStatus, new_value:E_JacksonSt
 			enter_status(new_value)
 
 		E_JacksonStatus.Death:
-			#Log.debug("僵尸原始为死亡状态")
 			return
 
 ## 进入新状态

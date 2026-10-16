@@ -30,13 +30,16 @@ func _init() -> void:
 	## 而关卡又没有预选卡 —— 结果是一张植物都带不进去，这关直接没法打
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版口径：只出豌豆僵尸 + 坚果僵尸两只植物僵尸，不出普僵
 	## （旗帜波仍会由波次管理器补旗子僵尸 + 普僵，那是本体波次逻辑，不是本关出怪表）
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z031PeaShooterZombie,
-		CharacterRegistry.ZombieType.Z032WallNutZombie,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.PEA_SHOOTER_ZOMBIE,
+		ZombieIds.WALL_NUT_ZOMBIE,
 	]
 
 	## 展示僵尸

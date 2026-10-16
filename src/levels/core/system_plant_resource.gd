@@ -7,7 +7,7 @@ class_name SystemPlantResource
 ## 种法见 `PlantCellManager.system_plant_one()`。
 
 ## 植物类型
-@export var plant_type :CharacterRegistry.PlantType
+@export var plant_type : StringName
 ## 植物位置（从 1 起，0 表示整行 / 整列，见 system_plant_one）
 @export var plant_cell_pos:Vector2i
 ## 是否为模仿者植物
@@ -33,7 +33,7 @@ static func create_flower_pot_columns(col_count: int, begin_col: int = 1) -> Arr
 		return result
 	for i in col_count:
 		var pot := SystemPlantResource.new()
-		pot.plant_type = CharacterRegistry.PlantType.P034FlowerPot
+		pot.plant_type = PlantIds.FLOWER_POT
 		pot.plant_cell_pos = Vector2i(0, begin_col + i)
 		result.append(pot)
 	return result

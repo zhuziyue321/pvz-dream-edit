@@ -26,7 +26,7 @@ var zombie_manager: ZombieManager
 ## 接上本关的僵尸管理器（关卡脚本创建本节点后调用一次）
 func init_bungi_blitz(zm: ZombieManager) -> void:
 	zombie_manager = zm
-	Log.debug("蹦极闪电战开启：本关僵尸全部由蹦极僵尸空投进场")
+	Log.info("蹦极闪电战开启：本关僵尸全部由蹦极僵尸空投进场")
 
 
 #region 空投本波僵尸
@@ -37,11 +37,11 @@ func init_bungi_blitz(zm: ZombieManager) -> void:
 ## （空投蹦极僵尸本身也算僵尸数，所以它没离场前本波不会清完）
 func create_drop_wave_zombies(
 	create_manager: ZombieWaveCreateManager,
-	wave_spawn: Array[CharacterRegistry.ZombieType], wave: int
+	wave_spawn: Array[StringName], wave: int
 ) -> Array[Zombie000Base]:
 	var carry_zombies: Array[Zombie000Base] = []
 	for i in range(wave_spawn.size()):
-		var zombie_type: CharacterRegistry.ZombieType = wave_spawn[i]
+		var zombie_type: StringName = wave_spawn[i]
 		var cell: PlantCell = pick_drop_cell()
 		## 找不到空投落点时退化成普通进场，保证本波僵尸不会凭空消失
 		if cell == null:
@@ -75,7 +75,7 @@ func pick_drop_cell() -> PlantCell:
 
 ## 创建被吊着的僵尸（先建真僵尸，血量 / 僵尸数都记在本波头上）
 func create_carry_zombie(
-	zombie_type: CharacterRegistry.ZombieType, lane: int, wave: int, cell: PlantCell
+	zombie_type: StringName, lane: int, wave: int, cell: PlantCell
 ) -> Zombie000Base:
 	return zombie_manager.create_norm_zombie(
 		zombie_type,
@@ -88,7 +88,7 @@ func create_carry_zombie(
 ## 创建空投蹦极僵尸，把上面那只僵尸吊下来
 func create_drop_bungi(cell: PlantCell, lane: int, wave: int, carry_zombie: Zombie000Base) -> void:
 	zombie_manager.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z026BungiDrop,
+		ZombieIds.BUNGI_DROP,
 		zombie_manager.all_zombie_rows[lane],
 		create_init_para(lane, wave),
 		drop_global_pos(cell, lane),
@@ -114,7 +114,7 @@ func drop_global_pos(cell: PlantCell, lane: int) -> Vector2:
 
 
 ## 退化成普通进场时挑一条行
-func pick_lane(zombie_type: CharacterRegistry.ZombieType) -> int:
+func pick_lane(zombie_type: StringName) -> int:
 	var row_type = Global.character_registry.get_zombie_info(
 		zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType
 	)

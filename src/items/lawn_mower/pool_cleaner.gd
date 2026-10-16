@@ -33,7 +33,6 @@ func _on_area_entered(area: Area2D) -> void:
 			_on_lane_zombie_enter(owner_node)
 
 	elif owner_node.name =="Pool":
-		Log.debug("小推车碰撞到泳池")
 		start_swim()
 
 ## 启动小推车
@@ -51,7 +50,6 @@ func _on_area_exited(area: Area2D) -> void:
 		pass
 
 	elif owner_node.name =="Pool":
-		Log.debug("小推车碰离开泳池")
 		end_swim()
 
 func suck_end():

@@ -83,7 +83,7 @@ size = Vector2(75, 5)
 script = ExtResource("2_5b05c")
 attack_value = 20
 is_attack = false
-plant_type = 22
+plant_type = &"caltrop"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]

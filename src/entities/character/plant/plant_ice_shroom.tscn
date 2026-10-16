@@ -108,7 +108,7 @@ scale_max = 3.0
 
 [node name="Plant015IceShroom" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_n3wco")]
 script = ExtResource("2_xarg1")
-plant_type = 15
+plant_type = &"ice_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="BodyCorrect" parent="Body" index="0"]

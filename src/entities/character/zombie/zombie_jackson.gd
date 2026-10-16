@@ -145,7 +145,6 @@ func be_hypno():
 
 ## 舞王被魅惑额外操作
 func jackson_be_hypno():
-	Log.debug("舞王或被魅惑")
 	dancer_manager_change()
 
 	jackson_manager = SceneRegistry.JACKSON_MANAGER.instantiate()

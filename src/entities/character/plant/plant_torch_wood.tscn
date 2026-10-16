@@ -53,7 +53,7 @@ size = Vector2(66, 66)
 
 [node name="Plant023TorchWood" instance=ExtResource("1_t46j5")]
 script = ExtResource("2_s1g5k")
-plant_type = 23
+plant_type = &"torch_wood"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-40, -67)

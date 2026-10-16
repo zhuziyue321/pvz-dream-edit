@@ -32,7 +32,7 @@ var _curr_text := ""
 ## 箭头快捷工具：每帧要重新解析的目标（None = 没有在指东西）
 var _follow_target: PointerTargetResolver.E_PointerTarget = PointerTargetResolver.E_PointerTarget.None
 ## 箭头快捷工具：目标对应的植物类型（Card / Lawn 两个目标用得上）
-var _follow_plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+var _follow_plant_type: StringName = PlantIds.NULL
 ## 箭头快捷工具：解析目标要用的主游戏（目标可能是阳光 / 卡片 / 草坪格子）
 var _follow_main_game: MainGameManager
 
@@ -89,7 +89,7 @@ static func ensure_level_hint(main_game: MainGameManager) -> TutorialAdviceUI:
 ## target 传 None = 收起箭头（见 hide_arrow）
 func point_to_level_target(main_game: MainGameManager,
 		target: PointerTargetResolver.E_PointerTarget,
-		plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+		plant_type: StringName = PlantIds.NULL) -> void:
 	_follow_main_game = main_game
 	_follow_target = target
 	_follow_plant_type = plant_type

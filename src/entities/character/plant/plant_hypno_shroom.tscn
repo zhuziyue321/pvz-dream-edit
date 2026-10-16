@@ -60,7 +60,7 @@ node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"
 
 [node name="Plant013HypnoShroom" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_giqvm")]
 script = ExtResource("2_sgftx")
-plant_type = 13
+plant_type = &"hypno_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="SleepComponent" parent="." index="4"]

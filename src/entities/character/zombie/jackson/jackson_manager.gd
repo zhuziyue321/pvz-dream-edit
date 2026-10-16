@@ -163,7 +163,6 @@ func get_current_animation_info():
 			"progress": current_time / total_time if total_time > 0 else 0.0
 		}
 	else:
-		Log.debug("无动画播放")
 		return {
 			"name": 'armraise',
 			"curr_scale": curr_scale,
@@ -177,9 +176,6 @@ func get_current_animation_info():
 func call_zombie_dancer():
 	for i in zombie_dancers:
 		if not zombie_dancers[i]:
-			if i == -1:
-				Log.debug("舞王不存在？有问题")
-
 			var new_zombie_dancer_lane_and_pos = get_new_zombie_dancer_lane_and_glo_pos(i, zombie_dancers[-1].lane, zombie_dancers[-1].global_position)
 			## 如果当前位置可以生成伴舞
 			if new_zombie_dancer_lane_and_pos:
@@ -188,7 +184,7 @@ func call_zombie_dancer():
 					Zombie000Base.E_ZInitAttr.Lane:new_zombie_dancer_lane_and_pos["lane"],
 				}
 				var _new_zombie_dancer:Zombie010Dancer = get_main_game().zombie_manager.create_norm_zombie(
-					CharacterRegistry.ZombieType.Z010Dancer,
+					ZombieIds.DANCER,
 					get_main_game().zombie_manager.all_zombie_rows[new_zombie_dancer_lane_and_pos["lane"]],
 					zombie_init_para,
 					new_zombie_dancer_lane_and_pos["pos"],

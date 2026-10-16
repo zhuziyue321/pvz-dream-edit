@@ -28,7 +28,7 @@ func init_level_items(mg: MainGameManager, item_root: Node2D) -> void:
 ## 本波僵尸不从场地边缘走进来，改由空投蹦极僵尸吊进场（清单仍由通用波次按战力算）
 func create_wave_zombies(
 	create_manager: ZombieWaveCreateManager,
-	wave_spawn: Array[CharacterRegistry.ZombieType],
+	wave_spawn: Array[StringName],
 	wave: int
 ) -> Array[Zombie000Base]:
 	if bungi_blitz == null:
@@ -47,23 +47,26 @@ func _init() -> void:
 	is_bungi = true
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	3: 2,
-	7: 2,
-	31: 2,
-	34: 2
+	&"cherry_bomb": 2,
+	&"chomper": 2,
+	&"pumpkin": 2,
+	&"flower_pot": 2
 	})
 	## 本关通关掉落：大蒜（种子包）
 	level_complete_loot = "garlic_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	await plant_flower_pot_columns(4)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z022Ladder,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.LADDER,
 	]
 
 	## 关卡戴夫对话

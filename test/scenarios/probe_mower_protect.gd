@@ -116,7 +116,7 @@ func _check_protect_block_row(a, choose: ZombieChooseRowSystem, row_num: int, la
 	var weights := _all_rows_weight(row_num)
 	var hit_protected := false
 	var picked_rows: Dictionary = {}
-	for i in range(60):
+	for _i in range(60):
 		var row: int = choose.select_spawn_row(CharacterRegistry.ZombieRowType.Land, weights)
 		if row == lane:
 			hit_protected = true
@@ -164,7 +164,7 @@ func _check_out_of_range(a, choose: ZombieChooseRowSystem, row_num: int) -> void
 ## 让每一行都可出怪的临时基础权重（1-1 只有一行铺了草皮，权重表按行类型算会只剩一行）
 func _all_rows_weight(row_num: int) -> Array[float]:
 	var weights: Array[float] = []
-	for i in range(row_num):
+	for _i in range(row_num):
 		weights.append(1.0)
 	return weights
 

@@ -10,7 +10,7 @@
 [node name="ZombieBoss000Base" unique_id=1135427569 instance=ExtResource("1_bu51k")]
 script = ExtResource("2_gwo2k")
 ; zombie_type = Z999ZombossDoctor
-zombie_type = 999
+zombie_type = &"zomboss_doctor"
 ; init_be_attack_status = 64 即 E_BeAttackStatusZombie.IsBossInvulnerable：
 ; 出场即为抬头免疫态，低头窗口由状态机的 hurt_enable 关键帧打开（见 ZB000Base.set_hurt_window）。
 init_be_attack_status = 64

@@ -61,7 +61,7 @@ size = Vector2(1200, 5)
 
 [node name="Plant030StarFruit" instance=ExtResource("1_nndnm")]
 script = ExtResource("2_ds8om")
-plant_type = 30
+plant_type = &"star_fruit"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-40, -59)
@@ -161,7 +161,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("9_j1qv8")
-attack_bullet_type = 8
+attack_bullet_type = &"star"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet"), NodePath("../Body/BodyCorrect/Marker2DBullet2"), NodePath("../Body/BodyCorrect/Marker2DBullet3"), NodePath("../Body/BodyCorrect/Marker2DBullet4"), NodePath("../Body/BodyCorrect/Marker2DBullet5")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

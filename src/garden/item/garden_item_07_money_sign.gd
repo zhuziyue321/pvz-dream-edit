@@ -35,7 +35,6 @@ func use_it():
 	plant_cell_give_dave = SceneRegistry.PLANT_CELL_GARDEN.instantiate()
 	plant_cell_give_dave.position += Vector2(-40,-60)
 	crazy_dave.reset_dave(dave_dialog, plant_cell_give_dave)
-	#Log.debug(plant_cell_give_dave.global_position)
 	plant_cell_give_dave.init_curr_plant_cell(choosed_plant_data)
 	crazy_dave.is_activate = true
 	crazy_dave.visible = true
@@ -52,9 +51,7 @@ func use_it():
 ## 同意售卖
 func sell_agree():
 	Global.global_game_state.coin_value += curr_plant_price
-	Log.debug(str("当前金币：") + str(Global.global_game_state.coin_value))
 
-	Log.debug(plant_cell_give_dave.global_position)
 	plant_cell_give_dave.queue_free()
 ## 不同意售卖
 func sell_disagree():

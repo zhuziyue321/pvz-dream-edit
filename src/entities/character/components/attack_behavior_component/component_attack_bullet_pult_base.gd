@@ -10,7 +10,6 @@ var last_target_enemy:Character000Base
 ## 攻击间隔后触发执行攻击
 func _on_bullet_attack_cd_timer_timeout() -> void:
 	last_target_enemy = detect_component.update_first_enemy()
-	#Log.debug(last_target_enemy)
 	if is_instance_valid(last_target_enemy):
 		last_target_enemy_global_pos = last_target_enemy.global_position
 		# 在这里调用实际攻击逻辑

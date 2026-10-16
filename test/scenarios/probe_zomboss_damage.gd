@@ -56,7 +56,7 @@ func _check_pea_hits_boss(a, mg, boss, hp) -> void:
 
 
 ## 同行限制只对普通角色生效：其它行的豌豆仍打不到这一行的普通僵尸。
-func _check_lane_still_matters(a, mg, boss) -> void:
+func _check_lane_still_matters(a, mg, _boss) -> void:
 	var zombie = _spawn_zombie_for_probe(mg, 2)
 	if zombie == null:
 		a.log("  [INFO] 造不出第 2 行的僵尸，跳过跨行回归（不算失败）")
@@ -103,7 +103,7 @@ func _deal_pea(a, mg, target, bullet_lane: int) -> int:
 	if area == null:
 		_check(a, "取到目标的受击区域", false, "受击组件下没有 Area2D")
 		return 0
-	var scene: PackedScene = Global.bullet_registry.get_bullet_scenes(BulletRegistry.BulletType.Bullet001Pea)
+	var scene: PackedScene = Global.bullet_registry.get_bullet_scenes(BulletIds.PEA)
 	if scene == null:
 		_check(a, "注册表里有豌豆", false, "取不到 Bullet001Pea")
 		return 0
@@ -123,7 +123,6 @@ func _deal_pea(a, mg, target, bullet_lane: int) -> int:
 	## 同一帧内开关受击窗口并结算，避免状态机在两帧之间把它关掉。
 	_open_hurt_window(target)
 	bullet._on_area_2d_attack_area_entered(area)
-	var after_call: int = target_hp.curr_hp
 	await a.wait(0.3)
 	var dealt: int = before - target_hp.curr_hp
 	## 命中过的子弹自己会 queue_free，重复释放会报错；这里只收尾。
@@ -153,7 +152,7 @@ func _spawn_zombie_for_probe(mg, lane: int):
 		Zombie000Base.E_ZInitAttr.CurrWave: 1,
 	}
 	return zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm,
+		ZombieIds.NORM,
 		row,
 		init_para,
 		row.zombie_create_position.global_position)

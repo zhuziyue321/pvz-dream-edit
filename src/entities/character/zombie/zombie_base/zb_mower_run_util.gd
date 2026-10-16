@@ -17,7 +17,7 @@ static func run(zombie: Zombie000Base, lawn_mover: LawnMover) -> void:
 	## 取消亡语
 	zombie.is_can_death_language = false
 	## 首先死亡无掉落
-	zombie.hp_component.Hp_loss_death(false)
+	zombie.hp_component.hp_loss_to_death(false)
 	## 禁用移动组件 停止移动
 	zombie.move_component.disable_component(ComponentNormBase.E_IsEnableFactor.Death)
 	## 停止动画
@@ -34,12 +34,10 @@ static func run(zombie: Zombie000Base, lawn_mover: LawnMover) -> void:
 ## 通用碾压表现：压扁 + 逐个掉落本体掉落物（手和头）
 ## 返回串好整条流程的 Tween，调用方接 finished 即可
 static func start_anim_norm(zombie: Zombie000Base, lawn_mover: LawnMover) -> Tween:
-	## 先掉落防具
+	## 先掉落防具：每层防具自己走完破损外观与掉落（防具是 `ArmorComponent`，可能不止一层）
 	var hp_component := zombie.hp_component as HpComponentZombie
-	if hp_component.curr_hp_armor1 != 0:
-		zombie.hp_stage_change_component.judge_body_change_armor(0, 0, true, true)
-	if hp_component.curr_hp_armor2 != 0:
-		zombie.hp_stage_change_component.judge_body_change_armor(0, 0, true, false)
+	for armor in hp_component.get_all_armors():
+		armor.force_break_appearance()
 
 	## 收集本体掉落物（手和头），先藏起来
 	var all_node_drop: Array[ZombieDropBase] = zombie.hp_stage_change_component.get_all_body_change()

@@ -30,7 +30,7 @@ anim_offset_max = 1.0
 
 [node name="Bullet001Pea" instance=ExtResource("1_hs85o")]
 is_can_up = true
-bullet_type = 1
+bullet_type = &"pea"
 
 [node name="BulletBody" parent="Body" index="0"]
 texture = ExtResource("2_0kdi0")

@@ -22,7 +22,7 @@ func _init() -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z001Norm]
+	var zombie_list: Array[StringName] = [ZombieIds.NORM]
 
 	## 展示僵尸
 	await show_zombie(zombie_list)
@@ -52,21 +52,21 @@ func _tutorial_flow(mg: MainGameManager) -> void:
 	## 允许操作：先让玩家能点卡片 / 种植，此时还不出怪、不天降阳光
 	await allow_operation()
 	## 箭头指到向日葵的种子包上
-	await arrow_card(CharacterRegistry.PlantType.P002SunFlower)
+	await arrow_card(PlantIds.SUN_FLOWER)
 	await hint("向日葵是非常重要的植物！")
 	## 等「选择植物」完成：捡起种子包 / 已经种下去了，谁先到都算过
 	await _wait_select_plant(mg)
 	## 教玩家把向日葵种下去
 	await hint("点击草地种下你的种子！")
-	await wait_plant(1, CharacterRegistry.PlantType.P002SunFlower)
+	await wait_plant(1, PlantIds.SUN_FLOWER)
 	## 再种两株，凑够三棵向日葵
 	## 教学排在开战之前，天降阳光还没启动，靠教程掉两颗阳光把这一段补上
 	## （原版这段教学与开战同时进行，玩家一边种一边收天上掉的阳光）
-	await arrow_card(CharacterRegistry.PlantType.P002SunFlower)
+	await arrow_card(PlantIds.SUN_FLOWER)
 	await hint("至少要种下三棵向日葵！")
 	await spawn_sun()
 	await spawn_sun()
-	await wait_plant(2, CharacterRegistry.PlantType.P002SunFlower)
+	await wait_plant(2, PlantIds.SUN_FLOWER)
 	await hide_arrow()
 	## 夸一句，停一停让玩家看清发生了什么
 	await hint("干得漂亮！")
@@ -90,11 +90,11 @@ signal select_plant_done
 func _wait_select_plant(mg: MainGameManager) -> void:
 	## 先看看这一步是不是**已经完成**了 —— 是就不用等信号：
 	##   1. 手上已经拿着向日葵的种子包（提示还没出完玩家就把卡点了）
-	if LevelWaitCondition.is_holding_card(mg, CharacterRegistry.PlantType.P002SunFlower):
+	if LevelWaitCondition.is_holding_card(mg, PlantIds.SUN_FLOWER):
 		return
 	##   2. 草坪上已经有向日葵（玩家手快，「拿卡 → 种下」连着点完了 ——
 	##      下一步的种植都做完了，选择植物当然也算完成；本关开局草坪是空的，有就是玩家种的）
-	if LevelWaitCondition.count_lawn_plants(mg, CharacterRegistry.PlantType.P002SunFlower) > 0:
+	if LevelWaitCondition.count_lawn_plants(mg, PlantIds.SUN_FLOWER) > 0:
 		return
 	## 信号一：草坪上种下了向日葵（每个格子各有一个信号，逐个接上）
 	for row_cells: Array in mg.plant_cell_manager.all_plant_cells:
@@ -118,15 +118,15 @@ func _wait_select_plant(mg: MainGameManager) -> void:
 
 
 ## 草坪上种下了向日葵 —— 「选择植物」这一步算过了
-func _on_sunflower_planted(_cell: PlantCell, plant_type: CharacterRegistry.PlantType) -> void:
-	if plant_type != CharacterRegistry.PlantType.P002SunFlower:
+func _on_sunflower_planted(_cell: PlantCell, plant_type: StringName) -> void:
+	if plant_type != PlantIds.SUN_FLOWER:
 		return
 	select_plant_done.emit()
 
 
 ## 玩家把向日葵的种子包捡到了手上 —— 「选择植物」这一步算过了
 func _on_sunflower_taken(card: Card) -> void:
-	if card == null or card.card_plant_type != CharacterRegistry.PlantType.P002SunFlower:
+	if card == null or card.card_plant_type != PlantIds.SUN_FLOWER:
 		return
 	select_plant_done.emit()
 #endregion

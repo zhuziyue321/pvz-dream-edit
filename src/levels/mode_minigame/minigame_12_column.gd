@@ -36,21 +36,21 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	start_sun = 50000
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	3: 1,
-	7: 1,
-	18: 1,
-	21: 1,
-	33: 1,
-	34: 1,
-	35: 1,
-	40: 1
+	&"cherry_bomb": 1,
+	&"chomper": 1,
+	&"squash": 1,
+	&"jalapeno": 1,
+	&"cabbage_pult": 1,
+	&"flower_pot": 1,
+	&"corn_pult": 1,
+	&"melon_pult": 1
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
-	0: 5,
-	1: 24,
-	2: 40,
-	3: 32,
-	4: 36,
+	0: &"potato_mine",
+	1: &"tall_nut",
+	2: &"melon_pult",
+	3: &"magnet_shroom",
+	4: &"coffee_bean",
 	9: 45
 	})
 	create_new_card_speed = 1.5
@@ -158,7 +158,7 @@ func _on_cell_mouse_exit(_plant_cell: PlantCell) -> void:
 
 ## 种下一株 → 同列其它行补上同一株（本关的「排山倒海」就这一条规则）
 ## 补的行能不能种仍由格子自己判（`judge_is_can_plant`），种不进去的行直接跳过
-func _on_plant_create(plant_cell: PlantCell, _plant_type: CharacterRegistry.PlantType) -> void:
+func _on_plant_create(plant_cell: PlantCell, _plant_type: StringName) -> void:
 	if is_filling_column or not _is_holding_plant_card():
 		## 没持卡时的种植物（开局预置的花盆这类）不算玩家的整列种植
 		return
@@ -220,7 +220,7 @@ func _free_column_shadows() -> void:
 func _is_holding_plant_card() -> bool:
 	if not is_instance_valid(curr_card):
 		return false
-	return curr_card.card_plant_type != CharacterRegistry.PlantType.Null
+	return curr_card.card_plant_type != PlantIds.NULL
 
 
 ## 这一格能不能种下当前手上的植物 —— 与手持组件用的是同一条判据
@@ -262,20 +262,23 @@ func _get_cell(row: int, col: int) -> PlantCell:
 #endregion
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 屋顶是裸地：先沿整列铺出左侧 8 列的种植位（原版本关 9 列里只有最右一列没有花盆）
 	await plant_flower_pot_columns(8)
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
-		CharacterRegistry.ZombieType.Z022Ladder,
-		CharacterRegistry.ZombieType.Z009Jackson,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.FOOTBALL,
+		ZombieIds.GARGANTUAR,
+		ZombieIds.LADDER,
+		ZombieIds.JACKSON,
 	]
 
 	## 展示僵尸

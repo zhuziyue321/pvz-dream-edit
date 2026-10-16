@@ -186,7 +186,6 @@ func _on_agree(price: int, result_detail: CrazyDaveDialogDetailResource) -> void
 		result_detail.text = TEXT_DISAGREE
 		return
 	Global.save_service.save_now()
-	Log.debug(str("夜晚戴夫卖出卡槽扩充,已购买次数:") + str(game_state.get_card_slot_upgrade_num()))
 	## 卡槽数变了:重新结算冒险模式的锁定卡槽 / 预选卡,并给本关出战卡槽补一格
 	GameContext.curr_main_game.game_para.refresh_pre_choosed_card_on_card_slot_change()
 	GameContext.curr_main_game.card_manager.add_one_battle_card_placeholder()
@@ -196,7 +195,6 @@ func _on_agree(price: int, result_detail: CrazyDaveDialogDetailResource) -> void
 ## 不同意购买
 func _on_disagree(result_detail: CrazyDaveDialogDetailResource) -> void:
 	result_detail.text = TEXT_DISAGREE
-	Log.debug("夜晚戴夫推销:玩家拒绝了卡槽扩充")
 
 
 ## 同意后的回复:还有下一档就预告价格,已经是最后一档就道别

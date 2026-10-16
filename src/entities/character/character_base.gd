@@ -16,12 +16,14 @@ enum E_TimerType{
 	IceDecelerate,	## 冰冻减速
 	IceFreeze,		## 冰冻停滞
 	Butter,			## 黄油
+	Slow,			## 通用减速（伤害系统的 `EFFECT_SLOW` 效果）
 }
 ## 减速相关计时器(第一次使用时创建)
 var all_timer:Dictionary[E_TimerType, Timer] = {
 	E_TimerType.IceDecelerate:null,
 	E_TimerType.IceFreeze:null,
 	E_TimerType.Butter:null,
+	E_TimerType.Slow:null,
 }
 #endregion
 
@@ -52,6 +54,7 @@ enum E_Influence_Speed_Factor{
 	InitRandomSpeed,
 	IceDecelerateSpeed,
 	IceFreezeSpeed,
+	Slow,			## 通用减速（伤害系统的 `EFFECT_SLOW` 效果，与冰冻减速分开计）
 	HammerZombieSpeed,	## 锤僵尸模式修改速度
 	ZamboniHp,		## 冰车僵尸血量变化时
 	Butter,			## 黄油
@@ -234,7 +237,6 @@ func ready_garden():
 
 ## 随机初始化角色速度
 func init_random_speed():
-	#Log.debug("随机初始化角色速度")
 	## 初始化角色速度
 	update_speed_factor(randf_range(random_speed_range.x, random_speed_range.y), E_Influence_Speed_Factor.InitRandomSpeed)
 
@@ -256,9 +258,82 @@ func character_death():
 	if is_can_death_language:
 		death_language()
 
+## 【伤害系统】**统一的伤害入口**：本角色要对谁造成伤害，一律走这里。
+##
+## 为什么不再是各语义入口自己调 `hp_component.hp_loss()`：
+## 那条路会绕过 `DamageSystem` 的修饰器链与伤害事件 —— 将来加护盾、反伤、联机对齐
+## 都要**每一处**补一遍，漏一处就是一个静默的"这个技能打人没伤害"。
+## 语义入口（`be_attacked_bullet` / `be_zombie_eat` / `be_bomb` …）现在只负责
+## **组装 DamageInfo**，真正的派发只有这一个函数。
+##
+## [param info] 伤害描述（见 `DamageInfo`，`target` 一般是别人，`attacker` 是自己）
+## [return] 结算结果（见 `DamageResult`）
+func apply_damage(info: DamageInfo) -> DamageResult:
+	return DamageSystem.apply(info)
+
+
+## 【伤害系统】**② 受击方加工包**：系统应用之前，给目标一次**改写这个包**的机会。
+##
+## 这是「特殊效果」的落点。包里系统**不认**的那些效果（`ConstDamage.EFFECT_CALTROP` 一类）
+## 是一张发起方写给受击方的便条，**只有受击方看得懂**，由它在这里翻译成具体后果：
+##
+## [codeblock]
+## ## 洗冰车：地刺扎我 = 秒杀（原版行为）
+## func process_damage(info: DamageInfo) -> bool:
+##     if info.has_effect(ConstDamage.EFFECT_CALTROP):
+##         info.is_instant_kill = true                  ## 秒杀：直接清空，不看伤害值
+##     return true
+##
+## ## 巨人：地刺扎我 = 无视
+## func process_damage(info: DamageInfo) -> bool:
+##     info.remove_effect(ConstDamage.EFFECT_CALTROP)
+##     return true
+##
+## ## 免疫爆炸：整个包都不要
+## func process_damage(info: DamageInfo) -> bool:
+##     if info.cause == ConstDamage.E_DamageCause.Bomb:
+##         return false
+##     return true
+## [/codeblock]
+##
+## 与 `DamageModifierComponent` 的分工：
+##   · 本方法是**角色自己的规则**，写在角色脚本里，天然跟着角色走（K-01 的例外：
+##     它改的是"这一次的包"而不是持有状态，且规则本身就属于这个角色）；
+##   · 修饰器组件是**可插拔的通用规则**，谁挂谁生效，不用改角色脚本。
+## 两者都在 ② 阶段跑，本方法先跑，修饰器后跑。
+##
+## 三条纪律：
+##   · **不要在这里触发新的伤害**（嵌套 `apply()`）。要加伤害就改 `info.amount`，让系统去施加；
+##   · **不要在这里改 `hp_component`** —— 那是 ③ 系统应用阶段的事，这里只改包；
+##   · 重写时**应该** `return super(info)`，除非你要显式否决这次伤害。
+##
+## [param info] 效果包，**可以直接改它的 `effects` / `amount` / `mode`**
+## [return] true = 继续结算；false = 取消整个包（一滴血都不掉、控制也不上）
+func process_damage(_info: DamageInfo) -> bool:
+	return true
+
+
+## 【伤害系统】**管线末端**：由 `DamageSystem` 在 ② 加工完之后调用，把伤害交给血量组件结算。
+##
+## 子类一般**不需要**重写：结算规则在血量组件里（`HpComponent` / `HpComponentZombie`）。
+## 只有当"这个角色挨打时还要额外做点什么"才重写，且**必须** `return super(info)`。
+## [param info] 本次伤害（`amount` 已过加工阶段，`final_amount` 已回填）
+## [return] 结算后的本体血量
+func take_damage(info: DamageInfo) -> int:
+	return hp_component.hp_loss(info)
+
+
 ## 被攻击至死亡(大保龄球)
+##
+## 走秒杀（`is_instant_kill`）而不是"打一个等于总血量的伤害"：后者仍要过一遍防具的
+## 吸收规则，碰上减伤 / 固定吸收的防具就打不死；秒杀是"必死"，与防具表怎么配无关。
+## 伤害值留着只是让 `DamageResult` / 统计上的数字好看，真正致死靠的是那个字段。
 func be_attack_to_death(trigger_be_attack_SFX:=true):
-	hp_component.Hp_loss(hp_component.get_all_hp(),BulletRegistry.AttackMode.Norm, true, trigger_be_attack_SFX)
+	var info := DamageInfo.create(self, hp_component.get_all_hp(),
+		ConstDamage.E_DamageMode.Norm, ConstDamage.E_DamageCause.Bullet)
+	info.is_instant_kill = true
+	info.trigger_sfx = trigger_be_attack_SFX
+	apply_damage(info)
 
 ## 死亡不消失(海草\被碾压)
 func character_death_not_disappear():
@@ -266,17 +341,38 @@ func character_death_not_disappear():
 
 ## 死亡直接消失
 func character_death_disappear():
-	hp_component.Hp_loss_death(false)
+	hp_component.hp_loss_to_death(false)
 	queue_free()
 
 ## 被子弹攻击
-func be_attacked_bullet(attack_value:int, bullet_mode:BulletRegistry.AttackMode=BulletRegistry.AttackMode.Norm, is_drop:bool=true, trigger_be_attack_SFX:=true):
-	hp_component.Hp_loss(attack_value, bullet_mode, is_drop, trigger_be_attack_SFX)
+## 语义入口：只组装 DamageInfo，派发交给 `apply_damage()`
+##
+## [param source_node] 伤害载体（那一发子弹）。可选，但**建议传**：
+## 有了它，"哪一发打的"才能进 `DamageInfo`，将来做反伤 / 命中统计 / 联机对账才有依据。
+## [param attacker_node] 发起者（射手）。可选：子弹一般不记录射手，留空即可。
+func be_attacked_bullet(attack_value:int, bullet_mode:ConstDamage.E_DamageMode=ConstDamage.E_DamageMode.Norm, is_drop:bool=true, trigger_be_attack_SFX:=true, source_node:Node=null, attacker_node:Node=null) -> DamageResult:
+	var info := DamageInfo.create(self, attack_value, bullet_mode, ConstDamage.E_DamageCause.Bullet)
+	info.is_drop_on_death = is_drop
+	info.trigger_sfx = trigger_be_attack_SFX
+	info.source = source_node
+	info.attacker = attacker_node
+	var result := apply_damage(info)
+	be_hit_light()
+	return result
+
+
+## 受击发光一次：被打中时 body 闪一下白光（纯表现，不参与任何结算）。
+##
+## 单独开一个方法是为了让**不走 `be_attacked_bullet()` 的发起方**（地刺自己写包那一条路）
+## 也能复用这份表现，而不用去碰别人的 `body` 节点（K-03）。
+func be_hit_light() -> void:
 	body.body_light()
 
 ## 被锤子攻击(伤害值不生效)
-func be_attacked_hammer(attack_value:int):
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Hammer, true, true)
+func be_attacked_hammer(attack_value:int) -> bool:
+	var info := DamageInfo.create(self, attack_value,
+		ConstDamage.E_DamageMode.Hammer, ConstDamage.E_DamageCause.Hammer)
+	apply_damage(info)
 	body.body_light()
 	return is_death
 
@@ -284,8 +380,13 @@ func be_attacked_hammer(attack_value:int):
 ## 被僵尸啃食
 ## attack_value:伤害
 ## attack_zombie:攻击的僵尸
-func be_zombie_eat(attack_value:int, _attack_zombie:Zombie000Base):
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, true, false)
+func be_zombie_eat(attack_value:int, attack_zombie:Zombie000Base):
+	var info := DamageInfo.create(self, attack_value,
+		ConstDamage.E_DamageMode.Penetration, ConstDamage.E_DamageCause.Eat)
+	## 啃食不吃受击音效（音效在攻击组件的 attack_once() 里播），但要记下是谁啃的
+	info.trigger_sfx = false
+	info.attacker = attack_zombie
+	apply_damage(info)
 
 ## 被僵尸啃食一次发光
 func be_zombie_eat_once(_attack_zombie:Zombie000Base):
@@ -330,6 +431,26 @@ func update_invisible_show(is_invisible_show: bool) -> void:
 #endregion
 
 #region 速度修改相关
+## 【通用效果】被减速：伤害系统 `EFFECT_SLOW` 的落点（`DamageSystem._apply_effect_slow()` 调它）。
+##
+## 与 `be_ice_decelerate()` 的区别：那是**冰冻减速**（固定 0.5 系数 + 冰蓝色，带寒冰语义），
+## 本方法是**通用减速**（系数由发起方给，不染色），给寒冰豌豆以外的减速来源用。
+## 两者各用一个速度因子槽、各用一个计时器，互不覆盖。
+## [param time] 持续秒数；已经在减速中时取「更长的那个」（与冰冻减速一致）
+## [param factor] 速度系数（0.5 = 半速）
+func be_slow(time:float, factor:float = 0.5):
+	if is_death:
+		return
+	update_speed_factor(factor, E_Influence_Speed_Factor.Slow)
+	if not is_instance_valid(all_timer[E_TimerType.Slow]):
+		all_timer[E_TimerType.Slow] = GlobalUtils.create_new_timer_once(self, _on_slow_timer_timeout)
+	if all_timer[E_TimerType.Slow].time_left < time:
+		all_timer[E_TimerType.Slow].start(time)
+
+## 通用减速计时器结束
+func _on_slow_timer_timeout() -> void:
+	update_speed_factor(1.0, E_Influence_Speed_Factor.Slow)
+
 ## 被冰冻减速
 func be_ice_decelerate(time:float):
 	update_speed_factor(0.5, E_Influence_Speed_Factor.IceDecelerateSpeed)
@@ -348,7 +469,10 @@ func _on_ice_decelerate_timer_timeout() -> void:
 ## [param damage] 本次伤害，由发动方给出（寒冰菇炸弹组件的 `bomb_value`）；<=0 表示只冻不打。
 func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, damage:int = 20):
 	if damage > 0:
-		hp_component.Hp_loss(damage, BulletRegistry.AttackMode.Real, true, false)
+		var info := DamageInfo.create(self, damage,
+			ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Freeze)
+		info.trigger_sfx = false
+		apply_damage(info)
 
 	self.time_ice_end_decelerate = new_time_ice_end_decelerate
 	update_speed_factor(0.0, E_Influence_Speed_Factor.IceFreezeSpeed)

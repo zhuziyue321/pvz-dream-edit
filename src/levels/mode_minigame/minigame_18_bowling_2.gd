@@ -33,13 +33,13 @@ func _init() -> void:
 	## 出卡概率照原版 wiki 的百分比直接当权重（create_plant_weights 内部归一化）：
 	## 坚果 74% / 爆炸坚果 13% / 巨型坚果墙 13%
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1001: 74,
-	1002: 13,
-	1003: 13
+	&"wall_nut_bowling": 74,
+	&"wall_nut_bowling_bomb": 13,
+	&"wall_nut_bowling_big": 13
 	})
 	conveyor_order = ResourceCardReference.create_plant_order({
-	0: 1001,
-	1: 1002,
+	0: &"wall_nut_bowling",
+	1: &"wall_nut_bowling_bomb",
 	2: 1003
 	})
 	is_bowling_stripe = true
@@ -55,16 +55,16 @@ func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 顺序照原版 wiki「Zombies」一节：普通 / 摇旗 / 路障 / 撑杆 / 铁桶 / 读报 / 纱门 / 舞王 / 伴舞
 	## （伴舞由舞王自己召唤出场，原版仍把它列进名单，这里跟着登记）
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z002Flag,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z010Dancer,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.FLAG,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.JACKSON,
+		ZombieIds.DANCER,
 	]
 
 	if mg.curr_game_round == 1:

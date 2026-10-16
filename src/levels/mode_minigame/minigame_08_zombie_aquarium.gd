@@ -78,7 +78,7 @@ func run_flow(mg: MainGameManager) -> void:
 	_create_seed_packets(aquarium.get_manager())
 
 	var is_win: bool = await aquarium.signal_finished
-	Log.debug("僵尸水族馆：关卡流程结束，is_win = %s" % str(is_win))
+	Log.info("僵尸水族馆：关卡流程结束，is_win = %s" % str(is_win))
 
 
 #region 出战卡槽里的自定义种子包（本关专属）
@@ -92,14 +92,14 @@ func _create_seed_packets(aquarium: ZombiquariumManager) -> void:
 	## 第一张：买潜水僵尸（原版就是这条 tooltip「购买潜水僵尸」）
 	var snorkel_ref := ResourceCardReference.create(
 		ResourceCardReference.CardType.Zombie,
-		CharacterRegistry.ZombieType.Z012Snorkle
+		ZombieIds.SNORKLE
 	)
 	_append_packet(create_custom_seed_packet(snorkel_ref, ConstZombiquarium.PET_SUN_COST,
 		_on_buy_pet_packet_click.bind(aquarium)))
 	## 第二张：买奖杯（1000 阳光，买下即通关）
 	var trophy_ref := ResourceCardReference.create(
 		ResourceCardReference.CardType.Zombie,
-		CharacterRegistry.ZombieType.Z012Snorkle
+		ZombieIds.SNORKLE
 	)
 	var trophy_packet := create_custom_seed_packet(trophy_ref, ConstZombiquarium.TROPHY_SUN_COST,
 		_on_trophy_packet_click.bind(aquarium))
@@ -131,7 +131,7 @@ func _append_packet(card: Card) -> void:
 
 
 ## 「购买潜水僵尸」被点击：买成了由水族馆自己扣阳光（见 ZombiquariumManager.try_buy_pet）
-func _on_buy_pet_packet_click(card: Card, aquarium: ZombiquariumManager) -> void:
+func _on_buy_pet_packet_click(_card: Card, aquarium: ZombiquariumManager) -> void:
 	if not is_instance_valid(aquarium):
 		return
 	if not aquarium.try_buy_pet():

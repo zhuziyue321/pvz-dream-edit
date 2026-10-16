@@ -65,7 +65,7 @@ var selected_cards: Array = []
 
 ## 已解锁的植物:
 ## 初始只有豌豆射手,白卡通过冒险模式关卡解锁(见 ConstPlantUnlock),紫卡与模仿者在商店购买后加入
-var curr_plant :Array[CharacterRegistry.PlantType]= ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
+var curr_plant :Array[StringName]= ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
 
 ## 把所有**落盘字段**清回默认值(切到一个还没有存档的新用户时调用)
 ##
@@ -90,24 +90,36 @@ func reset_to_defaults() -> void:
 
 #region 植物解锁进度
 ## 植物是否已解锁
-func is_plant_unlocked(plant_type:CharacterRegistry.PlantType) -> bool:
+func is_plant_unlocked(plant_type: StringName) -> bool:
 	return curr_plant.has(plant_type)
 
 ## 解锁一个植物,返回是否为本次新解锁
-func unlock_plant(plant_type:CharacterRegistry.PlantType) -> bool:
-	if plant_type == CharacterRegistry.PlantType.Null:
+func unlock_plant(plant_type: StringName) -> bool:
+	if plant_type == PlantIds.NULL:
 		return false
 	if curr_plant.has(plant_type):
 		return false
 	curr_plant.append(plant_type)
 	return true
 
+## 撤掉一株植物的解锁（模组关掉 / 玩法下线时用）：从已解锁列表摘掉,并把「上次选卡」里的
+## 条目一并清掉
+##
+## ★ 这是留给模组的口子（与 `unlock_plant()` 成对）：只装一次的话玩家一读档植物就回来了
+## （读档按存档重建 `curr_plant`），卸载时也要真的从列表里删 —— 光把开关置 false 没用。
+func lock_plant(plant_type: StringName) -> void:
+	if plant_type == PlantIds.NULL:
+		return
+	curr_plant.erase(plant_type)
+	_remove_plant_from_selected_cards(plant_type)
+
 ## 批量解锁植物,返回本次新解锁的植物
-func unlock_plants(plant_types:Array) -> Array[CharacterRegistry.PlantType]:
-	var new_unlock:Array[CharacterRegistry.PlantType] = []
+func unlock_plants(plant_types:Array) -> Array[StringName]:
+	var new_unlock:Array[StringName] = []
 	for plant_type in plant_types:
-		if unlock_plant(int(plant_type) as CharacterRegistry.PlantType):
-			new_unlock.append(int(plant_type) as CharacterRegistry.PlantType)
+		## 入参可能是老存档里的数字编号（见 PlantIds.from_legacy）
+		if unlock_plant(PlantIds.from_legacy(plant_type)):
+			new_unlock.append(PlantIds.from_legacy(plant_type))
 	return new_unlock
 
 ## 控制台「调试模式」的总开关,开通后才能拿到的植物见 ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES
@@ -121,6 +133,30 @@ var is_debug_mode := false
 func apply_debug_mode(value: bool) -> void:
 	is_debug_mode = value
 	_sync_debug_mode_plants()
+	_sync_debug_mode_zombie_cards()
+
+## 僵尸卡片（含僵王卡）当前是否可用:总开关打开,或控制台「调试模式」打开
+##
+## ★ 这是僵尸卡片唯一的判据,三处入口都问它:待选卡槽生成僵尸卡页 / 关卡预选僵尸卡 /
+## 「重选上次卡片」恢复僵尸卡 —— 别在调用点直接读 ConstFeatureSwitch.ZOMBIE_CARD_ENABLED。
+## 调试模式这条通道同时让解谜「我是僵尸」关卡恢复可用(它们靠预选僵尸卡开局)。
+func is_zombie_card_enabled() -> bool:
+	return ConstFeatureSwitch.ZOMBIE_CARD_ENABLED or is_debug_mode
+
+## 僵尸卡片关掉时,把「上次选卡」里的僵尸 / 僵王条目一并清掉
+## 为什么必须连这里一起清:「重选上次卡片」照存档条目直接点待选卡位(见 CardSlotNorm),
+## 调试模式关掉后待选区根本没有僵尸容器,条目留着会索引到不存在的卡位。
+## 总开关打开时僵尸卡始终可用,不做清理。
+func _sync_debug_mode_zombie_cards() -> void:
+	if is_zombie_card_enabled():
+		return
+	for i in range(selected_cards.size() - 1, -1, -1):
+		var card_data: Dictionary = selected_cards[i]
+		var card_type: ResourceCardReference.CardType = int(card_data.get(
+			"card_type", ResourceCardReference.CardType.Null)) as ResourceCardReference.CardType
+		if card_type == ResourceCardReference.CardType.Zombie \
+			or card_type == ResourceCardReference.CardType.ZombieBoss:
+			selected_cards.remove_at(i)
 
 ## 按当前 is_debug_mode 同步「只有调试模式才有的植物」
 ## 关掉时必须真的从 curr_plant 里删:读档会按存档记录重建那份列表(见 SaveService._build_curr_plant),
@@ -129,20 +165,20 @@ func _sync_debug_mode_plants() -> void:
 	if is_debug_mode:
 		unlock_plants(ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES)
 		return
-	for plant_type:CharacterRegistry.PlantType in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
-		curr_plant.erase(plant_type)
-		_remove_debug_card_from_selected_cards(plant_type)
+	for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
+		lock_plant(plant_type)
 
 ## 从「上次选卡」里摘掉一株已不可选的植物
 ## 为什么必须连这里一起清:「重选上次卡片」是照存档条目直接点待选卡位的(
-## 见 CardSlotNorm._on_re_card_button_pressed),卡片容器在关掉调试模式后已经隐藏,
-## 条目留着就会选进去一张看不见的卡。
-func _remove_debug_card_from_selected_cards(plant_type:CharacterRegistry.PlantType) -> void:
+## 见 CardSlotNorm._on_re_card_button_pressed),卡片容器在关掉调试模式 / 卸掉模组后已经不在了,
+## 条目留着就会点到一个不存在的卡位。
+func _remove_plant_from_selected_cards(plant_type: StringName) -> void:
 	for i in range(selected_cards.size() - 1, -1, -1):
 		var card_data: Dictionary = selected_cards[i]
 		if int(card_data.get("card_type", ResourceCardReference.CardType.Null)) != ResourceCardReference.CardType.Plant:
 			continue
-		if int(card_data.get("content_id", 0)) != plant_type:
+		## content_id 可能是老存档的数字编号，按类别转一次再比（见 PlantIds.from_legacy）
+		if PlantIds.from_legacy(card_data.get("content_id", &"")) != plant_type:
 			continue
 		selected_cards.remove_at(i)
 
@@ -150,10 +186,10 @@ func _remove_debug_card_from_selected_cards(plant_type:CharacterRegistry.PlantTy
 ## adventure_level: 冒险模式关卡序号(1-1 = 1 …… 5-10 = 50)
 ## 该关给哪一株**由那一关的脚本**说了算(level_complete_loot 那个战利品名字,见 LootRegistry):
 ## 既向本关掉的那包种子,也决定这里解锁的植物 —— 同一件事只在一处写,没有另外一张「关卡序号 -> 植物」表。
-func unlock_plant_on_adventure_level(adventure_level:int) -> Array[CharacterRegistry.PlantType]:
-	var plants: Array[CharacterRegistry.PlantType] = []
+func unlock_plant_on_adventure_level(adventure_level:int) -> Array[StringName]:
+	var plants: Array[StringName] = []
 	var reward_plant := LevelRegistry.get_adventure_level_reward_plant(adventure_level)
-	if reward_plant != CharacterRegistry.PlantType.Null:
+	if reward_plant != PlantIds.NULL:
 		plants.append(reward_plant)
 	return unlock_plants(plants)
 
@@ -216,19 +252,19 @@ func success_all_adventure_level() -> int:
 		var curr_level_state_data: Dictionary = curr_all_level_state_data.get(save_game_name, {})
 		curr_level_state_data["IsSuccess"] = true
 		curr_all_level_state_data[save_game_name] = curr_level_state_data
-		var new_unlock: Array[CharacterRegistry.PlantType] = unlock_plant_on_adventure_level(adventure_level)
-		for plant_type:CharacterRegistry.PlantType in new_unlock:
-			Log.debug(str("通关解锁新植物: ") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)))
+		var new_unlock: Array[StringName] = unlock_plant_on_adventure_level(adventure_level)
+		for plant_type: StringName in new_unlock:
+			Log.info(str("通关解锁新植物: ") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)))
 		success_num += 1
 	Global.save_service.save_now()
 	return success_num
 
 
 ## 紫卡植物与模仿者是否已开放购买(需通关对应关卡后在商店购买)
-func is_purple_card_can_buy(plant_type:CharacterRegistry.PlantType) -> bool:
+func is_purple_card_can_buy(plant_type: StringName) -> bool:
 	return ConstPlantUnlock.is_purple_card_can_buy(plant_type, get_max_success_adventure_level())
 ## 该植物是否为商店商品(紫卡或模仿者)
-func is_shop_plant(plant_type:CharacterRegistry.PlantType) -> bool:
+func is_shop_plant(plant_type: StringName) -> bool:
 	return ConstPlantUnlock.is_shop_plant(plant_type)
 #endregion
 
@@ -395,6 +431,10 @@ func use_garden_tool(tool_type: GardenManager.E_GardenTool) -> bool:
 func normalize_garden_data_numbers() -> void:
 	garden_state.normalize_garden_data_numbers()
 
+## 把 garden_data 里每株已存档花园植物的类型(id / 枚举)统一回运行期形态（读档后调一次）
+func normalize_garden_plant_cell_data() -> void:
+	garden_state.normalize_garden_plant_cell_data()
+
 ## 该花园工具现在能不能用：买断型 = 已买，消耗型 = 还有库存
 func is_garden_tool_available(tool_type: GardenManager.E_GardenTool) -> bool:
 	return garden_state.is_garden_tool_available(tool_type)
@@ -442,46 +482,97 @@ func add_card_slot_upgrade() -> bool:
 		return false
 	card_slot_upgrade_num += 1
 	return true
+
+
+## 调试用：把疯狂戴夫商店里的商品全部置为「已拥有」（快捷键 Ctrl+D 然后按 3）
+## 与真花钱买的区别只有「不扣金币」：每一件都走各自的购买入口（buy_* / unlock_plant），
+## 所以买断型记"已买"、消耗型补到持有上限、紫卡与模仿者直接进已解锁植物 —— 与在货架上买完等价。
+##
+## ⚠️ 不动关卡进度：商店"开不开门 / 上不上架"是通关进度推出来的（见 ConstUnlockLevel），
+## 想连关卡一起解锁请按 Ctrl+D 然后按 1；这里只负责"货架上能看到的那些货都归你"。
+## 巧克力不在货架上（只由僵尸掉落，见 ConstShop.CHOCOLATE_PRICE 的注释），调试时顺手一起补满。
+## 返回本次新拥有的商品件数
+func unlock_all_shop_goods() -> int:
+	var goods_num := 0
+	## 卡槽扩充拉满（原版最多买到 ConstShop.MAX_CARD_SLOT_NUM 格）
+	while add_card_slot_upgrade():
+		goods_num += 1
+	## 水路 / 屋顶清洁车（普通草坪小推车免费配发，不在货架上）
+	var cleaner_types: Array[GIM_LawnMover.E_LawnMoverType] = [
+		GIM_LawnMover.E_LawnMoverType.PoolCleaner,
+		GIM_LawnMover.E_LawnMoverType.RoofCleaner,
+	]
+	for mover_type in cleaner_types:
+		if buy_lawn_mover(mover_type):
+			goods_num += 1
+	## 钉耙：手上没有就买一次，有就补满（买一次管 ConstShop.RAKE_USE_NUM_PER_BUY 关）
+	if buy_rake():
+		goods_num += 1
+	elif rake_use_num < ConstShop.RAKE_USE_NUM_PER_BUY:
+		rake_use_num = ConstShop.RAKE_USE_NUM_PER_BUY
+	## 坚果包扎术
+	if buy_wall_nut_first_aid():
+		goods_num += 1
+	## 紫卡与模仿者：直接进已解锁植物（再到货架上看到就是"已拥有"）
+	goods_num += unlock_plants(ConstPlantUnlock.get_all_shop_plant_types()).size()
+	## 蘑菇园 / 水族馆（阳光房默认就有；智慧树页由 buy_tree_of_wisdom() 一并开出来）
+	for bg_type in ConstShop.GARDEN_BG_PRICE:
+		if buy_garden_bg(int(bg_type) as GardenManager.E_GardenBgType):
+			goods_num += 1
+	## 智慧树（买断 + 开智慧树页 + 送戴夫白送的那几袋树肥料）
+	if buy_tree_of_wisdom():
+		goods_num += 1
+	## 花园工具：买断型记"已买"，消耗型补到持有上限
+	for i in range(GardenManager.E_GardenTool.size()):
+		var tool_type := i as GardenManager.E_GardenTool
+		if GlobalGameState.is_consumable_garden_tool(tool_type):
+			var lack_num := ConstShop.get_tool_max_own_num(tool_type) - get_garden_tool_num(tool_type)
+			if lack_num > 0 and add_garden_tool_num(tool_type, lack_num):
+				goods_num += 1
+		elif buy_garden_tool(tool_type):
+			goods_num += 1
+	Global.save_service.save_now()
+	return goods_num
 #endregion
 
 ## 已解锁僵尸的默认列表(新用户 / 重置存档时的初始值,见 reset_to_defaults)
-const DEFAULT_CURR_ZOMBIE: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z001Norm,
-	CharacterRegistry.ZombieType.Z002Flag,
-	CharacterRegistry.ZombieType.Z003Cone,
-	CharacterRegistry.ZombieType.Z004PoleVaulter,
-	CharacterRegistry.ZombieType.Z005Bucket,
-	CharacterRegistry.ZombieType.Z006Paper,
-	CharacterRegistry.ZombieType.Z007ScreenDoor,
-	CharacterRegistry.ZombieType.Z008Football,
-	CharacterRegistry.ZombieType.Z009Jackson,
-	CharacterRegistry.ZombieType.Z010Dancer,
-	CharacterRegistry.ZombieType.Z011Duckytube,
-	CharacterRegistry.ZombieType.Z012Snorkle,
-	CharacterRegistry.ZombieType.Z013Zamboni,
-	CharacterRegistry.ZombieType.Z014Bobsled,
-	CharacterRegistry.ZombieType.Z015Dolphinrider,
-	CharacterRegistry.ZombieType.Z016Jackbox,
-	CharacterRegistry.ZombieType.Z017Balloon,
-	CharacterRegistry.ZombieType.Z018Digger,
-	CharacterRegistry.ZombieType.Z019Pogo,
-	CharacterRegistry.ZombieType.Z020Yeti,
-	CharacterRegistry.ZombieType.Z021Bungi,
-	CharacterRegistry.ZombieType.Z022Ladder,
-	CharacterRegistry.ZombieType.Z023Catapult,
-	CharacterRegistry.ZombieType.Z024Gargantuar,
-	CharacterRegistry.ZombieType.Z025Imp,
-	CharacterRegistry.ZombieType.Z1001BobsledSingle,
+const DEFAULT_CURR_ZOMBIE: Array[StringName] = [
+	ZombieIds.NORM,
+	ZombieIds.FLAG,
+	ZombieIds.CONE,
+	ZombieIds.POLE_VAULTER,
+	ZombieIds.BUCKET,
+	ZombieIds.PAPER,
+	ZombieIds.SCREEN_DOOR,
+	ZombieIds.FOOTBALL,
+	ZombieIds.JACKSON,
+	ZombieIds.DANCER,
+	ZombieIds.DUCKYTUBE,
+	ZombieIds.SNORKLE,
+	ZombieIds.ZAMBONI,
+	ZombieIds.BOBSLED,
+	ZombieIds.DOLPHINRIDER,
+	ZombieIds.JACKBOX,
+	ZombieIds.BALLOON,
+	ZombieIds.DIGGER,
+	ZombieIds.POGO,
+	ZombieIds.YETI,
+	ZombieIds.BUNGI,
+	ZombieIds.LADDER,
+	ZombieIds.CATAPULT,
+	ZombieIds.GARGANTUAR,
+	ZombieIds.IMP,
+	ZombieIds.BOBSLED_SINGLE,
 ]
 
 ## 已解锁的僵尸（新用户取 DEFAULT_CURR_ZOMBIE，见 reset_to_defaults）
-var curr_zombie :Array[CharacterRegistry.ZombieType]= DEFAULT_CURR_ZOMBIE.duplicate()
+var curr_zombie :Array[StringName]= DEFAULT_CURR_ZOMBIE.duplicate()
 
 ## 已解锁的僵王；博士默认可选，与已解锁的普通僵尸共同组成僵尸候选页
-var curr_zombie_boss :Array[CharacterRegistry.ZombieBossType] = [
-	CharacterRegistry.ZombieBossType.ZB001Doctor,
+var curr_zombie_boss :Array[StringName] = [
+	ZombieBossIds.DOCTOR,
 ]
 
 ## 僵王是否已解锁
-func is_zombie_boss_unlocked(boss_type: CharacterRegistry.ZombieBossType) -> bool:
+func is_zombie_boss_unlocked(boss_type: StringName) -> bool:
 	return curr_zombie_boss.has(boss_type)

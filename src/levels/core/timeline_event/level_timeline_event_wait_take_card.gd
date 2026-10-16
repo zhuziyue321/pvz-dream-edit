@@ -9,7 +9,7 @@ class_name LevelTimelineEventWaitTakeCard
 ## 玩家点了卡 → HandComponentCharacter 推事件 → 本事件立刻放行。
 
 ## 指定要捡的植物；留 Null 表示任意卡
-@export var plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+@export var plant_type: StringName = PlantIds.NULL
 
 var _is_taken := false
 
@@ -24,7 +24,7 @@ func run(main_game: MainGameManager) -> void:
 
 
 func _on_hand_card_take(card: Card) -> void:
-	if plant_type != CharacterRegistry.PlantType.Null \
+	if plant_type != PlantIds.NULL \
 			and (card == null or card.card_plant_type != plant_type):
 		return
 	_is_taken = true

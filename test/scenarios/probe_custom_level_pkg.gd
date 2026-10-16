@@ -1,4 +1,7 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const CustomChooseLevel := preload("res://mods_builtin/custom_level/custom_choose_level.gd")
 ## 探针：验证「自制关卡 = 一个目录」的加载方式。
 ##
 ## 玩家自制关卡目录 = Godot 的 user:// 目录下的 custom_level

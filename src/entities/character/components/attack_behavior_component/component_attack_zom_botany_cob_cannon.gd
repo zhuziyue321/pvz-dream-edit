@@ -12,7 +12,7 @@ func _shoot_bullet() -> void:
 	if not is_instance_valid(target) or markers_2d_bullet.is_empty():
 		return
 	var bullet: Bullet016CobCannon = Global.bullet_registry.create_bullet(
-		BulletRegistry.BulletType.Bullet016CobCannon
+		BulletIds.COB_CANNON
 	)
 	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
 	if bullet == null:

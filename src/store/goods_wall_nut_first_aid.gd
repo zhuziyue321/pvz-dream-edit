@@ -43,7 +43,6 @@ func _create_dialog_detail() -> CrazyDaveDialogDetailResource:
 func get_one_goods():
 	if Global.global_game_state.buy_wall_nut_first_aid():
 		Global.save_service.save_now()
-		Log.debug("购买坚果包扎术")
 	else:
 		Log.warn("购买坚果包扎术失败:已经买过")
 	_refresh_goods_state()

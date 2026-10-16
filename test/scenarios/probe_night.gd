@@ -56,21 +56,21 @@ const EXPECT_CARD_NUM_EXCEPT_BASE: Dictionary = {5: 3}
 ## 关卡资源自带的固定预选卡（键为小关号），未列出的关卡一律不写预选卡
 ## 2-5 = 土豆地雷 / 墓碑吞噬者 / 樱桃炸弹（原版固定卡：砸出来的阳光用来啃墓碑与炸僵尸）
 const EXPECT_FIXED_CARD: Dictionary = {
-	5: [CharacterRegistry.PlantType.P005PotatoMine,
-		CharacterRegistry.PlantType.P012GraveBuster,
-		CharacterRegistry.PlantType.P003CherryBomb],
+	5: [PlantIds.POTATO_MINE,
+		PlantIds.GRAVE_BUSTER,
+		PlantIds.CHERRY_BOMB],
 }
 ## 第二大关各关通关给哪株植物的**期望值**：键为冒险模式关卡序号（2-x = 10 + x），
 ## 实际值写在各关脚本上（adventure_02_0x.gd 的 `_init()`），这里是从玩家视角记的一份对照。
 const EXPECT_UNLOCK: Dictionary = {
-	11: CharacterRegistry.PlantType.P010SunShroom,		## 2-1 阳光菇
-	12: CharacterRegistry.PlantType.P011FumeShroom,		## 2-2 大喷菇
-	13: CharacterRegistry.PlantType.P012GraveBuster,	## 2-3 墓碑吞噬者
-	15: CharacterRegistry.PlantType.P013HypnoShroom,	## 2-5 魅惑菇
-	16: CharacterRegistry.PlantType.P014ScaredyShroom,	## 2-6 胆小菇
-	17: CharacterRegistry.PlantType.P015IceShroom,		## 2-7 寒冰菇
-	18: CharacterRegistry.PlantType.P016DoomShroom,		## 2-8 毁灭菇
-	20: CharacterRegistry.PlantType.P017LilyPad,		## 2-10 睡莲
+	11: PlantIds.SUN_SHROOM,		## 2-1 阳光菇
+	12: PlantIds.FUME_SHROOM,		## 2-2 大喷菇
+	13: PlantIds.GRAVE_BUSTER,	## 2-3 墓碑吞噬者
+	15: PlantIds.HYPNO_SHROOM,	## 2-5 魅惑菇
+	16: PlantIds.SCAREDY_SHROOM,	## 2-6 胆小菇
+	17: PlantIds.ICE_SHROOM,		## 2-7 寒冰菇
+	18: PlantIds.DOOM_SHROOM,		## 2-8 毁灭菇
+	20: PlantIds.LILY_PAD,		## 2-10 睡莲
 }
 
 var _failed := 0
@@ -143,9 +143,9 @@ func _check_level_para(a) -> void:
 			_is_same_int_array(prechosen_ids, expect_pre_card),
 			str(prechosen_ids))
 		var is_wave_ok := not para.zombie_refresh_types.is_empty()
-		for zombie_type: CharacterRegistry.ZombieType in para.zombie_refresh_types:
+		for zombie_type: StringName in para.zombie_refresh_types:
 			## 旗帜僵尸由大波逻辑单独塞入，名单里不该出现；名单外的僵尸会被静默过滤
-			if zombie_type == CharacterRegistry.ZombieType.Z002Flag or not whitelist.has(zombie_type):
+			if zombie_type == ZombieIds.FLAG or not whitelist.has(zombie_type):
 				is_wave_ok = false
 		_check(a, label + " 出怪表全部可自然刷新", is_wave_ok, str(para.zombie_refresh_types))
 #endregion
@@ -166,7 +166,7 @@ func _check_unlock_table(a) -> void:
 		var expect: Variant = EXPECT_UNLOCK.get(level, null)
 		if expect == null:
 			_check(a, "通关 %s 没有新植物" % level_name,
-				got == CharacterRegistry.PlantType.Null, str(got))
+				got == PlantIds.NULL, str(got))
 		else:
 			_check(a, "通关 %s 解锁 %s" % [level_name, _plant_name(expect)], got == expect, str(got))
 #endregion
@@ -178,7 +178,7 @@ func _check_level_02_01_runtime(a) -> bool:
 	a.log("")
 	a.log("STEP3 2-1 实机（新档首次进入）")
 	## 新档只拥有豌豆射手：卡槽 6 >= 拥有卡数 1，选卡阶段会被自动跳过
-	Global.global_game_state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	Global.global_game_state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	Global.global_game_state.curr_all_level_state_data = {}
 
 	var para: ResourceLevelData = (load(_level_path(1)) as GDScript).new()
@@ -243,16 +243,16 @@ func _check_tombstone_plant_condition(a) -> void:
 	_check(a, "场上存在墓碑格子", true, str(tombstone_cell.row_col))
 
 	var grave_buster_condition: ResourcePlantCondition = Global.character_registry.get_plant_info(
-		CharacterRegistry.PlantType.P012GraveBuster,
+		PlantIds.GRAVE_BUSTER,
 		CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	var norm_condition: ResourcePlantCondition = Global.character_registry.get_plant_info(
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
+		PlantIds.PEA_SHOOTER_SINGLE,
 		CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	_check(a, "墓碑吞噬者可以种在墓碑上",
-		grave_buster_condition.judge_is_can_plant(tombstone_cell, CharacterRegistry.PlantType.P012GraveBuster),
+		grave_buster_condition.judge_is_can_plant(tombstone_cell, PlantIds.GRAVE_BUSTER),
 		str(tombstone_cell.row_col))
 	_check(a, "普通植物不能种在墓碑上",
-		not norm_condition.judge_is_can_plant(tombstone_cell, CharacterRegistry.PlantType.P001PeaShooterSingle),
+		not norm_condition.judge_is_can_plant(tombstone_cell, PlantIds.PEA_SHOOTER_SINGLE),
 		str(tombstone_cell.row_col))
 #endregion
 
@@ -290,7 +290,7 @@ func _check_conveyor_and_final_level(a) -> void:
 
 	## 2-10 = 该区重点僵尸「舞王」，与选关界面第 2 页 2-10 的本关看点图标对应
 	var para_10: ResourceLevelData = (load(_level_path(10)) as GDScript).new()
-	_check(a, "2-10 出怪表含舞王", para_10.zombie_refresh_types.has(CharacterRegistry.ZombieType.Z009Jackson),
+	_check(a, "2-10 出怪表含舞王", para_10.zombie_refresh_types.has(ZombieIds.JACKSON),
 		str(para_10.zombie_refresh_types))
 	## 原版没有「出怪倍率」，收尾关统一 1：倍率 2 会让末波战力翻倍，密度远超原版
 	_check(a, "2-10 大波倍率 = 1（原版无倍率）", para_10.zombie_multy == 1, str(para_10.zombie_multy))
@@ -334,7 +334,7 @@ func _finish(a) -> void:
 	a.quit_game()
 
 
-## 两个整型列表逐项相等（预选卡是 Array[PlantType]，这里按 int 比）
+## 两个整型列表逐项相等（预选卡是 Array[StringName]，这里按 int 比）
 func _is_same_int_array(got: Array, expect: Array) -> bool:
 	if got.size() != expect.size():
 		return false
@@ -350,7 +350,7 @@ func _level_path(small: int) -> String:
 
 
 ## 植物名（只用于日志可读性）
-func _plant_name(plant_type: CharacterRegistry.PlantType) -> String:
+func _plant_name(plant_type: StringName) -> String:
 	return str(Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantName))
 

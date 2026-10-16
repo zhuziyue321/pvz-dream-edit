@@ -25,26 +25,29 @@ func _init() -> void:
 	pot_hint_num = 2
 	## 棕色神秘罐（僵尸）: 橄榄球(8) x3 / 铁桶(5) x4 / 普僵(1) x7 / 玩偶匣(16) x1
 	random_pot_plant.assign({
-	6: 2,
-	13: 2,
-	18: 4,
-	31: 3,
-	32: 3,
-	49: 6
+	&"snow_pea": 2,
+	&"hypno_shroom": 2,
+	&"squash": 4,
+	&"pumpkin": 3,
+	&"magnet_shroom": 3,
+	&"pea_shooter_double_reverse": 6
 	})
 	random_pot_zombie.assign({
-	1: 7,
-	5: 4,
-	8: 3,
-	16: 1
+	&"norm": 7,
+	&"bucket": 4,
+	&"football": 3,
+	&"jackbox": 1
 	})
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z016Jackbox,
+		ZombieIds.NORM,
+		ZombieIds.BUCKET,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKBOX,
 	])

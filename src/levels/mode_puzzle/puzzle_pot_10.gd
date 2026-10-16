@@ -26,32 +26,35 @@ func _init() -> void:
 	pot_col_range = Vector2i(2, 9)
 	## 棕色神秘罐（僵尸）: 普僵(1) x8 / 铁桶(5) x5 / 玩偶匣(16) x1 / 巨人(24) x1
 	random_pot_plant.assign({
-	1: 1,
-	4: 1,
-	5: 2,
-	6: 1,
-	18: 5,
-	19: 2,
-	49: 6
+	&"pea_shooter_single": 1,
+	&"wall_nut": 1,
+	&"potato_mine": 2,
+	&"snow_pea": 1,
+	&"squash": 5,
+	&"three_peater": 2,
+	&"pea_shooter_double_reverse": 6
 	})
 	## 绿色植物罐（戴夫提示，原版带叶子图案的罐子一定是植物）
 	random_pot_zombie.assign({
-	1: 8,
-	5: 5,
-	16: 1,
-	24: 1
+	&"norm": 8,
+	&"bucket": 5,
+	&"jackbox": 1,
+	&"gargantuar": 1
 	})
 	plant_pot.assign({
-	6: 1,
-	26: 1
+	&"paper": 1,
+	&"bungi_drop": 1
 	})
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z016Jackbox,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
+		ZombieIds.NORM,
+		ZombieIds.BUCKET,
+		ZombieIds.JACKBOX,
+		ZombieIds.GARGANTUAR,
 	])

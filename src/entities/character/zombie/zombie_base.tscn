@@ -48,7 +48,7 @@ height = 100.0
 
 [node name="Zombie000Base" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_q5all")]
 script = ExtResource("2_72xfp")
-zombie_type = 0
+zombie_type = &""
 is_ignore_ladder = false
 iron_type = 0
 init_be_attack_status = 1
@@ -71,10 +71,6 @@ script = ExtResource("6_in461")
 
 [node name="HpComponent" parent="." index="4"]
 script = ExtResource("3_rdbr5")
-max_hp_armor1 = 0
-max_hp_armor2 = 0
-sfx_be_attack_armor1 = 0
-sfx_be_attack_armor2 = 0
 max_hp = 270
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HpComponent" index="0"]

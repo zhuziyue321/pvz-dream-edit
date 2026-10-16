@@ -10,17 +10,17 @@ var _cumulative_weights: Array[int] = []
 var _total_weight: int = 0
 
 
-## 使用 [param weights] 初始化；零权重不参与，负权重、僵王和无效出战引用报告错误。
-## 单次抽取保留每张植物、僵尸卡的相对概率，不以类型额外分组。
+## 使用 [param weights] 初始化；零权重不参与，负权重和无效出战引用报告错误。
+## 单次抽取保留每张植物、僵尸卡的相对概率，不以类型额外分组（**僵王按普通僵尸参与抽取**，
+## 它在选卡层已与普通僵尸共用同一个 card_id 空间，不再被单独排除）。
 func init_card_random_pool(weights: Array[ResourceCardWeight]) -> void:
 	_references.clear()
 	_cumulative_weights.clear()
 	_total_weight = 0
 	## 权重条目只读，保存独立引用以避免修改共享关卡资源。
 	for entry: ResourceCardWeight in weights:
-		if entry == null or entry.weight < 0 or not AllCards.is_battle_card(entry.card_reference) \
-			or entry.card_reference.card_type == ResourceCardReference.CardType.ZombieBoss:
-			Log.error("CardRandomPool：条目必须引用已注册的植物或普通僵尸，并具有非负权重。")
+		if entry == null or entry.weight < 0 or not AllCards.is_battle_card(entry.card_reference):
+			Log.error("CardRandomPool：条目必须引用已注册的植物、僵尸或僵王，并具有非负权重。")
 			continue
 		if entry.weight == 0:
 			continue

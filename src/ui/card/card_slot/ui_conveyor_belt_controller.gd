@@ -130,12 +130,12 @@ func set_card_weight_scale(card_reference: ResourceCardReference, scale: float) 
 
 
 ## 直接指定某种植物的权重（0 = 本次不参与抽取）
-func set_plant_weight(plant_type: CharacterRegistry.PlantType, weight: int) -> void:
+func set_plant_weight(plant_type: StringName, weight: int) -> void:
 	set_card_weight(ResourceCardReference.create(ResourceCardReference.CardType.Plant, plant_type), weight)
 
 
 ## 按倍率调整某种植物的权重（乘在关卡给的初始权重上）
-func set_plant_weight_scale(plant_type: CharacterRegistry.PlantType, scale: float) -> void:
+func set_plant_weight_scale(plant_type: StringName, scale: float) -> void:
 	set_card_weight_scale(ResourceCardReference.create(ResourceCardReference.CardType.Plant, plant_type), scale)
 
 
@@ -149,7 +149,7 @@ func reset_weights() -> void:
 func get_current_weight(card_reference: ResourceCardReference) -> int:
 	if card_reference == null:
 		return 0
-	var key: Vector2i = card_reference.get_template_key()
+	var key: StringName = card_reference.get_template_key()
 	if _weight_overrides.has(key):
 		return int(_weight_overrides[key])
 	var weight: int = 0
@@ -163,7 +163,7 @@ func get_current_weight(card_reference: ResourceCardReference) -> int:
 
 
 ## 某种植物当前的生效权重（关卡没配这种卡就是 0）
-func get_plant_weight(plant_type: CharacterRegistry.PlantType) -> int:
+func get_plant_weight(plant_type: StringName) -> int:
 	return get_current_weight(ResourceCardReference.create(ResourceCardReference.CardType.Plant, plant_type))
 
 
@@ -202,18 +202,18 @@ func get_cards() -> Array[Card]:
 
 
 ## 传送带上的植物种类（去重，按传送带上的先后顺序）
-func get_card_plant_types() -> Array[CharacterRegistry.PlantType]:
-	var plant_types: Array[CharacterRegistry.PlantType] = []
+func get_card_plant_types() -> Array[StringName]:
+	var plant_types: Array[StringName] = []
 	for card: Card in get_cards():
 		var plant_type := card.card_plant_type
-		if plant_type == CharacterRegistry.PlantType.Null or plant_types.has(plant_type):
+		if plant_type == PlantIds.NULL or plant_types.has(plant_type):
 			continue
 		plant_types.append(plant_type)
 	return plant_types
 
 
 ## 传送带上某种植物的张数
-func count_card(plant_type: CharacterRegistry.PlantType) -> int:
+func count_card(plant_type: StringName) -> int:
 	var num := 0
 	for card: Card in get_cards():
 		if card.card_plant_type == plant_type:

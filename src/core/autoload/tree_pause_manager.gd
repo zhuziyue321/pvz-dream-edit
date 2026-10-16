@@ -23,10 +23,6 @@ var curr_pause_factor: Dictionary = {}
 
 func _update_pause_state() -> void:
 	get_tree().paused = curr_pause_factor.values().any(func(v): return v)
-	if get_tree().paused:
-		Log.debug("暂停游戏")
-	else:
-		Log.debug("继续游戏")
 
 ## 开始场景树暂停
 func start_tree_pause(pause_factor: E_PauseFactor) -> void:

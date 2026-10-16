@@ -116,7 +116,7 @@ eat_attack = 1800
 eat_CD = 40.0
 is_bite = false
 is_chewing = false
-plant_type = 7
+plant_type = &"chomper"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]

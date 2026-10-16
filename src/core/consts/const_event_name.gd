@@ -50,6 +50,14 @@ const CARD_SLOT_NORM_START_GAME := "card_slot_norm_start_game"
 const MAIN_GAME_CLICK_CARD := "main_game_click_card"
 ## 玩家点击了铲子。payload: 无
 const MAIN_GAME_CLICK_SHOVEL := "main_game_click_shovel"
+## 草坪上两格的植物互换（三消类玩法那一次滑动）。payload: [行A, 列A, 行B, 列B]
+##
+## 与 `MAIN_GAME_CLICK_SHOVEL` 同一套：**外部替玩家做主**时推这一条，本体不认识谁在订阅
+## （三消是关卡侧玩法，见硬约束 §1-8，所以这里写的是"两格互换"而不是某个玩法名）。
+## 联机时主机跑成后把这一条下发，两端跑的是**同一串**交换，盘面才不会各走各的
+## （见 [联机模组](../../../docs/参考存档/联机模组.md)）。
+## ⚠️ 只传行列下标、不传 `PlantCell` 对象：这一条要过网络，对象引用过不去。
+const MAIN_GAME_SWAP_CELL := "main_game_swap_cell"
 ## 手上拿起了一张卡。payload: 见 CardManager
 const HAND_CARD_TAKE := "hand_card_take"
 ## 手上的卡被放下 / 收回。payload: 见 CardManager
@@ -94,6 +102,12 @@ const CANVAS_LAYER_EFFECT_ONCE := "canvas_layer_effect_once"
 const GOLD_MAGNET_ATTRACT_ONCE := "gold_magnet_attract_once"
 ## 有角色被魅惑，全场重判敌我。payload: 见 DetectComponent
 const CHARACTER_BE_HYPNO := "character_be_hypno"
+## 一次伤害结算完成（**观测用**，见 [伤害系统](../../../docs/参考存档/伤害系统.md)）。
+## payload: [DamageInfo, DamageResult]
+##
+## 频内高频（僵尸啃食每 8 帧一次 × 场上僵尸数），没有订阅者时 EventBus 会直接返回。
+## 订阅方**不要**在里面再改血量：联机客户端的血量由主机快照下发，本地改了会被下一次快照覆盖。
+const DAMAGE_APPLIED := "damage_applied"
 #endregion
 
 #region 关卡流程
@@ -151,6 +165,10 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	CARD_SLOT_NORM_START_GAME: [],
 	MAIN_GAME_CLICK_CARD: [Variant.Type.TYPE_OBJECT],
 	MAIN_GAME_CLICK_SHOVEL: [],
+	MAIN_GAME_SWAP_CELL: [
+		Variant.Type.TYPE_INT, Variant.Type.TYPE_INT,
+		Variant.Type.TYPE_INT, Variant.Type.TYPE_INT,
+	],
 	HAND_CARD_TAKE: [Variant.Type.TYPE_OBJECT],
 	HAND_CARD_RELEASE: [Variant.Type.TYPE_OBJECT],
 	FIRST_COIN_DROP: [Variant.Type.TYPE_OBJECT],
@@ -187,6 +205,8 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	CANVAS_LAYER_EFFECT_ONCE: [Variant.Type.TYPE_INT, Variant.Type.TYPE_NIL],
 	GOLD_MAGNET_ATTRACT_ONCE: [Variant.Type.TYPE_VECTOR2],
 	CHARACTER_BE_HYPNO: [Variant.Type.TYPE_OBJECT],
+	## 两个位置都是对象（DamageInfo / DamageResult），具体类型由订阅方负责
+	DAMAGE_APPLIED: [Variant.Type.TYPE_OBJECT, Variant.Type.TYPE_OBJECT],
 	#endregion
 
 	#region 关卡流程

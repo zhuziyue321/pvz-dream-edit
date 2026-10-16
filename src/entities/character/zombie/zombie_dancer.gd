@@ -87,4 +87,3 @@ func jackson_be_hypno():
 	jackson_manager.start_anim()
 	jackson_manager.init_anim_speed(animation_origin_speed, influence_speed_factors[E_Influence_Speed_Factor.InitRandomSpeed])
 	jackson_manager.is_hypnotized = true
-	#Log.debug("舞王或伴舞被魅惑")

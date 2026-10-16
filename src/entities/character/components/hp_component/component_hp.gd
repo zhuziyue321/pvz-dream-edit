@@ -73,24 +73,56 @@ func set_death_hp(new_death_hp:int):
 func get_all_hp():
 	return curr_hp
 
-## attack_value(int): 掉血的值
-## bullet_mode(AttackMode): 伤害类型
-## trigger_be_attack_SFX:=true:是否触发受击音效
-## [is_drop_on_death:bool] 死亡时是否有掉落
-## [is_drop_2:bool] 是否有掉落额外条件
-## return bool: 返回是否死亡
-func Hp_loss(attack_value:int, _bullet_mode:BulletRegistry.AttackMode =BulletRegistry.AttackMode.Norm, is_drop_on_death: bool = true, trigger_be_attack_SFX: bool = true, is_drop_2: bool = true):
-	curr_hp -= attack_value
-	var is_drop = not (owner.is_death and not is_drop_on_death) and is_drop_2
+
+## **秒杀**：直接把血清空（**不看伤害值、不走任何吸收 / 减伤规则，必然致死**）。
+##
+## 由 `hp_loss()` 在 `info.is_instant_kill` 为真时调用；僵尸子类重写成"防具 + 本体一起清"
+## （见 `HpComponentZombie.clear_all_hp()`）。
+##
+## 走的是血量 setter，所以死亡信号 / 亡语 / 掉落与"被打死"走同一条路（见 `DamageInfo.is_instant_kill`）。
+## [return] 清空后的本体血量
+func clear_all_hp() -> int:
+	curr_hp = 0
+	return curr_hp
+
+
+## **结算层**：把一次伤害真正扣到血量上（植物只有本体血，僵尸子类重写成三层分配）。
+##
+## ⚠️ 这是**管线的末端**，不是给业务代码直接调的入口 ——
+## 直接调它会绕过 `DamageSystem` 的修饰器与伤害事件（将来加护盾 / 联机会各漏一处，且不报错）。
+## 要造成伤害请走 `DamageSystem.apply()` 或角色的语义入口（`be_attacked_bullet()` / `be_zombie_eat()` …）。
+##
+## [param info] 本次伤害（见 `DamageInfo`；`amount` 已被修饰器改好，这里不再改）
+## [return] 结算后的本体血量（僵尸子类返回本体血，不是三层之和）
+func hp_loss(info: DamageInfo) -> int:
+	if info.is_instant_kill:
+		clear_all_hp()
+	else:
+		curr_hp -= info.amount
+	var is_drop = not (owner.is_death and not info.is_drop_on_death) and info.is_drop_2
 	signal_hp_loss.emit(curr_hp, is_drop)
 
 	## 如果有受击音效并且触发受击音效
-	if sfx_be_attack_body != SoundManager.TypeBeAttackSFX.Null and trigger_be_attack_SFX:
+	if sfx_be_attack_body != SoundManager.TypeBeAttackSFX.Null and info.trigger_sfx:
 		SoundManager.play_be_attack_SFX(sfx_be_attack_body)
 
-	return curr_hp == 0
+	return curr_hp
 
-## 掉血死亡
-##[is_drop:bool]是否有掉落body
-func Hp_loss_death(is_drop:=true):
-	Hp_loss(get_all_hp(),BulletRegistry.AttackMode.Norm, is_drop, false)
+
+## **发起层**：直接把血清空（铲子铲除 / 死亡消失 / 关卡脚本强制致死一类）。
+##
+## 走 `DamageSystem` 而不是自己扣：这条路径同样是"一次伤害"，将来要免疫 / 统计照样该经过它。
+## [param is_drop] 是否有掉落
+func hp_loss_to_death(is_drop: bool = true) -> DamageResult:
+	var info := DamageInfo.create(
+		owner_character,
+		get_all_hp(),
+		ConstDamage.E_DamageMode.Norm,
+		ConstDamage.E_DamageCause.Death
+	)
+	## 本函数要的就是"必死"，所以开秒杀：不看伤害值、不看防具的吸收规则，直接清空。
+	## （伤害值照填只是为了 `DamageResult` 上的数字好看，不是靠它致死）
+	info.is_instant_kill = true
+	info.is_drop_on_death = is_drop
+	info.trigger_sfx = false
+	return DamageSystem.apply(info)

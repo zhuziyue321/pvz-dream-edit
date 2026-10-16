@@ -79,8 +79,8 @@ func _check_level_resource(a) -> void:
 	var lvl := Global.global_game_state.get_adventure_level_on_save_game_name("101_0_0036")
 	var reward_plant := LevelRegistry.get_adventure_level_reward_plant(lvl)
 	_check(a, "（前置）4-6 的首次通关奖励仍是植物（序号 %d）" % lvl,
-		reward_plant != CharacterRegistry.PlantType.Null, str(reward_plant))
-	_check(a, "4-6 的通关奖励是杨桃", reward_plant == CharacterRegistry.PlantType.P030StarFruit,
+		reward_plant != PlantIds.NULL, str(reward_plant))
+	_check(a, "4-6 的通关奖励是杨桃", reward_plant == PlantIds.STAR_FRUIT,
 		str(reward_plant))
 
 	var p_0302: ResourceLevelData = (load(LEVEL_03_02) as GDScript).new()
@@ -100,7 +100,7 @@ func _run_level(a, max_level: int) -> void:
 	a.log("")
 	a.log("--- 3. 实机 4-6（模拟已通关到 %s）---" % ConstUnlockLevel.get_adventure_level_name(max_level))
 	_mark_cleared(max_level)
-	Global.global_game_state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	Global.global_game_state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 
 	var para: ResourceLevelData = (load(LEVEL_04_06) as GDScript).new()
 	para.set_choose_level(ADV, PAGE_04, ID_04_06)

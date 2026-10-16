@@ -11,6 +11,16 @@ extends RefCounted
 
 var state: GlobalGameState
 
+## 一株已存档花园植物里「必须是 int」的字段（枚举 / 计数）
+## 其余字段各就各位：`curr_plant_type` 是 id，`direction_x` 本来就是 float
+const GARDEN_PLANT_CELL_INT_KEYS: Array[String] = [
+	"curr_growth_stage",		## GardenManager.E_GrowthStage
+	"curr_need_item",			## GardenManager.E_NeedItem
+	"curr_water_time",
+	"max_water_time",
+	"curr_plant_condition",
+]
+
 func _init(p_state: GlobalGameState) -> void:
 	state = p_state
 
@@ -138,6 +148,44 @@ func normalize_garden_data_numbers() -> void:
 	for tool_key in raw_tool_num:
 		tool_num[str(tool_key)] = int(raw_tool_num[tool_key])
 	state.garden_data[GlobalGameState.GARDEN_TOOL_NUM_KEY] = tool_num
+
+
+## 把 garden_data 里每一株「已存档的花园植物」从 JSON 形态拉回运行期形态
+##
+## 两层坑同一次修掉（2026-10-14 角色 id 去编号那一轮漏了花园植物格子，进花园必崩）：
+##   ① `curr_plant_type` 老存档是数字编号（`6` = 寒冰射手），现在是 StringName id
+##      —— 不迁移就是 "Trying to assign value of type 'float' to a variable of type 'StringName'"；
+##   ② JSON 一律把数字读成 float，`curr_growth_stage` / `curr_need_item` 这类 int 字段
+##      赋值到 int 变量上同样报类型错（与 `normalize_garden_data_numbers()` 同一个坑）。
+## 由 SaveService.load_global_game_data() 读档后调一次，之后内存里的 garden_data 就是干净的类型。
+func normalize_garden_plant_cell_data() -> void:
+	## 独轮车里那株植物直接挂在 garden_data 顶层，没有「背景→页→格子」这层壳
+	var wheel_barrow_data: Variant = state.garden_data.get(GardenManager.WHEEL_BARROW_SAVE_KEY)
+	if wheel_barrow_data is Dictionary:
+		_normalize_one_garden_plant_cell(wheel_barrow_data as Dictionary)
+	for bg_key in state.garden_data:
+		var bg_data: Variant = state.garden_data[bg_key]
+		if not bg_data is Dictionary:
+			continue
+		for page_key in bg_data:
+			var page_data: Variant = (bg_data as Dictionary)[page_key]
+			if not page_data is Dictionary:
+				continue
+			for cell_key in page_data:
+				var cell_data: Variant = (page_data as Dictionary)[cell_key]
+				if cell_data is Dictionary:
+					_normalize_one_garden_plant_cell(cell_data as Dictionary)
+
+
+## 归一化一株已存档植物的数据（见 normalize_garden_plant_cell_data 的注释）
+## plant cell 数据字典的键见 GardenComponent.get_curr_plant_data()
+static func _normalize_one_garden_plant_cell(cell_data: Dictionary) -> void:
+	if not cell_data.has("curr_plant_type"):
+		return
+	cell_data["curr_plant_type"] = PlantIds.from_legacy(cell_data["curr_plant_type"])
+	for int_key in GARDEN_PLANT_CELL_INT_KEYS:
+		if cell_data.has(int_key):
+			cell_data[int_key] = int(cell_data[int_key])
 
 
 ## 该花园工具现在能不能用:买断型 = 已买,消耗型 = 还有库存

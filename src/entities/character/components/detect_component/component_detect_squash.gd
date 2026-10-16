@@ -42,5 +42,4 @@ func _judge_enemy_is_can_be_attack(enemy:Character000Base)->bool:
 			return false
 	## 其余东西
 	else:
-		Log.debug("检测到非角色类敌人")
 		return false

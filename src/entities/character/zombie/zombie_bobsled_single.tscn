@@ -1151,7 +1151,7 @@ nodes/output/position = Vector2(480, 100)
 node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"]
 
 [node name="Zombie1001BobsledSingle" instance=ExtResource("1_vt0sd")]
-zombie_type = 1001
+zombie_type = &"bobsled_single"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-42, -128)

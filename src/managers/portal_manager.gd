@@ -236,7 +236,6 @@ func _teleport_zombie(z: Zombie000Base, entry_door: Portal) -> void:
 	)
 	_remember_exit(z, exit_door)
 	SoundManager.play_character_SFX(&"Portal")
-	Log.debug("斗转星移：僵尸传送到 %d 行" % z.lane)
 
 
 ## 传送子弹

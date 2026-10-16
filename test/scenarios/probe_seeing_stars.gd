@@ -25,8 +25,8 @@ func run(a) -> void:
 	## 玩家**没有**杨桃（原版 4-6 才解锁）：预选卡必须照样把它塞进出战卡槽，不然本关永远打不完
 	var state = Global.global_game_state
 	state.curr_plant.assign([
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
-		CharacterRegistry.PlantType.P004WallNut,
+		PlantIds.PEA_SHOOTER_SINGLE,
+		PlantIds.WALL_NUT,
 	])
 
 	var para: Resource = (load(LEVEL) as GDScript).new()
@@ -100,14 +100,14 @@ func run(a) -> void:
 		_check(a, "找到一个非轮廓格子", false, "null")
 		_finish(a)
 		return
-	_check(a, "轮廓点上能种杨桃", _can_plant(star_cell, CharacterRegistry.PlantType.P030StarFruit))
-	_check(a, "轮廓点上能种南瓜头", _can_plant(star_cell, CharacterRegistry.PlantType.P031Pumpkin))
+	_check(a, "轮廓点上能种杨桃", _can_plant(star_cell, PlantIds.STAR_FRUIT))
+	_check(a, "轮廓点上能种南瓜头", _can_plant(star_cell, PlantIds.PUMPKIN))
 	_check(a, "轮廓点上不能种豌豆射手",
-		not _can_plant(star_cell, CharacterRegistry.PlantType.P001PeaShooterSingle))
+		not _can_plant(star_cell, PlantIds.PEA_SHOOTER_SINGLE))
 	_check(a, "轮廓点外不能种杨桃",
-		not _can_plant(other_cell, CharacterRegistry.PlantType.P030StarFruit))
+		not _can_plant(other_cell, PlantIds.STAR_FRUIT))
 	_check(a, "轮廓点外能种豌豆射手",
-		_can_plant(other_cell, CharacterRegistry.PlantType.P001PeaShooterSingle))
+		_can_plant(other_cell, PlantIds.PEA_SHOOTER_SINGLE))
 
 	# ------------------------------------------------ STEP4 选卡：杨桃是预选卡
 	a.log("STEP4 选卡")
@@ -115,7 +115,7 @@ func run(a) -> void:
 		_finish(a)
 		return
 	_check(a, "出战卡槽里有杨桃（预选卡）",
-		_has_card(mg, CharacterRegistry.PlantType.P030StarFruit))
+		_has_card(mg, PlantIds.STAR_FRUIT))
 	mg.card_manager.card_slot_norm._on_texture_button_pressed()
 
 	if not await _wait_progress(a, mg, MainGameManager.E_MainGameProgress.MAIN_GAME, 30.0):
@@ -134,12 +134,12 @@ func run(a) -> void:
 		waited_bar += 0.5
 	_check(a, "开打后进度条显示", provider.is_bar_visible(), str(waited_bar) + " 秒仍未开第一波")
 	## 先种一个看进度条是不是跟着涨（口径 = 已种轮廓点 / 总数）
-	star_cells[0].create_plant(CharacterRegistry.PlantType.P030StarFruit)
+	star_cells[0].create_plant(PlantIds.STAR_FRUIT)
 	var one_progress := 100.0 / float(STAR_CELL_NUM)
 	_check(a, "种 1 个轮廓点 → 进度 = 1/" + str(STAR_CELL_NUM),
 		absf(provider.get_progress() - one_progress) < 0.01, str(provider.get_progress()))
 	for plant_cell: PlantCell in star_cells:
-		plant_cell.create_plant(CharacterRegistry.PlantType.P030StarFruit)
+		plant_cell.create_plant(PlantIds.STAR_FRUIT)
 	_check(a, "全种上 → 进度 100%", is_equal_approx(provider.get_progress(), 100.0),
 		str(provider.get_progress()))
 	await a.wait(3.0)
@@ -189,13 +189,13 @@ func _find_cell_outside_stars(mg, star_cells: Array[PlantCell]) -> PlantCell:
 
 
 ## 这一格能不能种 plant_type（走的是玩家持卡时的同一条判定）
-func _can_plant(plant_cell: PlantCell, plant_type: CharacterRegistry.PlantType) -> bool:
+func _can_plant(plant_cell: PlantCell, plant_type: StringName) -> bool:
 	var cond: ResourcePlantCondition = Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	return cond.judge_is_can_plant(plant_cell, plant_type)
 
 
-func _has_card(mg, plant_type: CharacterRegistry.PlantType) -> bool:
+func _has_card(mg, plant_type: StringName) -> bool:
 	for card: Card in mg.card_manager.card_slot_battle.curr_cards:
 		if card.card_plant_type == plant_type:
 			return true

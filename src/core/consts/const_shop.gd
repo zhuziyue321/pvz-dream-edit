@@ -206,16 +206,16 @@ const WALL_NUT_FIRST_AID_PRICE := 2000
 ## 数据来源: 同上(Wall-nut First Aid 的 Strategies 段: Wall-nuts, Tall-nuts, Pumpkins)
 ## 口径: 原版一代;大蒜与地刺王不在此列 —— 大蒜是防御植物但不能补种,
 ## 地刺王虽然也会分段掉外观却不是防御植物,同样不能补种(见该页 Trivia)
-const WALL_NUT_FIRST_AID_PLANT_TYPES: Array[int] = [
-	CharacterRegistry.PlantType.P004WallNut,
-	CharacterRegistry.PlantType.P024TallNut,
-	CharacterRegistry.PlantType.P031Pumpkin,
+const WALL_NUT_FIRST_AID_PLANT_TYPES: Array[StringName] = [
+	PlantIds.WALL_NUT,
+	PlantIds.TALL_NUT,
+	PlantIds.PUMPKIN,
 ]
 #endregion
 
 
 ## 该植物是否能用坚果包扎术补种修复(见 WALL_NUT_FIRST_AID_PLANT_TYPES)
-static func is_first_aid_plant(plant_type: CharacterRegistry.PlantType) -> bool:
+static func is_first_aid_plant(plant_type: StringName) -> bool:
 	return WALL_NUT_FIRST_AID_PLANT_TYPES.has(plant_type)
 
 ## 再买一次卡槽扩充的价格(已购买 upgrade_num 次),已满级或价目缺失返回 -1

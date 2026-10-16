@@ -70,8 +70,42 @@ func zamboni_death_effect():
 	SoundManager.play_character_SFX(&"explosion")
 	queue_free()
 
-## 被地刺扎
-func be_caltrop():
-	is_caltrop = true
-	character_death_not_disappear()
-	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsAnimGap)
+## 【受击方加工包】地刺扎我 = 当场报废（原版行为：洗冰车压到地刺上直接散架）。
+##
+## 把这张便条翻译成"秒杀"（`is_instant_kill`），剩下的交给系统正常结算 —— 死亡流程、
+## 爆炸特效、冰道消失全按正常死亡走一遍。改前是 `character_death_not_disappear()`
+## 直接清空血量，那条路绕过了管线（免疫 / 统计 / 联机都会漏），现在统一走 `DamageSystem`。
+func process_damage(info: DamageInfo) -> bool:
+	if info.has_effect(ConstDamage.EFFECT_CALTROP):
+		info.is_instant_kill = true
+	return super(info)
+
+## 报废表现放在**管线末端**而不是加工阶段：加工阶段只决定"伤害该是多少"，
+## 这里才是"伤害真的结算了"。否则修饰器取消掉这次伤害时，动画已经切成报废状态，
+## 会留下"车还在跑却是散架姿势"的视觉 bug。
+func take_damage(info: DamageInfo) -> int:
+	if info.has_effect(ConstDamage.EFFECT_CALTROP):
+		is_caltrop = true
+		move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsAnimGap)
+		_be_vehicle_backlash(info)
+	return super(info)
+
+
+## 【载具反伤】被地刺类扎到 → 反过来对**发起方**打一下（**0 伤害**，只是递一张便条）。
+##
+## 0 伤害不是"打不动"，是"我不决定后果"：车压根不知道扎它的是地刺还是钢地刺，
+## 受损多少是**受击方**在加工阶段自己写进 `effects[EFFECT_DAMAGE]` 的（硬约束 §1-8）。
+## 没有发起者（天降 / 脚本伤害）就不反伤 —— 没得可打。
+func _be_vehicle_backlash(info: DamageInfo) -> void:
+	if not is_instance_valid(info.attacker):
+		return
+	## 显式转角色：`DamageInfo.attacker` 声明成 `Node`（它可能不是角色，也可能已经 free）
+	var attacker_character := info.attacker as Character000Base
+	if attacker_character == null:
+		return
+	var backlash := DamageInfo.create(attacker_character, 0,
+		ConstDamage.E_DamageMode.Norm, ConstDamage.E_DamageCause.Crush)
+	backlash.attacker = self
+	backlash.trigger_sfx = false
+	backlash.set_effect(ConstDamage.EFFECT_VEHICLE_BACKLASH, true)
+	attacker_character.apply_damage(backlash)

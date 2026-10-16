@@ -18,7 +18,7 @@ class_name CharacterShowFactory
 ## [pos] 挂上去之后的局部坐标，Vector2.ZERO = 交给父节点布局（种子包这类由容器决定）
 ## [extra_para] 额外初始化参数，会覆盖默认的 CharacterInitType
 static func create_show_plant(
-	plant_type:CharacterRegistry.PlantType,
+	plant_type: StringName,
 	parent:Node,
 	pos:Vector2 = Vector2.ZERO,
 	extra_para:Dictionary = {}
@@ -42,17 +42,16 @@ static func create_show_plant(
 
 ## 创建展示态僵尸（参数含义同 create_show_plant）
 static func create_show_zombie(
-	zombie_type:CharacterRegistry.ZombieType,
+	zombie_type: StringName,
 	parent:Node,
 	pos:Vector2 = Vector2.ZERO,
 	extra_para:Dictionary = {}
 ) -> Zombie000Base:
-	var zombie_scene:PackedScene = Global.character_registry.get_zombie_info(
-		zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieScenes)
-	if zombie_scene == null:
-		Log.error("展示态僵尸：取不到 [%s] 的僵尸场景" % str(zombie_type))
+	## 走注册表的统一入口：热注册的僵尸没有场景文件，是靠配方现场组装的
+	var zombie:Zombie000Base = Global.character_registry.instantiate_zombie(zombie_type)
+	if zombie == null:
+		Log.error("展示态僵尸：创建 [%s] 失败" % str(zombie_type))
 		return null
-	var zombie:Zombie000Base = zombie_scene.instantiate()
 	var init_para:Dictionary = {
 		Zombie000Base.E_ZInitAttr.CharacterInitType:Character000Base.E_CharacterInitType.IsShow
 	}

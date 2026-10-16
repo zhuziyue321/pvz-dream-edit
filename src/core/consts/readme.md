@@ -16,6 +16,8 @@
 | `const_plant_unlock.gd` | `ConstPlantUnlock` | 植物解锁进度：初始植物、紫卡与模仿者的开放购买关卡与售价。被 `GlobalGameState`、`SaveService`、`StoreManager` 引用。**不含**「冒险第 N 关给哪株植物」 —— 那句话写在那一关的关卡脚本上（`LevelRegistry.get_adventure_level_reward_plant()`）。 |
 | `const_shop.gd` | `ConstShop` | 疯狂戴夫商店的卡槽扩充商品常量：出战卡槽基准数 / 上限、单价、可购买次数。被 `GlobalGameState`、`ResourceLevelData`、`GoodsCardSlot` 引用。 |
 | `const_unlock_level.gd` | `ConstUnlockLevel` | 冒险模式进度解锁：模式 / 铲子 / 图鉴 / 手套 / 花园 / 金钱 / 商店的解锁关卡序号与判定函数。 |
+| `plant_condition_bits.gd` | `PlantConditionBits` | **植物种植条件的地形位**：`ResourcePlantCondition.plant_condition` 那个位掩码每一位的名字（`GRASS` / `WATER` / `ROOF` / `WATER_BOWL` …）。加一位要同时改 `data/character/plant_condition/condition_plant_base.gd` 的 `@export_flags`（编辑器里的勾选项），详见 [参考存档/运行期植物.md](../../../docs/参考存档/运行期植物.md) §5。 |
+| `bullet_ids.gd` | `BulletIds` | **子弹类型 id**：StringName 常量（`PEA` / `WINTER_MELON` / `BOWLING` …），替代 2026-10-13 删除的 `BulletRegistry.BulletType` int 枚举。取 id 一律写 `BulletIds.PEA`，**不要**在业务代码里写裸字符串；id → 场景的映射仍在 `bullet_registry.gd`。 |
 | `const_feature_switch.gd` | `ConstFeatureSwitch` | **玩法功能总开关**：临时下线已实现的玩法时改这里（`false` = 隐藏，`true` = 恢复）。当前含 `ZOMBIE_CARD_ENABLED`（选卡界面的僵尸卡片）。**原 `GLOVE_ENABLED`（关卡内手套）已删除** —— 手套改成了模组，开关与设置都在 `user://<用户名>/mod_config.ini`（见 [参考存档/模组机制.md](../../../docs/参考存档/模组机制.md)）；**原版没有的玩法一律做成模组，不要在这里加开关**（见该脚本文件头）。新增本体开关**只放这里**，不要散到别的常量文件。 |
 
 

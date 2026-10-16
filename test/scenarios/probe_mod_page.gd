@@ -1,4 +1,8 @@
 extends RefCounted
+
+## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
+const GloveMod := preload("res://mods_builtin/glove/glove_mod.gd")
+const ModBase := preload("res://mods_builtin/mod_base.gd")
 ## 探针：模组页面（`src/ui/mod_page/`）
 ##
 ## 验六件事：

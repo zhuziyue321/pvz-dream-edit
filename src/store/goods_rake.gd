@@ -37,7 +37,6 @@ func _refresh_goods_state() -> void:
 func get_one_goods():
 	if Global.global_game_state.buy_rake():
 		Global.save_service.save_now()
-		Log.debug(str("购买钉耙,可用关数:") + str(Global.global_game_state.get_rake_use_num()))
 	else:
 		Log.warn("购买钉耙失败:手上还有钉耙没用完")
 	_refresh_goods_state()

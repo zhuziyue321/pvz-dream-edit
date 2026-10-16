@@ -53,6 +53,7 @@
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="46_y1kuf"]
 [ext_resource type="Script" uid="uid://ft3ggocyk4i6" path="res://src/entities/character/components/attack_behavior_component/component_attack_zombie_ladder.gd" id="47_4iwad"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="47_ifyml"]
+[ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_kwxxo"]
 script = ExtResource("25_lcajd")
@@ -1311,14 +1312,12 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_ceiw1")
 nodes/TimeScale/position = Vector2(220, 140)
 node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
-[node name="Zombie022Ladder" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_5r6ob")]
+[node name="Zombie022Ladder" instance=ExtResource("1_5r6ob")]
 script = ExtResource("2_5r6ob")
 is_place_ladder = false
 is_drop_ladder = false
 is_fail_ladder = false
-zombie_type = 22
-iron_type = 2
-iron_node = NodePath("Body/BodyCorrect/IronNode")
+zombie_type = &"ladder"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-59, -120)
@@ -1537,13 +1536,19 @@ scale = Vector2(0.85, 0.85)
 texture = ExtResource("16_vv6a1")
 centered = false
 
+[node name="ArmorComponent" type="Node2D" parent="." node_paths=PackedStringArray("iron_node")]
+script = ExtResource("9_armor")
+armor_type = 6
+armor_class = 2
+max_hp = 500
+sfx_be_attack = 2
+iron_node = NodePath("../Body/BodyCorrect/IronNode")
+body_change = Array[ExtResource("25_lcajd")]([SubResource("Resource_4ms44"), SubResource("Resource_bcikk"), SubResource("Resource_4hs72")])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("25_lcajd")]([SubResource("Resource_kwxxo"), SubResource("Resource_wi3j7")])
-body_change_armor2 = Array[ExtResource("25_lcajd")]([SubResource("Resource_4ms44"), SubResource("Resource_bcikk"), SubResource("Resource_4hs72")])
 
 [node name="HpComponent" parent="." index="4"]
-max_hp_armor2 = 500
-sfx_be_attack_armor2 = 2
 max_hp = 500
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]

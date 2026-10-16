@@ -57,18 +57,14 @@ static func init_plant_cell_row_on_zombie_row_type(pcm: PlantCellManager) -> voi
 		pcm.plant_cell_row_on_zombie_row_type[zombie_row_type].clear()
 	if pcm.game_para.pot_col_range.y > pcm.row_col.y:
 		pcm.game_para.pot_col_range.y = pcm.row_col.y
-		Log.debug("warning:生成罐子的结束列数大于当前场景植物格子的列数，生成罐子的结束列数已修改为植物格子列数")
 	## 罐子需要的列
 	var need_col: int = pcm.game_para.pot_col_range.y - pcm.game_para.pot_col_range.x
 	var num_pot_candidate: int = need_col * pcm.row_col.x
-	Log.debug(str("设置罐子的列数：") + str(need_col) + str(" 罐子生成位置数量为：") + str(num_pot_candidate))
 
 	if need_col == 0:
-		Log.debug("warning: 罐子列数为0，取消生成罐子")
 		return
 
 	if pcm.game_para.pot_mode == ConstLevelData.E_PotMode.Fixd:
-		Log.debug(str("罐子生成模式为 固定数量生成模式， 罐子生成总数为：") + str(pcm.game_para.pot_num_on_fixed_mode))
 		assert(
 			pcm.game_para.pot_num_on_fixed_mode <= num_pot_candidate,
 			"罐子需求总数为：" + str(pcm.game_para.pot_num_on_fixed_mode)
@@ -116,7 +112,7 @@ static func create_pot_hint(pcm: PlantCellManager) -> void:
 		if not is_instance_valid(pot):
 			continue
 		## 只能提示「这里面是植物」
-		if pot.curr_plant_type == CharacterRegistry.PlantType.Null:
+		if pot.curr_plant_type == PlantIds.NULL:
 			continue
 		if pot.pot_type != ScaryPot.E_PotType.Random:
 			continue
@@ -124,9 +120,6 @@ static func create_pot_hint(pcm: PlantCellManager) -> void:
 	candidates.shuffle()
 	for i in range(mini(hint_num, candidates.size())):
 		candidates[i].set_hint_plant_pot()
-	Log.debug(
-		str("戴夫提示罐数量：") + str(mini(hint_num, candidates.size())) + str(" / 配置 ") + str(hint_num)
-	)
 
 #endregion
 
@@ -179,14 +172,11 @@ static func create_all_pot_on_fixed_mode(pcm: PlantCellManager) -> void:
 		pcm, pcm.game_para.plant_pot, plant_cell_remaining, ScaryPot.E_PotType.Plant
 	)
 
-	Log.debug(str("当前已经生成的罐子数量:") + str(pcm.curr_pot_num))
-	Log.debug(str("结果固定罐子生成完成后剩余植物格子数量：") + str(plant_cell_remaining.size()))
 
 	## 随机罐子数量和
 	var random_pot_num_sum = pcm.game_para.random_pot_num_on_fixed_mode.x \
 		+ pcm.game_para.random_pot_num_on_fixed_mode.y \
 		+ pcm.game_para.random_pot_num_on_fixed_mode.z
-	Log.debug(str("还需生成结果随机罐子数量(随机、植物、僵尸)：") + str(random_pot_num_sum))
 	## 打乱顺序
 	plant_cell_remaining.shuffle()
 
@@ -211,11 +201,9 @@ static func create_all_pot_on_fixed_mode(pcm: PlantCellManager) -> void:
 			break
 		create_random_res_pot(pcm, plant_cell_remaining.pop_back(), ScaryPot.E_PotType.Zombie)
 
-	Log.debug(str("剩余罐子数量：") + str(plant_cell_remaining.size()) + str(" 使用 随机类型 结果随机罐子填充"))
 	for plant_cell in plant_cell_remaining:
 		create_random_res_pot(pcm, plant_cell)
 
-	Log.debug(str("生成的所有罐子数量:") + str(pcm.curr_pot_num))
 
 ## 创建一个结果随机罐子
 static func create_random_res_pot(
@@ -240,11 +228,6 @@ static func create_multi_zombie_pot(
 		## 循环数量
 		for i in range(pot_num_zombie_types[zombie_type]):
 			if plant_cells_candidate.is_empty():
-				Log.debug(
-					str("warning: 僵尸类型")
-					+ str(Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieName))
-					+ str("没有对应的空闲植物格子")
-				)
 				return plant_cells_candidate
 			var plant_cell: PlantCell = plant_cells_candidate.pick_random()
 			var pot_para: Dictionary = {

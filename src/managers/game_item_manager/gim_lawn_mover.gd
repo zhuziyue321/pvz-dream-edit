@@ -86,7 +86,6 @@ func create_all_lawn_movers(is_has_all_lawn_mover:Array=[], is_defer_appear:bool
 		all_lane_have_lawn_mover.append(row_data.have_lawn_mover)
 		all_lane_mover_bought.append(Global.global_game_state.is_lawn_mover_bought(mover_type))
 
-	Log.debug(str("创建小推车, 小推车类型") + str(all_lawn_movers_type) + str(" 各行是否有小推车") + str(all_lane_have_lawn_mover))
 	assert(game_item_manager.main_game.zombie_manager.all_zombie_rows.size() == all_lawn_movers_type.size(), "小推车数量与僵尸行数量不一致")
 	for lane in range(all_lawn_movers_type.size()):
 		var zombie_row:ZombieRow = game_item_manager.main_game.zombie_manager.all_zombie_rows[lane]

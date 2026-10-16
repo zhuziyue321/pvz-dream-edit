@@ -5,7 +5,7 @@
 
 [node name="Bullet014CattailBullet" instance=ExtResource("1_dbrh7")]
 bullet_mode = 1
-bullet_type = 14
+bullet_type = &"cattail"
 
 [node name="BulletBody" parent="Body" index="0"]
 texture = ExtResource("2_hfvkc")

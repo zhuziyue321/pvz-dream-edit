@@ -5,7 +5,7 @@ class_name ZB001DoctorSkillSpawn
 ## 本技能私有的同步准备候选；保存实际类型与抽样数据，不随放置清单跨帧保存。
 class SpawnCandidate extends RefCounted:
 	## 已解析雪橇替换后的实际生成类型，战力与选行均以此类型为准。
-	var zombie_type: CharacterRegistry.ZombieType
+	var zombie_type: StringName
 	## 与当前场地行数一致的零起始行权重；合法行为 1，其他行为 0，仅在准备阶段读取。
 	var row_weights: Array[float] = []
 	## 实际生成类型的正数单体战力，用于最低预算与剩余名额预留。
@@ -16,7 +16,7 @@ class SpawnCandidate extends RefCounted:
 	## 创建准备阶段候选，并将行权重复制到固定类型容器，不共享调用方数组。[br]
 	## [param type] 实际生成类型；[param lanes] 零起始行权重。[br]
 	## [param zombie_power] 已校验为正数的单体战力；[param selection_weight] 原配置类型的正数抽样权重。
-	func _init(type: CharacterRegistry.ZombieType, lanes: Array[float], zombie_power: int, selection_weight: int) -> void:
+	func _init(type: StringName, lanes: Array[float], zombie_power: int, selection_weight: int) -> void:
 		zombie_type = type
 		row_weights.assign(lanes)
 		power = zombie_power
@@ -30,11 +30,11 @@ class SpawnCandidate extends RefCounted:
 ## 每次技能计划放置的最多数量，不得小于最小值。
 @export_range(1, 20, 1) var spawn_count_max: int = 5
 ## 博士允许放置的类型，基础权重统一来自角色注册表，不读取自然出怪列表。
-@export var zombie_types: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z001Norm,
-	CharacterRegistry.ZombieType.Z003Cone,
-	CharacterRegistry.ZombieType.Z004PoleVaulter,
-	CharacterRegistry.ZombieType.Z005Bucket,
+@export var zombie_types: Array[StringName] = [
+	ZombieIds.NORM,
+	ZombieIds.CONE,
+	ZombieIds.POLE_VAULTER,
+	ZombieIds.BUCKET,
 ]
 
 @export_group("放置战力成长")
@@ -49,7 +49,7 @@ class SpawnCandidate extends RefCounted:
 @export_group("")
 
 ## 博士独立维护的运行时权重；键和值均为整数，普通复制即可隔离修改。
-var zombie_weights: Dictionary[CharacterRegistry.ZombieType, int] = CharacterRegistry.ZombieSpawnWeights.duplicate()
+var zombie_weights: Dictionary[StringName, int] = CharacterRegistry.ZombieSpawnWeights.duplicate()
 ## 已成功准备的技能次数；先用于本次权重和战力预算计算，再递增，中断时不回退。
 var spawn_skill_use_count: int = 0
 ## 当前实例的有效初始战力预算；0 表示尚未修正，后续初始化与批次准备只允许提高。
@@ -73,7 +73,7 @@ func initialize_skill() -> void:
 	# 已校验配置中的最低战力，不依赖尚未开始的关卡选行过程。
 	var minimum_power: int = 0
 	# 已验证具有正战力的配置类型；雪橇替换仍在实际准备阶段按冰车计费。
-	for zombie_type: CharacterRegistry.ZombieType in zombie_types:
+	for zombie_type: StringName in zombie_types:
 		# 当前配置类型的战力，用于计算首批可承担的最低总战力。
 		var power: int = Global.character_registry.ZombieSpawnPower[zombie_type]
 		minimum_power = power if minimum_power == 0 else mini(minimum_power, power)
@@ -135,17 +135,17 @@ func _collect_spawn_candidates(manager: ZombieManager, allowed_lanes: Array[int]
 	# 以配置类型的权重抽样；雪橇无可用冰道时可以解析成冰车，不改变原抽样权重。
 	var candidates: Array[SpawnCandidate] = []
 	# 当前配置类型，每个类型最多贡献一个随机项。
-	for zombie_type: CharacterRegistry.ZombieType in zombie_types:
+	for zombie_type: StringName in zombie_types:
 		# 当前类型的有效概率权重，权重不参与战力预算计算。
 		var weight: int = zombie_weights.get(zombie_type, 0)
 		# 实际待生成的类型，雪橇缺少冰道时替换为冰车。
-		var actual_type: CharacterRegistry.ZombieType = zombie_type
+		var actual_type: StringName = zombie_type
 		if weight <= 0:
 			continue
 		# 合法行同时满足动画映射、水陆限制和雪橇的冰道要求。
 		var row_weights: Array[float] = _get_lane_weights(manager, actual_type, allowed_lanes)
-		if zombie_type == CharacterRegistry.ZombieType.Z014Bobsled and not row_weights.has(1.0):
-			actual_type = CharacterRegistry.ZombieType.Z013Zamboni
+		if zombie_type == ZombieIds.BOBSLED and not row_weights.has(1.0):
+			actual_type = ZombieIds.ZAMBONI
 			row_weights = _get_lane_weights(manager, actual_type, allowed_lanes)
 		if not row_weights.has(1.0):
 			continue
@@ -198,7 +198,7 @@ func _build_spawn_entries(candidates: Array[SpawnCandidate], spawn_count: int, m
 		# 已过滤的候选信息，清单只保存类型与行，不保存临时行权重数组。
 		var selected: SpawnCandidate = picker.get_random_item() as SpawnCandidate
 		# 本项最终生成类型，与候选中计费的战力一致。
-		var selected_type: CharacterRegistry.ZombieType = selected.zombie_type
+		var selected_type: StringName = selected.zombie_type
 		# 实际类型允许的水陆行分类，交给博士独立的选行系统。
 		var row_type: CharacterRegistry.ZombieRowType = Global.character_registry.get_zombie_info(selected_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType)
 		# 本项锁定的零起始行号，播放动画和释放僵尸共用；负数表示选行失败。
@@ -248,8 +248,8 @@ func _update_spawn_weights() -> void:
 	zombie_weights = CharacterRegistry.ZombieSpawnWeights.duplicate()
 	# 前六次技能保持基础权重，之后最多衰减二十档；首次准备使用索引 0。
 	var decay_steps: int = clampi(spawn_skill_use_count - 5, 0, 20)
-	zombie_weights[CharacterRegistry.ZombieType.Z001Norm] -= decay_steps * 180
-	zombie_weights[CharacterRegistry.ZombieType.Z003Cone] -= decay_steps * 150
+	zombie_weights[ZombieIds.NORM] -= decay_steps * 180
+	zombie_weights[ZombieIds.CONE] -= decay_steps * 150
 
 
 ## 按完整动画结束次数选择本批任务；不重新随机类型或行。
@@ -299,16 +299,16 @@ func _release_action() -> void:
 		or spawn_marker.is_queued_for_deletion() or _current_entry == null:
 		return
 	# 类型与行必须和播放中的动画使用同一份准备结果。
-	var zombie_type: CharacterRegistry.ZombieType = _current_entry.zombie_type
+	var zombie_type: StringName = _current_entry.zombie_type
 	var lane: int = _current_entry.lane
-	if zombie_type == CharacterRegistry.ZombieType.Z014Bobsled and not _has_ice_road(manager, lane):
+	if zombie_type == ZombieIds.BOBSLED and not _has_ice_road(manager, lane):
 		return
 	manager.create_skill_zombie(zombie_type, lane, spawn_marker.global_position.x)
 
 
 ## 返回 [param zombie_type] 在 [param manager] 场地中的候选行权重。[br]
 ## [param allowed_lanes] 来自动画映射；不合法的行权重为 0，合法行为 1。
-func _get_lane_weights(manager: ZombieManager, zombie_type: CharacterRegistry.ZombieType, allowed_lanes: Array[int]) -> Array[float]:
+func _get_lane_weights(manager: ZombieManager, zombie_type: StringName, allowed_lanes: Array[int]) -> Array[float]:
 	# 与真实场景行数一致，不能把缺失行映射成默认末行。
 	var row_weights: Array[float] = []
 	row_weights.resize(manager.all_zombie_rows.size())
@@ -317,7 +317,7 @@ func _get_lane_weights(manager: ZombieManager, zombie_type: CharacterRegistry.Zo
 	for lane: int in allowed_lanes:
 		if not manager.can_spawn_skill_zombie(zombie_type, lane):
 			continue
-		if zombie_type == CharacterRegistry.ZombieType.Z014Bobsled and not _has_ice_road(manager, lane):
+		if zombie_type == ZombieIds.BOBSLED and not _has_ice_road(manager, lane):
 			continue
 		row_weights[lane] = 1.0
 	return row_weights
@@ -368,9 +368,9 @@ func get_configuration_error() -> String:
 		Log.error("%s：%s" % [get_path(), detected_error])
 		return detected_error
 	# 拒绝重复类型，避免同一类型因重复填写获得额外权重。
-	var seen_types: Array[CharacterRegistry.ZombieType] = []
+	var seen_types: Array[StringName] = []
 	# 每个类型必须有已注册场景、正的基础权重及战力，特殊蹦极不进入手部放置池。
-	for zombie_type: CharacterRegistry.ZombieType in zombie_types:
+	for zombie_type: StringName in zombie_types:
 		if not Global.character_registry.ZombieInfo.has(zombie_type) or not Global.character_registry.ZombieSpawnWeights.has(zombie_type):
 			detected_error = "放置类型必须同时具有角色注册信息和基础出怪权重。"
 			Log.error("%s：%s" % [get_path(), detected_error])
@@ -389,8 +389,8 @@ func get_configuration_error() -> String:
 			detected_error = "放置技能的每种僵尸必须配置正数战力。"
 			Log.error("%s：%s" % [get_path(), detected_error])
 			return detected_error
-		if zombie_type == CharacterRegistry.ZombieType.Z014Bobsled \
-			and Global.character_registry.ZombieSpawnPower.get(CharacterRegistry.ZombieType.Z013Zamboni, 0) <= 0:
+		if zombie_type == ZombieIds.BOBSLED \
+			and Global.character_registry.ZombieSpawnPower.get(ZombieIds.ZAMBONI, 0) <= 0:
 			detected_error = "雪橇的冰车替换类型必须配置正数战力。"
 			Log.error("%s：%s" % [get_path(), detected_error])
 			return detected_error

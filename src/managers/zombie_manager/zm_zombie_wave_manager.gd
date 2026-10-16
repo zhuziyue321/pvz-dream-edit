@@ -25,7 +25,7 @@ var drop_unlock_wave :int = -1
 @onready var ui_remind_word: UIRemindWord = %UIRemindWord
 
 ## 大波僵尸时墓碑生产的僵尸类型
-@export var zombie_type_candidate_tombstone :Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z001Norm]
+@export var zombie_type_candidate_tombstone :Array[StringName] = [ZombieIds.NORM]
 
 ## 当前波次类型
 enum E_WaveType{
@@ -183,7 +183,7 @@ func start_next_wave() -> void:
 		unlock_zombie.signal_character_death.connect(
 			_on_unlock_zombie_death.bind(unlock_zombie), CONNECT_ONE_SHOT
 		)
-		Log.debug(str("第") + str(curr_wave) + str("波僵尸携带解锁道具"))
+		Log.info(str("第") + str(curr_wave) + str("波僵尸携带解锁道具"))
 
 	signal_wave_refresh.emit(curr_wave == max_wave - 1)
 	wave_started.emit(curr_wave)

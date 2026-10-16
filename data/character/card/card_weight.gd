@@ -18,10 +18,12 @@ static func create(card_ref: ResourceCardReference, value: int) -> ResourceCardW
 
 
 #region 关卡配置批量构造
-## 把 {角色编号: 权重} 批量转成权重条目数组，供关卡脚本直接赋值给 LevelData。
+## 把 {角色 id: 权重} 批量转成权重条目数组，供关卡脚本直接赋值给 LevelData。
 ## 与 [method ResourceCardReference.create_plant_list] 配套使用，保持一处配置一张表。
+## 键既可以是 id 字符串（`PlantIds.XXX`），也可以是老编号 int（见
+## [method ResourceCardReference.normalize_id]；`StringName(1001)` 是运行期报错）。
 
-## 批量构造植物权重；[param weights] 键为植物编号，值为相对权重。
+## 批量构造植物权重；[param weights] 键为植物 id 或老编号，值为相对权重。
 static func create_plant_weights(weights: Dictionary) -> Array[ResourceCardWeight]:
 	return _create_weights(ResourceCardReference.CardType.Plant, weights)
 
@@ -34,6 +36,8 @@ static func create_zombie_weights(weights: Dictionary) -> Array[ResourceCardWeig
 static func _create_weights(type: ResourceCardReference.CardType, weights: Dictionary) -> Array[ResourceCardWeight]:
 	var result: Array[ResourceCardWeight] = []
 	for content_id in weights:
-		result.append(create(ResourceCardReference.create(type, int(content_id)), int(weights[content_id])))
+		## 键既可以是 id 字符串（`PlantIds.XXX`），也可以是老编号 int（见 normalize_id 的说明）
+		var card_ref := ResourceCardReference.create(type, ResourceCardReference.normalize_id(type, content_id))
+		result.append(create(card_ref, int(weights[content_id])))
 	return result
 #endregion

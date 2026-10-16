@@ -24,17 +24,17 @@ func _init() -> void:
 	##                    火炬树桩(23) / 玉米投手(35) / 大蒜(37)
 	plant_col_on_zombie_mode = 4
 	all_plants_weight_on_zombie_mode.assign({
-	1: 2,
-	2: 6,
-	6: 2,
-	18: 2,
-	22: 2,
-	23: 1,
-	35: 2,
-	37: 1
+	&"pea_shooter_single": 2,
+	&"sun_flower": 6,
+	&"snow_pea": 2,
+	&"squash": 2,
+	&"caltrop": 2,
+	&"torch_wood": 1,
+	&"corn_pult": 2,
+	&"garlic": 1
 	})
 	all_must_plants_on_zombie_mode.assign({
-	2: 5
+	&"sun_flower": 5
 	})
 	is_bowling_stripe = true
 	plant_cell_col_j = 4
@@ -56,8 +56,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z024Gargantuar,
+		ZombieIds.NORM,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.GARGANTUAR,
 	])

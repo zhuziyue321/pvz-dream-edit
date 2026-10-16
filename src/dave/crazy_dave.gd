@@ -89,7 +89,6 @@ func start_dialog():
 			is_activate = false
 			bubble_2.visible = false
 		else:
-			Log.debug("开场白结束")
 			is_idle = true
 			## 开场白结束后停止检测
 			set_process_unhandled_input(false)

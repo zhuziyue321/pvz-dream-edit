@@ -1003,7 +1003,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Zombie025Imp" instance=ExtResource("1_cklgi")]
 script = ExtResource("2_r3fwd")
 is_thrown = false
-zombie_type = 25
+zombie_type = &"imp"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-55, -120)

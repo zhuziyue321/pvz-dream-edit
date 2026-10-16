@@ -7,7 +7,7 @@ class_name ResourceSaveGamePlantCellManager
 @export var all_plant_cells_datas:Array[ResourceSaveGamePlantCell]
 
 ## 当前植物种植的信息[植物种类:植物数量],读档时验证是否正确
-@export var curr_plant_num:Dictionary[CharacterRegistry.PlantType, int]
+@export var curr_plant_num:Dictionary[StringName, int]
 
 ## 墓碑管理器数据
 @export var tomb_stone_manager_data:Dictionary

@@ -65,7 +65,7 @@ func enter_hand(payload: Variant = null) -> bool:
 			return false
 		return true
 	## 植物
-	if curr_card.card_plant_type != CharacterRegistry.PlantType.Null:
+	if curr_card.card_plant_type != PlantIds.NULL:
 		plant_condition = Global.character_registry.get_plant_info(
 			curr_card.card_plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 		)
@@ -145,7 +145,7 @@ func _clear_curr_data() -> void:
 
 #region 紫卡预种植提示
 ## 紫卡预种植植物身体明暗发光开始
-func start_preplant_purple_light(curr_plant_condition: ResourcePlantCondition, plant_type: CharacterRegistry.PlantType) -> void:
+func start_preplant_purple_light(curr_plant_condition: ResourcePlantCondition, plant_type: StringName) -> void:
 	curr_all_preplant_purple = curr_plant_condition.get_all_preplant_purple(
 		main_game.plant_cell_manager.all_plant_cells, plant_type
 	)
@@ -193,7 +193,7 @@ func click_cell(plant_cell: PlantCell) -> bool:
 		curr_card.signal_card_use_end.emit()
 		return true
 
-	if curr_card.card_plant_type != CharacterRegistry.PlantType.Null:
+	if curr_card.card_plant_type != PlantIds.NULL:
 		## 坚果包扎术：手持坚果类卡片点在掉手 / 裂开的同种坚果上 = 补种修复，
 		## 不铲除旧植物也不腾格子，照样扣一张卡的钱与冷却
 		var first_aid_plant := plant_cell.get_first_aid_plant(curr_card.card_plant_type)
@@ -233,7 +233,7 @@ func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Nod
 		curr_characte_static_shadow.modulate.a = 0.5
 		return true
 	## 植物
-	if curr_card.card_plant_type != CharacterRegistry.PlantType.Null:
+	if curr_card.card_plant_type != PlantIds.NULL:
 		## 判定是否可以种植植物
 		if plant_condition.judge_is_can_plant(plant_cell, curr_card.card_plant_type):
 			curr_characte_static_shadow.global_position = plant_cell.get_new_plant_static_shadow_global_position(plant_condition.place_plant_in_cell)
@@ -251,7 +251,7 @@ func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Nod
 	## 僵尸
 	else:
 		## 如果当前格子不能放置普通僵尸（蹦极除外）
-		if not plant_cell.can_common_zombie and curr_card.card_zombie_type != CharacterRegistry.ZombieType.Z021Bungi:
+		if not plant_cell.can_common_zombie and curr_card.card_zombie_type != ZombieIds.BUNGI:
 			return false
 		## 如果不是双地形
 		if zombie_row_type != CharacterRegistry.ZombieRowType.Both:

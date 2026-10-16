@@ -24,7 +24,7 @@ func _on_change_is_attack(value: bool) -> void:
 	if not is_instance_valid(target):
 		return
 	is_used = true
-	target.be_attacked_bullet(squash_attack_value, BulletRegistry.AttackMode.Penetration, false, false)
+	target.be_attacked_bullet(squash_attack_value, ConstDamage.E_DamageMode.Penetration, false, false)
 	SoundManager.play_character_SFX(&"gargantuar_thump")
 	## 压完自身消失（原版消耗品），不算被玩家打死，所以不掉落战利品
 	character_death_disappear()

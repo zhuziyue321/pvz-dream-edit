@@ -23,14 +23,14 @@ func _init() -> void:
 	## 原版本关的纸板植物: 豌豆射手(1) / 向日葵(2) / 土豆地雷(5) / 火炬树桩(23) / 裂荚射手(29)
 	plant_col_on_zombie_mode = 4
 	all_plants_weight_on_zombie_mode.assign({
-	1: 2,
-	2: 6,
-	5: 2,
-	23: 1,
-	29: 2
+	&"pea_shooter_single": 2,
+	&"sun_flower": 6,
+	&"potato_mine": 2,
+	&"torch_wood": 1,
+	&"split_pea": 2
 	})
 	all_must_plants_on_zombie_mode.assign({
-	2: 5
+	&"sun_flower": 5
 	})
 	is_bowling_stripe = true
 	plant_cell_col_j = 4
@@ -52,7 +52,7 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z018Digger,
+		ZombieIds.NORM,
+		ZombieIds.BUCKET,
+		ZombieIds.DIGGER,
 	])

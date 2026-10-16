@@ -11,7 +11,7 @@
 [node name="Plant1002WallNutBowling" instance=ExtResource("1_5bty5")]
 script = ExtResource("2_tojy8")
 bowling_bullet_scene = ExtResource("3_m0ob3")
-plant_type = 1002
+plant_type = &"wall_nut_bowling_bomb"
 
 [node name="Body" parent="." index="1"]
 modulate = Color(1, 0, 0.141176, 1)

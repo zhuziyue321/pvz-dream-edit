@@ -1220,7 +1220,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Zombie012Snorkle" instance=ExtResource("1_ryuum")]
 script = ExtResource("2_5stlx")
-zombie_type = 12
+zombie_type = &"snorkle"
 metadata/_edit_pinned_properties_ = [&"zombie_type"]
 
 [node name="BodyCorrect" parent="Body" index="0"]

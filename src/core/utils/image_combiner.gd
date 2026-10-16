@@ -17,7 +17,6 @@ func _export_combined_image():
 	var img: Image = viewport.get_texture().get_image()
 	var path := "res://combined_result.png"
 	img.save_png(path)
-	Log.debug(str("图片已保存到: ") + str(path))
 
 #
 #extends Node
@@ -53,7 +52,6 @@ func _export_combined_image():
 	#
 	## 保存结果（PNG支持透明度）
 	#base.save_png("res://CrazyDave_body1.png")
-	#Log.debug("保存成功：res://CrazyDave_body1.png")
 #
 #func _ready():
 	#apply_mask_and_save()

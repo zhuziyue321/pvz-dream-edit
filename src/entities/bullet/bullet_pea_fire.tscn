@@ -973,7 +973,7 @@ radius = 21.0238
 
 [node name="Bullet006PeaFire" instance=ExtResource("1_oflek")]
 script = ExtResource("2_rm55x")
-bullet_type = 6
+bullet_type = &"pea_fire"
 attack_value = 40
 trigger_be_attack_sfx = false
 type_bullet_SFX = 2

@@ -108,7 +108,7 @@ size = Vector2(1000, 5)
 
 [node name="Plant008PeaShooterDouble" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_ug5a7")]
 script = ExtResource("2_8obf8")
-plant_type = 8
+plant_type = &"pea_shooter_double"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]

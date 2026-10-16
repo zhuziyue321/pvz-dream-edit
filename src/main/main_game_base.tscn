@@ -131,7 +131,7 @@ script = ExtResource("5_j3aa3")
 
 [node name="ZombieWaveManager" type="Node" parent="Manager/ZombieManager"]
 script = ExtResource("5_qfhda")
-zombie_type_candidate_tombstone = Array[int]([1, 3, 5])
+zombie_type_candidate_tombstone = Array[StringName]([&"norm", &"cone", &"bucket"])
 
 [node name="ZombieWaveRefreshManager" type="Node" parent="Manager/ZombieManager/ZombieWaveManager"]
 script = ExtResource("6_ee3wa")
@@ -264,8 +264,8 @@ unique_name_in_owner = true
 process_mode = 1
 layout_mode = 3
 anchors_preset = 0
-offset_left = 70.0
-offset_right = 70.0
+offset_left = 20.0
+offset_right = 20.0
 script = ExtResource("35_ee3wa")
 
 [node name="Marker2DSunTargetDefault" type="Marker2D" parent="CanvasLayerCardSlot/CardSlotRoot"]
@@ -852,114 +852,6 @@ max_value = 3.0
 step = 0.5
 value = 1.0
 
-[node name="Button1" type="BaseButton" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option"]
-_import_path = NodePath("")
-unique_name_in_owner = false
-process_mode = 0
-process_priority = 0
-process_physics_priority = 0
-process_thread_group = 0
-physics_interpolation_mode = 2
-auto_translate_mode = 0
-editor_description = ""
-visible = true
-modulate = Color(1, 1, 1, 1)
-self_modulate = Color(1, 1, 1, 1)
-show_behind_parent = false
-top_level = false
-clip_children = 0
-light_mask = 1
-visibility_layer = 1
-z_index = 0
-z_as_relative = true
-y_sort_enabled = false
-texture_filter = 0
-texture_repeat = 0
-material = null
-use_parent_material = false
-clip_contents = false
-custom_minimum_size = Vector2(0, 0)
-layout_direction = 0
-layout_mode = 0
-anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
-offset_left = 6.0
-offset_top = 123.5
-offset_right = 94.0
-offset_bottom = 160.5
-grow_horizontal = 1
-grow_vertical = 1
-rotation = 0.0
-scale = Vector2(1, 1)
-pivot_offset = Vector2(0, 0)
-size_flags_horizontal = 1
-size_flags_vertical = 1
-size_flags_stretch_ratio = 1.0
-localize_numeral_system = true
-tooltip_text = ""
-tooltip_auto_translate_mode = 0
-focus_neighbor_left = NodePath("")
-focus_neighbor_top = NodePath("")
-focus_neighbor_right = NodePath("")
-focus_neighbor_bottom = NodePath("")
-focus_next = NodePath("")
-focus_previous = NodePath("")
-focus_mode = 2
-focus_behavior_recursive = 0
-mouse_filter = 1
-mouse_behavior_recursive = 0
-mouse_force_pass_scroll_events = true
-mouse_default_cursor_shape = 0
-accessibility_name = ""
-accessibility_description = ""
-accessibility_live = 0
-accessibility_controls_nodes = Array[NodePath]([])
-accessibility_described_by_nodes = Array[NodePath]([])
-accessibility_labeled_by_nodes = Array[NodePath]([])
-accessibility_flow_to_nodes = Array[NodePath]([])
-theme = null
-theme_type_variation = &""
-disabled = false
-toggle_mode = false
-button_pressed = false
-action_mode = 1
-button_mask = 1
-keep_pressed_outside = false
-button_group = null
-shortcut = null
-shortcut_feedback = true
-shortcut_in_tooltip = true
-script = ExtResource("29_8fvtd")
-metadata/_custom_type_script = "uid://parybxg7tb1k"
-
-[node name="Panel" type="Panel" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button1"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_type_variation = &"PanelButtonBG"
-
-[node name="Label" type="Label" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button1"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "查看图鉴"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="CanvasLayerAlmanac" type="CanvasLayer" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button1"]
-unique_name_in_owner = true
-layer = 60
-
 [node name="Button4" type="BaseButton" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option"]
 _import_path = NodePath("")
 unique_name_in_owner = false
@@ -994,10 +886,10 @@ anchor_left = 0.0
 anchor_top = 0.0
 anchor_right = 0.0
 anchor_bottom = 0.0
-offset_left = 113.0
-offset_top = 124.0
-offset_right = 201.0
-offset_bottom = 161.0
+offset_left = 5.0
+offset_top = 123.5
+offset_right = 200.0
+offset_bottom = 160.5
 grow_horizontal = 1
 grow_vertical = 1
 rotation = 0.0
@@ -1060,7 +952,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "选项设置"
+text = "控制台"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -1415,7 +1307,6 @@ debug_color = Color(0, 0.6, 0.69803923, 0.20392157)
 
 [connection signal="pressed" from="CanvasLayerCardSlot/CardSlotRoot/CardSlotContainer/ShovelContainer/UIShovel/Button" to="CanvasLayerCardSlot/CardSlotRoot/CardSlotContainer/ShovelContainer/UIShovel" method="_on_button_pressed"]
 [connection signal="pressed" from="CanvasLayerUI/All_UI/MainGameMenuButton" to="CanvasLayerUI/All_UI/MainGameMenuOptionDialog" method="appear_menu"]
-[connection signal="pressed" from="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button1" to="CanvasLayerUI/All_UI/MainGameMenuOptionDialog" method="encyclopedia"]
 [connection signal="pressed" from="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button4" to="CanvasLayerUI/All_UI/MainGameMenuOptionDialog" method="_on_button_console_pressed"]
 [connection signal="pressed" from="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button2" to="CanvasLayerUI/All_UI/MainGameMenuOptionDialog" method="resume_game"]
 [connection signal="pressed" from="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Option/Button3" to="CanvasLayerUI/All_UI/MainGameMenuOptionDialog" method="return_main_menu"]

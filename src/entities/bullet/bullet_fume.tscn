@@ -3,7 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://cit8bsc5op7f0" path="res://src/entities/bullet/bullet_linear_base.tscn" id="1_58nqe"]
 
 [node name="Bullet004Fume" instance=ExtResource("1_58nqe")]
-bullet_type = 4
+bullet_type = &"fume"
 max_attack_num = -1
 speed = 450.0
 bullet_mode = 1

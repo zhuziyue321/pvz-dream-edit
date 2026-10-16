@@ -1,21 +1,25 @@
-[gd_scene load_steps=5 format=3 uid="uid://mng559f0d4kg5"] 
+[gd_scene load_steps=6 format=3 uid="uid://mng559f0d4kg5"] 
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_base"]
 [ext_resource type="Script" uid="uid://ujiovgacmpew0" path="res://src/entities/character/components/zombie_plant_component/component_zombie_plant.gd" id="2_plant"]
 [ext_resource type="Script" uid="uid://n3lx95zcxsds0" path="res://src/entities/character/components/attack_behavior_component/component_attack_zom_botany.gd" id="4_atk"]
+[ext_resource type="Script" uid="uid://bqh7yexy3v62h" path="res://src/entities/character/components/armor_component/component_armor_plant_head.gd" id="9_armor"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_zomray"]
 size = Vector2(760, 70)
 
 [node name="Zombie036SnowPeaZombie" instance=ExtResource("1_base")]
-zombie_type = 36
+zombie_type = &"snow_pea_zombie"
 
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor1 = 300
+[node name="ArmorComponent" type="Node2D" parent="."]
+script = ExtResource("9_armor")
+armor_type = 9
+armor_class = 1
+max_hp = 300
 
 [node name="AttackComponent" parent="." index="6" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("4_atk")
 attack_cd = 1.5
-attack_bullet_type = 2
+attack_bullet_type = &"pea_snow"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="1"]

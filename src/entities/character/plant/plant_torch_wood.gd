@@ -8,8 +8,8 @@ var bullets:Node2D
 
 ## 子弹升级数据
 const bullet_upgrade_data = {
-	BulletRegistry.BulletType.Bullet001Pea: BulletRegistry.BulletType.Bullet006PeaFire,
-	BulletRegistry.BulletType.Bullet002PeaSnow: BulletRegistry.BulletType.Bullet001Pea,
+	BulletIds.PEA: BulletIds.PEA_FIRE,
+	BulletIds.PEA_SNOW: BulletIds.PEA,
 }
 
 func ready_norm() -> void:

@@ -106,7 +106,7 @@ func before_wave_spawn(
 ## [wave] 当前波次
 func create_wave_zombies(
 	create_manager: ZombieWaveCreateManager,
-	wave_spawn: Array[CharacterRegistry.ZombieType],
+	wave_spawn: Array[StringName],
 	wave: int
 ) -> Array[Zombie000Base]:
 	return create_manager.create_norm_wave_zombies(wave_spawn, wave)
@@ -146,7 +146,7 @@ func create_custom_seed_packet(
 	## 源卡：模仿者（P999）不出战，没有登记模板，单独取源目录里那一张
 	var template: Card = AllCards.get_template(card_reference)
 	if template == null and card_reference.card_type == ResourceCardReference.CardType.Plant \
-			and card_reference.content_id == CharacterRegistry.PlantType.P999Imitater:
+			and card_reference.content_id == PlantIds.IMITATER:
 		template = AllCards.imitater_card
 	if template == null:
 		Log.error("关卡脚本：自定义种子包的卡牌身份未注册：%s" % str(card_reference.to_dict()))
@@ -330,16 +330,26 @@ func gain(loot_name: String, glo_pos: Vector2 = Vector2.ZERO) -> void:
 
 
 ## 判胜用的主游戏：优先用流程注入的那个，没有再退回全局（与 _get_battle_card_slot 同一套兜底）
+##
+## ⚠️ 「拿不到」要分成三种，不能合成一句 ERROR（以前就是一句，结果把正常的收尾报成了错误）：
+##   1. **这一关已经不存在了**（本关自己的主游戏已销毁 / 全局也没有当前局）——
+##      挂在流程协程上的那几步会在关卡拆除后醒过来（玩家退出 / 联机时被房主带走），
+##      那时判胜无处可判，安静跳过：这不是错误；
+##   2. 全局那一局**不是本关的**（`game_para != self`）—— 那是**下一关**的主游戏，
+##      判到别人头上去才是真的错：跳过并 WARN；
+##   3. 人就站在本关里却没有结算子管理器 —— 真错误：ERROR（带上本关存档名，好定位）。
 func _get_win_main_game() -> MainGameManager:
-	## ★ 本关自己的主游戏已经被销毁 = **这一关已经不存在了**（玩家退出 / 联机时被房主带走了），
-	##   判胜无从谈起，安静跳过：这不是错误，挂在流程协程上的那几步会在关卡拆除后醒过来
-	##   （那时 `GameContext.curr_main_game` 也已经是 null / 下一关的那一个，判到别人头上去才真是错）。
+	## ★ 本关自己的主游戏已经被销毁 = **这一关已经不存在了**（见上面第 1 条）
 	if _mg != null and not is_instance_valid(_mg):
-		Log.debug("关卡脚本：本关已经结束（主游戏不在了），判胜已跳过")
 		return null
 	var mg: MainGameManager = _mg if is_instance_valid(_mg) else GameContext.curr_main_game
-	if mg == null or not is_instance_valid(mg) or mg.reward_manager == null:
-		Log.error("关卡脚本：主游戏 / 通关结算子管理器不存在，判胜已跳过")
+	if mg == null or not is_instance_valid(mg):
+		return null
+	if mg.game_para != self:
+		Log.warn("关卡脚本：判胜时当前这一局不是本关（本关=%s），已跳过" % save_game_name)
+		return null
+	if mg.reward_manager == null:
+		Log.error("关卡脚本：主游戏没有通关结算子管理器，判胜已跳过（本关=%s）" % save_game_name)
 		return null
 	return mg
 
@@ -434,7 +444,7 @@ func bowling_stripe() -> void:
 ## [refresh_types] 本关出怪表，预览僵尸按它生成；留空 = 沿用关卡数据的 zombie_refresh_types
 ## （预览跑在开战之前，本关出怪表要在这里一起给，见 LevelTimelineEventShowZombie）
 ## 参数名**不能**叫 `zombie_refresh_types` —— 会遮蔽基类 ResourceLevelData 的同名字段
-func show_zombie(refresh_types: Array[CharacterRegistry.ZombieType] = []) -> void:
+func show_zombie(refresh_types: Array[StringName] = []) -> void:
 	var event := LevelTimelineEventShowZombie.new()
 	event.zombie_refresh_types = refresh_types
 	await _run_event(event, "展示僵尸")
@@ -481,7 +491,7 @@ func wait_battle_start() -> void:
 ## timeout > 0 时最多等这么多秒
 ## 前两个参数**不能**叫 `max_wave` / `zombie_refresh_types` —— 会遮蔽基类 ResourceLevelData 的同名字段
 func start_battle(wave_num: int = -1,
-		refresh_types: Array[CharacterRegistry.ZombieType] = [],
+		refresh_types: Array[StringName] = [],
 		timeout: float = 0.0) -> void:
 	var event := LevelTimelineEventStartBattle.new()
 	event.max_wave = wave_num
@@ -555,7 +565,7 @@ func hide_hint() -> void:
 ## 箭头指到 target 那类东西上（跟着目标走：阳光会飘、卡片会位移，箭头每帧重算落点）
 ## plant_type 给 Card / Lawn 两个目标用（找那张卡 / 找能种它的格子）
 func arrow(target: PointerTargetResolver.E_PointerTarget,
-		plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+		plant_type: StringName = PlantIds.NULL) -> void:
 	var event := LevelTimelineEventArrow.new()
 	event.target = target
 	event.plant_type = plant_type
@@ -563,12 +573,12 @@ func arrow(target: PointerTargetResolver.E_PointerTarget,
 
 
 ## 箭头指到这张种子包上
-func arrow_card(plant_type: CharacterRegistry.PlantType) -> void:
+func arrow_card(plant_type: StringName) -> void:
 	await arrow(PointerTargetResolver.E_PointerTarget.Card, plant_type)
 
 
 ## 箭头指到一块能种下 plant_type 的草地上（留 Null = 草坪中心那一格）
-func arrow_lawn(plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+func arrow_lawn(plant_type: StringName = PlantIds.NULL) -> void:
 	await arrow(PointerTargetResolver.E_PointerTarget.Lawn, plant_type)
 
 
@@ -630,7 +640,7 @@ func spawn_sun() -> void:
 
 
 ## 等玩家把这张卡捡到手上；plant_type 留 Null = 任意卡
-func wait_take_card(plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+func wait_take_card(plant_type: StringName = PlantIds.NULL) -> void:
 	var event := LevelTimelineEventWaitTakeCard.new()
 	event.plant_type = plant_type
 	await _run_event(event, "等待玩家捡起卡片")
@@ -642,7 +652,7 @@ func wait_take_shovel() -> void:
 
 
 ## 等玩家种下 count 株植物；plant_type 留 Null = 任意植物
-func wait_plant(count: int = 1, plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> void:
+func wait_plant(count: int = 1, plant_type: StringName = PlantIds.NULL) -> void:
 	var event := LevelTimelineEventWaitPlant.new()
 	event.count = count
 	event.plant_type = plant_type
@@ -668,7 +678,7 @@ func wait_dig_all_plants() -> void:
 ## 给「说完一句提示先让玩家自己试」用的 —— 原版 1-1 说完「阳光够了」之后是直接等的，
 ## 只有玩家自己不动手的那 4 秒过去了，才补那句「点击豌豆射手，再种一棵！」。
 func wait_plant_timeout(count: int = 1,
-		plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null,
+		plant_type: StringName = PlantIds.NULL,
 		timeout: float = 4.0) -> bool:
 	var event := LevelTimelineEventWaitPlant.new()
 	event.count = count

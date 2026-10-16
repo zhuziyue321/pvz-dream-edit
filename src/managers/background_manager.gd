@@ -43,7 +43,6 @@ func init_background():
 	background.texture = curr_bg_texture
 	home.init_home(game_para.game_BG)
 	if not game_para.is_zombie_can_home:
-		Log.debug("僵尸无法进房")
 		home.disable_home()
 	init_map_bg_anim()
 	init_map_bg_logic()

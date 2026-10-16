@@ -62,7 +62,7 @@ func run(a) -> void:
 	var tomb: TombStone = tomb_list[0]
 
 	## 1) 正常出一只
-	var ok1 := tomb.create_new_zombie(CharacterRegistry.ZombieType.Z001Norm, 1.0)
+	var ok1 := tomb.create_new_zombie(ZombieIds.NORM, 1.0)
 	_check(a, "1) 第一次出怪成功", ok1, str(ok1))
 	if not ok1:
 		_finish(a)
@@ -71,7 +71,7 @@ func run(a) -> void:
 		tomb.is_creating_zombie(), str(tomb.is_creating_zombie()))
 	## 忙碌期间重复调用必须被挡住
 	_check(a, "1) 忙碌期间重复出怪被拒绝",
-		not tomb.create_new_zombie(CharacterRegistry.ZombieType.Z001Norm, 1.0))
+		not tomb.create_new_zombie(ZombieIds.NORM, 1.0))
 
 	## 2) 冒头途中把它打死 —— 正是原 bug 的触发条件
 	var victim: Zombie000Base = tomb.new_zombie
@@ -86,7 +86,7 @@ func run(a) -> void:
 	## 3) 墓碑必须恢复空闲，并且还能再放一只
 	_check(a, "3) 墓碑恢复空闲（出怪中僵尸被销毁不留残留）",
 		not tomb.is_creating_zombie(), str(tomb.is_creating_zombie()))
-	var ok2 := tomb.create_new_zombie(CharacterRegistry.ZombieType.Z001Norm, 1.0)
+	var ok2 := tomb.create_new_zombie(ZombieIds.NORM, 1.0)
 	_check(a, "3) 第二次出怪成功", ok2, str(ok2))
 	await a.wait(2.5)
 	var alive := 0

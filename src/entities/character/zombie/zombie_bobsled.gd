@@ -44,7 +44,10 @@ func judge_is_in_ice_road():
 			is_in_road = true
 			break
 	if not is_in_road:
-		hp_component.Hp_loss(100,BulletRegistry.AttackMode.Real, true, false)
+		## 离开冰道持续掉血：真实伤害（无视二类防具），不播受击音效（不是"被打"）
+		var info := DamageInfo.create(self, 100, ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Script)
+		info.trigger_sfx = false
+		apply_damage(info)
 
 
 ## 角色死亡
@@ -69,7 +72,7 @@ func death_language():
 			}
 			get_main_game().zombie_manager.call_deferred(
 				"create_norm_zombie",
-				CharacterRegistry.ZombieType.Z1001BobsledSingle,
+				ZombieIds.BOBSLED_SINGLE,
 				zombie_row,
 				zombie_init_para,
 				Vector2(sub_zombie_body.global_position.x, get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)

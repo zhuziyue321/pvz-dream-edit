@@ -103,12 +103,12 @@ func _create_seed_packets() -> void:
 	for i in range(ConstBeghouled.UPGRADE_LIST.size()):
 		var info: Dictionary = ConstBeghouled.UPGRADE_LIST[i]
 		## 卡面用升级**之后**的那种植物（原版升级按钮上画的就是升级版）
-		var icon_type: CharacterRegistry.PlantType = info["to"]
+		var icon_type: StringName = info["to"]
 		_create_upgrade_packet(i, icon_type, int(info["sun"]))
 	## 第四张：刷新盘面（身份引用只用来取卡片模板，卡面在下面整张换成专用贴图）
 	var refresh_ref := ResourceCardReference.create(
 		ResourceCardReference.CardType.Plant,
-		CharacterRegistry.PlantType.P999Imitater
+		PlantIds.IMITATER
 	)
 	var refresh_card := create_custom_seed_packet(refresh_ref, ConstBeghouled.SHUFFLE_SUN, _on_refresh_packet_click)
 	ConstBeghouled.set_packet_face(refresh_card, ConstBeghouled.PACKET_REFRESH_TEXTURE)
@@ -116,7 +116,7 @@ func _create_seed_packets() -> void:
 	## 第五张：填坑（花 200 阳光填一个弹坑，填完那格立刻长出新植物）
 	var fill_ref := ResourceCardReference.create(
 		ResourceCardReference.CardType.Plant,
-		CharacterRegistry.PlantType.P016DoomShroom
+		PlantIds.DOOM_SHROOM
 	)
 	crater_fill_packet = create_custom_seed_packet(fill_ref, ConstBeghouled.CRATER_FILL_SUN, _on_fill_packet_click)
 	ConstBeghouled.set_packet_face(crater_fill_packet, ConstBeghouled.PACKET_FILL_TEXTURE)
@@ -133,7 +133,7 @@ func _on_crater_num_changed(crater_num: int) -> void:
 
 
 ## 一张升级种子包：点了把场上（以及以后长出来的）from 植物全换成 to，买过一次就永久置灰
-func _create_upgrade_packet(index: int, icon_type: CharacterRegistry.PlantType, sun_cost: int) -> void:
+func _create_upgrade_packet(index: int, icon_type: StringName, sun_cost: int) -> void:
 	var card_ref := ResourceCardReference.create(ResourceCardReference.CardType.Plant, icon_type)
 	_append_packet(create_custom_seed_packet(card_ref, sun_cost, _on_upgrade_packet_click.bind(index)))
 
@@ -179,12 +179,12 @@ func _on_fill_packet_click(card: Card) -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.SCREEN_DOOR,
 	]
 
 	## 展示僵尸

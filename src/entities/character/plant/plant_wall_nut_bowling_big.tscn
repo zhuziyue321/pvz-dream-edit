@@ -11,7 +11,7 @@
 [node name="Plant1003WallNutBowling" instance=ExtResource("1_aj77m")]
 script = ExtResource("2_41x36")
 bowling_bullet_scene = ExtResource("3_31glj")
-plant_type = 1003
+plant_type = &"wall_nut_bowling_big"
 
 [node name="Shadow" parent="." index="0"]
 scale = Vector2(2, 2)

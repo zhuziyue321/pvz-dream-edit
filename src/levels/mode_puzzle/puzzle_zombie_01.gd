@@ -24,13 +24,13 @@ func _init() -> void:
 	plant_col_on_zombie_mode = 3
 	## 必种 4 株向日葵：没有向日葵就没有阳光来源，关卡必然打不下去
 	all_plants_weight_on_zombie_mode.assign({
-	1: 2,
-	2: 6,
-	6: 2,
-	18: 1
+	&"pea_shooter_single": 2,
+	&"sun_flower": 6,
+	&"snow_pea": 2,
+	&"squash": 1
 	})
 	all_must_plants_on_zombie_mode.assign({
-	2: 4
+	&"sun_flower": 4
 	})
 	is_bowling_stripe = true
 	plant_cell_col_j = 4
@@ -52,7 +52,7 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z008Football,
+		ZombieIds.NORM,
+		ZombieIds.BUCKET,
+		ZombieIds.FOOTBALL,
 	])

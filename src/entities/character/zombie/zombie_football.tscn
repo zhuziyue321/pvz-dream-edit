@@ -49,6 +49,7 @@
 [ext_resource type="Texture2D" uid="uid://yj0oi6qioc7a" path="res://assets/reanim/Zombie_charred_pile1.png" id="39_rx8gp"]
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="40_c1bm0"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="41_atbac"]
+[ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_roprh"]
 script = ExtResource("2_2ie3r")
@@ -1181,10 +1182,8 @@ nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_0uapb")
 nodes/TimeScale/position = Vector2(359, 63)
 node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
-[node name="Zombie009Football" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_n4h18")]
-zombie_type = 8
-iron_type = 1
-iron_node = NodePath("Body/BodyCorrect/IronNode")
+[node name="Zombie009Football" instance=ExtResource("1_n4h18")]
+zombie_type = &"football"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-73, -129)
@@ -1408,12 +1407,16 @@ scale = Vector2(0.796448, 0.796448)
 texture = ExtResource("25_6e5dw")
 centered = false
 
+[node name="ArmorComponent" type="Node2D" parent="." node_paths=PackedStringArray("iron_node")]
+script = ExtResource("9_armor")
+armor_type = 3
+armor_class = 1
+max_hp = 1400
+iron_node = NodePath("../Body/BodyCorrect/IronNode")
+body_change = Array[ExtResource("2_2ie3r")]([SubResource("Resource_ptw5q"), SubResource("Resource_vqhl3"), SubResource("Resource_210lq")])
+
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("2_2ie3r")]([SubResource("Resource_roprh"), SubResource("Resource_bmjfw")])
-body_change_armor1 = Array[ExtResource("2_2ie3r")]([SubResource("Resource_ptw5q"), SubResource("Resource_vqhl3"), SubResource("Resource_210lq")])
-
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor1 = 1400
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]
 centered = false

@@ -20,7 +20,7 @@ var curr_attack_num:=0
 ## 子弹默认移动方向
 @export var direction: Vector2 = Vector2.RIGHT
 ## 子弹伤害模式：普通，穿透，真实
-@export var bullet_mode : BulletRegistry.AttackMode
+@export var bullet_mode : ConstDamage.E_DamageMode
 ## 子弹移动离出生点最大距离，超过自动销毁
 @export var max_distance := 2000.0
 ## 子弹初始位置
@@ -175,12 +175,12 @@ func _attack_enemy(enemy:Character000Base):
 		_attack_plant(enemy)
 	elif enemy is ZB000Base:
 		## 僵王直接使用角色伤害入口，不转换成普通僵尸或套用其防具规则
-		enemy.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx)
+		enemy.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx, self)
 
 ## 对僵尸敌人造成伤害,直线类子弹重写
 func _attack_zombie(zombie:Zombie000Base):
-	## 攻击敌人
-	zombie.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx)
+	## 攻击敌人（最后一个参数 = 伤害载体，让"哪一发打的"能进 DamageInfo）
+	zombie.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx, self)
 
 
 ## 对植物敌人造成伤害（僵尸方子弹 / 植物僵尸使用）
@@ -190,7 +190,7 @@ func _attack_plant(plant:Plant000Base):
 		## 格子里没有可攻击的植物（例如只剩花盆 / 睡莲且掩码不含悬浮）
 		return
 	## 攻击敌人
-	plant.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx)
+	plant.be_attacked_bullet(attack_value, bullet_mode, true, trigger_be_attack_sfx, self)
 
 
 ## 直线子弹先对壳类进行攻击

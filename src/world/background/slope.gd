@@ -39,10 +39,8 @@ func _ready() -> void:
 	end_pos_slope = slope_shape.b
 	slope_global_pos_x_range = Vector2(start_pos_slope.x + global_position.x, end_pos_slope.x + global_position.x)
 
-	Log.debug(str("屋顶斜面单位方向为:") + str(dir_ground))
 	## 逆时针旋转90度
 	normal_vector_slope = Vector2(dir_ground.y, -dir_ground.x)
-	Log.debug(str("屋顶斜面法向量方向(地面上方向)为:") + str(normal_vector_slope))
 
 	area_2d_slope_detection.area_entered.connect(_on_area_2d_area_entered)
 	area_2d_slope_detection.area_exited.connect(_on_area_2d_area_exited)
@@ -64,11 +62,9 @@ func _on_area_2d_area_entered(area: Area2D) -> void:
 	var area_owner = area.owner
 	## 如果检测到僵尸
 	if area_owner is Zombie000Base:
-		#Log.debug("检测到僵尸")
 		area_owner.update_move_dir_y_correct(dir_ground)
 	elif area_owner is RoofCleaner:
 		area_owner.update_move_dir_y_correct(dir_ground)
-		Log.debug(str("检测到屋顶小推车") + str(dir_ground))
 
 ## 僵尸\小推车离开
 func _on_area_2d_area_exited(area: Area2D) -> void:

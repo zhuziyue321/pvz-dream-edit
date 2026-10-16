@@ -130,7 +130,6 @@ func on_lawn_mover_triggered(mower_lane: int) -> void:
 	lane_protect_time_left[mower_lane] = mower_protect_time
 	## 有了非零的计时器，_process 才需要跑（见 _refresh_process）
 	_refresh_process()
-	Log.debug("丢车保护：第 %d 行 %.1f 秒内不出怪" % [mower_lane, mower_protect_time])
 
 
 ## 保护计时数组与当前行数对齐（换场景/关卡时行数可能不同）
@@ -172,7 +171,6 @@ func calculate_smooth_weights(zombie_row_type: CharacterRegistry.ZombieRowType, 
 		return smooth_weights
 
 	if not special_base_weight.is_empty():
-		Log.debug("使用临时特殊基础权重")
 		base_weight = special_base_weight
 		total_base_weight = GlobalUtils.sum_arr(base_weight)
 	else:

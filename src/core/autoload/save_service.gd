@@ -47,7 +47,6 @@ func save_now() -> void:
 	var path := _get_save_game_path()
 	if path.is_empty():
 		# 未选用户时常见，不算错误
-		Log.debug("全局存档跳过：未登录用户或用户名为空")
 		return
 
 	if global_game_state == null:
@@ -79,7 +78,6 @@ func save_now() -> void:
 
 	if not _save_json(data, path):
 		return
-	Log.debug(str(GlobalUtils.get_curr_time()) + str(" 存档全局数据成功, 存档路径:") + str(path))
 
 func load_global_game_data() -> void:
 	var path := _get_save_game_path()
@@ -101,7 +99,6 @@ func load_global_game_data() -> void:
 	## 只判主档：主档没了但 .bak 还在时仍要走 _load_json 的备份回退，不能当成新用户。
 	if not FileAccess.file_exists(path) and not FileAccess.file_exists(path + ".bak"):
 		global_game_state.reset_to_defaults()
-		Log.debug(str("✅ 该用户尚无存档，已按新档初始化: ") + str(path))
 		return
 
 	var loaded: Variant = _load_json(path)
@@ -127,15 +124,18 @@ func load_global_game_data() -> void:
 	state.garden_data = data.get("garden_data", state.DEFAULT_GARDEN_DATA).duplicate(true)
 	## JSON 读回来的数字都是 float:转回 int,免得花园工具记录越存越"浮点"
 	state.normalize_garden_data_numbers()
+	## 花园植物的 id / 枚举同样是这个坑:植物类型在老存档里是数字编号,现在一律是 StringName id
+	state.normalize_garden_plant_cell_data()
 	state.curr_all_level_state_data = data.get("curr_all_level_state_data", state.DEFAULT_CURR_ALL_LEVEL_STATE_DATA).duplicate(true)
 	state.selected_cards = _normalize_selected_cards(data.get("selected_cards", []))
 	## 已解锁植物: 存档里的解锁记录 + 按已通关冒险关卡重新推导(兼容旧档与手动改档),取并集
 	state.curr_plant = _build_curr_plant(data, state)
 
 	var loaded_curr_zombie_raw: Array = data.get("curr_zombie", state.curr_zombie)
-	var loaded_curr_zombie: Array[CharacterRegistry.ZombieType] = []
+	var loaded_curr_zombie: Array[StringName] = []
 	for zombie_type in loaded_curr_zombie_raw:
-		loaded_curr_zombie.append(int(zombie_type) as CharacterRegistry.ZombieType)
+		## 老存档里是数字编号（Z001 = 1 …），新格式是字符串 id；见 ZombieIds.from_legacy
+		loaded_curr_zombie.append(ZombieIds.from_legacy(zombie_type))
 	state.curr_zombie = loaded_curr_zombie
 
 
@@ -152,33 +152,46 @@ func _normalize_selected_cards(raw: Variant) -> Array:
 		if not item is Dictionary:
 			continue
 		var card_data: Dictionary = (item as Dictionary).duplicate()
-		# 已经是新格式：只需把 JSON 的 float 转回 int,并确认模仿修饰是布尔值。
+		# 新格式：类别转回 int；content_id 可能是字符串 id（当前格式），
+		# 也可能是老存档里的数字编号 —— 按类别经 *_ids.from_legacy() 统一成 id。
 		if card_data.has("card_type") and card_data.has("content_id"):
 			card_data["card_type"] = int(card_data["card_type"])
-			card_data["content_id"] = int(card_data["content_id"])
+			card_data["content_id"] = _content_id_of(card_data)
 			card_data["is_imitater"] = bool(card_data.get("is_imitater", false))
 			result.append(card_data)
 			continue
 		# 旧格式：植物条目
 		if card_data.has("plant_type"):
 			result.append({"card_type": ResourceCardReference.CardType.Plant,
-				"content_id": int(card_data["plant_type"]),
+				"content_id": PlantIds.from_legacy(card_data["plant_type"]),
 				"is_imitater": bool(card_data.get("is_imitater", false))})
 			continue
 		# 旧格式：普通僵尸条目
 		if card_data.has("zombie_type"):
 			result.append({"card_type": ResourceCardReference.CardType.Zombie,
-				"content_id": int(card_data["zombie_type"]),
+				"content_id": ZombieIds.from_legacy(card_data["zombie_type"]),
 				"is_imitater": false})
 	return result
+
+
+## 把存档里读到的角色编号统一成字符串 id（按卡牌类别选转换表）
+static func _content_id_of(card_data: Dictionary) -> StringName:
+	match int(card_data.get("card_type", ResourceCardReference.CardType.Null)):
+		ResourceCardReference.CardType.Plant:
+			return PlantIds.from_legacy(card_data["content_id"])
+		ResourceCardReference.CardType.Zombie:
+			return ZombieIds.from_legacy(card_data["content_id"])
+		ResourceCardReference.CardType.ZombieBoss:
+			return ZombieBossIds.from_legacy(card_data["content_id"])
+	return &""
 
 
 ## 构建已解锁植物列表:
 ## 初始植物 + 已通关冒险关卡对应的植物 + 存档中已记录的植物(紫卡/模仿者等购买所得)
 ## 取并集,保证旧档不丢植物、通关进度也能自愈
-func _build_curr_plant(data: Dictionary, state: GlobalGameState) -> Array[CharacterRegistry.PlantType]:
+func _build_curr_plant(data: Dictionary, state: GlobalGameState) -> Array[StringName]:
 	## 不基于 state.curr_plant 累加,避免切换用户时把上一个用户的解锁带过来
-	var result: Array[CharacterRegistry.PlantType] = []
+	var result: Array[StringName] = []
 	for plant_type in ConstPlantUnlock.INIT_PLANT_TYPES:
 		if not result.has(plant_type):
 			result.append(plant_type)
@@ -193,13 +206,14 @@ func _build_curr_plant(data: Dictionary, state: GlobalGameState) -> Array[Charac
 			continue
 		## 本关给哪一株写在那一关的脚本上（level_complete_loot 那个战利品名字），不查表
 		var reward_plant := LevelRegistry.get_adventure_level_reward_plant(adventure_level)
-		if reward_plant != CharacterRegistry.PlantType.Null and not result.has(reward_plant):
+		if reward_plant != PlantIds.NULL and not result.has(reward_plant):
 			result.append(reward_plant)
 
 	## 存档中已记录的植物(购买类解锁)
 	for plant_type in data.get("curr_plant", []):
-		var curr: CharacterRegistry.PlantType = int(plant_type) as CharacterRegistry.PlantType
-		if curr != CharacterRegistry.PlantType.Null and not result.has(curr):
+		## 老存档里是数字编号（P001 = 1 …），新格式是字符串 id；见 PlantIds.from_legacy
+		var curr: StringName = PlantIds.from_legacy(plant_type)
+		if curr != PlantIds.NULL and not result.has(curr):
 			result.append(curr)
 	return result
 

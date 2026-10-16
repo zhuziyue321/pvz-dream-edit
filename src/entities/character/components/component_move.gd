@@ -183,11 +183,9 @@ func start_ladder():
 
 func _walking_start():
 	walking_status = WalkingStatus.start
-	#Log.debug(str(111) + str("walk is start"))
 
 func _walking_end():
 	walking_status = WalkingStatus.end
-	#Log.debug(str(111) + str("walk is end"))
 
 ## 动画结束时
 @warning_ignore("unused_parameter")

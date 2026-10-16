@@ -67,7 +67,7 @@ node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"
 [node name="Plant028Blover" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_ccuq8")]
 script = ExtResource("2_rbyii")
 blover_time = 2.0
-plant_type = 28
+plant_type = &"blover"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="BodyCorrect" parent="Body" index="0"]

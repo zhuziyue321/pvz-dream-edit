@@ -132,7 +132,7 @@ anim_offset_max = 1.0
 script = ExtResource("2_0r7iw")
 prepare_time = 10.0
 is_prepare_end = false
-plant_type = 5
+plant_type = &"potato_mine"
 node_no_change_direction = [null, null, null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("BombComponent/Area2DBomb"), NodePath("DetectComponent")]
 

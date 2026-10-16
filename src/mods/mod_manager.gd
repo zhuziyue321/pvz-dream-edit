@@ -13,6 +13,21 @@ class_name ModManagerClass
 ## 那次为了隐藏手套要在 5 个本体文件里各堵一层）。
 ## 做成模组后：关 = 不装载，本体零分支、零节点。
 ##
+## ★★ 模组在哪：**两个加载源，`user://mods/` 优先**，两份各自独立、**不互相复制**
+##   · `user://mods/`        —— **优先**：玩家那份。想改内置模组就把它**整个目录**拷到这里再改；
+##                               放自己的模组也在这里（要先在 `MOD_SCRIPT_PATHS` 登记 id）。
+##   · `res://mods_builtin/` —— 工程里的内置源（导出后躺在包里）：玩家那份没有 / 读不出来时从这里加载。
+##
+##   装载时按**模组**判定（见 `_resolve_mod_roots()`）：
+##   `user://mods/<入口脚本>` 在 → 整个模组从 `user://mods/` 加载；不在 → 从 `res://mods_builtin/` 加载。
+##
+##   ⚠️ 一个模组只从**一个根**加载，绝不混着来：模组内部靠 `preload("相对路径")` 互相引用，
+##   一半 `user://`、一半包里会错位报错。所以改内置模组要**整个目录拷过去**（含 `mod_base.gd`），
+##   拷漏了不会自动退回内置源 —— 那样「改了不生效」更难查，改成启动打一行 warn 列出缺哪些。
+##
+##   内置源永远齐全，所以它是「只给玩家一个游戏文件」时保证模组一定能跑起来的那份；
+##   玩家那份**读不出来**时（导出把脚本二进制化后引擎认不出的形态）也会退到这里再试一次。
+##
 ## 三条约定：
 ##   1. **id 走注册表**：id 常量在 `ModIds`，id → 入口脚本的映射只在下面的
 ##      `MOD_SCRIPT_PATHS`（硬约束 §1-4），业务代码里不许再出现第二张映射表
@@ -22,8 +37,16 @@ class_name ModManagerClass
 ##      还不存在时照它播种一份，之后一律以存档文件为准 —— 页面上开 / 关就真的持久化了。
 ##   3. **本体不 import 模组**：本体只调 `is_mod_enabled(ModIds.XXX)`
 ##
+## ⚠️ 从 `user://mods/` 加载时，那些脚本**不是**工程脚本，有两条硬限制（Godot 4.6.2 实测）：
+##   · 它们的 `class_name` **不会注册成全局类** —— 所以模组内部一律 `extends "相对路径.gd"`
+##     与 `const Xxx := preload("xxx.gd")`，**不能**写 `extends ModBase` / `var m: ModBase`；
+##   · 相应地，本文件（在 `res://`）也不能引用任何模组里的类 —— 一律按 `Variant` 动态调用。
+##   退回内置源加载时这两条限制会**自动消失**（`res://` 下写相对路径照样能用，只是整套已经按上面的
+##   口吻写好了，**不要**因为「这次能写 `extends ModBase`」就去改 —— 玩家那份一回来就会炸）。
+##   详见 [模组机制](../../docs/参考存档/模组机制.md) §二与 `mods_builtin/README.md`。
+##
 ## 装载时机：
-##   `_ready()`                      —— 游戏启动：装载已启用模组的 `install()`
+##   `_ready()`                      —— 游戏启动：定加载根 → 读存档 → 装载已启用模组的 `install()`
 ##   `install_mods_to_main_game(mg)` —— 每局：由 `MainGameManager.init_manager()` 调用，
 ##                                     排在 `hand_manager.init_manager()` 之前
 ##
@@ -32,14 +55,30 @@ class_name ModManagerClass
 ## 界面：模组的列表与开 / 关在**模组页面**（`src/ui/mod_page/mod_page.tscn`，
 ## 主菜单 → 选项 → 控制台 →「模组」），本管理器不往控制台挂任何东西。
 ##
-## 关联：ModBase ｜ ModIds ｜ ModConfig ｜ [模组机制](../../docs/参考存档/模组机制.md)
+## 关联：ModIds ｜ ModConfig ｜ [模组机制](../../docs/参考存档/模组机制.md)
 
-## 模组 id → 入口脚本路径（唯一的一张映射表）
+## 玩家那一份的根目录（`user://` = 编辑器与导出后同址）：**优先加载**
+const MODS_ROOT := "user://mods"
+## 内置模组的根（工程内，导出后躺在包里）：玩家那份没有 / 读不出来时的**兜底加载根**
+const BUILTIN_MODS_DIR := "res://mods_builtin"
+## 不算「模组文件」的后缀：`.uid` 是 Godot 给 `res://` 文件配的 id，`.import` 同理
+const IGNORE_SUFFIXES: Array[String] = [".uid", ".import"]
+
+## 模组 id → 入口脚本路径（唯一的一张映射表；**相对加载根**，见 `_mod_script_path()`）
 const MOD_SCRIPT_PATHS: Dictionary = {
-	ModIds.GLOVE: "res://src/mods/glove/glove_mod.gd",
-	ModIds.CUSTOM_LEVEL: "res://src/mods/custom_level/custom_level_mod.gd",
-	ModIds.NETPLAY: "res://src/mods/netplay/netplay_mod.gd",
+	ModIds.GLOVE: "glove/glove_mod.gd",
+	ModIds.HAMMER: "hammer/hammer_mod.gd",
+	ModIds.WATER_BOWL: "water_bowl/water_bowl_mod.gd",
+	ModIds.PURPLE_DIRECT_PLANT: "purple_direct_plant/purple_direct_plant_mod.gd",
+	ModIds.MORE_ARMOR: "more_armor/more_armor_mod.gd",
+	ModIds.CUSTOM_LEVEL: "custom_level/custom_level_mod.gd",
+	ModIds.NETPLAY: "netplay/netplay_mod.gd",
+	ModIds.BALANCE: "balance/balance_mod.gd",
+	ModIds.PVZ2: "pvz2/pvz2_mod.gd",
+	ModIds.ZHAOXIAO: "zhaoxiao/zhaoxiao_mod.gd",
 }
+## 模组基类（两个根下各有一份）：用它判断「入口脚本是不是真的继承了 ModBase」
+const MOD_BASE_REL_PATH := "mod_base.gd"
 
 ## 工程默认开关（`ModConfig`）：**只在存档文件还不存在时播种一次**，之后一律以存档文件为准
 const CONFIG_PATH := "res://data/mods/mod_config.tres"
@@ -48,8 +87,11 @@ const MOD_SAVE_FILE := "mod_config.ini"
 ## 存档文件里「这个模组开没开」的键名（一个模组一个段，段名就是模组 id）
 const ENABLED_KEY := "enabled"
 
+## 每个模组**当前实际从哪个根加载**（两个源，`MODS_ROOT` 优先；见 `_resolve_mod_roots()`）
+var mod_roots: Dictionary[StringName, String] = {}
 ## 已创建的模组（不论开关，创建出来是为了让日志 / 将来的界面能列出全部模组）
-var all_mods: Dictionary[StringName, ModBase] = {}
+## ⚠️ 值**不能**标成 `ModBase`：那是 `user://` 里的脚本，本文件引用不到（见类注释）
+var all_mods: Dictionary = {}
 ## 每个模组的开关状态（启动时由存档文件初始化，运行期可被改）
 var enabled_mods: Dictionary[StringName, bool] = {}
 ## 已经跑过 `install()` 的模组（避免运行期开开关时重复安装）
@@ -58,6 +100,8 @@ var installed_mods: Dictionary[StringName, bool] = {}
 var mod_settings: Dictionary = {}
 ## 落盘节流标记：一帧里改好几次也只在帧末写一次文件（拖滑条时不会每帧写一遍）
 var _save_scheduled := false
+## 素材缓存：`"<模组 id>/<相对路径>"` → 读到的 Resource（见 `load_mod_asset()`）
+var _asset_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -65,9 +109,89 @@ func _ready() -> void:
 	## 信号后发，所以这里读到的已经是新用户
 	if Global != null and Global.user_manager != null:
 		Global.user_manager.signal_users_update.connect(_on_users_update)
+	_resolve_mod_roots()
 	_load_config()
 	_load_save()
 	_install_enabled_mods()
+
+
+## 某个模组入口脚本的**当前生效**路径（`<加载根>/<id>/<xxx>_mod.gd`）
+func _mod_script_path(mod_id: StringName) -> String:
+	return _mod_root(mod_id).path_join(MOD_SCRIPT_PATHS[mod_id])
+
+
+## 这个模组从哪个根加载：**玩家那份优先**，那份没有就用内置源（未解析过也给内置源）
+func _mod_root(mod_id: StringName) -> String:
+	return mod_roots.get(mod_id, BUILTIN_MODS_DIR)
+
+
+#region 加载根：两个源，user://mods 优先
+## 定每个模组的**加载根**：玩家那份有入口脚本就用它，没有就用内置源
+##
+## 两个源**不互相复制**（2026-10-15 起）：仓库里的内置源不再往 `user://mods/` 铺一份，
+## 玩家想改哪个内置模组，自己把**整个目录**拷到 `user://mods/` 下再改 —— 拷过去才生效，
+## 没拷就跑内置源那份（永远齐全）。
+## 早先的「启动自动复制 + 内容指纹决定要不要重铺」已撤销：它会把玩家改过的文件冲回去，
+## 也多一份「到底跑的是哪边」的解释成本；现在哪边有就跑哪边，一眼可判。
+##
+## 判定粒度是**整个模组**：一个模组只从一个根加载 —— 模组内部靠 `preload("相对路径")` 互相引用，
+## 混着来会错位报错。玩家那份**缺文件**不退回内置源（改了不生效更难查），只打一行 warn 列清单。
+func _resolve_mod_roots() -> void:
+	mod_roots.clear()
+	## 加载根可能变（玩家那份来 / 走），缓存过的素材要作废
+	_asset_cache.clear()
+	var from_user: Array[String] = []
+	var from_builtin: Array[String] = []
+	for mod_id in MOD_SCRIPT_PATHS:
+		var rel_script := String(MOD_SCRIPT_PATHS[mod_id])
+		if FileAccess.file_exists(MODS_ROOT.path_join(rel_script)):
+			mod_roots[mod_id] = MODS_ROOT
+			from_user.append(str(mod_id))
+			_warn_missing_files(mod_id)
+			continue
+		mod_roots[mod_id] = BUILTIN_MODS_DIR
+		from_builtin.append(str(mod_id))
+	Log.info("ModManager: 模组加载根 —— 玩家目录 %d 个 [%s]，内置源 %d 个 [%s]" % [
+		from_user.size(), ", ".join(from_user), from_builtin.size(), ", ".join(from_builtin)])
+
+
+## 玩家那份**缺哪些文件**（对比内置源的同名目录）：只报不改判定，让玩家自己补
+func _warn_missing_files(mod_id: StringName) -> void:
+	var rel_dir := String(MOD_SCRIPT_PATHS[mod_id]).get_base_dir()
+	var missing: Array[String] = []
+	_collect_missing_files(
+		BUILTIN_MODS_DIR.path_join(rel_dir), MODS_ROOT.path_join(rel_dir), rel_dir, missing)
+	if missing.is_empty():
+		return
+	Log.warn("ModManager: [%s] 玩家那份 %s 缺 %d 个文件 [%s] —— 整个模组只从玩家那份加载，缺的请补上" % [
+		str(mod_id), MODS_ROOT.path_join(rel_dir), missing.size(), ", ".join(missing)])
+
+
+## 递归收集 `src_dir` 里有、`dst_dir` 里没有的文件（跳过 `.uid` / `.import`）
+func _collect_missing_files(src_dir: String, dst_dir: String, rel_dir: String, out: Array[String]) -> void:
+	var dir := DirAccess.open(src_dir)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry_name := dir.get_next()
+	while entry_name != "":
+		if not entry_name.begins_with("."):
+			var rel := rel_dir.path_join(entry_name)
+			if dir.current_is_dir():
+				_collect_missing_files(
+					src_dir.path_join(entry_name), dst_dir.path_join(entry_name), rel, out)
+			elif not _is_ignored_file(entry_name) and not FileAccess.file_exists(dst_dir.path_join(entry_name)):
+				out.append(rel)
+		entry_name = dir.get_next()
+	dir.list_dir_end()
+
+
+func _is_ignored_file(file_name: String) -> bool:
+	for suffix in IGNORE_SUFFIXES:
+		if file_name.ends_with(suffix):
+			return true
+	return false
+#endregion
 
 
 #region 装载
@@ -76,7 +200,7 @@ func _ready() -> void:
 func _load_config() -> void:
 	for mod_id in MOD_SCRIPT_PATHS:
 		enabled_mods[mod_id] = false
-	var config: ModConfig = load(CONFIG_PATH)
+	var config = load(CONFIG_PATH)
 	if config == null:
 		Log.warn("ModManager: 读不到模组配置 %s，全部模组按关闭处理" % CONFIG_PATH)
 		return
@@ -90,7 +214,7 @@ func _load_config() -> void:
 ## 创建全部模组实例，并给已启用的跑一次全局 install()
 func _install_enabled_mods() -> void:
 	for mod_id in MOD_SCRIPT_PATHS:
-		var mod := _create_mod(mod_id)
+		var mod = _create_mod(mod_id)
 		if mod == null:
 			continue
 		all_mods[mod_id] = mod
@@ -100,20 +224,50 @@ func _install_enabled_mods() -> void:
 
 
 ## 创建一个模组实例（实例化失败只记日志，不让游戏起不来）
-func _create_mod(mod_id: StringName) -> ModBase:
-	var script_path: String = MOD_SCRIPT_PATHS[mod_id]
-	var script: GDScript = load(script_path)
-	if script == null:
+##
+## ⚠️ 返回值不能标 `ModBase`：入口脚本可能来自 `user://`（那里 `class_name` 不注册为全局类，
+## 见类注释）。校验「是不是真的继承了 ModBase」也不能用
+## `Script.instance_has()` —— user:// 下的脚本不走资源缓存，每次 `load()` 都是新对象，
+## 指针比不上，实测恒为 false；改成沿 `get_base_script()` 基链比 **路径**。
+##
+## 最后一重兜底：入口脚本在（判过 `FileAccess.file_exists`）却**读不出来** —— 导出把脚本二进制化后
+## `user://` 那份可能是引擎认不出的形态。这时退内置源再试一次，总比整个模组静默消失好。
+func _create_mod(mod_id: StringName):
+	var script_path := _mod_script_path(mod_id)
+	## 局部变量不叫 script：本类继承 Node，`script` 是 Object 的属性，同名会触发 SHADOWED_VARIABLE_BASE_CLASS
+	var mod_script = load(script_path)
+	if mod_script == null and _mod_root(mod_id) != BUILTIN_MODS_DIR:
+		Log.warn("ModManager: [%s] 玩家那份读不出来 %s，退回内置源" % [str(mod_id), script_path])
+		mod_roots[mod_id] = BUILTIN_MODS_DIR
+		script_path = _mod_script_path(mod_id)
+		mod_script = load(script_path)
+	if mod_script == null:
 		Log.error("ModManager: 模组入口脚本加载失败 %s" % script_path)
 		return null
-	var mod: ModBase = script.new() as ModBase
+	var mod = mod_script.new()
 	if mod == null:
+		Log.error("ModManager: 模组入口脚本实例化失败 %s" % script_path)
+		return null
+	if not _extends_mod_base(mod):
 		Log.error("ModManager: 模组入口脚本不是 ModBase 子类 %s" % script_path)
 		return null
 	return mod
 
 
-func _install(mod_id: StringName, mod: ModBase) -> void:
+## 实例的基链里有没有 `mod_base.gd`（比 `instance_has()` 可靠，见 `_create_mod` 注释）
+## 两个根下各有一份 `mod_base.gd`，所以两根都要认 —— 认哪一个取决于它是从哪个根加载的
+func _extends_mod_base(mod) -> bool:
+	var user_path := MODS_ROOT.path_join(MOD_BASE_REL_PATH)
+	var builtin_path := BUILTIN_MODS_DIR.path_join(MOD_BASE_REL_PATH)
+	var sc = mod.get_script()
+	while sc != null:
+		if sc.resource_path == user_path or sc.resource_path == builtin_path:
+			return true
+		sc = sc.get_base_script()
+	return false
+
+
+func _install(mod_id: StringName, mod) -> void:
 	mod.install()
 	installed_mods[mod_id] = true
 	Log.info("ModManager: 已装载模组 [%s] %s" % [str(mod_id), mod.get_mod_name()])
@@ -220,8 +374,61 @@ func is_mod_enabled(mod_id: StringName) -> bool:
 
 
 ## 取模组实例（未启用也返回，便于日志 / 界面列出全部模组）
-func get_mod(mod_id: StringName) -> ModBase:
+func get_mod(mod_id: StringName):
 	return all_mods.get(mod_id)
+
+
+## 这个模组**当前实际**从哪个根加载（`MODS_ROOT` / `BUILTIN_MODS_DIR`）
+## 模组里要拼自己的资源路径（场景 / 脚本 / 图片）就用这个 —— 别去抄根目录常量：
+## 根是启动期定的，写死成 `user://mods` 会在「这份跑的是内置源」时指到空目录
+func get_mod_root(mod_id: StringName) -> String:
+	return _mod_root(mod_id)
+
+
+## 读一个模组**自己的素材**（贴图 / 场景 / 资源）：`rel_path` 相对**模组目录**
+## （例：`"tongtong.png"` / `"bonkchoy/bonkchoy_88x73.png"`），读不到给 null。
+##
+## 为什么要有这个口子 —— 模组有两个加载根（`user://mods/` 优先 / `res://mods_builtin/` 兜底），
+## 而 `user://` 下的图片**不走引擎导入管线**（`.import` 只对 `res://` 生效），
+## 直接 `load("user://...png")` 拿不到 Texture2D。本方法统一处理：
+##   · 先按本模组**当前生效的加载根**拼出完整路径；
+##   · 优先 `load()`（`res://` 下图片已导入 = 直接得 Texture2D；`.tscn` / `.tres` 两根都行）；
+##   · 拿不到且文件在时，退回 `Image.load_from_file()` + `ImageTexture`（`user://` 那份）。
+## 结果按「模组 + 相对路径」缓存，同一个素材读多次只解码一次。
+##
+## 模组素材请走这个口子（别再 `preload("res://assets/...")` 塞进本体 —— 那样模组不自包含、
+## 导出后 `user://` 那份也读不到）；模组入口（`ModBase` 子类）可直接用 `load_asset()` 转调这里。
+func load_mod_asset(mod_id: StringName, rel_path: String) -> Resource:
+	var key := "%s/%s" % [str(mod_id), rel_path]
+	if _asset_cache.has(key):
+		return _asset_cache[key]
+	var full := _mod_dir(mod_id).path_join(rel_path)
+	var res: Resource = null
+	if ResourceLoader.exists(full):
+		res = load(full)
+	if res == null and FileAccess.file_exists(full):
+		## `user://` 下的图片没被引擎导入过：直接读原始文件再包成 ImageTexture
+		var image := Image.load_from_file(full)
+		if image != null:
+			res = ImageTexture.create_from_image(image)
+	if res == null:
+		Log.error("ModManager: 读不到模组 [%s] 的素材 %s（模组目录 %s）" % [
+			str(mod_id), rel_path, _mod_dir(mod_id)])
+		return null
+	_asset_cache[key] = res
+	return res
+
+
+## 模组素材的完整路径（按当前加载根 + 模组目录拼出，不读文件）—— 给需要**路径**的地方用（如探针断言）
+func get_mod_asset_path(mod_id: StringName, rel_path: String) -> String:
+	return _mod_dir(mod_id).path_join(rel_path)
+
+
+## 一个模组**自己的目录**（`<加载根>/<id 目录>`）：`MOD_SCRIPT_PATHS[id]` 是
+## `<id 目录>/<入口脚本>`，所以取它的目录那一段 —— `_mod_root()` 返回的是**父目录**，
+## 直接 path_join(rel_path) 会少一层模组目录
+func _mod_dir(mod_id: StringName) -> String:
+	return _mod_root(mod_id).path_join(String(MOD_SCRIPT_PATHS[mod_id]).get_base_dir())
 
 
 ## 读一个模组**自己的设置**（没存过就返回 [param default_value]）
@@ -257,7 +464,7 @@ func set_mod_enabled(mod_id: StringName, value: bool) -> void:
 ## 只改内存里的开关 + 补装 / 卸载，**不落盘**（换用户重读存档时用：文件本来就是刚读出来的）
 func _apply_enabled_state(mod_id: StringName, value: bool) -> void:
 	enabled_mods[mod_id] = value
-	var mod := get_mod(mod_id)
+	var mod = get_mod(mod_id)
 	if mod == null:
 		return
 	if value:

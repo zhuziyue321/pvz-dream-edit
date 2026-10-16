@@ -24,7 +24,7 @@ enum E_PointerTarget {
 ## caller 拿不到坐标就该收起箭头，下一帧再问一次（目标可能是稍后才出现的东西）
 static func resolve(main_game: MainGameManager,
 		target: E_PointerTarget,
-		plant_type: CharacterRegistry.PlantType,
+		plant_type: StringName,
 		advice_ui: TutorialAdviceUI) -> Variant:
 	if target == E_PointerTarget.None or not is_instance_valid(main_game):
 		return null
@@ -60,9 +60,9 @@ static func resolve(main_game: MainGameManager,
 ## 当前可点的卡里指定植物的那张（plant_type 为 Null 时取第一张）
 ## 传送带关（1-5 / x-10）没有出战卡槽，卡片在传送带上，所以统一走 get_curr_card_list()
 static func get_battle_card(main_game: MainGameManager,
-		plant_type: CharacterRegistry.PlantType) -> Card:
+		plant_type: StringName) -> Card:
 	for card: Card in get_curr_card_list(main_game):
-		if plant_type == CharacterRegistry.PlantType.Null or card.card_plant_type == plant_type:
+		if plant_type == PlantIds.NULL or card.card_plant_type == plant_type:
 			return card
 	return null
 
@@ -81,14 +81,14 @@ static func get_curr_card_list(main_game: MainGameManager) -> Array:
 ## 草坪上「最适合种下当前卡片」的植物格子：从草坪中心向外找第一个能种下的格子
 ## 1-5 保龄球关红线右边一律不可种植，靠 can_plant_in_cell() 过滤掉红线外的格子
 static func get_lawn_center_plant_cell(main_game: MainGameManager,
-		plant_type: CharacterRegistry.PlantType) -> PlantCell:
+		plant_type: StringName) -> PlantCell:
 	if main_game.plant_cell_manager == null:
 		return null
 	var cell_rows: Array[Array] = main_game.plant_cell_manager.all_plant_cells
 	if cell_rows.is_empty():
 		return null
 	var want_type := plant_type
-	if want_type == CharacterRegistry.PlantType.Null:
+	if want_type == PlantIds.NULL:
 		want_type = get_pointer_plant_type(main_game, plant_type)
 	for row_index: int in center_out_order(cell_rows.size()):
 		var cells: Array = cell_rows[row_index]
@@ -96,7 +96,7 @@ static func get_lawn_center_plant_cell(main_game: MainGameManager,
 			var plant_cell := cells[col_index] as PlantCell
 			if plant_cell == null:
 				continue
-			if want_type == CharacterRegistry.PlantType.Null:
+			if want_type == PlantIds.NULL:
 				return plant_cell
 			if can_plant_in_cell(plant_cell, want_type):
 				return plant_cell
@@ -105,16 +105,16 @@ static func get_lawn_center_plant_cell(main_game: MainGameManager,
 
 ## 当前指向的植物类型：优先取调用方给的，其次取卡槽第一张卡
 static func get_pointer_plant_type(main_game: MainGameManager,
-		plant_type: CharacterRegistry.PlantType) -> CharacterRegistry.PlantType:
-	if plant_type != CharacterRegistry.PlantType.Null:
+		plant_type: StringName) -> StringName:
+	if plant_type != PlantIds.NULL:
 		return plant_type
-	var card := get_battle_card(main_game, CharacterRegistry.PlantType.Null)
+	var card := get_battle_card(main_game, PlantIds.NULL)
 	if card != null:
 		return card.card_plant_type
-	return CharacterRegistry.PlantType.Null
+	return PlantIds.NULL
 
 
-static func can_plant_in_cell(plant_cell: PlantCell, plant_type: CharacterRegistry.PlantType) -> bool:
+static func can_plant_in_cell(plant_cell: PlantCell, plant_type: StringName) -> bool:
 	var plant_condition: ResourcePlantCondition = Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource
 	)

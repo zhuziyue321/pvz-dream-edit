@@ -48,7 +48,7 @@ var _flag_to_raise := -1
 #endregion
 
 ## 当前可以生成的僵尸类型
-var curr_zombie_type_candidate :Array[CharacterRegistry.ZombieType] = [CharacterRegistry.ZombieType.Z001Norm]
+var curr_zombie_type_candidate :Array[StringName] = [ZombieIds.NORM]
 ## 当前每小组可以生成的僵尸数量
 var curr_num_new_zombie_every_group := 1
 ## 当前每小组间隔时间（从1s开始，每大组减速0.05秒，真正使用时增加0.1秒波动）最小为0.5
@@ -158,7 +158,6 @@ func _on_hammer_zombie_timer_timeout() -> void:
 	## 必须 await：没有空闲墓碑时它会先补墓碑并等 2 秒，不等的话后面的
 	## 「停顿 → 补墓碑 → 起下一组」会和这 2 秒并发，出怪节奏串在一起
 	await create_one_group_min_zombie()
-	#Log.debug(str("当前波：") + str(curr_wave))
 	## 如果是大组的最后一小组（从0开始计数）
 	if curr_group_min == 9:
 		curr_group_min = -1
@@ -173,9 +172,9 @@ func _on_hammer_zombie_timer_timeout() -> void:
 				2:
 					curr_num_new_zombie_every_group = 2
 				4:
-					curr_zombie_type_candidate.append(CharacterRegistry.ZombieType.Z003Cone)
+					curr_zombie_type_candidate.append(ZombieIds.CONE)
 				6:
-					curr_zombie_type_candidate.append(CharacterRegistry.ZombieType.Z005Bucket)
+					curr_zombie_type_candidate.append(ZombieIds.BUCKET)
 				8:
 					curr_num_new_zombie_every_group = 3
 			## 更新僵尸动画速度和小组间隔

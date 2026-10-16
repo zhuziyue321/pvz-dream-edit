@@ -38,6 +38,25 @@ var row_col: Vector2i
 ## 注意：不要用 position.y 代替它 —— 数据驱动地图后 position.y 是格子的绝对 y（含 row_y）。
 var slope_step_y: float = 0.0
 
+#region 格子的附加属性（原版没有，留给模组）
+## 当前格子的**光照等级**（原版没有这个属性，恒为 0）
+##
+## ★ 这是留给模组的口子（"原版平衡"里的「火炬树桩 / 路灯花照明 → 向日葵按光照多产阳光」）：
+##   本体**不认识**光照这件事，谁加谁减由调用方决定，本体只提供「存一个数 + 增减」的能力。
+##   格子随场景一起销毁，所以不用清 —— 新的一局全是 0。
+var light_level: int = 0
+
+
+## 光照等级增减（delta 可正可负，低于 0 按 0 算）
+func add_light_level(delta: int) -> void:
+	light_level = maxi(0, light_level + delta)
+
+
+## 把光照等级直接设成某个值（重算时先清零再逐个加，用这个比反复 add 干净）
+func set_light_level(value: int) -> void:
+	light_level = maxi(0, value)
+#endregion
+
 @export_group("当前格子的条件")
 @export_subgroup("植物种植")
 #@export_flags("1 无", "2 草地", "4 花盆", "8 水", "16 睡莲", "32 屋顶/裸地")
@@ -124,8 +143,8 @@ enum E_SpecialStateZombie {
 var ladder:Ladder
 
 ## 植物种植和死亡信号
-signal signal_plant_create(plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType)
-signal signal_plant_free(plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType)
+signal signal_plant_create(plant_cell:PlantCell, plant_type: StringName)
+signal signal_plant_free(plant_cell:PlantCell, plant_type: StringName)
 
 #region 植物格子初始化
 func _ready() -> void:
@@ -180,7 +199,6 @@ func plant_be_flattened():
 		if is_instance_valid(curr_plant):
 			## 被压扁
 			curr_plant.be_flattened()
-			Log.debug(str(curr_plant.name) + str("被压扁"))
 
 #endregion
 
@@ -191,7 +209,7 @@ func plant_be_flattened():
 ##    否则 create_plant 里「非紫卡且该位置已有植物就返回」的判据会命中模仿者本体，变身直接失败；
 ## 2、await 必须在 plant_cell 上挂起 —— 模仿者本体马上就要 queue_free，
 ##    挂在它自己身上的协程会被 Godot 连同对象一起取消，下一株植物永远不会出现。
-func imitater_create_plant(plant_type:CharacterRegistry.PlantType, is_plant_start_effect:=true):
+func imitater_create_plant(plant_type: StringName, is_plant_start_effect:=true):
 	await get_tree().process_frame
 	return create_plant(plant_type, false, is_plant_start_effect, true)
 
@@ -201,15 +219,15 @@ func imitater_create_plant(plant_type:CharacterRegistry.PlantType, is_plant_star
 ##[is_imitater_material:bool] 是否为模仿者材质（只是套模仿者的灰色材质，植物本体就是 plant_type。
 ##   模仿者变身 / 预种植 / 读档走这一档；注意它和上一个参数的语义不同，别传错位）
 ##[is_zombie_mode:bool] 是否为我是僵尸模式
-func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is_plant_start_effect:=true, is_imitater_material:=false, is_zombie_mode:=false) -> Plant000Base:
+func create_plant(plant_type: StringName, is_imitater:=false, is_plant_start_effect:=true, is_imitater_material:=false, is_zombie_mode:=false) -> Plant000Base:
 	var plant_condition:ResourcePlantCondition
 	var plant :Plant000Base
 	plant_condition = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 	## 创建植物
 	if is_imitater:
 		## 创建植物
-		#plant_condition = Global.character_registry.get_plant_info(CharacterRegistry.PlantType.P999Imitater, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
-		plant = Global.character_registry.get_plant_info(CharacterRegistry.PlantType.P999Imitater, CharacterRegistry.PlantInfoAttribute.PlantScenes).instantiate()
+		#plant_condition = Global.character_registry.get_plant_info(PlantIds.IMITATER, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
+		plant = Global.character_registry.get_plant_info(PlantIds.IMITATER, CharacterRegistry.PlantInfoAttribute.PlantScenes).instantiate()
 		plant = plant as Plant999Imitater
 		plant.imitater_plant_type = plant_type
 	else:
@@ -225,7 +243,6 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 			## 非紫卡 如果该位置已经存在植物,返回
 			var exist_plant := get_plant(plant_condition.place_plant_in_cell)
 			if is_instance_valid(exist_plant):
-				Log.debug(str("当前位置") + str(row_col) + str("已经有植物：") + str(exist_plant.name))
 				return
 
 		plant = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantScenes).instantiate()
@@ -277,7 +294,7 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 ##   只修坚果 / 高坚果 / 南瓜头，且必须已经掉手或裂开（血量阶段 >= 1）才允许补种；
 ##   只是掉了点血、外观还完好的视为完好，不能补种；没买包扎术也不能补种
 ## [plant_type] 手持卡片的植物类型；返回可被修复的植物，没有则返回 null
-func get_first_aid_plant(plant_type: CharacterRegistry.PlantType) -> Plant000Base:
+func get_first_aid_plant(plant_type: StringName) -> Plant000Base:
 	if not ConstShop.is_first_aid_plant(plant_type):
 		return null
 	if not Global.global_game_state.is_wall_nut_first_aid_owned():
@@ -303,8 +320,6 @@ func coffee_bean_awake_up():
 	var norm_plant := get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	if is_instance_valid(norm_plant):
 		norm_plant.coffee_bean_awake_up()
-	else:
-		Log.debug("没有睡眠植物")
 
 ## 获取种植新植物时植物虚影的位置
 func get_new_plant_static_shadow_global_position(place_plant_in_cell:CharacterRegistry.PlacePlantInCell):
@@ -324,7 +339,7 @@ func one_plant_free(plant:Plant000Base):
 	if curr_plant_condition.place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Down:
 		_detach_down_plant_container(plant)
 	## 玉米加农炮只有后轮plantcell发射信号更新植物数据
-	if plant.plant_type == CharacterRegistry.PlantType.P048CobCannon:
+	if plant.plant_type == PlantIds.COB_CANNON:
 		if plant.plant_cell == self:
 			signal_plant_free.emit(self, plant.plant_type)
 	else:
@@ -378,11 +393,34 @@ func _flower_pot_change_condition():
 		curr_condition = 4
 
 ## 底部植物种植或死亡时改变地形
-func down_plant_change_condition(is_water:bool):
+##
+## [param own_condition_bit] 非 0 = 这只底部植物自己声明了地形位（模组的水盆那类，
+##   见 `Plant000DownBase.own_condition_bit`）：改地形只认它声明的那一位，本体不认识具体是谁；
+##   为 0 = 原版那两套（水池行按睡莲、其它行按花盆）
+func down_plant_change_condition(is_water:bool, own_condition_bit := 0):
+	if own_condition_bit != 0:
+		_own_bit_change_condition(own_condition_bit)
+		return
 	if is_water:
 		_lily_pad_change_condition()
 	else:
 		_flower_pot_change_condition()
+
+
+## 按底部植物自己声明的那一位切换地形（种下 = 加上该位，移除 = 还原成原始地形）
+func _own_bit_change_condition(bit:int):
+	if curr_condition & bit:
+		curr_condition = ori_condition
+	else:
+		curr_condition = 1 | bit
+
+
+## 取这只底部植物自己声明的地形位（不是底部植物 = 0）
+func _down_plant_own_bit(plant: Plant000Base) -> int:
+	var down_plant := plant as Plant000DownBase
+	if down_plant == null:
+		return 0
+	return down_plant.own_condition_bit
 #endregion
 
 #region 搬运植物
@@ -390,7 +428,7 @@ func down_plant_change_condition(is_water:bool):
 ## 只换格子。搬运期间植物**不摘出场景树**（只开 top_level 做视觉位移），否则 Timer / _process 会中断。
 ##
 ## 本区是**通用 API**，两个使用方：
-##   · 手套模组（src/mods/glove/）：玩家拎起植物换个地方放下
+##   · 手套模组（mods_builtin/glove/）：玩家拎起植物换个地方放下
 ##   · 僵尸迷阵三消（beghouled_manager）：交换与下落
 ## 名字不带手套 —— 手套是模组，本体的格子 API 不该叫它的名字。
 
@@ -427,7 +465,7 @@ func move_take_plant(plant: Plant000Base) -> bool:
 	## 底部植物（花盆 / 睡莲）离开本格子：把中间 / 壳容器搬回本格子，并还原地形
 	if place == CharacterRegistry.PlacePlantInCell.Down:
 		_detach_down_plant_container(plant)
-		down_plant_change_condition(plant_cell_type == PlantCellType.Pool)
+		down_plant_change_condition(plant_cell_type == PlantCellType.Pool, _down_plant_own_bit(plant))
 	return true
 
 
@@ -472,7 +510,7 @@ func move_put_plant(plant: Plant000Base, place: CharacterRegistry.PlacePlantInCe
 	## 底部植物（花盆 / 睡莲）进入本格子：把中间 / 壳容器收进它的上下移动容器，并切换地形
 	if place == CharacterRegistry.PlacePlantInCell.Down:
 		_attach_down_plant_container(plant)
-		down_plant_change_condition(plant_cell_type == PlantCellType.Pool)
+		down_plant_change_condition(plant_cell_type == PlantCellType.Pool, _down_plant_own_bit(plant))
 
 	var target_container: Node = plant_container_node[place]
 	## ⚠️ 搬运期间植物一直留在场景树里，放回时必须先无条件摘出，
@@ -557,7 +595,6 @@ func be_bungi()->Node2D:
 ## 创建墓碑
 func create_tombstone():
 	if is_instance_valid(tombstone):
-		Log.debug(str("当前植物格子") + str(row_col) + str("已经有墓碑， 创建墓碑失败"))
 		return
 	## 被墓碑顶掉的植物
 	var all_place_plant_in_cell_be_tombstone = [
@@ -658,26 +695,26 @@ func set_bowling_no_zombie():
 
 #region 按植物类型限制种植（观星）
 ## 本格只允许种这些植物；空 = 不限制（观星的星星轮廓点：只能种杨桃 / 南瓜头）
-var only_allow_plant_types: Array[CharacterRegistry.PlantType] = []
+var only_allow_plant_types: Array[StringName] = []
 ## 本格禁止种的植物（观星：把杨桃挡在星星轮廓点之外，免得 125 阳光的杨桃种到别处）
-var forbidden_plant_types: Array[CharacterRegistry.PlantType] = []
+var forbidden_plant_types: Array[StringName] = []
 
 
 ## 本格是否允许种 plant_type —— 种植条件的**第一道闸**
 ## （消费方：ResourcePlantCondition.judge_is_can_plant，所有植物都过这一关）
-func is_plant_type_allowed(plant_type: CharacterRegistry.PlantType) -> bool:
+func is_plant_type_allowed(plant_type: StringName) -> bool:
 	if not only_allow_plant_types.is_empty() and not only_allow_plant_types.has(plant_type):
 		return false
 	return not forbidden_plant_types.has(plant_type)
 
 
 ## 设置本格「只允许种这些植物」（传空数组 = 解除限制）
-func set_only_allow_plant_types(types: Array[CharacterRegistry.PlantType]) -> void:
+func set_only_allow_plant_types(types: Array[StringName]) -> void:
 	only_allow_plant_types.assign(types)
 
 
 ## 设置本格「禁止种这些植物」（传空数组 = 解除限制）
-func set_forbidden_plant_types(types: Array[CharacterRegistry.PlantType]) -> void:
+func set_forbidden_plant_types(types: Array[StringName]) -> void:
 	forbidden_plant_types.assign(types)
 #endregion
 
@@ -838,7 +875,7 @@ func get_plant_ladder() -> Plant000Base:
 
 ## 获取周围一圈(包括本身格子)的某个植物
 ## 网格查询在 PlantCellManager（all_plant_cells / row_col 都在那儿），这里只按 row_col 转发
-func get_plant_surrounding(p_t:CharacterRegistry.PlantType) -> Array[Plant000Base]:
+func get_plant_surrounding(p_t: StringName) -> Array[Plant000Base]:
 	return GameContext.curr_main_game.plant_cell_manager.get_plant_surrounding(self, p_t)
 
 

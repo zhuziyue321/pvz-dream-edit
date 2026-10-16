@@ -37,30 +37,30 @@ var is_battle_card: bool:
 	get:
 		return card_reference != null and card_reference.is_valid() and not card_reference.is_imitater
 
-## 兼容旧字段：植物编号；非植物卡或未配置时返回 Null。
-var card_plant_type: CharacterRegistry.PlantType:
+## 植物 id；非植物卡或未配置时返回 NULL。
+var card_plant_type: StringName:
 	get:
 		if card_reference == null or card_reference.card_type != ResourceCardReference.CardType.Plant:
-			return CharacterRegistry.PlantType.Null
-		return card_reference.content_id as CharacterRegistry.PlantType
+			return PlantIds.NULL
+		return card_reference.content_id
 	set(value):
 		_set_content(ResourceCardReference.CardType.Plant, value)
 
-## 兼容旧字段：普通僵尸编号；非僵尸卡或未配置时返回 Null。
-var card_zombie_type: CharacterRegistry.ZombieType:
+## 普通僵尸 id；非僵尸卡或未配置时返回 NULL。
+var card_zombie_type: StringName:
 	get:
 		if card_reference == null or card_reference.card_type != ResourceCardReference.CardType.Zombie:
-			return CharacterRegistry.ZombieType.Null
-		return card_reference.content_id as CharacterRegistry.ZombieType
+			return ZombieIds.NULL
+		return card_reference.content_id
 	set(value):
 		_set_content(ResourceCardReference.CardType.Zombie, value)
 
-## 兼容旧字段：僵王编号；非僵王卡或未配置时返回 Null。
-var card_zombie_boss_type: CharacterRegistry.ZombieBossType:
+## 僵王 id；非僵王卡或未配置时返回 NULL。
+var card_zombie_boss_type: StringName:
 	get:
 		if card_reference == null or card_reference.card_type != ResourceCardReference.CardType.ZombieBoss:
-			return CharacterRegistry.ZombieBossType.Null
-		return card_reference.content_id as CharacterRegistry.ZombieBossType
+			return ZombieBossIds.NULL
+		return card_reference.content_id
 	set(value):
 		_set_content(ResourceCardReference.CardType.ZombieBoss, value)
 
@@ -74,8 +74,8 @@ var is_imitater: bool:
 		card_reference.is_imitater = value
 #endregion
 
-## 按类别写入角色编号；没有引用时新建一份，保留已有的模仿修饰。
-func _set_content(new_type: ResourceCardReference.CardType, content_id: int) -> void:
+## 按类别写入角色 id；没有引用时新建一份，保留已有的模仿修饰。
+func _set_content(new_type: ResourceCardReference.CardType, content_id: StringName) -> void:
 	if card_reference == null:
 		card_reference = ResourceCardReference.create(new_type, content_id, false)
 		return

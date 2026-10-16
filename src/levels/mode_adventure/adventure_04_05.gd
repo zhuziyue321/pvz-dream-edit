@@ -31,64 +31,67 @@ func _init() -> void:
 	pot_mode = ConstLevelData.E_PotMode.Fixd
 	pot_col_range = Vector2i(6, 9)
 	random_pot_plant.assign({
-	1: 9,
-	18: 2
+	&"pea_shooter_single": 9,
+	&"squash": 2
 	})
 	random_pot_zombie.assign({
-	1: 3,
-	16: 1
+	&"norm": 3,
+	&"jackbox": 1
 	})
 	pot_config_on_round.assign([{
 	"pot_col_range": Vector2i(6, 9),
 	"pot_hint_num": 0,
 	"random_pot_plant": {
-	1: 9,
-	18: 2
+	&"pea_shooter_single": 9,
+	&"squash": 2
 	},
 	"random_pot_zombie": {
-	1: 3,
-	16: 1
+	&"norm": 3,
+	&"jackbox": 1
 	}
 	}, {
 	"pot_col_range": Vector2i(5, 9),
 	"pot_hint_num": 2,
 	"random_pot_plant": {
-	1: 7,
-	6: 5,
-	18: 1
+	&"pea_shooter_single": 7,
+	&"snow_pea": 5,
+	&"squash": 1
 	},
 	"random_pot_zombie": {
-	1: 4,
-	5: 2,
-	8: 1
+	&"norm": 4,
+	&"bucket": 2,
+	&"football": 1
 	}
 	}, {
 	"pot_col_range": Vector2i(4, 9),
 	"pot_hint_num": 3,
 	"random_pot_plant": {
-	1: 6,
-	6: 6,
-	13: 4
+	&"pea_shooter_single": 6,
+	&"snow_pea": 6,
+	&"hypno_shroom": 4
 	},
 	"random_pot_zombie": {
-	1: 4,
-	5: 2,
-	9: 1,
-	16: 2
+	&"norm": 4,
+	&"bucket": 2,
+	&"jackson": 1,
+	&"jackbox": 2
 	}
 	}])
 	## 本关通关掉落：裂荚射手（种子包）
 	level_complete_loot = "split_pea_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z009Jackson,
-		CharacterRegistry.ZombieType.Z016Jackbox,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.NORM,
+		ZombieIds.BUCKET,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKSON,
+		ZombieIds.JACKBOX,
 	]
 
 	## 第 1 批：戴夫介绍玩法

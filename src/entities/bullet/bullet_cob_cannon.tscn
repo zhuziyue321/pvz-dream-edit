@@ -41,7 +41,7 @@ anim_offset_max = 1.0
 
 [node name="Bullet016CobCannon" instance=ExtResource("1_sm07q")]
 script = ExtResource("1_ymsek")
-bullet_type = 16
+bullet_type = &"cob_cannon"
 
 [node name="Body" parent="." index="1"]
 rotation = -1.5707964

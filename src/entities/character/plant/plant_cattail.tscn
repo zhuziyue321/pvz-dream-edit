@@ -81,7 +81,7 @@ size = Vector2(200, 5)
 
 [node name="Plant044Cattail" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_5hnsj")]
 script = ExtResource("2_7npfu")
-plant_type = 44
+plant_type = &"cattail"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -202,7 +202,7 @@ parameters/TimeScale/scale = 1.5
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("16_2hp7h")
-attack_bullet_type = 14
+attack_bullet_type = &"cattail"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]

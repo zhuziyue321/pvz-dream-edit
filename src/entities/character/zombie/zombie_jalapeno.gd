@@ -39,4 +39,4 @@ func _burn_lane() -> void:
 		for key in cell.plant_in_cell:
 			var plant = cell.plant_in_cell[key]
 			if is_instance_valid(plant) and not plant.is_death:
-				plant.be_attacked_bullet(burn_attack_value, BulletRegistry.AttackMode.Penetration, false, false)
+				plant.be_attacked_bullet(burn_attack_value, ConstDamage.E_DamageMode.Penetration, false, false)

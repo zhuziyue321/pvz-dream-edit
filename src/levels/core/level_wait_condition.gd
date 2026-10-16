@@ -11,7 +11,7 @@ class_name LevelWaitCondition
 
 ## 草坪上现在的植物数量；plant_type 给 Null = 数所有植物
 static func count_lawn_plants(main_game: MainGameManager,
-		plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> int:
+		plant_type: StringName = PlantIds.NULL) -> int:
 	if not _is_valid(main_game) or main_game.plant_cell_manager == null:
 		return 0
 	var num := 0
@@ -19,7 +19,7 @@ static func count_lawn_plants(main_game: MainGameManager,
 		for plant_cell: PlantCell in row_cells:
 			if plant_cell == null:
 				continue
-			if plant_type == CharacterRegistry.PlantType.Null:
+			if plant_type == PlantIds.NULL:
 				num += plant_cell.get_curr_plant_num()
 				continue
 			for place in plant_cell.plant_in_cell:
@@ -31,13 +31,13 @@ static func count_lawn_plants(main_game: MainGameManager,
 
 ## 手上是不是拿着一张卡；plant_type 给 Null = 拿着任意卡都算
 static func is_holding_card(main_game: MainGameManager,
-		plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null) -> bool:
+		plant_type: StringName = PlantIds.NULL) -> bool:
 	if not _is_valid(main_game) or main_game.hand_manager == null:
 		return false
 	var hand_manager := main_game.hand_manager
 	if not hand_manager.is_holding_hand():
 		return false
-	if plant_type == CharacterRegistry.PlantType.Null:
+	if plant_type == PlantIds.NULL:
 		return true
 	var hand := hand_manager.curr_hand_component as HandComponentCharacter
 	if hand == null:

@@ -12,6 +12,13 @@ class_name Plant000DownBase
 ## 底部类植物放置后，norm和shell植物位置变化
 @export var plant_up_position :Vector2
 
+## 本底部植物种下后给格子加的**地形位**（0 = 走原版那两套：水池行按睡莲、其它行按花盆）
+##
+## ★ 这是留给模组的口子（硬约束 §1：本体不认识任何模组）：水盆这类原版没有的底部植物
+##   在这一个字段里声明「我占 64 水盆位」，`PlantCell.down_plant_change_condition()`
+##   照着这个位改格子地形 —— 本体不必知道水盆是什么，也不用为它开分支。
+@export var own_condition_bit :int = 0
+
 ## 本体是否随水面上下起伏（荷叶开，花盆关）
 @export var is_float_anim := false
 ## 起伏幅度（像素，向上为负）
@@ -31,7 +38,8 @@ func init_plant(plant_init_para:Dictionary) -> void:
 	super(plant_init_para)
 	if plant_init_para[E_PInitAttr.CharacterInitType] != E_CharacterInitType.IsNorm:
 		return
-	plant_cell.down_plant_change_condition(plant_cell.plant_cell_type == PlantCell.PlantCellType.Pool)
+	plant_cell.down_plant_change_condition(
+		plant_cell.plant_cell_type == PlantCell.PlantCellType.Pool, own_condition_bit)
 
 ## 角色初始化完成（项目规范 K-04：角色子类不重写 _ready()）
 func ready_norm() -> void:
@@ -65,5 +73,6 @@ func _start_float_anim() -> void:
 
 ## 角色死亡时切换地形
 func character_death():
-	plant_cell.down_plant_change_condition(plant_cell.plant_cell_type == PlantCell.PlantCellType.Pool)
+	plant_cell.down_plant_change_condition(
+		plant_cell.plant_cell_type == PlantCell.PlantCellType.Pool, own_condition_bit)
 	super()

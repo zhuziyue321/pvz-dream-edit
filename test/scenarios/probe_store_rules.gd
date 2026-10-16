@@ -243,7 +243,7 @@ func _mark_cleared(state, upto: int) -> void:
 
 ## 把已拥有的每个花园背景的每一页格子全部占满，模拟原版「Zen Garden is full」
 func _fill_all_garden_cells(state) -> void:
-	var full_cell := {"curr_plant_type": CharacterRegistry.PlantType.P001PeaShooterSingle}
+	var full_cell := {"curr_plant_type": PlantIds.PEA_SHOOTER_SINGLE}
 	for bg_type in state.get_owned_garden_bg_types():
 		var cell_num := GardenManager.get_plant_cell_num_per_page(bg_type)
 		var bg_data := {}

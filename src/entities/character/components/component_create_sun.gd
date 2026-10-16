@@ -40,7 +40,7 @@ func _on_be_eat_once():
 ## 当角色死亡时
 func _on_character_death():
 	if remaining_sun_on_zombie_mode > 0:
-		for i in range(remaining_sun_on_zombie_mode):
+		for _i in range(remaining_sun_on_zombie_mode):
 			_spawn_sun()
 		remaining_sun_on_zombie_mode = 0
 
@@ -101,7 +101,7 @@ func _spawn_sun():
 		return
 	## 播放音效
 	SoundManager.play_character_SFX(&"Throw1")
-	for i in range(num_create_sun):
+	for _i in range(num_create_sun):
 		var new_sun:Sun = SceneRegistry.SUN.instantiate()
 		new_sun.init_sun(sun_value, get_main_game().suns.to_local(marker_2d_create_sun.global_position))
 		get_main_game().suns.add_child(new_sun)

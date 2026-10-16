@@ -113,7 +113,7 @@ script = ExtResource("2_ykfrv")
 is_drop_end = false
 is_grab = false
 is_umbrella_raise = false
-zombie_type = 21
+zombie_type = &"bungi"
 sfx_enter_name = &"bungee_scream"
 
 [node name="BungeeTarget" type="Sprite2D" parent="." index="1"]

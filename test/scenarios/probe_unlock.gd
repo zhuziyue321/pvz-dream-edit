@@ -26,20 +26,20 @@ func run(a) -> void:
 	var state = Global.global_game_state
 	var before: Array = state.curr_plant.duplicate()
 	a.log("  1-1 通关前已解锁: %s" % str(before))
-	_check(a, "新档只解锁初始植物", before.size() == 1 and before.has(CharacterRegistry.PlantType.P001PeaShooterSingle), str(before))
+	_check(a, "新档只解锁初始植物", before.size() == 1 and before.has(PlantIds.PEA_SHOOTER_SINGLE), str(before))
 
 	## 通关 1-1（关卡序号 1）-> 向日葵
 	GameContext.curr_main_game.save_manager.update_level_state_data_success()
 	await a.wait(0.5)
 	var after1: Array = state.curr_plant.duplicate()
 	a.log("  1-1 通关后已解锁: %s" % str(after1))
-	_check(a, "通关 1-1 解锁向日葵", after1.has(CharacterRegistry.PlantType.P002SunFlower), str(after1))
+	_check(a, "通关 1-1 解锁向日葵", after1.has(PlantIds.SUN_FLOWER), str(after1))
 	_check(a, "已通关关卡序号=1", state.get_max_success_adventure_level() == 1, str(state.get_max_success_adventure_level()))
 
 	## 通关 2-1（关卡序号 11）-> 阳光菇
 	var new_on_11: Array = state.unlock_plant_on_adventure_level(11)
 	a.log("  2-1 解锁: %s" % str(new_on_11))
-	_check(a, "通关 2-1 解锁阳光菇", state.curr_plant.has(CharacterRegistry.PlantType.P010SunShroom), str(state.curr_plant))
+	_check(a, "通关 2-1 解锁阳光菇", state.curr_plant.has(PlantIds.SUN_SHROOM), str(state.curr_plant))
 	_check(a, "重复通关不重复解锁", state.unlock_plant_on_adventure_level(1).is_empty())
 
 	## 重新读档：解锁不能丢
@@ -47,11 +47,11 @@ func run(a) -> void:
 	await a.wait(0.5)
 	var reloaded: Array = state.curr_plant.duplicate()
 	a.log("  重新读档后已解锁: %s" % str(reloaded))
-	_check(a, "重新读档保留豌豆射手", reloaded.has(CharacterRegistry.PlantType.P001PeaShooterSingle), str(reloaded))
-	_check(a, "重新读档保留向日葵", reloaded.has(CharacterRegistry.PlantType.P002SunFlower), str(reloaded))
+	_check(a, "重新读档保留豌豆射手", reloaded.has(PlantIds.PEA_SHOOTER_SINGLE), str(reloaded))
+	_check(a, "重新读档保留向日葵", reloaded.has(PlantIds.SUN_FLOWER), str(reloaded))
 
 	## 紫卡购买资格（未通关到对应关卡时不开放）
-	_check(a, "未通关的紫卡不开放购买", not state.is_purple_card_can_buy(CharacterRegistry.PlantType.P048CobCannon))
+	_check(a, "未通关的紫卡不开放购买", not state.is_purple_card_can_buy(PlantIds.COB_CANNON))
 	_finish(a)
 
 

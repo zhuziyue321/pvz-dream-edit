@@ -1,14 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://u3f1d3yb5tpn3"] 
+[gd_scene load_steps=6 format=3 uid="uid://u3f1d3yb5tpn3"] 
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_base"]
 [ext_resource type="Script" uid="uid://ujiovgacmpew0" path="res://src/entities/character/components/zombie_plant_component/component_zombie_plant.gd" id="2_plant"]
 [ext_resource type="Script" uid="uid://rmo6nm1ozb2wf" path="res://src/entities/character/zombie/zombie_squash.gd" id="3_self"]
+[ext_resource type="Script" uid="uid://bqh7yexy3v62h" path="res://src/entities/character/components/armor_component/component_armor_plant_head.gd" id="9_armor"]
 
 [node name="Zombie033SquashZombie" instance=ExtResource("1_base")]
 script = ExtResource("3_self")
-zombie_type = 33
+zombie_type = &"squash_zombie"
 
-[node name="HpComponent" parent="." index="4"]
-max_hp_armor1 = 300
+[node name="ArmorComponent" type="Node2D" parent="."]
+script = ExtResource("9_armor")
+armor_type = 9
+armor_class = 1
+max_hp = 300
 
 [node name="ZombiePlantComponent" type="Node2D" parent="." index="13"]
 script = ExtResource("2_plant")

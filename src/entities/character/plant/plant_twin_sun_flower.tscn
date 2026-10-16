@@ -45,7 +45,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant042TwinSunFlower" instance=ExtResource("1_xhjrs")]
 script = ExtResource("2_6jujh")
-plant_type = 42
+plant_type = &"twin_sun_flower"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-42, -69)

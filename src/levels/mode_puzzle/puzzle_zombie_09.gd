@@ -25,23 +25,23 @@ func _init() -> void:
 	##                    高坚果(24) / 裂荚射手(29) / 杨桃(30) / 磁力菇(32)
 	plant_col_on_zombie_mode = 5
 	all_plants_weight_on_zombie_mode.assign({
-	1: 2,
-	2: 6,
-	4: 2,
-	5: 2,
-	6: 2,
-	7: 2,
-	11: 2,
-	14: 1,
-	18: 2,
-	19: 2,
-	24: 2,
-	29: 2,
-	30: 2,
-	32: 2
+	&"pea_shooter_single": 2,
+	&"sun_flower": 6,
+	&"wall_nut": 2,
+	&"potato_mine": 2,
+	&"snow_pea": 2,
+	&"chomper": 2,
+	&"fume_shroom": 2,
+	&"scaredy_shroom": 1,
+	&"squash": 2,
+	&"three_peater": 2,
+	&"tall_nut": 2,
+	&"split_pea": 2,
+	&"star_fruit": 2,
+	&"magnet_shroom": 2
 	})
 	all_must_plants_on_zombie_mode.assign({
-	2: 6
+	&"sun_flower": 6
 	})
 	is_bowling_stripe = true
 	plant_cell_col_j = 4
@@ -63,13 +63,13 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 开战
 	await start_battle(-1, [
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z018Digger,
-		CharacterRegistry.ZombieType.Z021Bungi,
-		CharacterRegistry.ZombieType.Z022Ladder,
-		CharacterRegistry.ZombieType.Z025Imp,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.FOOTBALL,
+		ZombieIds.DIGGER,
+		ZombieIds.BUNGI,
+		ZombieIds.LADDER,
+		ZombieIds.IMP,
 	])

@@ -16,14 +16,14 @@ func _init() -> void:
 	can_choosed_card = false
 	monster_mode = ConstLevelData.E_MonsterMode.Null
 	zombie_refresh_types.assign([
-		CharacterRegistry.ZombieType.Z001Norm,
-		CharacterRegistry.ZombieType.Z003Cone,
-		CharacterRegistry.ZombieType.Z004PoleVaulter,
-		CharacterRegistry.ZombieType.Z005Bucket,
-		CharacterRegistry.ZombieType.Z006Paper,
-		CharacterRegistry.ZombieType.Z007ScreenDoor,
-		CharacterRegistry.ZombieType.Z008Football,
-		CharacterRegistry.ZombieType.Z009Jackson,
+		ZombieIds.NORM,
+		ZombieIds.CONE,
+		ZombieIds.POLE_VAULTER,
+		ZombieIds.BUCKET,
+		ZombieIds.PAPER,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.JACKSON,
 	])
 	start_sun = 300
 	## 「我是僵尸」模式的出战卡：1 / 3 / 5 号僵尸
@@ -36,8 +36,8 @@ func _init() -> void:
 	is_zombie_mode = true
 	plant_col_on_zombie_mode = 5
 	all_plants_weight_on_zombie_mode.assign({
-	1: 1,
-	2: 1
+	&"pea_shooter_single": 1,
+	&"sun_flower": 1
 	})
 	## 保龄球红线：第 4 列之后只能进僵尸
 	is_bowling_stripe = true

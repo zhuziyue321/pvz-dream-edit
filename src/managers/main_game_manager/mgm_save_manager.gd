@@ -38,7 +38,6 @@ func save_game_main_game():
 	if err != OK:
 		Log.error("关卡数据存档失败:%s, 错误代码 %d" % [path, err])
 	else:
-		Log.debug(str("关卡数据存档成功：") + str(path))
 		update_level_state_data_multi_round_data(true)
 
 
@@ -78,7 +77,6 @@ var level_success_write_gate: Callable = Callable()
 func update_level_state_data_success():
 	## 先看有没有人替这一局做主（见 `level_success_write_gate`）：说了不算就什么都不写
 	if level_success_write_gate.is_valid() and not level_success_write_gate.call():
-		Log.debug("已按外部裁决跳过本关的通关存档写入：" + str(game_para.save_game_name))
 		return
 	## 更新全局关卡数据
 	var curr_level_state_data:Dictionary = Global.global_game_state.curr_all_level_state_data.get(game_para.save_game_name, {})
@@ -98,9 +96,9 @@ func unlock_plant_on_level_success() -> void:
 	var adventure_level: int = Global.global_game_state.get_adventure_level_on_save_game_name(game_para.save_game_name)
 	if adventure_level <= 0:
 		return
-	var new_unlock: Array[CharacterRegistry.PlantType] = Global.global_game_state.unlock_plant_on_adventure_level(adventure_level)
-	for plant_type:CharacterRegistry.PlantType in new_unlock:
-		Log.debug(str("通关解锁新植物: ") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)))
+	var new_unlock: Array[StringName] = Global.global_game_state.unlock_plant_on_adventure_level(adventure_level)
+	for plant_type: StringName in new_unlock:
+		Log.info(str("通关解锁新植物: ") + str(Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantName)))
 
 
 ## 通关冒险模式关卡后,检查本关是否让玩家拿到新道具(目前只有铲子: 通关 1-4)
@@ -111,7 +109,7 @@ func unlock_item_on_level_success() -> void:
 		return
 	if not Global.global_game_state.is_shovel_unlocked():
 		return
-	Log.debug(str("通关") + str(ConstUnlockLevel.get_adventure_level_name(adventure_level)) + str(" 获得新道具: 铲子"))
+	Log.info(str("通关") + str(ConstUnlockLevel.get_adventure_level_name(adventure_level)) + str(" 获得新道具: 铲子"))
 
 
 ## 更新当前关卡数据 (多轮游戏)

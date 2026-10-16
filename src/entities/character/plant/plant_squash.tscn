@@ -448,7 +448,7 @@ size = Vector2(80, 5)
 script = ExtResource("2_rin1p")
 is_attack = false
 is_right = true
-plant_type = 18
+plant_type = &"squash"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent"), NodePath("Area2DSquashAttack")]
 
 [node name="CanAttackStatusComponent" type="Node2D" parent="."]

@@ -3,25 +3,25 @@ extends RefCounted
 ##
 ## 为什么有这个探针：
 ##   植物僵尸是「一份配置表 + 一批只改属性的继承场景」生成的，
-##   场景里任何一个节点索引 / 属性名写错（例如 HpComponent 的 max_hp_armor1 写不进去），
+##   场景里任何一个节点索引 / 属性名写错（例如防具组件的 max_hp 写不进去），
 ##   在编辑器里看不出来，只有跑起来才发现「头顶植物没有耐久」或者「发射组件没挂上」。
 ##   这里锁死：配置自洽 + 场景属性能落地。
 ##
 ## 只做静态检查，不进关卡（不 add_child，不会触发僵尸 / 子弹的 _ready）。
 
 ## 会发射子弹的那几只（其余用普通啃咬或自带特殊行为）
-const C_SHOOT_ZOMBIE_TYPES: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z035GatlingZombie,
-	CharacterRegistry.ZombieType.Z036SnowPeaZombie,
-	CharacterRegistry.ZombieType.Z040CabbagePultZombie,
-	CharacterRegistry.ZombieType.Z041CobCannonZombie,
-	CharacterRegistry.ZombieType.Z042MelonPultZombie,
-	CharacterRegistry.ZombieType.Z043WinterMelonZombie,
+const C_SHOOT_ZOMBIE_TYPES: Array[StringName] = [
+	ZombieIds.GATLING_ZOMBIE,
+	ZombieIds.SNOW_PEA_ZOMBIE,
+	ZombieIds.CABBAGE_PULT_ZOMBIE,
+	ZombieIds.COB_CANNON_ZOMBIE,
+	ZombieIds.MELON_PULT_ZOMBIE,
+	ZombieIds.WINTER_MELON_ZOMBIE,
 ]
 ## 恒定发射的那几只（原版口径：本体就是普通僵尸，照常走、照常啃，子弹只是附加项）
 ## 与上面那批的区别见 component_attack_zom_botany_pea.gd 的文件注释
-const C_CONSTANT_SHOOT_ZOMBIE_TYPES: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z031PeaShooterZombie,
+const C_CONSTANT_SHOOT_ZOMBIE_TYPES: Array[StringName] = [
+	ZombieIds.PEA_SHOOTER_ZOMBIE,
 ]
 
 var _failed := 0
@@ -46,14 +46,14 @@ func _check_config(a) -> void:
 		_expect(a, "配置 " + str(zombie_type) + " 植物耐久 > 0", info.plant_hp > 0, true)
 		_expect(a, "配置 " + str(zombie_type) + " 出怪战力 > 0", info.power > 0, true)
 		_expect(a, "配置 " + str(zombie_type) + " 出怪权重 > 0", info.weight > 0, true)
-	_expect(a, "普僵不是植物僵尸", ZomBotanyConfig.is_zom_botany(CharacterRegistry.ZombieType.Z001Norm), false)
-	_expect(a, "未知类型不是植物僵尸", ZomBotanyConfig.get_info(CharacterRegistry.ZombieType.Null), null)
+	_expect(a, "普僵不是植物僵尸", ZomBotanyConfig.is_zom_botany(ZombieIds.NORM), false)
+	_expect(a, "未知类型不是植物僵尸", ZomBotanyConfig.get_info(ZombieIds.NULL), null)
 	## 高坚果僵尸（原版 ZomBotany 2 专属，此前用南瓜僵尸顶替这个位置）
 	_expect(a, "高坚果僵尸的头顶植物耐久",
-		ZomBotanyConfig.get_info(CharacterRegistry.ZombieType.Z044TallNutZombie).plant_hp, 2200)
+		ZomBotanyConfig.get_info(ZombieIds.TALL_NUT_ZOMBIE).plant_hp, 2200)
 	## 窝瓜僵尸没有鸭子圈版本：行类型必须是陆地，否则泳池关水面行会刷出「没有鸭子圈却在水上走」的它
 	_expect(a, "窝瓜僵尸只在陆地行",
-		Global.character_registry.get_zombie_info(CharacterRegistry.ZombieType.Z033SquashZombie, CharacterRegistry.ZombieInfoAttribute.ZombieRowType),
+		Global.character_registry.get_zombie_info(ZombieIds.SQUASH_ZOMBIE, CharacterRegistry.ZombieInfoAttribute.ZombieRowType),
 		CharacterRegistry.ZombieRowType.Land)
 
 
@@ -68,19 +68,28 @@ func _check_scenes(a) -> void:
 			continue
 		var zombie: Zombie000Base = scene.instantiate()
 		_expect(a, "场景 " + str(zombie_type) + " 的 zombie_type", zombie.zombie_type, zombie_type)
-		var hp_component := zombie.get_node_or_null(^"HpComponent") as HpComponent
-		if hp_component == null:
+		if zombie.get_node_or_null(^"HpComponent") == null:
 			_failed += 1
 			a.log("  FAIL 植物僵尸 " + str(zombie_type) + " 没有 HpComponent")
 			zombie.free()
 			continue
-		## 头顶植物的耐久挂在一类防具血量上，场景没写进去就变成「植物打不掉」
-		_expect(a, "场景 " + str(zombie_type) + " 头顶植物耐久", hp_component.max_hp_armor1, info.plant_hp)
+		## 头顶植物的耐久 = 挂在同一角色下那件 `ArmorComponentPlantHead` 的血量
+		## （防具改成组件之后不再是 HpComponent 上的一个数字），场景漏配就变成「植物打不掉」
+		var head_armor: ArmorComponent = null
+		for child in zombie.get_children():
+			if child is ArmorComponent and child.armor_type == ConstArmor.E_ArmorType.PlantHead:
+				head_armor = child
+				break
+		if head_armor == null:
+			_failed += 1
+			a.log("  FAIL 植物僵尸 " + str(zombie_type) + " 没有 PlantHead 防具组件")
+		else:
+			_expect(a, "场景 " + str(zombie_type) + " 头顶植物耐久", head_armor.max_hp, info.plant_hp)
 		var attack_component := zombie.get_node_or_null(^"AttackComponent")
 		if zombie_type in C_SHOOT_ZOMBIE_TYPES:
 			_expect(a, "场景 " + str(zombie_type) + " 用的是植物僵尸发射组件",
 				attack_component is AttackComponentZomBotany, true)
-			if zombie_type == CharacterRegistry.ZombieType.Z035GatlingZombie:
+			if zombie_type == ZombieIds.GATLING_ZOMBIE:
 				_expect(a, "机枪僵尸一次 4 发", attack_component.burst_num, 4)
 		if zombie_type in C_CONSTANT_SHOOT_ZOMBIE_TYPES:
 			## 恒定发射 = 普通僵尸的啃咬 + 头顶植物一直开火，两个行为都不能少
@@ -102,7 +111,7 @@ func _check_scenes(a) -> void:
 		## 火炬僵尸：脚本用 %Area2DUpBullet 取节点，场景里必须勾「场景唯一名」
 		## （漏了 unique_name_in_owner 的话，@onready 会报 Node not found 并让整个僵尸 null，
 		##  一进场就把关卡流程打断 —— 见 zm_zombie_show_in_start.create_show_zombie）
-		if zombie_type == CharacterRegistry.ZombieType.Z037TorchwoodZombie:
+		if zombie_type == ZombieIds.TORCHWOOD_ZOMBIE:
 			var up_area := zombie.get_node_or_null(^"Area2DUpBullet") as Area2D
 			_expect(a, "火炬僵尸有升级子弹的区域", up_area != null and up_area.collision_mask == 8, true)
 			_expect(a, "火炬僵尸 Area2DUpBullet 已勾场景唯一名",

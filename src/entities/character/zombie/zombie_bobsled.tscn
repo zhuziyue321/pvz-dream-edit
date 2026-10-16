@@ -9474,7 +9474,7 @@ height = 200.0
 
 [node name="Zombie014Bobsled" instance=ExtResource("1_lm26a")]
 script = ExtResource("2_2l04k")
-zombie_type = 14
+zombie_type = &"bobsled"
 
 [node name="Body2" type="Node2D" parent="." index="0"]
 unique_name_in_owner = true

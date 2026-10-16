@@ -1169,7 +1169,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Zombie020Yeti" instance=ExtResource("1_77dhx")]
 script = ExtResource("2_cl1ng")
 probability_run = 0.2
-zombie_type = 20
+zombie_type = &"yeti"
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-45, -138)

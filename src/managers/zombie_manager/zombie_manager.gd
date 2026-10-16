@@ -24,6 +24,9 @@ const PRESET_ICE_ROAD_POS_OFFSET := Vector2(80, -22)
 @onready var zombie_boss_root: Node2D = get_node_or_null("%ZombieBossRoot") as Node2D
 
 ## 出战僵王成功入树、死亡或移除后发出，供关卡按当前存活实例选择战斗音乐与血条。
+## emit 点在业务本体 zm_boss_registry.gd 里（`manager.signal_living_bosses_changed.emit()`），
+## 本文件看不到使用点，GDScript 会误判成没用过。
+@warning_ignore("unused_signal")
 signal signal_living_bosses_changed()
 
 ## 僵王登记与生命周期管理。
@@ -215,7 +218,7 @@ func init_manager() -> void:
 ## 开战前改写本关出怪表：**关卡流程的「开战」事件带 zombie_refresh_types 时走这里**
 ## （见 LevelTimelineEventStartBattle._apply_battle_para）
 ## 随机池是按 zombie_refresh_types 建好的，改完表要顺手重建一次，否则本关还是按旧表出怪
-func apply_zombie_refresh_types(types: Array[CharacterRegistry.ZombieType]) -> void:
+func apply_zombie_refresh_types(types: Array[StringName]) -> void:
 	zombie_refresh_types = types
 	zombie_wave_manager.zombie_wave_create_manager.update_zombie_refresh_types()
 
@@ -256,7 +259,6 @@ func create_preset_ice_roads(cover_cell_num:int) -> void:
 		Log.error("开局冰道缺少植物格子 / 背景管理器，已跳过铺冰")
 		return
 	var all_plant_cells:Array[Array] = main_game.plant_cell_manager.all_plant_cells
-	var paved_row_num := 0
 	for lane in range(all_zombie_rows.size()):
 		var zombie_row:ZombieRow = all_zombie_rows[lane]
 		## 只结冰能跑冰车的地面行
@@ -277,21 +279,23 @@ func create_preset_ice_roads(cover_cell_num:int) -> void:
 		## 先从最右侧的僵尸出生点起铺，再往左展开，和洗冰车开过留下的那条冰是一个坐标系
 		ice_road.global_position = zombie_row.zombie_create_position.global_position + PRESET_ICE_ROAD_POS_OFFSET
 		ice_road.init_preset_ice_road(lane, cover_left_x)
-		paved_row_num += 1
-	Log.debug("开局冰道：%d 条地面行，每行从最右列往左覆盖 %d 格" % [paved_row_num, cover_cell_num])
 #endregion
 
 #region 生成僵尸
 ## 生成一个正常出战僵尸，所有出战僵尸都要从这里生成
 func create_norm_zombie(
-	zombie_type:CharacterRegistry.ZombieType,	## 僵尸类型
+	zombie_type: StringName,	## 僵尸类型
 	zombie_parent:Node,				## 僵尸父节点；传 null 时按 zombie_init_para 里的 Lane 自行取该行节点
 	zombie_init_para:Dictionary,			## 僵尸初始化参数
 	global_pos:Vector2=Vector2.ZERO,
 	init_zombie_special:Callable = Callable(),		## 初始化僵尸特殊属性
 	spawn_gap:float = 0.0				## 同波内陆续进场的额外 x 偏移（由波次方按序号算好传进来）
 ) -> Zombie000Base:
-	var zombie:Zombie000Base = Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieScenes).instantiate()
+	## 一律走注册表的统一入口：运行期热注册的僵尸没有场景文件，是靠配方现场组装的
+	var zombie:Zombie000Base = Global.character_registry.instantiate_zombie(zombie_type)
+	if zombie == null:
+		Log.error("ZombieManager：僵尸类型 %s 创建失败，已跳过本次生成" % zombie_type)
+		return null
 	if zombie_parent == null:
 		zombie_parent = all_zombie_rows[zombie_init_para[Zombie000Base.E_ZInitAttr.Lane]]
 	zombie_init_para[Zombie000Base.E_ZInitAttr.IsZombieMode] = game_para.is_zombie_mode
@@ -367,7 +371,6 @@ func wave_refresh(curr_is_end_wave:bool):
 	set_zombie_death_over_view()
 	if is_end_wave:
 		check_zombie_end_wave_timer.start()
-		Log.debug("最后一波僵尸检测是否有离开当前视野的僵尸")
 		## 多轮游戏计时器启动
 		multi_round_end_wave_timer_start()
 
@@ -380,7 +383,6 @@ func set_zombie_death_over_view():
 		if z.global_position.x > zombie_range_pos_x.y or z.global_position.x < zombie_range_pos_x.x:
 			#all_zombies_be_hypno.erase(z)
 			z.character_death_disappear()
-	#Log.debug(str("删除离开当前视野的僵尸，目前还剩的僵尸：") + str(all_zombies_1d))
 #endregion
 
 #region 多轮游戏
@@ -395,7 +397,6 @@ func multi_round_end_wave_timer_start():
 		multi_round_end_wave_timer.timeout.connect(_on_trigger_start_next_round_game)
 		add_child(multi_round_end_wave_timer)
 	multi_round_end_wave_timer.start()
-	Log.debug("多轮游戏波次后一波计时器启动")
 
 ## 触发开始下一轮game
 func _on_trigger_start_next_round_game():
@@ -434,9 +435,9 @@ func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 	zombie_refresh_types.clear()
 	# 第一次选卡 (curr_round == 1) 的 “固定三种”：普僵 + 路障 + 铁桶
 	if curr_round == 1:
-		zombie_refresh_types.append(CharacterRegistry.ZombieType.Z001Norm)
-		zombie_refresh_types.append(CharacterRegistry.ZombieType.Z003Cone)
-		zombie_refresh_types.append(CharacterRegistry.ZombieType.Z005Bucket)
+		zombie_refresh_types.append(ZombieIds.NORM)
+		zombie_refresh_types.append(ZombieIds.CONE)
+		zombie_refresh_types.append(ZombieIds.BUCKET)
 	else:
 		## 出怪白名单按地图数据的默认僵尸行类型取（旧实现读的是已删除的
 		## MainSceneRegistry.ZombieRowTypewithMainScenesMap 场景表）
@@ -445,36 +446,29 @@ func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 			Log.error("多轮出怪缺少地图数据，无法取得出怪白名单")
 			return
 		var whitelist_refresh_zombie_types_copy = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[map_data.get_default_zombie_row_type()].duplicate(true)
-		zombie_refresh_types.append(CharacterRegistry.ZombieType.Z001Norm)
-		whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z001Norm)
+		zombie_refresh_types.append(ZombieIds.NORM)
+		whitelist_refresh_zombie_types_copy.erase(ZombieIds.NORM)
 		# 第二种：80% 路障 (Cone)，20% 报纸 (Paper)
 		## 走 `GameRng`：多轮关卡每一轮的出怪表两端要一样
 		var prob = GameRng.randf()
 		if prob < 0.8:
-			zombie_refresh_types.append(CharacterRegistry.ZombieType.Z003Cone)
-			whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z003Cone)
+			zombie_refresh_types.append(ZombieIds.CONE)
+			whitelist_refresh_zombie_types_copy.erase(ZombieIds.CONE)
 		else:
-			zombie_refresh_types.append(CharacterRegistry.ZombieType.Z006Paper)
-			whitelist_refresh_zombie_types_copy.erase(CharacterRegistry.ZombieType.Z006Paper)
+			zombie_refresh_types.append(ZombieIds.PAPER)
+			whitelist_refresh_zombie_types_copy.erase(ZombieIds.PAPER)
 		## 第二轮之后可能刷新僵尸(min(轮次*2,8)+2)个
-		for i in range(min(curr_round * 2, 8)):
+		for _i in range(min(curr_round * 2, 8)):
 			var zombie_type_choose = GameRng.pick_random(whitelist_refresh_zombie_types_copy)
 			zombie_refresh_types.append(zombie_type_choose)
 			whitelist_refresh_zombie_types_copy.erase(zombie_type_choose)
 
-			if zombie_type_choose == CharacterRegistry.ZombieType.Z021Bungi:
-				Log.debug("warning: 出怪刷新列表禁止使用 Z021Bungi ,已修改为选择 is_bungi 参数")
+			if zombie_type_choose == ZombieIds.BUNGI:
 				is_bungi = true
 				zombie_refresh_types.erase(zombie_type_choose)
 
 			if whitelist_refresh_zombie_types_copy.is_empty():
 				break
-
-	Log.debug(str("当前轮次") + str(curr_round) + str("可能刷新的僵尸类型有:"))
-	for zombie_type in zombie_refresh_types:
-		Log.debug(Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieName))
-	if is_bungi:
-		Log.debug(Global.character_registry.get_zombie_info(CharacterRegistry.ZombieType.Z021Bungi, CharacterRegistry.ZombieInfoAttribute.ZombieName))
 
 
 #endregion
@@ -501,15 +495,15 @@ func create_boss() -> ZB000Base:
 	return boss_registry.create_boss()
 
 ## 正式战斗、有效根节点及注册表允许时返回 true。
-func can_summon_boss(boss_type: CharacterRegistry.ZombieBossType) -> bool:
+func can_summon_boss(boss_type: StringName) -> bool:
 	return boss_registry.can_summon_boss(boss_type)
 
 ## 卡牌召唤入口；每次成功返回新实例，失败返回 null。
-func try_create_boss_from_card(boss_type: CharacterRegistry.ZombieBossType) -> ZB000Base:
+func try_create_boss_from_card(boss_type: StringName) -> ZB000Base:
 	return boss_registry.try_create_boss_from_card(boss_type)
 
 ## 登记僵王实例并接入敌方计数；同一实例重复登记只返回 true。
-func register_boss(boss: ZB000Base, boss_type: CharacterRegistry.ZombieBossType, count_as_new: bool = true) -> bool:
+func register_boss(boss: ZB000Base, boss_type: StringName, count_as_new: bool = true) -> bool:
 	return boss_registry.register_boss(boss, boss_type, count_as_new)
 
 ## 返回按登记顺序排列的存活实例快照。
@@ -545,17 +539,15 @@ func _try_finish_wave(global_pos: Vector2) -> void:
 
 #region 技能生成僵尸
 ## 判断技能能否将指定类型放入目标行，不依赖普通波次选行器，也不改变计数。
-func can_spawn_skill_zombie(zombie_type: CharacterRegistry.ZombieType, lane: int) -> bool:
+func can_spawn_skill_zombie(zombie_type: StringName, lane: int) -> bool:
 	if lane < 0 or lane >= all_zombie_rows.size() or lane >= all_zombies_2d.size():
 		return false
 	var row: ZombieRow = all_zombie_rows[lane]
 	if not is_instance_valid(row) or not row.is_inside_tree() or row.is_queued_for_deletion() \
 		or not is_instance_valid(row.zombie_create_position):
 		return false
-	if zombie_type == 0 or not Global.character_registry.ZombieInfo.has(zombie_type):
-		return false
-	var scene: PackedScene = Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieScenes) as PackedScene
-	if scene == null or not scene.can_instantiate():
+	## 内置僵尸走场景、热注册的走配方，能不能创建由注册表一句话回答
+	if zombie_type == ZombieIds.NULL or not Global.character_registry.can_instantiate_zombie(zombie_type):
 		return false
 	var row_type: CharacterRegistry.ZombieRowType = Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType)
 	return row_type == CharacterRegistry.ZombieRowType.Both \
@@ -563,7 +555,7 @@ func can_spawn_skill_zombie(zombie_type: CharacterRegistry.ZombieType, lane: int
 
 
 ## 技能生成入口：使用释放点 X 和目标行基准 Y，登记与计数复用普通创建流程。
-func create_skill_zombie(zombie_type: CharacterRegistry.ZombieType, lane: int, spawn_x: float) -> Zombie000Base:
+func create_skill_zombie(zombie_type: StringName, lane: int, spawn_x: float) -> Zombie000Base:
 	if not is_game_running() or not is_finite(spawn_x) or not can_spawn_skill_zombie(zombie_type, lane):
 		return null
 	var row: ZombieRow = all_zombie_rows[lane]
@@ -586,7 +578,7 @@ func create_skill_bungi(target_cell: PlantCell, anchor: Marker2D, on_created: Ca
 		or not main_game.is_ancestor_of(target_cell) or target_cell.get_bungi_target() == null:
 		return null
 	var lane: int = target_cell.row_col.x
-	if not can_spawn_skill_zombie(CharacterRegistry.ZombieType.Z021Bungi, lane):
+	if not can_spawn_skill_zombie(ZombieIds.BUNGI, lane):
 		return null
 	var row: ZombieRow = all_zombie_rows[lane]
 	var spawn_position := Vector2(target_cell.global_position.x + target_cell.size.x / 2.0,
@@ -599,7 +591,7 @@ func create_skill_bungi(target_cell: PlantCell, anchor: Marker2D, on_created: Ca
 		Zombie000Base.E_ZInitAttr.CurrWave: -1,
 		Zombie000Base.E_ZInitAttr.ParticipatesNaturalRefresh: false,
 	}
-	return create_norm_zombie(CharacterRegistry.ZombieType.Z021Bungi, row, init_parameters,
+	return create_norm_zombie(ZombieIds.BUNGI, row, init_parameters,
 		spawn_position, _initialize_skill_bungi.bind(target_cell, anchor, on_created)) as Zombie021Bungi
 
 
@@ -714,7 +706,6 @@ func zombie_update_lane(zombie:Zombie000Base, ori_lane:int):
 		var new_callback := zombie_update_lane.bind(zombie, zombie.lane)
 		if not zombie.signal_lane_update.is_connected(new_callback):
 			zombie.signal_lane_update.connect(new_callback)
-		#Log.debug("僵尸换行")
 
 
 #region 控制台 所有僵尸死亡

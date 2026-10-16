@@ -19,9 +19,9 @@ const LEVEL := "res://src/levels/mode_minigame/minigame_19_pogo_party.gd"
 const EXPECT_MAX_WAVE := 30
 ## 原版 Trivia：从可以种植物到第一波约有 55 秒
 const EXPECT_FIRST_WAVE_DELAY := 55.0
-const POGO := CharacterRegistry.ZombieType.Z019Pogo
-const FLAG := CharacterRegistry.ZombieType.Z002Flag
-const NORM := CharacterRegistry.ZombieType.Z001Norm
+const POGO := ZombieIds.POGO
+const FLAG := ZombieIds.FLAG
+const NORM := ZombieIds.NORM
 
 var _failed := 0
 
@@ -54,10 +54,10 @@ func run(a) -> void:
 	a.log("STEP2 进关卡（手里要有卡，免得被「种子包过少」自动跳过选卡）")
 	var state = Global.global_game_state
 	state.curr_plant.assign([
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
-		CharacterRegistry.PlantType.P002SunFlower,
-		CharacterRegistry.PlantType.P004WallNut,
-		CharacterRegistry.PlantType.P009PuffShroom,
+		PlantIds.PEA_SHOOTER_SINGLE,
+		PlantIds.SUN_FLOWER,
+		PlantIds.WALL_NUT,
+		PlantIds.PUFF_SHROOM,
 	])
 	Global.game_para = para
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(para.game_sences))
@@ -190,7 +190,7 @@ func _count_pots(mg, col_count: int, only_flower := false) -> int:
 			var pot = (row_cells[col] as PlantCell).get_plant(CharacterRegistry.PlacePlantInCell.Down)
 			if not is_instance_valid(pot):
 				continue
-			if only_flower and pot.plant_type != CharacterRegistry.PlantType.P034FlowerPot:
+			if only_flower and pot.plant_type != PlantIds.FLOWER_POT:
 				continue
 			num += 1
 	return num

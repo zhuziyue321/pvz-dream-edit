@@ -70,7 +70,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant002SunFlower" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_gi1qh")]
 script = ExtResource("2_7boeb")
-plant_type = 2
+plant_type = &"sun_flower"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 character_init_type = 1
 

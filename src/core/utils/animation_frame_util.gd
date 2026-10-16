@@ -23,6 +23,14 @@ class_name AnimationFrameUtil
 ##   4. AnimationTree 每帧会覆盖 AnimationPlayer 的姿态，必须在 seek 之前摘掉
 ##   5. 定格后摘掉播放器 / 碰撞体等非显示节点，剩下一棵纯 Sprite2D 的静态节点树
 ##   6. 要图片就把这棵树按包围盒等比缩放居中，再离屏渲染成 Texture2D
+##   7. 返回前必须剥掉场景身份（见 detach_scene_identity）：取出来的节点是 PackedScene
+##      的实例，被剥过之后它的结构和原场景对不上，直接 duplicate() 会整棵错乱
+##   8. ⚠️ **别在 `_ready()` 里取帧**：取帧要往 `tree.root` 挂一个临时容器，而任何节点的
+##      `_ready()` 传播期间 root 都"正忙着布置子节点"，`add_child()` 会被拒
+##      （C++ 报错 "Parent node is busy setting up children"），容器进不了树 →
+##      AnimationPlayer 定格不了 → 拿到的是**没定格的默认姿态**，而且只在日志里留一行 C++ 报错。
+##      要取就推到帧末再取（`xxx.call_deferred()` / 先 `await tree.process_frame`）。
+##      （水盆模组踩过：ModManager 的 `_ready()` 里 install → 建卡面取帧 → 报这一条）
 
 ## 动画没写 step 时的兜底帧率(原版 reanim 是 12fps)
 const FALLBACK_STEP := 1.0 / 12.0
@@ -37,6 +45,14 @@ const DEFAULT_TEXTURE_SIZE := Vector2(64.0, 64.0)
 ## 失败(场景为空 / 找不到动画 / 内容为空)返回 null，不抛错
 static func create_frame_texture(scene: PackedScene, anim_name: StringName, frame: int = 0,
 		size: Vector2 = DEFAULT_TEXTURE_SIZE, margin: float = 0.0) -> Texture2D:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		Log.error("取动画帧失败：取不到 SceneTree")
+		return null
+	## 先让出一帧：调用方常在 `_ready()` 里调本函数（如 `AnimationFrameIcon`），而那一刻
+	## root 正忙着布置子节点，取帧要挂的临时容器会被 `add_child()` 拒掉
+	## （见 `create_frame_node()` 里的同款判断与本文件头第 8 条）
+	await tree.process_frame
 	var node := create_frame_node(scene, anim_name, frame)
 	if node == null:
 		return null
@@ -55,11 +71,6 @@ static func create_frame_texture(scene: PackedScene, anim_name: StringName, fram
 	viewport.add_child(holder)
 	holder.add_child(node)
 	apply_fit(holder, rect, size, margin)
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
-		Log.error("取动画帧失败：取不到 SceneTree")
-		viewport.free()
-		return null
 	tree.root.add_child(viewport)
 	## 等两个整帧再取图：第一帧 viewport 才排进渲染队列，第二帧拿到的才是画好的图
 	## 用 process_frame 而不是 RenderingServer.frame_post_draw —— 后者在无头(dummy 渲染)
@@ -102,6 +113,10 @@ static func create_frame_node(scene: PackedScene, anim_name: StringName, frame: 
 		inst.free()
 		return null
 	tree.root.add_child(viewport)
+	## root 正"忙着布置子节点"时 add_child 会被拒（多半是在某个 `_ready()` 里取的帧）：
+	## 容器没进树 → 播放器 seek 不动 → 下面拿到的就是没定格的默认姿态
+	if viewport.get_parent() == null:
+		Log.error("取动画帧失败：临时容器没挂进场景树（别在 _ready() 里取帧） ", scene.resource_path)
 	viewport.add_child(inst)
 	## AnimationTree 会每帧覆盖姿态，定格前先摘掉；碰撞体留着也没用，一起摘
 	strip_nodes(inst, _is_pose_blocker)
@@ -111,6 +126,7 @@ static func create_frame_node(scene: PackedScene, anim_name: StringName, frame: 
 	strip_nodes(inst, _is_not_drawable)
 	viewport.remove_child(inst)
 	viewport.queue_free()
+	detach_scene_identity(inst)
 	return inst
 
 
@@ -170,6 +186,20 @@ static func detach_scripts(root: Node) -> void:
 		root.set_script(null)
 	for child in root.get_children():
 		detach_scripts(child)
+
+
+## 剥掉节点树里每一层「实例根」的场景身份（把 scene_file_path 清空）
+##
+## 取出来的帧节点是 PackedScene 的实例，脚本 / 播放器 / 影子被 `strip_nodes()` 剥过之后，
+## 它的结构已经和原场景对不上。`Node.duplicate()` 默认带 DUPLICATE_USE_INSTANTIATION，
+## 会**按原场景重新实例化**：剥掉的节点复活、定格的姿态退回默认帧，还报
+## `Child node disappeared while duplicating`（观星关的格子虚影、水盆模组的卡面都踩过）。
+## 清空 scene_file_path 之后 duplicate() 退化成深拷贝，复制出来的就是眼前这棵树。
+static func detach_scene_identity(root: Node) -> void:
+	if root.scene_file_path != "":
+		root.scene_file_path = ""
+	for child in root.get_children():
+		detach_scene_identity(child)
 
 
 ## 删掉 root 下所有满足 predicate 的后代节点(整棵子树一起删，root 自身不删)

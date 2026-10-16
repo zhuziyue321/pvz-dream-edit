@@ -23,12 +23,12 @@ func run(a) -> void:
 	## 玩家拥有这些卡：里面有本关禁掉的（向日葵 / 小喷菇），也有不禁的（豌豆射手 / 坚果墙）
 	var state = Global.global_game_state
 	state.curr_plant.assign([
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
-		CharacterRegistry.PlantType.P002SunFlower,
-		CharacterRegistry.PlantType.P004WallNut,
-		CharacterRegistry.PlantType.P009PuffShroom,
+		PlantIds.PEA_SHOOTER_SINGLE,
+		PlantIds.SUN_FLOWER,
+		PlantIds.WALL_NUT,
+		PlantIds.PUFF_SHROOM,
 	])
-	state.unlock_plant(CharacterRegistry.PlantType.P999Imitater)
+	state.unlock_plant(PlantIds.IMITATER)
 
 	var para: Resource = (load(LEVEL) as GDScript).new()
 	if para == null:
@@ -52,12 +52,12 @@ func run(a) -> void:
 		_check(a, "找到待选卡槽", false, "null")
 		_finish(a)
 		return
-	_check(a, "向日葵不出现（普通页）", not _candidate_visible(cand, false, CharacterRegistry.PlantType.P002SunFlower))
-	_check(a, "小喷菇不出现（普通页）", not _candidate_visible(cand, false, CharacterRegistry.PlantType.P009PuffShroom))
-	_check(a, "豌豆射手正常出现（普通页）", _candidate_visible(cand, false, CharacterRegistry.PlantType.P001PeaShooterSingle))
-	_check(a, "坚果墙正常出现（普通页）", _candidate_visible(cand, false, CharacterRegistry.PlantType.P004WallNut))
-	_check(a, "向日葵的模仿者也不出现", not _candidate_visible(cand, true, CharacterRegistry.PlantType.P002SunFlower))
-	_check(a, "豌豆射手的模仿者正常出现", _candidate_visible(cand, true, CharacterRegistry.PlantType.P001PeaShooterSingle))
+	_check(a, "向日葵不出现（普通页）", not _candidate_visible(cand, false, PlantIds.SUN_FLOWER))
+	_check(a, "小喷菇不出现（普通页）", not _candidate_visible(cand, false, PlantIds.PUFF_SHROOM))
+	_check(a, "豌豆射手正常出现（普通页）", _candidate_visible(cand, false, PlantIds.PEA_SHOOTER_SINGLE))
+	_check(a, "坚果墙正常出现（普通页）", _candidate_visible(cand, false, PlantIds.WALL_NUT))
+	_check(a, "向日葵的模仿者也不出现", not _candidate_visible(cand, true, PlantIds.SUN_FLOWER))
+	_check(a, "豌豆射手的模仿者正常出现", _candidate_visible(cand, true, PlantIds.PEA_SHOOTER_SINGLE))
 
 	# ------------------------------------------------ STEP2 走到选卡阶段并点「开始游戏」
 	a.log("STEP2 等选卡阶段")
@@ -69,7 +69,7 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP3 布阵阶段
 	a.log("STEP3 布阵阶段：能操作、不出怪、有「开始战斗！」按钮")
 	var button = null
-	for i in range(80):
+	for _i in range(80):
 		await a.wait(0.5)
 		button = _find_lets_rock_button(mg)
 		if button != null:
@@ -112,7 +112,7 @@ func run(a) -> void:
 
 #region 工具
 ## 待选区里某张卡是否出现（imitater = true 查模仿者页）
-func _candidate_visible(cand, imitater: bool, plant_type: CharacterRegistry.PlantType) -> bool:
+func _candidate_visible(cand, imitater: bool, plant_type: StringName) -> bool:
 	var containers = cand.all_card_candidate_containers_plant_imitater if imitater \
 		else cand.all_card_candidate_containers_plant
 	if not AllCards.plant_card_ids.has(plant_type):

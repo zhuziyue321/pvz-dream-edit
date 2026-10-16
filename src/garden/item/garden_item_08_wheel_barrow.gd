@@ -44,11 +44,11 @@ func activete_it():
 
 	## 如果存在植物并且植物种植类型为陆地
 	if is_have_plant:
-		var curr_plant_condition:int = choosed_plant_data["curr_plant_condition"]
+		## 读档里来的是 float(JSON 没有整数):必须 int(),否则 `& 2` 位运算炸
+		var curr_plant_condition:int = int(choosed_plant_data["curr_plant_condition"])
 		## 植物种植类型为陆地并且为水族馆场景
 		if curr_plant_condition & 2 and garden_manager.curr_bg_type == GardenManager.E_GardenBgType.Aquarium:
 
-			Log.debug("当前植物不可以种在水中")
 			var reminder_info :ReminderInformation =  SceneRegistry.REMINDER_INFORMATION.instantiate()
 
 			get_tree().current_scene.add_child(reminder_info)
@@ -105,7 +105,6 @@ func _on_area_2d_area_entered(area: Area2D) -> void:
 	else:
 		var new_plant_cell:PlantCellGarden = area.owner
 		if new_plant_cell.plant_in_cell == null:
-			#Log.debug("进入格子初始化格子虚影")
 			curr_plant_cell = new_plant_cell
 			curr_plant_cell.init_curr_plant_cell_shadow(choosed_plant_data)
 

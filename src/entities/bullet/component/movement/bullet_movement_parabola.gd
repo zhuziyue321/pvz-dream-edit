@@ -79,7 +79,6 @@ func physics_process_bullet_move(delta: float) -> bool:
 	## 使用缓动函数来调整时间 t (最后时移动变快)
 	var eased_t = eased_time(t)
 
-	#Log.debug(str("当前时间：") + str(curr_time) + str(" 最终比例：") + str(t))
 	## 如果到达最终落点时未命中敌人,移动失败，子弹根调用攻击null销毁子弹
 	if eased_t >= 1:
 		return false

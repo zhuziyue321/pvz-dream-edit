@@ -50,9 +50,9 @@ func run(a) -> void:
 
 	## 1-1 是教程关，第一波要等教程推进才启动，这里直接摆僵尸上场
 	var creator = zm.zombie_wave_manager.zombie_wave_create_manager
-	creator.wave_create_zombie(CharacterRegistry.ZombieType.Z001Norm, 0, 1)
-	creator.wave_create_zombie(CharacterRegistry.ZombieType.Z001Norm, 1, 1)
-	creator.wave_create_zombie(CharacterRegistry.ZombieType.Z001Norm, 2, 1)
+	creator.wave_create_zombie(ZombieIds.NORM, 0, 1)
+	creator.wave_create_zombie(ZombieIds.NORM, 1, 1)
+	creator.wave_create_zombie(ZombieIds.NORM, 2, 1)
 	await a.wait(1.0)
 
 	var all_zombie := _pick_zombies()

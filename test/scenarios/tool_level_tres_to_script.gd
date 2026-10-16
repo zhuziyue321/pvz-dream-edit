@@ -45,8 +45,10 @@ const EVENT_ARGS := ["wait_time", "timeout", "plants"]
 ## 写 `EnumType(值)` 会报 "Member ... is not a function"），
 ## 成员名按值反查 enum 定义得到：[脚本路径, enum 名, 类名]
 ## 按**字段名**匹配，所以顶层属性和内联子资源的属性都生效
-## （子资源上的 plant_type 就是靠这条转的；教程步骤的 pointer_target / finish_type
-## 随教程系统一并删除了，迁移工具不再认这两个字段）
+##
+## ⚠️ `plant_type` / `zombie_refresh_types` 原来也在这张表里，2026-10-13 角色编号改成
+## 字符串 id 之后这两个字段在 `.tres` 里已经是 `&"pea_shooter"` 这种字面量，
+## **不再是裸 int**，所以从表里摘掉了（留着反而会拿新 id 去查已经删除的 enum）。
 const ENUM_FIELDS := {
 	"game_sences": ["res://src/core/autoload/main_scene_registry.gd", "MainScenes", "MainSceneRegistry"],
 	"game_BG": ["res://src/core/consts/const_level_data.gd", "GameBg", "ConstLevelData"],
@@ -54,11 +56,6 @@ const ENUM_FIELDS := {
 	"monster_mode": ["res://src/core/consts/const_level_data.gd", "E_MonsterMode", "ConstLevelData"],
 	"card_mode": ["res://src/core/consts/const_level_data.gd", "E_CardMode", "ConstLevelData"],
 	"pot_mode": ["res://src/core/consts/const_level_data.gd", "E_PotMode", "ConstLevelData"],
-	"plant_type": ["res://src/core/autoload/character_registry.gd", "PlantType", "CharacterRegistry"],
-	## 出怪表是**枚举数组**：`start_battle(10, [1, 3])` 这种写法同样会触发
-	## INT_AS_ENUM_WITHOUT_CAST（这类警告只在 Godot 编辑器输出面板里报，无头跑批完全安静，
-	## 2026-10-03 全仓扫出 154 处），所以逐元素换成员名交给 _enumed_array()
-	"zombie_refresh_types": ["res://src/core/autoload/character_registry.gd", "ZombieType", "CharacterRegistry"],
 }
 
 
@@ -164,7 +161,16 @@ func _gen_one(a, path: String) -> bool:
 		out.append_array(init_block)
 		out.append("")
 		out.append("")
-	out.append("func run_flow(%s: MainGameManager) -> void:" % ("mg" if _uses_mg(flow_lines) else "_mg"))
+	## 形参一律写 `mg`：改成 `_mg` 会遮蔽 LevelScriptBase 的同名字段（SHADOWED_VARIABLE_BASE_CLASS）。
+	## 流程用不上 mg 时再补一条 @warning_ignore 按掉 UNUSED_PARAMETER
+	## （范本见 src/levels/mode_adventure/adventure_01_03.gd）
+	if _uses_mg(flow_lines):
+		out.append("func run_flow(mg: MainGameManager) -> void:")
+	else:
+		out.append("## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。")
+		out.append("## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。")
+		out.append('@warning_ignore("unused_parameter")')
+		out.append("func run_flow(mg: MainGameManager) -> void:")
 	if flow_lines.is_empty():
 		out.append("\tpass")
 	out.append_array(flow_lines)

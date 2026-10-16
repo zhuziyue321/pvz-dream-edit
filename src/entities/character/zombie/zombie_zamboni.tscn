@@ -1347,7 +1347,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Zombie013Zamboni" instance=ExtResource("1_cvyhe")]
 script = ExtResource("2_tjtkh")
 is_caltrop = false
-zombie_type = 13
+zombie_type = &"zamboni"
 is_ignore_ladder = true
 
 [node name="IceRoad" parent="." index="0" instance=ExtResource("3_yuhtx")]
@@ -1674,7 +1674,7 @@ script = ExtResource("46_5rl58")
 
 [node name="CanAttackStatusComponent" type="Node2D" parent="AttackComponent/DetectComponent"]
 script = ExtResource("90_canas01")
-can_attack_plant_status = 13
+can_attack_plant_status = 9
 can_attack_zombie_status = 1
 
 [node name="MoveComponent" parent="." index="8"]

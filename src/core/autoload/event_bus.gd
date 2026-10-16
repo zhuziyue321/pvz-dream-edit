@@ -69,7 +69,6 @@ func push_event(event_name: String, payload : Variant = [], immediate: bool = tr
 	_validate_payload(event_name, payload)
 
 	if debug_mode:
-		Log.debug("[EventBus] Pushing event: %s with payload: %s" % [event_name, payload])
 		_pushed_event_names[event_name] = true
 
 	if enable_history:
@@ -88,18 +87,13 @@ func push_event(event_name: String, payload : Variant = [], immediate: bool = tr
 	#
 	# 这个分支同时是「事件名拼错」和「订阅方还没挂上」的共同表现：
 	# 两者都是**整条链路静默什么都不发生**，排查时毫无痕迹。
-	# 拼错的名字在外面找不到（EventBus 是动态信号，拼错不报编译错），
-	# 所以 debug 模式下必须在这里留一句话，否则只能靠肉眼看常量表。
+	# 拼错的名字在外面找不到（EventBus 是动态信号，拼错不报编译错），只能靠肉眼看常量表。
 	if not has_signal(event_name):
-		if debug_mode:
-			Log.debug("[EventBus] 事件 %s 从未被订阅过（事件名拼错，或订阅方此时还没挂上），已丢弃" % event_name)
 		return
 
 	# 按优先级排好序的连接快照（订阅关系没变过时直接复用缓存）
 	var ordered_connections := _get_ordered_connections(event_name)
 	if ordered_connections.is_empty():
-		if debug_mode:
-			Log.debug("[EventBus] No subscribers for event: %s" % event_name)
 		return
 
 	# 筛选满足过滤条件的连接
@@ -183,10 +177,7 @@ func subscribe(
 	# 检查是否已存在相同的回调
 	for conn in get_signal_connection_list(event_name):
 		if conn["callable"] == callback:
-			if debug_mode:
-				Log.debug("[EventBus] Callback already subscribed to event: %s" % event_name)
-			else:
-				Log.warn("Callback already subscribed to event: %s" % event_name)
+			Log.warn("Callback already subscribed to event: %s" % event_name)
 			return
 
 	# 连接信号
@@ -208,9 +199,6 @@ func subscribe(
 
 	# 订阅关系变了，排好序的快照作废
 	_invalidate_cache(event_name)
-
-	if debug_mode:
-		Log.debug("[EventBus] Subscribed to event: %s with priority: %s" % [event_name, priority])
 
 ## 取消订阅事件
 ## [param event_name] 事件名
@@ -234,9 +222,6 @@ func unsubscribe(event_name: String, callback: Callable) -> void:
 			_event_metadata[event_name].erase(obj_id)
 			if _event_metadata[event_name].is_empty():
 				_event_metadata.erase(event_name)
-
-		if debug_mode:
-			Log.debug("[EventBus] Unsubscribed from event: %s" % event_name)
 
 ## 订阅一次性事件
 ## [param event_name] 事件名
@@ -290,9 +275,6 @@ func clear_subscriptions() -> void:
 	_event_metadata.clear()
 	## 所有订阅关系都没了，快照整体作废
 	_ordered_connections_cache.clear()
-
-	if debug_mode:
-		Log.debug("[EventBus] All subscriptions cleared")
 
 ## 获取事件订阅者数量
 ## [param event_name] 事件名

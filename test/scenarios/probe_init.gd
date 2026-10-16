@@ -75,7 +75,7 @@ func _check_norm_zombie(a) -> void:
 		_check(a, "僵尸管理器可用", false, "zombie_wave_manager 为空")
 		return
 	var z: Zombie000Base = mgr.zombie_wave_manager.zombie_wave_create_manager.wave_create_zombie(
-		CharacterRegistry.ZombieType.Z001Norm, 0, 0
+		ZombieIds.NORM, 0, 0
 	)
 	await a.wait(0.5)
 	if z == null or not is_instance_valid(z):
@@ -104,7 +104,7 @@ func _check_norm_zombie(a) -> void:
 
 ## 窝瓜：ready_norm() 里创建受击状态掩码组件，_ready 阶段不该再创建
 func _check_squash(a, cell: PlantCell) -> void:
-	var p := _new_plant(CharacterRegistry.PlantType.P018Squash, cell)
+	var p := _new_plant(PlantIds.SQUASH, cell)
 	if p == null:
 		_check(a, "窝瓜创建成功", false, "实例化失败")
 		return
@@ -125,7 +125,7 @@ func _check_squash(a, cell: PlantCell) -> void:
 
 ## 睡莲：Plant000DownBase 的 ready_norm() 链
 func _check_lily_pad(a, cell: PlantCell) -> void:
-	var p := _new_plant(CharacterRegistry.PlantType.P017LilyPad, cell)
+	var p := _new_plant(PlantIds.LILY_PAD, cell)
 	if p == null:
 		_check(a, "睡莲创建成功", false, "实例化失败")
 		return
@@ -146,7 +146,7 @@ func _check_lily_pad(a, cell: PlantCell) -> void:
 	await a.wait(0.2)
 
 
-func _new_plant(plant_type: CharacterRegistry.PlantType, cell: PlantCell) -> Plant000Base:
+func _new_plant(plant_type: StringName, cell: PlantCell) -> Plant000Base:
 	var scene: PackedScene = Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantScenes)
 	if scene == null:

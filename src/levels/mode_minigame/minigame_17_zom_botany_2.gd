@@ -32,24 +32,27 @@ func _init() -> void:
 	zombie_multy = 10
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[CharacterRegistry.ZombieType] = [
-		CharacterRegistry.ZombieType.Z031PeaShooterZombie,
-		CharacterRegistry.ZombieType.Z032WallNutZombie,
-		CharacterRegistry.ZombieType.Z033SquashZombie,
-		CharacterRegistry.ZombieType.Z034JalapenoZombie,
-		CharacterRegistry.ZombieType.Z035GatlingZombie,
-		CharacterRegistry.ZombieType.Z036SnowPeaZombie,
-		CharacterRegistry.ZombieType.Z037TorchwoodZombie,
-		CharacterRegistry.ZombieType.Z038MagnetShroomZombie,
-		CharacterRegistry.ZombieType.Z039PumpkinZombie,
-		CharacterRegistry.ZombieType.Z040CabbagePultZombie,
-		CharacterRegistry.ZombieType.Z042MelonPultZombie,
-		CharacterRegistry.ZombieType.Z043WinterMelonZombie,
+	var zombie_list: Array[StringName] = [
+		ZombieIds.PEA_SHOOTER_ZOMBIE,
+		ZombieIds.WALL_NUT_ZOMBIE,
+		ZombieIds.SQUASH_ZOMBIE,
+		ZombieIds.JALAPENO_ZOMBIE,
+		ZombieIds.GATLING_ZOMBIE,
+		ZombieIds.SNOW_PEA_ZOMBIE,
+		ZombieIds.TORCHWOOD_ZOMBIE,
+		ZombieIds.MAGNET_SHROOM_ZOMBIE,
+		ZombieIds.PUMPKIN_ZOMBIE,
+		ZombieIds.CABBAGE_PULT_ZOMBIE,
+		ZombieIds.MELON_PULT_ZOMBIE,
+		ZombieIds.WINTER_MELON_ZOMBIE,
 		## 原版 ZomBotany 2 的 4 只新增里唯一此前缺的一只
-		CharacterRegistry.ZombieType.Z044TallNutZombie,
-		CharacterRegistry.ZombieType.Z001Norm,
+		ZombieIds.TALL_NUT_ZOMBIE,
+		ZombieIds.NORM,
 	]
 
 	## 展示僵尸

@@ -62,7 +62,7 @@ size = Vector2(240, 180)
 [node name="Plant038UmbrellaLeaf" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_kuurk")]
 script = ExtResource("2_7nhj0")
 is_activate_umbrella = false
-plant_type = 38
+plant_type = &"umbrella_leaf"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("Area2DUmbrella")]
 
 [node name="BodyCorrect" parent="Body" index="0"]

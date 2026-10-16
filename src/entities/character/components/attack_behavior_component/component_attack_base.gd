@@ -52,14 +52,12 @@ func enable_component(is_enable_factor:E_IsEnableFactor):
 ## 禁用组件
 func disable_component(is_enable_factor:E_IsEnableFactor):
 	super(is_enable_factor)
-	#Log.debug(owner.name)
 	if is_instance_valid(detect_component):
 		detect_component.disable_component(is_enable_factor)
 	update_is_attack_factors(false, E_IsAttackFactors.Enbale)
 
 ## 开始攻击
 func attack_start():
-	#Log.debug("开始攻击")
 	signal_change_is_attack.emit(true)
 
 ## 结束攻击

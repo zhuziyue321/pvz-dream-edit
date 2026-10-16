@@ -16,7 +16,7 @@ class_name Plant000Base
 
 #region 植物类基础属性
 
-@export var plant_type:CharacterRegistry.PlantType
+@export var plant_type: StringName
 ## 行和列
 var row_col:Vector2i = Vector2i(-1, -1)
 ## 植物所在格子
@@ -57,7 +57,8 @@ var garden_date_init:Dictionary
 
 #region 初始化相关
 func character_ready() -> void:
-	if plant_type == 0:
+	## 空 id 而不是 0：植物类型是 StringName（见 `PlantIds`），没有"第 0 号"这回事
+	if plant_type == PlantIds.NULL:
 		Log.error(name, "植物类型未赋值")
 
 ## 植物初始化属性
@@ -145,11 +146,9 @@ func be_bungi()->Node2D:
 	character_death_disappear()
 	return body_copy
 
-## 被僵尸啃食
-## attack_value:伤害
-## attack_zombie:攻击的僵尸
-func be_zombie_eat(attack_value:int, _attack_zombie:Zombie000Base):
-	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, true, false)
+## 被僵尸啃食：走基类 `Character000Base.be_zombie_eat()`（穿透伤害 + 不播受击音效），
+## 植物侧没有特殊分支，不再重写 —— 重写却和基类一模一样，将来改基类就会漏掉这里。
+## 需要"被啃时做点什么"的子类改重写 `be_zombie_eat_once()`（大蒜 / 魅惑 / 我是僵尸走这条）。
 
 ## 被僵尸啃食一次发光
 func be_zombie_eat_once(attack_zombie:Zombie000Base):
@@ -174,7 +173,7 @@ func character_death():
 ## 死亡不消失
 func character_death_not_disappear():
 	hp_component_plant.is_death_free = false
-	hp_component.Hp_loss_death()
+	hp_component.hp_loss_to_death()
 
 #endregion
 
@@ -194,7 +193,7 @@ func be_shovel_look_end():
 ## 被铲子铲除,禁止亡语
 func be_shovel_kill():
 	is_can_death_language = false
-	hp_component.Hp_loss_death()
+	hp_component.hp_loss_to_death()
 
 ## 手持紫卡植物可以种植在该植物上
 func preplant_purple_body_light_and_dark():

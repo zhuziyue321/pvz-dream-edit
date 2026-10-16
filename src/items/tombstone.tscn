@@ -37,7 +37,7 @@ anim_offset_max = 1.0
 [node name="Tombstone" type="Node2D"]
 z_index = -4
 script = ExtResource("1_34xhw")
-zombie_candidate_list = Array[int]([1, 3, 5])
+zombie_candidate_list = Array[StringName]([&"norm", &"cone", &"bucket"])
 
 [node name="TombstoneMask" type="Panel" parent="."]
 clip_children = 1

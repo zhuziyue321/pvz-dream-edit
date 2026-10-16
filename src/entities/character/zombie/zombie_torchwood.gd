@@ -8,9 +8,9 @@ class_name Zombie037Torchwood
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Torchwood_Zombie)
 
 ## 豌豆升级表（与火炬树桩一致：豌豆 → 火豌豆；寒冰豌豆先被解冻成普通豌豆）
-const bullet_upgrade_data: Dictionary[BulletRegistry.BulletType, BulletRegistry.BulletType] = {
-	BulletRegistry.BulletType.Bullet001Pea: BulletRegistry.BulletType.Bullet006PeaFire,
-	BulletRegistry.BulletType.Bullet002PeaSnow: BulletRegistry.BulletType.Bullet001Pea,
+const bullet_upgrade_data: Dictionary[StringName, StringName] = {
+	BulletIds.PEA: BulletIds.PEA_FIRE,
+	BulletIds.PEA_SNOW: BulletIds.PEA,
 }
 
 ## 检测玩家子弹的区域（场景里配置：mask 只开 layer4 BulletFromPlant）
@@ -48,7 +48,7 @@ func _on_area_2d_up_bullet_area_entered(area: Area2D) -> void:
 func _up_bullet(curr_bullet: Bullet000Base) -> void:
 	if curr_bullet in curr_bullet_up:
 		return
-	var new_type: BulletRegistry.BulletType = bullet_upgrade_data[curr_bullet.bullet_type]
+	var new_type: StringName = bullet_upgrade_data[curr_bullet.bullet_type]
 	var bullet_up: Bullet000Base = Global.bullet_registry.create_bullet(new_type)
 	## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发
 	if bullet_up == null:

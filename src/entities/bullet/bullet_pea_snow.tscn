@@ -87,7 +87,7 @@ anim_offset_max = 1.0
 [node name="Bullet002PeaSnow" instance=ExtResource("1_uicea")]
 script = ExtResource("2_pfv8q")
 time_be_decelerated = 3.0
-bullet_type = 2
+bullet_type = &"pea_snow"
 is_can_up = true
 
 [node name="BulletBody" parent="Body" index="0"]

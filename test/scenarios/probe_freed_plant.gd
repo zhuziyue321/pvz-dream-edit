@@ -28,7 +28,7 @@ func run(a) -> void:
 	await a.wait(2.0)
 
 	var place = CharacterRegistry.PlacePlantInCell.Norm
-	var p_type = CharacterRegistry.PlantType.P001PeaShooterSingle
+	var p_type = PlantIds.PEA_SHOOTER_SINGLE
 	var cell: PlantCell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[0][0]
 
 	## STEP1 第一次种植

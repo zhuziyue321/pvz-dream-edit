@@ -60,6 +60,9 @@ enum E_PlayerAction {
 	ClickCell,		## 点了某一格草地（payload: `[PlantCell]`）—— 种植物与铲植物是同一枚入口
 	PickSun,		## 捡起一颗阳光（payload: `[Sun]`）
 	PickDrop,		## 捡起一件掉落物（payload: `[Coin]` 或 `[ChocolateDrop]`）
+	SwapCell,		## 把草坪上两格的植物互换（payload: `[PlantCell, PlantCell]`）
+					## —— 三消类玩法那一次「按住拖过去」；本体只认「两格互换」这个动作，
+					##    不认识任何具体玩法（硬约束 §1-8），谁用它由关卡侧自己决定
 }
 
 #const RandomPicker = preload("random_picker.gd")
@@ -72,6 +75,7 @@ enum E_PlayerAction {
 ## 本体每一个玩家操作入口都调这一句（不要直接去读 `player_action_gate`）：
 ##   点卡 `card.gd` / 铲子 `shovel_in_ui.gd` / 点格子 `HandManager._on_click_cell()`
 ##   / 捡阳光 `Sun._on_button_pressed()` / 捡掉落物 `Coin` 与 `ChocolateDrop`
+##   / 交换草坪上两株植物（三消类玩法的那一次滑动）关卡侧玩法管理器自己调
 ## 判空与转型都收在这一处，调用方一行就够；单机关掉模组时这里恒 false，零影响。
 func submit_player_action(action: E_PlayerAction, payload: Array = []) -> bool:
 	if not player_action_gate.is_valid():
@@ -137,9 +141,9 @@ func sum_arr(arr: Array[float]) -> float:
 	return total
 
 ## 根据当前植物类型和僵尸类型获取当前是植物还是僵尸
-func get_character_type(plant_type:CharacterRegistry.PlantType, zombie_type:CharacterRegistry.ZombieType) -> CharacterRegistry.CharacterType:
-	if plant_type == CharacterRegistry.PlantType.Null:
-		if zombie_type == CharacterRegistry.ZombieType.Null:
+func get_character_type(plant_type: StringName, zombie_type: StringName) -> CharacterRegistry.CharacterType:
+	if plant_type == PlantIds.NULL:
+		if zombie_type == ZombieIds.NULL:
 			return CharacterRegistry.CharacterType.Null
 		else:
 			return CharacterRegistry.CharacterType.Zombie
@@ -213,9 +217,9 @@ func change_scene(scene_path: String) -> void:
 
 #region 特殊僵尸生成函数
 
-func get_special_zombie_callable(zombie_type:CharacterRegistry.ZombieType, plant_cell:PlantCell) -> Callable:
+func get_special_zombie_callable(zombie_type: StringName, plant_cell:PlantCell) -> Callable:
 	match zombie_type:
-		CharacterRegistry.ZombieType.Z021Bungi:
+		ZombieIds.BUNGI:
 			return create_bungi.bind(plant_cell)
 	return Callable()
 

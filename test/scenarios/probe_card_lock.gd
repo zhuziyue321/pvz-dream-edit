@@ -18,7 +18,7 @@ func run(a) -> void:
 
 	var state = Global.global_game_state
 	## 新档：只有豌豆射手
-	state.curr_plant.assign([CharacterRegistry.PlantType.P001PeaShooterSingle])
+	state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	state.curr_all_level_state_data = {}
 
 	if not await _goto_level(a):
@@ -42,7 +42,7 @@ func run(a) -> void:
 		str(battle.curr_cards.size()))
 	if battle.curr_cards.size() > 0:
 		var c0 = battle.curr_cards[0]
-		_check(a, "1-1 第 1 张是豌豆射手", c0.card_plant_type == CharacterRegistry.PlantType.P001PeaShooterSingle,
+		_check(a, "1-1 第 1 张是豌豆射手", c0.card_plant_type == PlantIds.PEA_SHOOTER_SINGLE,
 			str(c0.card_plant_type))
 		## 预选卡没有连接点击信号 -> 点了也不会被取消（"固定"）
 		c0._on_button_pressed()
@@ -55,8 +55,8 @@ func run(a) -> void:
 	_check(a, "新档金钱未解锁", not state.is_money_unlocked(), str(state.get_max_success_adventure_level()))
 	_check(a, "新档商店未解锁", not state.is_shop_unlocked(), str(state.get_max_success_adventure_level()))
 	_check(a, "新档商店扩展=0", state.get_shop_expand_stage() == 0, str(state.get_shop_expand_stage()))
-	_check(a, "紫卡不在已解锁列表", not state.curr_plant.has(CharacterRegistry.PlantType.P041GatlingPea))
-	_check(a, "模仿者不在已解锁列表", not state.curr_plant.has(CharacterRegistry.PlantType.P999Imitater))
+	_check(a, "紫卡不在已解锁列表", not state.curr_plant.has(PlantIds.GATLING_PEA))
+	_check(a, "模仿者不在已解锁列表", not state.curr_plant.has(PlantIds.IMITATER))
 
 	## 金钱未解锁时不应掉落金币
 	var dim = GameContext.curr_main_game.drop_item_manager.dim_coin
@@ -81,9 +81,9 @@ func run(a) -> void:
 		str(ConstUnlockLevel.get_next_shop_expand_level(24)))
 	_check(a, "关卡名反解 34->4-4", ConstUnlockLevel.get_adventure_level_name(34) == "4-4",
 		ConstUnlockLevel.get_adventure_level_name(34))
-	_check(a, "3-4 上架机枪射手", state.is_purple_card_can_buy(CharacterRegistry.PlantType.P041GatlingPea))
-	_check(a, "3-4 未上架玉米加农炮", not state.is_purple_card_can_buy(CharacterRegistry.PlantType.P048CobCannon))
-	_check(a, "3-4 未上架模仿者", not state.is_purple_card_can_buy(CharacterRegistry.PlantType.P999Imitater))
+	_check(a, "3-4 上架机枪射手", state.is_purple_card_can_buy(PlantIds.GATLING_PEA))
+	_check(a, "3-4 未上架玉米加农炮", not state.is_purple_card_can_buy(PlantIds.COB_CANNON))
+	_check(a, "3-4 未上架模仿者", not state.is_purple_card_can_buy(PlantIds.IMITATER))
 	_check(a, "关卡名反解 24->3-4", ConstUnlockLevel.get_adventure_level_name(24) == "3-4",
 		ConstUnlockLevel.get_adventure_level_name(24))
 
@@ -109,9 +109,9 @@ func run(a) -> void:
 		goods_kids.append_array(row.get_children())
 	_check(a, "商店生成 9 个植物卡商品", goods_kids.size() == 9, str(goods_kids.size()))
 
-	var g_041 = _find_goods(goods_kids, CharacterRegistry.PlantType.P041GatlingPea)
-	var g_048 = _find_goods(goods_kids, CharacterRegistry.PlantType.P048CobCannon)
-	var g_999 = _find_goods(goods_kids, CharacterRegistry.PlantType.P999Imitater)
+	var g_041 = _find_goods(goods_kids, PlantIds.GATLING_PEA)
+	var g_048 = _find_goods(goods_kids, PlantIds.COB_CANNON)
+	var g_999 = _find_goods(goods_kids, PlantIds.IMITATER)
 	_check(a, "机枪射手商品已上架", g_041 != null and g_041.visible and g_041.is_on_sale())
 	_check(a, "玉米加农炮未上架(隐藏)", g_048 != null and not g_048.visible)
 	_check(a, "模仿者未上架(隐藏)", g_999 != null and not g_999.visible)
@@ -131,7 +131,7 @@ func run(a) -> void:
 	if g_041 != null:
 		g_041.comfirm_get_this_goods()
 		await a.wait(0.5)
-	_check(a, "购买后解锁机枪射手", state.curr_plant.has(CharacterRegistry.PlantType.P041GatlingPea))
+	_check(a, "购买后解锁机枪射手", state.curr_plant.has(PlantIds.GATLING_PEA))
 	_check(a, "购买后扣除 5000", state.coin_value == 15000, str(state.coin_value))
 	if g_041 != null:
 		_check(a, "已购买的商品标记已拥有", not g_041.is_have_goods)
@@ -139,13 +139,13 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP6 反例：槽数不够时不锁
 	a.log("STEP6 拥有 7 张卡进 1-2（卡槽 6）")
 	state.curr_plant.assign([
-		CharacterRegistry.PlantType.P001PeaShooterSingle,
-		CharacterRegistry.PlantType.P002SunFlower,
-		CharacterRegistry.PlantType.P003CherryBomb,
-		CharacterRegistry.PlantType.P004WallNut,
-		CharacterRegistry.PlantType.P005PotatoMine,
-		CharacterRegistry.PlantType.P006SnowPea,
-		CharacterRegistry.PlantType.P007Chomper,
+		PlantIds.PEA_SHOOTER_SINGLE,
+		PlantIds.SUN_FLOWER,
+		PlantIds.CHERRY_BOMB,
+		PlantIds.WALL_NUT,
+		PlantIds.POTATO_MINE,
+		PlantIds.SNOW_PEA,
+		PlantIds.CHOMPER,
 	])
 	var p2 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 	p2.set_choose_level(ADV, 0, "0002")
@@ -164,8 +164,8 @@ func run(a) -> void:
 	a.log("STEP7 模拟通关冒险模式（5-10，序号 50）")
 	_mark_cleared(state, 50)
 	_check(a, "5-10 后商店扩展=3", state.get_shop_expand_stage() == 3, str(state.get_shop_expand_stage()))
-	_check(a, "5-10 上架玉米加农炮", state.is_purple_card_can_buy(CharacterRegistry.PlantType.P048CobCannon))
-	_check(a, "5-10 上架模仿者", state.is_purple_card_can_buy(CharacterRegistry.PlantType.P999Imitater))
+	_check(a, "5-10 上架玉米加农炮", state.is_purple_card_can_buy(PlantIds.COB_CANNON))
+	_check(a, "5-10 上架模仿者", state.is_purple_card_can_buy(PlantIds.IMITATER))
 	_check(a, "全部扩展完后无下一批", ConstUnlockLevel.get_next_shop_expand_level(50) == -1,
 		str(ConstUnlockLevel.get_next_shop_expand_level(50)))
 
@@ -177,8 +177,8 @@ func run(a) -> void:
 	else:
 		_check(a, "未购买模仿者时入口隐藏", seed_candidate.imitater_bg.visible == false,
 			str(seed_candidate.imitater_bg.visible))
-		state.unlock_plant(CharacterRegistry.PlantType.P999Imitater)
-		_check(a, "购买模仿者后已解锁", state.is_plant_unlocked(CharacterRegistry.PlantType.P999Imitater))
+		state.unlock_plant(PlantIds.IMITATER)
+		_check(a, "购买模仿者后已解锁", state.is_plant_unlocked(PlantIds.IMITATER))
 		## 重新进关卡验证入口显示
 		var p3 = (load("res://src/levels/mode_adventure/adventure_01_02.gd") as GDScript).new()
 		p3.set_choose_level(ADV, 0, "0002")

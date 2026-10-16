@@ -87,7 +87,7 @@ func run(a) -> void:
 	var zm = mg.zombie_manager
 	var lane_y: float = zm.all_zombie_rows[entry.lane].zombie_create_position.global_position.y
 	var zombie: Zombie000Base = zm.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm,
+		ZombieIds.NORM,
 		zm.all_zombie_rows[entry.lane],
 		{
 			Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
@@ -125,7 +125,7 @@ func run(a) -> void:
 	a.log("STEP3 子弹进门：传到配对门处并换行，方向不变")
 	var bullets: Node2D = mg.bullets
 	var bullet: Bullet000NormBase = Global.bullet_registry.get_bullet_scenes(
-		BulletRegistry.BulletType.Bullet001Pea).instantiate()
+		BulletIds.PEA).instantiate()
 	bullet.init_bullet({
 		Bullet000NormBase.E_InitParasAttr.IsActivateLane: true,
 		Bullet000NormBase.E_InitParasAttr.BulletLane: entry.lane,

@@ -14,7 +14,7 @@ class_name LevelTimelineEventArrow
 ## 箭头指向的目标；None = 收起箭头
 @export var target: PointerTargetResolver.E_PointerTarget = PointerTargetResolver.E_PointerTarget.None
 ## 目标对应的植物类型（Card / Lawn 两个目标用得上）
-@export var plant_type: CharacterRegistry.PlantType = CharacterRegistry.PlantType.Null
+@export var plant_type: StringName = PlantIds.NULL
 
 
 func run(main_game: MainGameManager) -> void:

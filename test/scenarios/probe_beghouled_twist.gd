@@ -90,8 +90,8 @@ func run(a) -> void:
 			var p = mgr.get_cell_plant(mgr.get_cell(row, col))
 			if p == null:
 				continue
-			if p.plant_type == CharacterRegistry.PlantType.P009PuffShroom \
-				or p.plant_type == CharacterRegistry.PlantType.P032MagnetShroom:
+			if p.plant_type == PlantIds.PUFF_SHROOM \
+				or p.plant_type == PlantIds.MAGNET_SHROOM:
 				mushroom_num += 1
 				if p.is_sleeping:
 					sleeping_num += 1
@@ -191,9 +191,9 @@ func run(a) -> void:
 	for row in range(mgr.board_row_num):
 		for col in range(mgr.board_col_num):
 			var t = mgr.get_cell_type(mgr.get_cell(row, col))
-			if t == CharacterRegistry.PlantType.P001PeaShooterSingle:
+			if t == PlantIds.PEA_SHOOTER_SINGLE:
 				old_num += 1
-			elif t == CharacterRegistry.PlantType.P008PeaShooterDouble:
+			elif t == PlantIds.PEA_SHOOTER_DOUBLE:
 				new_num += 1
 	_check(a, "场上不再有豌豆射手", old_num == 0, "剩余=" + str(old_num))
 	_check(a, "场上出现了双重射手", new_num > 0, "数量=" + str(new_num))
@@ -323,16 +323,16 @@ func _find_valid_twist(mgr) -> PlantCell:
 	var grid: Array[Array] = mgr._build_type_grid()
 	for row in range(mgr.board_row_num - 1):
 		for col in range(mgr.board_col_num - 1):
-			if grid[row][col] == CharacterRegistry.PlantType.Null \
-					or grid[row][col + 1] == CharacterRegistry.PlantType.Null \
-					or grid[row + 1][col] == CharacterRegistry.PlantType.Null \
-					or grid[row + 1][col + 1] == CharacterRegistry.PlantType.Null:
+			if grid[row][col] == PlantIds.NULL \
+					or grid[row][col + 1] == PlantIds.NULL \
+					or grid[row + 1][col] == PlantIds.NULL \
+					or grid[row + 1][col + 1] == PlantIds.NULL:
 				continue
-			var old: Array[CharacterRegistry.PlantType] = [
+			var old: Array[StringName] = [
 				grid[row][col], grid[row][col + 1],
 				grid[row + 1][col], grid[row + 1][col + 1],
 			]
-			var rotated: Array[CharacterRegistry.PlantType] = [old[2], old[0], old[3], old[1]]
+			var rotated: Array[StringName] = [old[2], old[0], old[3], old[1]]
 			grid[row][col] = rotated[0]
 			grid[row][col + 1] = rotated[1]
 			grid[row + 1][col] = rotated[2]

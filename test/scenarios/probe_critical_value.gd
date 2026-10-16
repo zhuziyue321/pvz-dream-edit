@@ -75,7 +75,7 @@ func _new_norm_zombie(a, lane: int) -> Zombie000Base:
 		_check(a, "僵尸管理器可用", false, "zombie_wave_manager 为空")
 		return null
 	var z: Zombie000Base = mgr.zombie_wave_manager.zombie_wave_create_manager.wave_create_zombie(
-		CharacterRegistry.ZombieType.Z001Norm, lane, 0
+		ZombieIds.NORM, lane, 0
 	)
 	await a.wait(0.5)
 	_check(a, "普僵创建成功（行%d）" % lane, z != null and is_instance_valid(z),
@@ -166,7 +166,7 @@ func _check_below(a, z: Zombie000Base, comp: CriticalValueComponent) -> void:
 	var critical := comp.get_critical_value()
 	var death_hp: int = z.hp_component.death_hp
 	var target_hp: int = death_hp + maxi((critical - death_hp) / 2, 1)
-	z.hp_component.Hp_loss(z.hp_component.max_hp - target_hp, BulletRegistry.AttackMode.Real, true, false)
+	_deal_damage(z, z.hp_component.max_hp - target_hp, ConstDamage.E_DamageMode.Real)
 	await a.wait(0.3)
 
 	_check(a, "掉血后僵尸仍存活（停在死亡血量之上）", is_instance_valid(z) and not z.is_death,
@@ -243,7 +243,7 @@ func _check_mower_blocked(a) -> void:
 	var critical := comp.get_critical_value()
 	var death_hp: int = z.hp_component.death_hp
 	var target_hp: int = death_hp + maxi((critical - death_hp) / 2, 1)
-	z.hp_component.Hp_loss(z.hp_component.max_hp - target_hp, BulletRegistry.AttackMode.Real, true, false)
+	_deal_damage(z, z.hp_component.max_hp - target_hp, ConstDamage.E_DamageMode.Real)
 	await a.wait(0.3)
 	var mower := _mower_of(z.lane)
 	_check(a, "行%d小推车存在" % z.lane, mower != null, "null" if mower == null else str(mower.get_path()))
@@ -258,7 +258,7 @@ func _check_mower_blocked(a) -> void:
 		"is_moving=%s" % str(mower.is_moving))
 
 	## 反例二：同一只僵尸死亡（掉头）之后仍然不触发
-	z.hp_component.Hp_loss(z.hp_component.get_all_hp(), BulletRegistry.AttackMode.Norm, true, false)
+	_deal_damage(z, z.hp_component.get_all_hp(), ConstDamage.E_DamageMode.Norm)
 	await a.wait(0.3)
 	_check(a, "僵尸已死亡", z.is_death == true, "is_death=%s" % str(z.is_death))
 	_check(a, "死亡后组件被禁用", comp.is_enabling == false, "is_enabling=%s" % str(comp.is_enabling))
@@ -268,6 +268,14 @@ func _check_mower_blocked(a) -> void:
 	await a.frames(3)
 	_check(a, "已死亡的僵尸不触发小推车", mower.is_moving == false,
 		"is_moving=%s" % str(mower.is_moving))
+
+
+## 掉血入口：**走伤害管线**，与游戏内完全一致（不直接调血量组件的结算函数）。
+## 探针这么写还有一层意思 —— 顺带回归「管线本身通不通」，绕过去就测不到了。
+func _deal_damage(z: Zombie000Base, amount: int, mode: ConstDamage.E_DamageMode) -> void:
+	var info := DamageInfo.create(z, amount, mode, ConstDamage.E_DamageCause.Script)
+	info.trigger_sfx = false
+	DamageSystem.apply(info)
 
 
 func _check(a, label: String, ok: bool, detail: String = "") -> void:

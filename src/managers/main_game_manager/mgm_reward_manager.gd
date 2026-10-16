@@ -64,9 +64,7 @@ func on_battle_finished(glo_pos:Vector2) -> void:
 	if not is_instance_valid(main_game) or game_para == null:
 		return
 	if main_game.curr_game_round == game_para.game_round:
-		Log.debug("本轮战斗打完：已是最后一轮，等关卡流程跑完再判胜")
 		return
-	Log.debug("本轮战斗打完：还有下一轮，触发下一轮")
 	main_game.start_next_round_game()
 
 
@@ -74,7 +72,6 @@ func on_battle_finished(glo_pos:Vector2) -> void:
 ## 冒险模式首次通关时掉的是本关奖励（不是奖杯）—— 那一句写在关卡脚本的 run_flow() 末尾
 ## （`await gain(level_complete_loot)`，见 LevelScriptBase.gain），本条只管奖杯兜底
 func create_trophy(glo_pos:Vector2):
-	Log.debug("胜利条件达成，创建奖杯")
 	## 如果不是最后一轮游戏，触发下一轮
 	if main_game.curr_game_round != game_para.game_round:
 		main_game.start_next_round_game()
@@ -94,7 +91,6 @@ func force_win_on_flow_finished() -> void:
 	## 多轮关卡：本轮跑完还有下一轮，切轮由「本轮战斗打完」负责（见 on_battle_finished）
 	if main_game.curr_game_round != main_game.game_para.game_round:
 		return
-	Log.debug("=======================关卡流程跑完，强制胜利并给奖杯=======================")
 	await win_with_trophy(get_default_glo_pos())
 
 
@@ -127,7 +123,6 @@ func win_with_item(glo_pos:Vector2) -> void:
 	await drop_unlock_item_on_level_complete(glo_pos)
 	if not is_instance_valid(main_game):
 		return
-	Log.debug("=======================关卡流程判胜，物品发完直接结算=======================")
 	win_main_game()
 
 
@@ -158,14 +153,12 @@ func start_trophy_only(glo_pos:Vector2) -> void:
 		return
 	if not _try_start_win():
 		return
-	Log.debug("=======================本关已通关过，重打只出奖杯=======================")
 	_spawn_trophy(glo_pos)
 
 
 ## 本关胜利流程的入口闸门：一关只判一次胜（流程内判过就不再重复）
 func _try_start_win() -> bool:
 	if is_win_started:
-		Log.debug("本关已经在走胜利流程，跳过重复判胜")
 		return false
 	is_win_started = true
 	return true
@@ -174,7 +167,7 @@ func _try_start_win() -> bool:
 ## 抛一个奖杯出来（**奖杯也是一种战利品**：按名字取贴图生产掉落物，见 LootRegistry）
 ## 玩家点开 -> CanvasLayerWhiteScreen 播「居中 -> 发光 -> 白屏」-> 屏幕全白了结算切场景
 func _spawn_trophy(glo_pos:Vector2) -> void:
-	Log.debug("=======================游戏结束，您获胜了=======================")
+	Log.info("=======================游戏结束，您获胜了=======================")
 	await gain_loot(LootRegistry.TROPHY, glo_pos)
 
 
@@ -203,7 +196,7 @@ func gain_loot(loot_name:String, glo_pos:Vector2) -> void:
 		return
 	main_game.drop_item_manager.mark_level_complete_drop(new_drop)
 	main_game.main_game_progress = MainGameManager.E_MainGameProgress.GAME_OVER
-	Log.debug("=======================掉落战利品：" + loot_name + "=======================")
+	Log.info("=======================掉落战利品：" + loot_name + "=======================")
 	## 礼物盒类战利品（奖杯 / 玉米卷）照旧被抛到画面内的落点上；
 	## 种子包自己有抛物线弹出（SeedPacket.launch），不要再抛一次
 	if new_drop is Present:
@@ -263,7 +256,6 @@ func drop_unlock_item_on_level_complete(glo_pos:Vector2) -> void:
 	if not game_para.drop_unlock_on_level_complete or is_unlock_drop_on_level_complete_done:
 		return
 	if main_game.is_curr_level_success():
-		Log.debug("本关已通关过，不再掉落通关解锁道具")
 		return
 	is_unlock_drop_on_level_complete_done = true
 	var new_drop := main_game.drop_item_manager.create_unlock_drop_on_level_complete(glo_pos)
@@ -323,11 +315,9 @@ var level_settle_gate: Callable = Callable()
 func win_main_game():
 	## 已经结算过：不再写第二遍通关存档 / 不再切第二次场景
 	if is_win_settled:
-		Log.debug("本关已经结算过，跳过重复结算")
 		return
 	## 先看有没有人要替这一局定结算时机（见 `level_settle_gate`）：说了"再等等"就先停在场上
 	if level_settle_gate.is_valid() and not level_settle_gate.call():
-		Log.debug("已按外部裁决推迟本关的结算：" + str(game_para.save_game_name))
 		return
 	is_win_settled = true
 	## 游戏暂停因素、游戏速度
@@ -366,10 +356,10 @@ func win_main_game():
 ## 重打同一关或打别的关卡不会重复跳商店
 func is_need_goto_store_on_win(is_shop_unlocked_before: bool, shop_expand_stage_before: int) -> bool:
 	if not is_shop_unlocked_before and Global.global_game_state.is_shop_unlocked():
-		Log.debug("通关 3-4 拿到车钥匙，商店解锁，直接进入商店")
+		Log.info("通关 3-4 拿到车钥匙，商店解锁，直接进入商店")
 		return true
 	if Global.global_game_state.get_shop_expand_stage() > shop_expand_stage_before:
-		Log.debug(str("通关冒险模式 ") \
+		Log.info(str("通关冒险模式 ") \
 			+ ConstUnlockLevel.get_adventure_level_name(_get_curr_adventure_level()) \
 			+ str(" 商店扩充，直接进入商店"))
 		return true
@@ -382,7 +372,7 @@ func is_need_goto_store_on_win(is_shop_unlocked_before: bool, shop_expand_stage_
 func is_need_goto_almanac_on_win(is_almanac_unlocked_before: bool) -> bool:
 	if is_almanac_unlocked_before or not Global.global_game_state.is_almanac_unlocked():
 		return false
-	Log.debug("通关 2-4 拿到大图鉴，图鉴解锁，直接打开图鉴")
+	Log.info("通关 2-4 拿到大图鉴，图鉴解锁，直接打开图鉴")
 	return true
 
 

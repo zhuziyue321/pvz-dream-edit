@@ -49,7 +49,6 @@ func gold_magnet_attract_once(target_pos:Vector2):
 ## 掉落位置为携带道具的僵尸死亡处，提示文本与贴图取自关卡数据的 drop_unlock_tip / drop_unlock_icon
 func create_unlock_drop(drop_global_position:Vector2):
 	create_unlock_drop_present(drop_global_position)
-	Log.debug("关卡中途掉落解锁道具")
 
 
 ## 僵尸掉的巧克力（买了蜗牛之后才会掉，见 DropItemComponent.drop_chocolate）
@@ -60,8 +59,6 @@ func create_chocolate(drop_global_position: Vector2) -> Node2D:
 		return null
 	var new_drop := dim_chocolate.create_chocolate(
 		get_clamp_drop_position(drop_global_position, CHOCOLATE_DROP_EDGE_MARGIN))
-	if new_drop != null:
-		Log.debug("僵尸掉落巧克力")
 	return new_drop
 
 
@@ -115,7 +112,6 @@ func create_unlock_drop_on_level_complete(drop_global_position:Vector2) -> Prese
 	var new_drop := create_unlock_drop_present(drop_global_position)
 	if new_drop == null:
 		return null
-	Log.debug("关卡结束掉落解锁道具")
 	return new_drop
 
 
@@ -159,7 +155,7 @@ func create_unlock_drop_present(drop_global_position:Vector2, tip_text := "", ic
 ## 掉出来之后由调用方决定它是不是「本关结算线」上的掉落物（mark_level_complete_drop）。
 func create_loot_drop(loot_name: String, drop_global_position: Vector2, tip_text := "") -> Node2D:
 	var plant_type := LootRegistry.get_plant_type(loot_name)
-	if plant_type != CharacterRegistry.PlantType.Null:
+	if plant_type != PlantIds.NULL:
 		## 种子包类：提示文本模板里的 %s 换成植物中文名
 		var seed_tip := tip_text if not tip_text.is_empty() \
 			else TIP_NEW_PLANT % get_plant_show_name(plant_type)
@@ -173,7 +169,7 @@ func create_loot_drop(loot_name: String, drop_global_position: Vector2, tip_text
 
 
 ## 掉一包战利品种子包（豌豆射手种子包这类：本体是卡片底图 + 植物形象，见 SeedPacket）
-func _create_loot_seed_packet(plant_type: int, tip_text: String, drop_global_position: Vector2) -> Node2D:
+func _create_loot_seed_packet(plant_type: StringName, tip_text: String, drop_global_position: Vector2) -> Node2D:
 	if dim_seed_packet == null:
 		return null
 	return dim_seed_packet.create_seed_packet(plant_type, tip_text,
@@ -218,7 +214,7 @@ func mark_level_complete_drop(new_drop: Node2D) -> Node2D:
 
 
 ## 取植物的中文名（图鉴数据），取不到时退回植物注册名
-func get_plant_show_name(plant_type:int) -> String:
+func get_plant_show_name(plant_type: StringName) -> String:
 	Global.global_read_data.ensure_almanac_loaded()
 	var plant_name := String(Global.character_registry.get_plant_info(
 		plant_type, CharacterRegistry.PlantInfoAttribute.PlantName))

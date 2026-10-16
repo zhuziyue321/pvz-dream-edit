@@ -19,8 +19,8 @@ class_name ZombieShowInStart
 ## 展示僵尸总数范围(下限 / 上限;类型数超过上限时按类型数取,保证每种出怪类型都能露脸)
 @export var show_zombie_num_range := Vector2i(5, 15)
 ## 不参与预览的僵尸类型: 原版出怪池里没有旗帜僵尸(旗帜是大波时才单独加进波次的)
-@export var exclude_show_zombie_types: Array[CharacterRegistry.ZombieType] = [
-	CharacterRegistry.ZombieType.Z002Flag,
+@export var exclude_show_zombie_types: Array[StringName] = [
+	ZombieIds.FLAG,
 ]
 
 var show_zombies_array :Array[Zombie000Base]
@@ -28,7 +28,7 @@ var show_zombies_array :Array[Zombie000Base]
 
 #region 生成关卡前展示僵尸
 ## 生成一个展示僵尸
-func create_show_zombie(zombie_type:CharacterRegistry.ZombieType, parent_node:Panel) -> Zombie000Base:
+func create_show_zombie(zombie_type: StringName, parent_node:Panel) -> Zombie000Base:
 	var zombie_pos :=Vector2(randf_range(0, parent_node.size.x), randf_range(0, parent_node.size.y))
 	return CharacterShowFactory.create_show_zombie(
 		zombie_type,
@@ -49,16 +49,16 @@ func create_prepare_show_zombies():
 	## 剩余名额按出怪权重抽样补足
 	for _i in range(get_show_zombie_num(show_types.size()) - show_types.size()):
 		var zombie_type := pick_weighted_zombie_type()
-		if zombie_type == CharacterRegistry.ZombieType.Null:
+		if zombie_type == ZombieIds.NULL:
 			break
 		show_zombies_array.append(create_show_zombie(zombie_type, show_zombie_panel))
 	## 蹦极僵尸不按y轴排序渲染,单独放一层
 	if zombie_manager.is_bungi:
-		show_zombies_array.append(create_show_zombie(CharacterRegistry.ZombieType.Z021Bungi, show_zombie_panel_2))
+		show_zombies_array.append(create_show_zombie(ZombieIds.BUNGI, show_zombie_panel_2))
 
 ## 参与预览的出怪类型(原版出怪池不含旗帜僵尸)
-func get_show_zombie_types() -> Array[CharacterRegistry.ZombieType]:
-	var show_types: Array[CharacterRegistry.ZombieType] = []
+func get_show_zombie_types() -> Array[StringName]:
+	var show_types: Array[StringName] = []
 	for zombie_type in zombie_manager.zombie_refresh_types:
 		if zombie_type in exclude_show_zombie_types:
 			continue
@@ -73,13 +73,13 @@ func get_show_zombie_num(type_num:int) -> int:
 	return clamp(num, lower, upper)
 
 ## 按出怪权重抽一个展示僵尸类型(用的是波次生成管理器那一份出怪随机池),取不到时返回 Null
-func pick_weighted_zombie_type() -> CharacterRegistry.ZombieType:
+func pick_weighted_zombie_type() -> StringName:
 	var wave_manager := zombie_manager.zombie_wave_manager
 	if wave_manager == null:
-		return CharacterRegistry.ZombieType.Null
+		return ZombieIds.NULL
 	var create_manager := wave_manager.zombie_wave_create_manager
 	if create_manager == null or create_manager.zombie_choose_random_pool == null:
-		return CharacterRegistry.ZombieType.Null
+		return ZombieIds.NULL
 	for _i in range(PICK_WEIGHTED_RETRY_NUM):
 		var zombie_type: Variant = create_manager.zombie_choose_random_pool.get_random_item()
 		if zombie_type == null:
@@ -87,7 +87,7 @@ func pick_weighted_zombie_type() -> CharacterRegistry.ZombieType:
 		if zombie_type in exclude_show_zombie_types:
 			continue
 		return zombie_type
-	return CharacterRegistry.ZombieType.Null
+	return ZombieIds.NULL
 
 ## 按权重抽类型时的重试次数(抽到不参与预览的类型时重抽)
 const PICK_WEIGHTED_RETRY_NUM := 4

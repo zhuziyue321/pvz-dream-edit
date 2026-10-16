@@ -5,8 +5,8 @@ class_name Bullet000Base
 @onready var bullet_shadow: Sprite2D = $BulletShadow
 ## 子弹本体节点
 @onready var body: Node2D = $Body
-## 子弹类型
-@export var bullet_type:BulletRegistry.BulletType
+## 子弹类型（StringName id，见 `BulletIds`；**不要**写裸数字，那套 int 编号已废）
+@export var bullet_type: StringName = BulletIds.NULL
 
 ## 实体编号（与角色 / 阳光 / 金币共用同一个分配器，全场唯一）
 ##

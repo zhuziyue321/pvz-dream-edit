@@ -75,7 +75,6 @@ func _run_level_script(level_script: LevelScriptBase) -> void:
 	if level_script.is_one_shot_flow:
 		## 整关只跑一遍：第一轮启动后跨轮继续往下跑，后续轮的调用直接跳过
 		if _is_one_shot_started:
-			Log.debug("关卡流程是整关跑一遍的，本已在执行 / 已跑完，跳过本次调用")
 			return
 		_is_one_shot_started = true
 
@@ -116,6 +115,5 @@ func _force_win_on_flow_finished() -> void:
 func _is_stale(my_run: int) -> bool:
 	if my_run == _run_id:
 		return false
-	Log.debug("关卡流程被新一轮顶掉，本次执行退出")
 	return true
 #endregion

@@ -96,7 +96,7 @@ charge_cd = 35.0
 is_bullet = true
 is_attack = false
 is_charge = false
-plant_type = 48
+plant_type = &"cob_cannon"
 
 [node name="Shadow" parent="." index="0"]
 position = Vector2(44, -1.5)

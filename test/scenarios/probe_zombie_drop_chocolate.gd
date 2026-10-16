@@ -122,7 +122,7 @@ func _create_zombie() -> Zombie000Base:
 		Zombie000Base.E_ZInitAttr.CurrWave: 1,
 	}
 	return zombie_manager.create_norm_zombie(
-		CharacterRegistry.ZombieType.Z001Norm,
+		ZombieIds.NORM,
 		zombie_manager.all_zombie_rows[0],
 		init_para,
 		ZOMBIE_POS)

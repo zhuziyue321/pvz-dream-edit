@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
     Compile-check every GDScript in the project.
 
@@ -36,11 +36,31 @@
     规避：改动涉及「在非 CanvasItem 的 Node 上调 2D 方法」时，务必在 Godot 编辑器里
     看一眼（编辑器实时下划线会标出来），或真正打开游戏跑到那段逻辑。
 
+    KNOWN LIMITATION 3 (实测 2026-10-12)：**本门禁抓不到 GDScript 分析类告警**
+    （UNUSED_SIGNAL / UNUSED_PARAMETER / SHADOWED_VARIABLE / INTEGER_DIVISION /
+    INCOMPATIBLE_TERNARY 等）。实测结论：
+      · `--headless --import`、`--headless --editor --quit-after`、跑 `probe_*.gd`
+        三种方式都**不输出**这些告警 —— 往 script 里临时插一个未使用参数（对照组）
+        同样一条都没报出来，所以「跑完安静」不等于「没有告警」；
+      · 它们只在 **Godot 编辑器界面 / 运行游戏的 `GDScript::reload`** 里出现，
+        就是带着 `W 0:00:02:621  <GDScript 警告> UNUSED_SIGNAL` 那种输出。
+    所以要确认某条告警消没消失，只能**打开编辑器或真跑一次游戏**看那些 `GDScript::reload`
+    行；本门禁只能证明「脚本能编译」（它确实也要跑，因为它们是编译级错误的上游）。
+
+    定位同类告警的土办法（2026-10-14 实测：连 `--editor --quit-after` 的 stdout/stderr 都
+    **一条告警都没有**，只能人肉在编辑器里翻）：
+    写个脚本按 func 块切分 .gd，统计每个局部变量的出现次数 —— **纯赋值（`x = 1` /
+    `x += 1`）不算「使用」**（Godot 的 UNUSED_VARIABLE 就是这个口径，只写不读照样报），
+    下划线前缀本来就豁免。扫出的候选人工复核后按「删掉 / 加 `_` 前缀」处理，
+    比在编辑器里一条条翻快得多。
+
     A curated list of messages that are noisy but harmless is skipped (see $Known below).
     Exit code: 0 = no unexpected errors, 1 = at least one real compile problem.
 #>
 param(
-    [string]$Godot = 'C:\Users\a a\Desktop\Godot_v4.6.2-stable_win64.exe',
+    ## 2026-10-13：默认路径指向的 Godot_v4.6.2-stable_win64.exe 在本机已不存在（实际叫 godot.exe），
+    ## 结果 Godot 根本没启动、stderr 只有两条 cmd 报错，门禁却照样 PASS（假绿）。已改成真实路径。
+    [string]$Godot = 'C:\Users\a a\Desktop\godot.exe',
     [switch]$ShowIgnored
 )
 
@@ -51,6 +71,15 @@ New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 $outF = Join-Path $tmp 'out.txt'
 $errF = Join-Path $tmp 'err.txt'
 Remove-Item -LiteralPath $outF, $errF -Force -ErrorAction SilentlyContinue
+
+## Godot 可执行文件不存在时**直接判 FAIL**：否则 cmd 只是打两行「找不到命令」，
+## 脚本照样走到最后输出 PASS（2026-10-13 实测过一次假绿）。
+if (-not (Test-Path -LiteralPath $Godot)) {
+    Write-Host ('[check] Godot executable not found: {0}' -f $Godot) -ForegroundColor Red
+    Write-Host '[check] 传 -Godot "<真实路径>" 或改本脚本的默认值' -ForegroundColor Red
+    Write-Host '[check] result=FAIL' -ForegroundColor Red
+    exit 1
+}
 
 Write-Host '[check] compiling every script via Godot resource pipeline...'
 $line = '"' + $Godot + '" --headless --path "' + $project + '" --import > "' + $outF + '" 2> "' + $errF + '"'

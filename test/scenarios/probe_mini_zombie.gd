@@ -43,7 +43,7 @@ func _run_level(a, title: String, level_path: String) -> void:
 	if zm.all_zombie_rows.is_empty():
 		return
 
-	var norm := _spawn(zm, CharacterRegistry.ZombieType.Z001Norm, 0, 610.0)
+	var norm := _spawn(zm, ZombieIds.NORM, 0, 610.0)
 	await a.wait(0.5)
 	if not is_instance_valid(norm):
 		_check(a, title + ": 普僵创建成功", false)
@@ -51,7 +51,7 @@ func _run_level(a, title: String, level_path: String) -> void:
 	_check_mini_body_and_hp(a, title, norm)
 
 	var jump_lane: int = mini(1, zm.all_zombie_rows.size() - 1)
-	var pole := _spawn(zm, CharacterRegistry.ZombieType.Z004PoleVaulter, jump_lane, 700.0)
+	var pole := _spawn(zm, ZombieIds.POLE_VAULTER, jump_lane, 700.0)
 	await a.wait(0.5)
 	if not is_instance_valid(pole):
 		_check(a, title + ": 撑杆僵尸创建成功", false)
@@ -70,7 +70,7 @@ func _run_level(a, title: String, level_path: String) -> void:
 	await a.wait(0.5)
 
 
-func _spawn(zm: ZombieManager, zombie_type: CharacterRegistry.ZombieType, lane: int, x: float) -> Zombie000Base:
+func _spawn(zm: ZombieManager, zombie_type: StringName, lane: int, x: float) -> Zombie000Base:
 	var row: ZombieRow = zm.all_zombie_rows[lane]
 	var init_para := {
 		Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,

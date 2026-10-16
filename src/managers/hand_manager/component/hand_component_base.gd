@@ -23,6 +23,7 @@ enum E_HandComponentType {
 	Shovel,		## 手持道具：铲子
 	Glove,		## 手持道具：手套（把场上的植物搬到另一个格子，不铲除不重种）
 	Hammer,		## 手持道具：锤子（锤僵尸玩法的锤子，见 LevelRuleHammerZombie / HandComponentHammer）
+	HammerMod,	## 手持道具：锤子（「锤子」模组：点草坪对小范围僵尸造成伤害，见 HandComponentHammerMod）
 }
 
 ## 所属手持管理器，由 HandManager 在注册时注入

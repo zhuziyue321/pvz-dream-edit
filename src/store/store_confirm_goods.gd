@@ -15,7 +15,6 @@ func _ready() -> void:
 
 ## 出现该界面确认购买商品
 func appear_canvas_layer(curr_goods:Goods):
-	Log.debug(curr_goods.name)
 	curr_goods_node = curr_goods
 	visible = true
 

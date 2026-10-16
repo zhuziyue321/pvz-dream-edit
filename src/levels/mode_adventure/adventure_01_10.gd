@@ -10,18 +10,21 @@ func _init() -> void:
 	is_day_sun = false
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	1: 2,
-	3: 2,
-	4: 2,
-	5: 2,
-	6: 2,
-	7: 2,
-	8: 2
+	&"pea_shooter_single": 2,
+	&"cherry_bomb": 2,
+	&"wall_nut": 2,
+	&"potato_mine": 2,
+	&"snow_pea": 2,
+	&"chomper": 2,
+	&"pea_shooter_double": 2
 	})
 	## 本关通关掉落：小喷菇（种子包）
 	level_complete_loot = "puff_shroom_seed_packet"
 
 
+## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
+## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
+@warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 展示僵尸
 	await show_zombie()
