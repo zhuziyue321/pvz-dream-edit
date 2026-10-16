@@ -16,6 +16,11 @@ const MODE_BUTTON_PATHS: Dictionary[String, MainSceneRegistry.MainScenes] = {
 	"BG_Right/Menu/Button4": MainSceneRegistry.MainScenes.ChooseLevelSurvival,
 }
 
+## 主菜单点冒险模式的僵尸手破土过场场景(由 assets/reanim/Zombie_hand.reanim 经 R2Ga 转换生成)
+const ZOMBIE_HAND_SCENE := preload("res://assets/reanim/Zombie_hand.tscn")
+## 过场播放中, 防止重复点击冒险模式
+var _adventure_transitioning := false
+
 ## 道具栏里"没解锁就不该出现"的按钮:花园(5-5 戴夫交给你) / 图鉴(2-4 掉落大图鉴) / 商店(3-4 拿到车钥匙)
 ## 与模式按钮不同:模式按钮未解锁时置灰并保留(与 ChooseLevelButton 同口径,玩家能看到还有哪些玩法),
 ## 这三个属于"拿到了才有"的东西,没解锁时直接隐藏,不做置灰、也不做点击提示
@@ -132,8 +137,24 @@ func show_lock_tip(text:String):
 	dialog_label.text = text
 	dialog.appear_dialog()
 
-## 开始游戏
+## 开始游戏(冒险模式): 先播僵尸手破土过场, 播完再进选关
 func _on_button_1_pressed() -> void:
+	if _adventure_transitioning:
+		return
+	_adventure_transitioning = true
+	_play_zombie_hand_transition()
+
+## 主菜单点冒险模式后的僵尸手破土过场, 播完再进选关
+func _play_zombie_hand_transition() -> void:
+	var hand: Node2D = ZOMBIE_HAND_SCENE.instantiate()
+	hand.z_index = 1000
+	add_child(hand)
+	var anim_player := hand.get_node("AnimLib") as AnimationPlayer
+	anim_player.animation_finished.connect(_on_zombie_hand_finished.bind(hand))
+	anim_player.play("ALL_ANIMS")
+
+func _on_zombie_hand_finished(_anim_name: String, hand: Node2D) -> void:
+	hand.queue_free()
 	Global.game_para = null
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelAdventure))
 

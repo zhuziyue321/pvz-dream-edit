@@ -349,6 +349,14 @@ func character_death_not_disappear():
 
 ## 死亡直接消失
 func character_death_disappear():
+	## [L-12] 直接消失的角色默认不触发亡语。
+	## 原先只有僵尸在自身重写（zombie_base.gd:425）里置了 `is_can_death_language = false`，
+	## 基类（植物走这条）没置，导致所有走基类的植物「直接消失」都会跑亡语；
+	## 现状靠「爆炸植物种下即自爆、土豆雷未出土不触发」的时序侥幸兜着（见 docs/TODO清单.md L-12）。
+	## ⚠️ 行为变更：须开真实游戏实测确认爆炸植物（樱桃/毁灭菇/土豆雷/寒冰菇/大嘴花兜底）的自爆亡语、
+	## 读档清理（plant_cell.gd::clear_data_plant_cell）、手套兜底（hand_component_glove.gd）仍正常——
+	## 这些路径若走本函数且依赖亡语会受影响。
+	is_can_death_language = false
 	hp_component.hp_loss_to_death(false)
 	queue_free()
 
