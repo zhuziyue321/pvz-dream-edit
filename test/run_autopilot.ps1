@@ -28,7 +28,11 @@ param(
     [string]$Project = '',
     [switch]$Windowed,
     [int]$MaxSeconds = 300,
-    [switch]$Quiet
+    [switch]$Quiet,
+    ## 2026-10-16: refuse to run while a previous godot instance still holds the
+    ## shared output file - that is exactly how "I asked for probe_x but got
+    ## probe_y" happens. With this switch the leftovers are killed and we go on.
+    [switch]$KillStale
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,6 +43,30 @@ if (-not (Test-Path -LiteralPath $Godot)) {
     Write-Host ('[autopilot] Godot executable not found: {0}' -f $Godot) -ForegroundColor Red
     Write-Host '[autopilot] pass -Godot "<real path>" or fix the default in this script' -ForegroundColor Red
     exit 2
+}
+
+## --- stale process guard (2026-10-16) ---------------------------------------
+## ap_out.txt / ap_err.txt have FIXED paths, and a godot instance that never got
+## told to quit keeps the file open. cmd then cannot truncate it, so this script
+## reads the PREVIOUS run's report and prints it as if it were today's result
+## (the classic symptom is "I asked for probe_x and got probe_y").
+## Refuse to start against that state; -KillStale kills the leftovers instead.
+$stale = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -like '*godot*' })
+if ($stale.Count -gt 0) {
+    if ($KillStale) {
+        Write-Host ('[autopilot] -KillStale: killing {0} leftover godot process(es)' -f $stale.Count) -ForegroundColor Yellow
+        $stale | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    } else {
+        Write-Host ('[autopilot] {0} godot process(es) already running:' -f $stale.Count) -ForegroundColor Red
+        foreach ($p in $stale) {
+            Write-Host ('[autopilot]   pid {0}  started {1}' -f $p.Id, $p.StartTime) -ForegroundColor Red
+        }
+        Write-Host '[autopilot] they may hold the shared output file -> this run could print THEIR report.' -ForegroundColor Red
+        Write-Host '[autopilot] close them (editor + game window), or pass -KillStale to kill them.' -ForegroundColor Red
+        Write-Host '[autopilot] result=STALE_PROCESS' -ForegroundColor Red
+        exit 3
+    }
 }
 if (-not $Project) {
     if ($PSScriptRoot) { $Project = (Split-Path $PSScriptRoot -Parent) } else { $Project = (Get-Location).Path }
@@ -83,6 +111,7 @@ Write-Host ""
 $old = $env:APPDATA
 $env:APPDATA = $userDir
 $code = -1
+$runStart = Get-Date
 try {
     $line = '"' + $Godot + '" ' + $godotArgs + ' > "' + $outF + '" 2> "' + $errF + '"'
     cmd.exe /c $line | Out-Null
@@ -91,8 +120,24 @@ try {
     $env:APPDATA = $old
 }
 
+## --- freshness check ---------------------------------------------------------
+## A report file older than $runStart was NOT written by this run: cmd could not
+## open it (a leftover process still holds it) and we are about to print an old
+## report as today's result. Say so loudly instead of passing it off as real.
+$isStale = $true
+if (Test-Path -LiteralPath $outF) {
+    $isStale = (Get-Item -LiteralPath $outF).LastWriteTime -lt $runStart
+}
+
 $out = Get-Content -LiteralPath $outF -Encoding UTF8 -ErrorAction SilentlyContinue
 $err = Get-Content -LiteralPath $errF -Encoding UTF8 -ErrorAction SilentlyContinue
+
+if ($isStale) {
+    Write-Host ''
+    Write-Host '[autopilot] STALE OUTPUT: ap_out.txt was NOT written by this run.' -ForegroundColor Red
+    Write-Host '            Everything below is from a PREVIOUS run - do NOT trust it.' -ForegroundColor Red
+    Write-Host '            Look for leftover godot processes, then re-run with -KillStale.' -ForegroundColor Red
+}
 
 if (-not $Quiet) {
     Write-Host "---- STDOUT ----"
@@ -104,4 +149,4 @@ if (-not $Quiet) {
 }
 
 Write-Host ""
-Write-Host "[autopilot] exitCode=$code  stdoutLines=$(@($out).Count)  stderrLines=$(@($err).Count)"
+Write-Host ("[autopilot] exitCode={0}  stdoutLines={1}  stderrLines={2}  stale={3}" -f $code, @($out).Count, @($err).Count, $isStale)

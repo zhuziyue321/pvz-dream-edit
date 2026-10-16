@@ -15,7 +15,7 @@
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | 项目          | 用 Godot 复刻原版《植物大战僵尸》的学习 / 同人改版基座（原版素材因版权已移除）                                                                        |
 | 引擎 / 语言     | Godot 4.6 / GDScript（版本口径以 `project.godot` 的 `config/features` 为准）                                                                                              |
-| 规模          | `src/` 643 个 `.gd` + 239 个 `.tscn`；`data/` 122 个 `.tres`；`animation/` 497 段动画；`docs/` 224 份 `.md`；11 个 autoload 单例（2026-10-16 实测，口径见 [架构总览.md](./架构总览.md) §15）                                                              |
+| 规模          | `src/` 643 个 `.gd` + 239 个 `.tscn`；`data/` 122 个 `.tres`；`animation/` 497 段动画；`docs/` 225 份 `.md`；11 个 autoload 单例（2026-10-16 实测；**规模数字的唯一权威来源是 [架构总览.md](./架构总览.md) §15**，本条与之不一致时以后者为准）                                                              |
 | 架构主线        | 数据驱动 + 组件化：角色 = base 场景 + 若干 `ComponentNormBase` 组件；资源一律 `res://` 绝对路径引用                                            |
 | 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，不入 git）、`test/`、`docs/`、`tools/` |
 | autoload 单例 | `Log` `Global` `SoundManager` `SceneRegistry` `AllCards` `GlobalUtils` `EventBus` `DamageSystem` `TreePauseManager` `ModManager` `DebugChannel`（共 11 个，见 `project.godot` 的 `[autoload]`） |

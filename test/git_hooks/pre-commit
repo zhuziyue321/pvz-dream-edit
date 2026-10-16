@@ -1,0 +1,96 @@
+#!/bin/sh
+## 提交前检查（pre-commit 钩子）
+##
+## 拦三类**明确不该进历史**的东西（都是 V-02 自检清单里原本靠人眼看的项）：
+##   1. 危险模式：根目录以引号开头的终端产物、*.tmp、error_log.txt、
+##      package(-lock).json、debug_channel_log.txt、_import_(err|out).txt、test/_tmp_*
+##   2. 孤儿 .uid：暂存了 .uid，但对应的主文件既不在暂存区、也不在工作区
+##      （Godot 编辑器删主文件后会留下这种垃圾，历史上曾一次留下 17 个）
+##   3. 超大文件：单文件 > 5 MB（避免把素材 / 二进制误提交；确需提交用 --no-verify）
+## 另外：暂存文件数 > 30 时**打印提醒**（不拦），防「一次误提交一堆无关文件」。
+##
+## 启用方式（与 pre-push 同一套，二者可各自独立）：
+##   cp test/git_hooks/pre-commit .git/hooks/pre-commit
+##   或 git config core.hooksPath test/git_hooks
+##
+## 跳过本次检查：`git commit --no-verify`
+##
+## 边界：它只拦「明确错」的，不做「路径是否属于本次任务」的判断 ——
+## 那需要输入（本任务的预期路径清单），钩子拿不到；那部分仍靠 V-02 的人工自检
+## 与 docs/Agent协作协议.md §1.1 的开工声明。
+
+set -u
+
+## core.quotepath=false：让 git 原样输出中文路径（否则会被转义成 \346... 这种）
+tmpf=$(mktemp 2>/dev/null || echo "${TMPDIR:-/tmp}/pvz_precommit.$$")
+git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM -z > "$tmpf"
+
+if [ ! -s "$tmpf" ]; then
+    rm -f "$tmpf"
+    exit 0
+fi
+
+fail=0
+
+## --- 1. 危险模式 --------------------------------------------------------------
+check_pattern() {
+    pattern="$1"
+    desc="$2"
+    hits=$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM | grep -E "$pattern" || true)
+    if [ -n "$hits" ]; then
+        echo "[pre-commit] $desc"
+        printf '%s\n' "$hits" | sed 's/^/             /'
+        fail=1
+    fi
+}
+
+check_pattern "^\.[^/]*$" "不应入库：根目录零散文案（终端重定向产物的典型形态）"
+check_pattern "^'" "不应入库：文件名以引号开头（终端重定向产物）"
+check_pattern "\.tmp$" "不应入库：Godot 崩溃残留 *.tmp"
+check_pattern "(^|/)error_log\.txt$" "不应入库：Godot 运行日志 error_log.txt"
+check_pattern "(^|/)package(-lock)?\.json$" "不应入库：npm 残留 package*.json"
+check_pattern "(^|/)debug_channel_log\.txt$" "不应入库：调试通道日志"
+check_pattern "(^|/)_import_(err|out)\.txt$" "不应入库：无头跑批的重定向输出"
+check_pattern "(^|/)_leak_(err|out)\.txt$" "不应入库：泄漏检测的重定向输出"
+check_pattern "^test/_tmp_" "不应入库：跑批临时脚本"
+
+## --- 2. 孤儿 .uid ------------------------------------------------------------
+while IFS= read -r -d '' f; do
+    case "$f" in
+        *.uid)
+            main=${f%.uid}
+            if [ ! -f "$main" ] && ! grep -qxF "$main" "$tmpf"; then
+                echo "[pre-commit] 孤儿 .uid（主文件不存在）：$f"
+                fail=1
+            fi
+            ;;
+    esac
+done < "$tmpf"
+
+## --- 3. 超大文件 -------------------------------------------------------------
+while IFS= read -r -d '' f; do
+    [ -f "$f" ] || continue
+    size=$(wc -c < "$f" 2>/dev/null | tr -d ' ')
+    [ -n "$size" ] || size=0
+    if [ "$size" -gt 5242880 ]; then
+        echo "[pre-commit] 超大文件（>5 MB，$(($size / 1048576)) MB）：$f"
+        fail=1
+    fi
+done < "$tmpf"
+
+## --- 4. 规模提醒（不拦） -----------------------------------------------------
+count=$(grep -c . "$tmpf" 2>/dev/null || echo 0)
+if [ "$count" -gt 30 ]; then
+    echo "[pre-commit] 提示：本次暂存 $count 个文件 —— 按 V-02 确认没有混入与本次任务无关的文件"
+    echo "              （逐路径 git add，别用 -A 或通配符；通配符在 git pathspec 里会跨目录匹配）"
+fi
+
+rm -f "$tmpf"
+
+if [ "$fail" -ne 0 ]; then
+    echo ""
+    echo "[pre-commit] 已阻止本次提交。处理完之后再提交；确需跳过：git commit --no-verify"
+    exit 1
+fi
+
+exit 0
