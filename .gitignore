@@ -30,7 +30,20 @@ test/inject/report.txt
 # 还要 `git rm --cached addons/todo_controller/config/config.tres` 才生效。
 addons/todo_controller/config/config.tres
 
+# 参考用的独立子项目（PVZ2 动画/素材导入实验），自带 project.godot，
+# 不属于本仓库 Godot 工程，不入库（3124 个文件，绝大部分是 .import / .png / .xml）
+/新建游戏项目/
+
 # agents
 agents.state.json
 .openagentpack/versions/
 .env
+
+# 根目录零散文案（2026-10-16 清理后加）：终端重定向产物 / npm 残留 / Godot 运行日志，一律不入库
+# 前两条曾以「文件名含引号」的形态留在根目录，`git add -A` 会误提交，故按模式挡住
+/*'*
+/error_log.txt
+/package.json
+/package-lock.json
+# 跑批遗留的临时脚本与其 .uid（.gd 那条见文件上方 /_tmp_*.gd）
+/test/_tmp_*
