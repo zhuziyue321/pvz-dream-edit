@@ -4,15 +4,11 @@
 .vscode
 
 # 调试通道产生的日志（本地排查用，不要提交）
-debug_channel_log.txt
-debug_channel_auto_log.txt
+/debug_channel_log.txt
+/debug_channel_auto_log.txt
 
-# 会话里随手写的补丁/跑批临时脚本（清理时直接删）
-.dsh_*
+# 会话里随手写的补丁脚本（清理时直接删）
 /_tmp_*.gd
-
-# Godot 编译 reanim 的临时目录（编译产物，不入库）
-assets/all_reanim/tmp/
 
 # 无头跑批 / 泄漏检测留下的重定向输出（清理时直接删）
 /_import_err.txt
@@ -20,17 +16,13 @@ assets/all_reanim/tmp/
 /_leak_err.txt
 /_leak_out.txt
 
-# autopilot 本地跑批留下的临时物（用户目录镜像、重定向输出、注入报告）
+# autopilot 本地跑批留下的临时物（用户目录镜像、语义扫描结果、注入报告）
 test/_userdir/
-test/_ud_*/
-test/_run_out.txt
-test/_probe_version.txt
 test/_semantic_scan_result.txt
 test/inject/report.txt
 
-# 第三方 addon 的编辑器状态：每次开编辑器都会自动改写（登记打开过的脚本列表），
-# 与代码无关。注意它已在 git 里被跟踪过 —— 光加这一行不够，
-# 还要 `git rm --cached addons/todo_controller/config/config.tres` 才生效。
+# 第三方 addon 的编辑器状态：每次开编辑器都会自动改写（登记打开过的脚本列表），与代码无关。
+# 已从版本控制退出，本行防止它被再次加回。
 addons/todo_controller/config/config.tres
 
 # 参考用的独立子项目（PVZ2 动画/素材导入实验），自带 project.godot，
@@ -42,11 +34,18 @@ agents.state.json
 .openagentpack/versions/
 .env
 
-# 根目录零散文案（2026-10-16 清理后加）：终端重定向产物 / npm 残留 / Godot 运行日志，一律不入库
-# 前两条曾以「文件名含引号」的形态留在根目录，`git add -A` 会误提交，故按模式挡住
+# 根目录零散文案：终端重定向产物 / npm 残留 / Godot 运行日志，一律不入库
 /*'*
 /error_log.txt
 /package.json
 /package-lock.json
-# 跑批遗留的临时脚本与其 .uid（.gd 那条见文件上方 /_tmp_*.gd）
+
+# 跑批遗留的临时脚本与其 .uid（根目录 .gd 那条见上方 /_tmp_*.gd）
 /test/_tmp_*
+
+# === 素材目录（2026-10-16 assets → pak/ 迁移后重写）===
+# pak/          原版解包素材（版权归 PopCap/EA，见 README 顶部声明）
+# assets_custom/ 项目自制 / 替换素材（字体、BGM、宽屏贴图、原版缺失项），在版本控制内
+# 旧的 assets/ 已全量迁移（引用改指上面两个目录）并从磁盘删除，原先「整体忽略 + 逐文件放行」
+# 的 200 多行白名单随之作废，只留下面一行守卫，防止旧素材被整体拉回版本控制。
+/assets/
