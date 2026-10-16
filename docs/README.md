@@ -35,7 +35,7 @@
 | [AI调试通道.md](AI调试通道.md)      | 打开游戏调试：Agent 自己启动**带窗口的真实游戏**、模拟操作、取回结构化状态（无头仅 CI 回归）                   | 需要运行期取证                       | 按需             |
 | [Agent协作协议.md](Agent协作协议.md) | 多 agent 并行：所有权分区、枚举编号段配额、串行验证                                           | 多个 agent 同时改本仓库               | **必须**（并行时）    |
 | [参考意见存档.md](参考意见存档.md)      | 排版 / 命名 / 目录习惯等细枝末节的参考意见，不做也不打回                                  | 想知道「仓库通常怎么做」但不想被强制时；判断某条该不该强制 | 参考             |
-| [TODO清单.md](TODO清单.md)          | 全仓库代码里**全部 6 条** `TODO` 注释的汇总快照（含位置、原文、处理建议、已销项的历史条目）                | 做清理 / 还债类任务；删疑似垃圾注释前；想知道还剩哪些待办 | 参考             |
+| [TODO清单.md](TODO清单.md)          | 全仓库待办汇总快照：`TODO` 注释（**条数以 `TODO清单.md` §1 口径为准，此处不写死数字**）+ 架构债（U / L / O 系列）+ 仓库卫生与工程债（H 系列），含位置、原文、处理建议、已销项的历史条目                | 做清理 / 还债类任务；删疑似垃圾注释前；想知道还剩哪些待办 | 参考             |
 
 ### 2.2 下一层的明细（不在这儿铺开，去各自目录读）
 
@@ -69,6 +69,8 @@
 | `src/`          | [AGENTS.md](../src/AGENTS.md) / [README.md](../src/README.md)        | 全部 `.gd` 与 `.tscn`（按功能就近放置） |
 | `data/`      | [AGENTS.md](../data/AGENTS.md) / [README.md](../data/README.md)  | `.tres` 数据层：数值改这里            |
 | `src/levels/`          | [AGENTS.md](../src/levels/AGENTS.md) / [README.md](../src/levels/README.md)          | 内置关卡（按模式分目录），走 `LevelRegistry` |
+| `mods_builtin/`        | [README.md](../mods_builtin/README.md)                                              | 内置模组源码（**加载源之一**：`user://mods/` 优先，那里没有才用它，两源不互相复制） |
+| `src/mods/`            | [README.md](../src/mods/README.md)                                                  | 模组框架：只剩 `mod_manager.gd`（autoload 必须在 `res://`） |
 | `animation/`      | [AGENTS.md](../animation/AGENTS.md) / [README.md](../animation/README.md)  | 动画资源（工具生成，不建议手改）             |
 | `test/`           | [AGENTS.md](../test/AGENTS.md) / [README.md](../test/README.md)            | 自动回归 / 调试通道入口                |
 | `addons/`         | [AGENTS.md](../addons/AGENTS.md) / [README.md](../addons/README.md)        | 第三方插件，非业务代码                  |

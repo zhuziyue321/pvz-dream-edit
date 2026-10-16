@@ -156,3 +156,26 @@ STEP5（开打后显示 / 种 1 个 = 1/13 / 全种满 = 100%）。
 
 连带：`docs/参考存档/特殊关卡.md` 观星表两处（轮廓点 **13 个** = 13 颗杨桃、星形图案换成 13 点那张）一并改正 ——
 那张表此前还停在老的 21 点五角星上。
+
+---
+
+## 补充（2026-10-13）：上面那条「别 duplicate，每格现取一帧」的踩坑已在源头修掉
+
+上面第 84~86 行那条踩坑的**结论仍然成立，但成因可以根治了**：
+
+- 成因：取出来的帧节点仍是 PackedScene 的**实例根**（`scene_file_path` 指向原场景），
+  被 `strip_nodes()` 剥过之后结构与原场景对不上；`Node.duplicate()` 默认带
+  `DUPLICATE_USE_INSTANTIATION`，会**按原场景重新实例化** —— 剥掉的节点复活、
+  定格姿态退回默认帧，并报 `get_child` 越界 + `Child node disappeared while duplicating`。
+- 修法（`src/core/utils/animation_frame_util.gd`）：`create_frame_node()` 返回前调新增的
+  `AnimationFrameUtil.detach_scene_identity(root)`，递归把每一层实例根的
+  `scene_file_path` 清空 → `duplicate()` 退化成深拷贝，复制出来的就是眼前这棵树。
+- **顺带修掉的真 bug**：水盆模组用 `create_frame_node()` 做卡面，选卡界面
+  `_init_card_slot_candidate_plant()` 对这张卡 `duplicate()`，同样报
+  `Child node disappeared while duplicating`（开模组进任意关卡必现）。
+- 观星那边的「每格现取一帧」不用改：它是**每格姿态不同**（亮 / 暗两档透明度），
+  本来就该各取各的，与能不能 duplicate 无关。
+
+**验证**：带窗口 `probe_animation_frame`（PASS，无头跑必 FAIL —— 离屏渲染在 dummy 渲染下
+拿不到图，与本改动无关）、`probe_seeing_stars` PASS、`probe_water_bowl` PASS；
+编译门禁 `real compile errors = 0`。

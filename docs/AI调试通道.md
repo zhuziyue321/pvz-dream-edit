@@ -369,7 +369,7 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 改动较小 / 确定不会出问题 → **免验证**，不用开游戏（判定见 [验证流程.md](验证流程.md) §1）。
 
 **验证过于艰难、非常耗时、不值得用脚本验证时** → 也允许不验证，但**必须在反馈里给出人工验证方法**  
-（进哪关 / 怎么操作 / 什么现象算对），见 [验证流程.md §1.1](验证流程.md#11-验证成本过高时可以不验证但必须在反馈里给出人工验证方法)。
+（进哪关 / 怎么操作 / 什么现象算对），见 [验证流程.md §1.2](验证流程.md#12-不开游戏时建议在反馈里给出人工验证方法)。
 
 ---
 
@@ -391,7 +391,7 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_plant.gd` —— 坐标最小复现（rect 中心 vs 屏幕中心、悬停核对、种植）
 - `test/scenarios/probe_map.gd` —— 坐标排查工具（画布变换 + 覆盖控件 + 扫描线）
 - `test/scenarios/probe_hand.gd` —— 手持物组件（持卡/种植/铲子/取消全流程 + 节点不堆积回归），报告里出 `[HAND] result=PASS`
-- `test/scenarios/probe_glove_unlock.gd` —— 手套解锁进度 + 冒险 4-6 戴夫赠礼（未通关 4-5 时组件禁用且卡槽不出现、通关后启用且出现；4-6 开场 8 句、念到「手套！」时戴夫手上举着物品、末句发疯），报告里出 `[GLOVEUNLOCK] result=PASS`
+- `test/scenarios/probe_glove_unlock.gd` —— 关卡内手套的解锁口径：与商店的园艺手套同时获取（未买园艺手套时组件禁用且卡槽不出现、买断后启用且出现），报告里出 `[GLOVEUNLOCK] result=PASS`
 - `test/scenarios/probe_freed_plant.gd` —— 植物死亡后格子残留「已释放实例」的回归（`PlantCell.get_plant()` 兜底），报告里出 `[FREED] result=PASS`
 - `test/scenarios/probe_puzzle_unlock.gd` —— 冒险 4-6 中途第 5 波掉礼盒解锁解谜模式（配置静态检查 + 真掉一次 + 点开弹出提示 + 掉落位置夹紧后仍在画面内 + 回头确认 3-2 那条没被改坏），报告里出 `[PUZZLEUNLOCK] result=PASS`
 - `test/scenarios/probe_tutorial.gd` —— 1-1 新手教程全流程（原版提示顺序、第一波僵尸的启动时机、已通关不再播），报告里出 `[TUTORIAL] result=PASS`
@@ -414,6 +414,7 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_seed_rain.gd` —— 迷你游戏「种子雨」的天降种子卡（发卡器挂在卡片前景层且定时器在跑 / 12 秒内持续出卡 / 卡片能捡起并能种到草坪 / 走通关结算切出主游戏），报告里出 `[SEEDRAIN] result=PASS`
 - `test/scenarios/probe_save_corrupt_guard.gd` —— 存档损坏的三条兜底（主档坏 → 回退 .bak 且不锁写 / 主档与 .bak 都坏 → 锁写且坏档隔离成 `.corrupt` / 重新读档后解锁能写档），报告里出 `[SAVEGUARD] result=PASS`
 - `test/scenarios/probe_level_registry_order.gd` —— 冒险模式第 n 个关卡 id 必须等于 `adventure_<大关>_<小关>`（**顺序 == 关卡序号**，是把选关页改成注册表动态生成的前提：level_id 按按钮顺序发放、save_game_name 由它拼出，错一位 = 全体玩家进度错位），报告里出 `[LVREG] result=PASS`
+- `test/scenarios/probe_debug_window_hotkey.gd` —— 调试窗口（Ctrl+Q）的热键与可见性链路（窗口已创建 / `_unhandled_key_input` 已启用 / 合成 Ctrl+Q 能开能关 / **`get_global_rect()` 真的落在视口内** + 截一张图），报告里出 `[DW] result=PASS`
 
 ---
 

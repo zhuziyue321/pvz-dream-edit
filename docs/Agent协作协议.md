@@ -22,8 +22,9 @@
 多 agent 并行时，真正的冲突源只有两类：
 
 1. **共享 hub 文件**：多个 agent 编辑同一个文件的不同区域，最后写入者胜、前面的改动被静默覆盖。
-2. **中心枚举插入**：`CharacterRegistry.PlantType` / `ZombieType` 等枚举在语义上是一个整体，
+2. **中心枚举插入**：`MainSceneRegistry.MainScenes` 等 int 枚举在语义上是一个整体，
    但物理上是一行一行的字面量，两个 agent 在同一段内插入就会撞。
+   （植物 / 僵尸 / 僵王 / 子弹 2026-10-13~14 已改成 StringName id，见 §3，不再有这一类的冲突。）
 
 本协议的两条对策正好一一对应：
 - 对策 A（§2 所有权分区）：给每个 agent 分配**互不重叠的目录/文件** → 消除第 1 类。
@@ -68,7 +69,7 @@ git worktree add ../pvz-agent-a agent/plant-pack-a
 | 文件 | 行数 | 被引用 | 所有者 | 并行策略 |
 |------|------|--------|--------|----------|
 | `src/core/autoload/character_registry.gd` | 756 | 67 | **main 独占** | 仅枚举插入走 §3 配额；数据字典（P2）后续搬出后再下放 |
-| `src/core/autoload/bullet_registry.gd` | ~60 | 多 | **main 独占** | 仅 `BulletType` 枚举插入走 §3 配额 |
+| `src/core/autoload/bullet_registry.gd` | ~60 | 多 | **main 独占** | 子弹 id 已改 StringName（2026-10-13），只在 `BulletIds` + `BULLET_SCENE_PATHS` 各加一行，**不再占编号段** |
 | `project.godot`（autoload / layer 段） | — | 全体 | **main 独占** | 新 autoload 一律 main 加 |
 | `src/core/autoload/all_cards.tscn` | — | 全体 | **main 独占** | 新卡片预制 main 登记 |
 | `src/managers/main_game_manager.gd` | 589 | 多 | main 为主 | 改波次/关卡先和 main 对齐 |
@@ -101,16 +102,21 @@ reserved 段（按本仓库现状）：
 - 植物：`P001–P048` 已用；`P999` 模仿者、`P1000` 萌芽、`P1001` 保龄球 特殊占用；
   `1000` 段全段预留给小游戏/特殊模式（见 项目规范 D-02）。
 - 僵尸：`Z001–Z024` 已用；`Z999` boss 特殊占用。
-- 子弹：`Bullet001+` 顺序占用；`Bullet1001` 保龄球；小游戏段同理预留。
+- 子弹：**不再有编号**（2026-10-13 起 id 是 StringName，见 `BulletIds`）。新增子弹只在
+  `BulletIds` 加一个语义常量，天然不撞段，**不需要配额**。
 
 **默认配额表**（开工前由 main 按实际 agent 数调整，填进下表）：
 
-| Agent | 植物编号段 | 僵尸编号段 | 子弹段 | 负责的组件功能域 |
-|-------|-----------|-----------|--------|------------------|
-| A | `P051`–`P070` | `Z031`–`Z040` | `Bullet051`–`Bullet070` | `attack_behavior_component/` |
-| B | `P071`–`P090` | `Z041`–`Z050` | `Bullet071`–`Bullet090` | `detect_component/` |
-| C | `P091`–`P110` | `Z051`–`Z060` | `Bullet091`–`Bullet110` | `bullet/movement/` |
-| D | `P111`–`P130` | `Z061`–`Z070` | `Bullet111`–`Bullet130` | `fx/`、`camera/` |
+> 2026-10-14 起**植物 / 僵尸 / 僵王编号也改成了 StringName id**（`PlantIds` / `ZombieIds` /
+> `ZombieBossIds`，和 10-13 的子弹同一套做法）：加一只新植物 / 僵尸 = 在 id 表里加一个常量，
+> **天然不撞段，不需要配额**。下表只留给还在用 int 编号的中心枚举（如 `MainScenes`）。
+
+| Agent | 植物 | 僵尸 | 子弹段 | 负责的组件功能域 |
+|-------|------|------|--------|------------------|
+| A | — 不占段 | — 不占段 | — 不占段 | `attack_behavior_component/` |
+| B | — 不占段 | — 不占段 | — 不占段 | `detect_component/` |
+| C | — 不占段 | — 不占段 | — 不占段 | `bullet/movement/` |
+| D | — 不占段 | — 不占段 | — 不占段 | `fx/`、`camera/` |
 
 **编号段使用规则（硬约束）**
 
@@ -118,8 +124,8 @@ reserved 段（按本仓库现状）：
 2. 每个新单位只占用自己段内**当前最小空闲编号**，不要跳号制造空洞（便于后续 agent 续接）。
 3. 枚举插入位置：GDScript 枚举成员顺序无所谓，插在各自段的连续区块即可；
    多 agent 在同一文件不同段插入 → git 自动合并无冲突。
-4. 若任务需要跨段（例如某僵尸需要一种新建子弹），该子弹编号也由**拥有僵尸的 agent** 在其子弹段内取，
-   不占用别的 agent 的子弹段。
+4. 若任务需要跨段（例如某僵尸需要一种新建子弹），该子弹 id 由**拥有僵尸的 agent** 加进 `BulletIds`
+   —— 字符串 id 按语义命名，天然不会撞，不需要分段。
 
 > §3 是「今天就能用」的止血方案。彻底方案（把 `PlantInfo`/`ZombieInfo` 字典外移为按单位的数据文件）
 > 见 项目规范 §9 / M-03，列入 P2，等基线稳定后再做。
@@ -198,7 +204,7 @@ Get-Content "$tmp\out.txt" -Encoding UTF8
 文档入口:          ../AGENTS.md（先读）+ docs/README.md（文档地图）
 Agent 标识:        A / B / C / D
 所有权分区:        src/entities/character/plant/plant_05x_* 等（列具体目录）
-编号段:            植物 P051–P070；僵尸 Z031–Z040；子弹 Bullet051–Bullet070
+编号段:            植物 / 僵尸 / 子弹都是 StringName id，不占段（各 id 表加常量即可）
 负责组件域:        attack_behavior_component/
 禁止触碰(hub):     character_registry.gd / bullet_registry.gd / project.godot / all_cards.tscn / test/scenarios/
 需要 main 代办:    枚举登记、autoload、卡片注册、探针登记
