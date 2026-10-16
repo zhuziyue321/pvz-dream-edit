@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/items/seed_packet.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://bnlu4gj7hi2m2" path="res://data/ui/card_bg/norm.tres" id="2_bg"]
-[ext_resource type="Texture2D" uid="uid://ck3qd7qu37g43" path="res://assets/image/ui/ui_trophy/AwardPickupGlow.png" id="3_glow"]
+[ext_resource type="Texture2D" path="res://pak/particles/AwardPickupGlow.png" id="3_glow"]
 
 [sub_resource type="SystemFont" id="SystemFont_cost"]
 font_names = PackedStringArray("Sans-Serif")

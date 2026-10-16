@@ -2,7 +2,7 @@
 
 [ext_resource type="Theme" uid="uid://cx302yraw066y" path="res://data/ui/themes/choose_level_theme.tres" id="1_exhd4"]
 [ext_resource type="Script" uid="uid://jru6xfv7g4f1" path="res://src/menus/choose_level/choose_level.gd" id="2_6fnvv"]
-[ext_resource type="Texture2D" uid="uid://bwevuvs5nnwfx" path="res://assets/image/ui/ui_challenge/Challenge_Background.jpg" id="3_fr1af"]
+[ext_resource type="Texture2D" path="res://pak/images/Challenge_Background.jpg" id="3_fr1af"]
 [ext_resource type="PackedScene" uid="uid://bhjnqm3kqr2fq" path="res://src/menus/choose_level/choose_level_button.tscn" id="4_sq4rf"]
 [ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_10.png" id="301_pot"]
 [ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_11.png" id="302_zombie"]
@@ -26,8 +26,8 @@
 [ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_08.gd" id="40_tddj0"]
 [ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_09.gd" id="42_jf455"]
 [ext_resource type="Script" path="res://src/levels/mode_puzzle/puzzle_zombie_10.gd" id="43_jf455"]
-[ext_resource type="Texture2D" uid="uid://xc3kqag3vqlq" path="res://assets/image/ui/ui_level/Almanac_CloseButton.png" id="30_8h7qg"]
-[ext_resource type="Texture2D" uid="uid://c82uuprowr5d" path="res://assets/image/ui/ui_level/Almanac_CloseButtonHighlight.png" id="31_gpkej"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="30_8h7qg"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="31_gpkej"]
 [ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="32_j5lj8"]
 
 [node name="ChooseLevel" type="Control"]

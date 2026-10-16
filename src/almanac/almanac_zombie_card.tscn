@@ -1,8 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://c8xa1hurve827"]
 
-[ext_resource type="Texture2D" uid="uid://kcj0o0fgykr5" path="res://assets/image/Almanac/Almanac_ZombieWindow.png" id="1_0hgaq"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_ZombieWindow.png" id="1_0hgaq"]
 [ext_resource type="Script" uid="uid://cd7p8v1iqsry6" path="res://src/almanac/almanac_zombie_card.gd" id="1_y3dyy"]
-[ext_resource type="Texture2D" uid="uid://c3u2ptvhtmyd3" path="res://assets/image/Almanac/Almanac_ZombieWindow2.png" id="34_20rvx"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_ZombieWindow2.png" id="34_20rvx"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_t27vh"]
 

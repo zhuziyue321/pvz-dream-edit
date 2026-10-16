@@ -1,12 +1,12 @@
 [gd_resource type="Animation" load_steps=8 format=3 uid="uid://d4j14at5jjq0x"]
 
-[ext_resource type="Texture2D" uid="uid://ckjv486u35x8i" path="res://assets/reanim/Tanglekelp_grab_back1.png" id="10_fuck"]
-[ext_resource type="Texture2D" uid="uid://cpaau5e20yh4i" path="res://assets/reanim/Tanglekelp_grab_back3.png" id="12_fuck"]
-[ext_resource type="Texture2D" uid="uid://cutxgswhgpst5" path="res://assets/reanim/Tanglekelp_grab_back4.png" id="13_fuck"]
-[ext_resource type="Texture2D" uid="uid://d0ouejxyysvbb" path="res://assets/reanim/Tanglekelp_grab_front1.png" id="14_fuck"]
-[ext_resource type="Texture2D" uid="uid://xed7ebsp133v" path="res://assets/reanim/Tanglekelp_grab_front2.png" id="15_fuck"]
-[ext_resource type="Texture2D" uid="uid://mgie0352rst4" path="res://assets/reanim/Tanglekelp_grab_front4.png" id="17_fuck"]
-[ext_resource type="Texture2D" uid="uid://bl4iyenxksu5k" path="res://assets/reanim/Tanglekelp_grab_front5.png" id="18_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_back1.png" id="10_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_back3.png" id="12_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_back4.png" id="13_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_front1.png" id="14_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_front2.png" id="15_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_front4.png" id="17_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_grab_front5.png" id="18_fuck"]
 
 [resource]
 resource_name = "Tanglekelp_grab"

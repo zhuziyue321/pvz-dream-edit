@@ -4,7 +4,7 @@ extends RefCounted
 ##       贴图 res://assets/image/zombie_note/ZombieNoteSmall.png，不再实例化僵尸
 ## 机器可读汇总：最后一行 [X10NOTE] result=PASS|FAIL failed=<n>
 
-const NOTE_PATH := "res://assets/image/zombie_note/ZombieNoteSmall.png"
+const NOTE_PATH := "res://pak/images/ZombieNoteSmall.png"
 const X10_TEXT_RECTS: Array[String] = [
 	"AllPage/GridContainer/ChooseLevelButton10/Panel/TextureRect",
 	"AllPage/GridContainer2/ChooseLevelButton10/Panel/TextureRect",

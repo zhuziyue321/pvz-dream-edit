@@ -1,11 +1,11 @@
 [gd_scene load_steps=9 format=3 uid="uid://fdb333s85hjr"]
 
-[ext_resource type="Texture2D" uid="uid://d5ssa4qqxbk0" path="res://assets/reanim/splash_ring.png" id="1_l3mi7"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_ring.png" id="1_l3mi7"]
 [ext_resource type="Script" uid="uid://cdbstvtvhlwfr" path="res://src/items/splash.gd" id="1_p6qe5"]
-[ext_resource type="Texture2D" uid="uid://celyio15bvpja" path="res://assets/reanim/splash_1.png" id="2_sjocy"]
-[ext_resource type="Texture2D" uid="uid://dx5dly4sju210" path="res://assets/reanim/splash_2.png" id="3_l74xl"]
-[ext_resource type="Texture2D" uid="uid://cwi65srup05yp" path="res://assets/reanim/splash_3.png" id="4_6ybki"]
-[ext_resource type="Texture2D" uid="uid://dc7shxa7ie2sh" path="res://assets/reanim/splash_4.png" id="5_lkv06"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_1.png" id="2_sjocy"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_2.png" id="3_l74xl"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_3.png" id="4_6ybki"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_4.png" id="5_lkv06"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 0.722222

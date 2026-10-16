@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bnfv6m0ut4477"]
 
 [ext_resource type="Script" uid="uid://b3il3lcwtmdd0" path="res://src/entities/bullet/bullet_base.gd" id="1_stuyg"]
-[ext_resource type="Texture2D" uid="uid://c54er6fxpmcc8" path="res://assets/image/projectile/pea_shadows.png" id="2_ouobi"]
+[ext_resource type="Texture2D" path="res://pak/images/pea_shadows.png" id="2_ouobi"]
 
 [node name="Bullet000Base" type="Node2D"]
 script = ExtResource("1_stuyg")

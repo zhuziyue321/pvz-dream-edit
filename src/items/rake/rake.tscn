@@ -1,9 +1,9 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://src/items/rake/rake.gd" id="1_rake"]
-[ext_resource type="Texture2D" uid="uid://dqd4aoy81vvxp" path="res://assets/reanim/rake1.png" id="2_rake1"]
-[ext_resource type="Texture2D" uid="uid://begtux3g1oemy" path="res://assets/reanim/rake2.png" id="3_rake2"]
-[ext_resource type="Texture2D" uid="uid://cfddgbnpn1cri" path="res://assets/reanim/rake_handle.png" id="4_handle"]
+[ext_resource type="Texture2D" path="res://pak/reanim/rake1.png" id="2_rake1"]
+[ext_resource type="Texture2D" path="res://pak/reanim/rake2.png" id="3_rake2"]
+[ext_resource type="Texture2D" path="res://pak/reanim/rake_handle.png" id="4_handle"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rake"]
 size = Vector2(36, 30)

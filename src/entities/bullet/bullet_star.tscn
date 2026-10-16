@@ -2,10 +2,10 @@
 
 [ext_resource type="PackedScene" uid="uid://cit8bsc5op7f0" path="res://src/entities/bullet/bullet_linear_base.tscn" id="1_db74q"]
 [ext_resource type="Script" uid="uid://c7bv1alkdp20n" path="res://src/entities/bullet/bullet_star.gd" id="2_cyj1w"]
-[ext_resource type="Texture2D" uid="uid://dreggrqvdh5x6" path="res://assets/image/projectile/Projectile_star.png" id="2_iiikx"]
-[ext_resource type="Texture2D" uid="uid://bmqp4pihrelkm" path="res://assets/image/particles/bullet/Star_splats.png" id="3_hbw56"]
+[ext_resource type="Texture2D" path="res://pak/images/Projectile_star.png" id="2_iiikx"]
+[ext_resource type="Texture2D" path="res://pak/particles/Star_splats.png" id="3_hbw56"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_oss8m"]
-[ext_resource type="Texture2D" uid="uid://d3dop6rp8kn7b" path="res://assets/image/particles/bullet/Star_particles.png" id="4_oss8m"]
+[ext_resource type="Texture2D" path="res://pak/particles/Star_particles.png" id="4_oss8m"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_cyj1w"]
 particles_animation = true

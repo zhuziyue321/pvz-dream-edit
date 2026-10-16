@@ -1,11 +1,11 @@
 [gd_resource type="Animation" load_steps=7 format=3 uid="uid://bkdw0mcstrdlw"]
 
-[ext_resource type="Texture2D" uid="uid://d2je1pntfgimf" path="res://assets/reanim/PoolCleaner_wheel.png" id="1_test4"]
-[ext_resource type="Texture2D" uid="uid://dqkdqqq613r0c" path="res://assets/reanim/PoolCleaner_body1.png" id="2_wu8wg"]
-[ext_resource type="Texture2D" uid="uid://dirqoy4v477t8" path="res://assets/reanim/PoolCleaner_tubeend.png" id="3_qv6dm"]
-[ext_resource type="Texture2D" uid="uid://brgyp3qdtvwbp" path="res://assets/reanim/PoolCleaner_tube.png" id="4_31n0y"]
-[ext_resource type="Texture2D" uid="uid://dii400pvutu4p" path="res://assets/reanim/PoolCleaner_funnel.png" id="5_pgckx"]
-[ext_resource type="Texture2D" uid="uid://cski0et40alxe" path="res://assets/reanim/PoolCleaner_funnel_overlay.png" id="6_55w0v"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_wheel.png" id="1_test4"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_body1.png" id="2_wu8wg"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_tubeend.png" id="3_qv6dm"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_tube.png" id="4_31n0y"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_funnel.png" id="5_pgckx"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_funnel_overlay.png" id="6_55w0v"]
 
 [resource]
 resource_name = "PoolCleaner_land"

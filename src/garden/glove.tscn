@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://dvasdbokm8eny"]
 
 [ext_resource type="Script" uid="uid://oounu8nyx4q4" path="res://src/garden/item/garden_item_06_glove.gd" id="1_uj2oe"]
-[ext_resource type="Texture2D" uid="uid://d4lqo87x72hwx" path="res://assets/image/garden/Zen_GardenGlove.png" id="2_qeck3"]
+[ext_resource type="Texture2D" path="res://pak/images/Zen_GardenGlove.png" id="2_qeck3"]
 [ext_resource type="Script" uid="uid://6vbmkjgmo5v0" path="res://src/garden/plant_cell_garden.gd" id="3_lpp2i"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_83fl8"]

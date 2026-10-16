@@ -1,6 +1,6 @@
 [gd_scene load_steps=8 format=3 uid="uid://bkx25sp71flk5"]
 
-[ext_resource type="Texture2D" uid="uid://d0hpo2yp78fwc" path="res://assets/image/plant/plantshadow.png" id="1_aoon1"]
+[ext_resource type="Texture2D" path="res://pak/images/plantshadow.png" id="1_aoon1"]
 [ext_resource type="Script" uid="uid://bxklo5o011ly" path="res://src/entities/character/character_base.gd" id="1_cr03h"]
 [ext_resource type="Script" uid="uid://deqe5y4hru4k" path="res://src/entities/character/components/component_hurt_box.gd" id="3_0ann2"]
 [ext_resource type="Script" uid="uid://dx752kig120mj" path="res://src/entities/character/components/body_character.gd" id="3_x2u1h"]

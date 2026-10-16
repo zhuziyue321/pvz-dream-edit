@@ -2,9 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://p2fwghratmjl" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_py6d0"]
 [ext_resource type="Script" uid="uid://ccjnjnre8jwfq" path="res://src/entities/bullet/bullet_melon.gd" id="2_itde2"]
-[ext_resource type="Texture2D" uid="uid://cyq6qjfok78qm" path="res://assets/reanim/Melonpult_melon.png" id="2_py6d0"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Melonpult_melon.png" id="2_py6d0"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_itde2"]
-[ext_resource type="Texture2D" uid="uid://bx81ebcqxmly2" path="res://assets/image/particles/bullet/Melonpult_particles.png" id="4_py6d0"]
+[ext_resource type="Texture2D" path="res://pak/images/Melonpult_particles.png" id="4_py6d0"]
 [ext_resource type="Script" uid="uid://kr4r24a1l80x" path="res://src/entities/bullet/component/spatter_component.gd" id="5_d0acj"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_o220a"]

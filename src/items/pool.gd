@@ -7,11 +7,11 @@ class_name Pool
 @onready var pool: Sprite2D = $Pool
 ## 泳池白天图片（已用 tools/merge_alpha.ps1 把 pool_base_.png 蒙版烘焙进 alpha 通道）
 const POOL_BASE = preload("res://assets/image/background/pool_base.png")
-const POOL = preload("res://assets/image/background/pool.jpg")
+const POOL = preload("res://pak/images/pool.jpg")
 
 ## 泳池黑夜图片（夜间底图复用同一张 pool_base_.png 蒙版烘焙）
 const POOL_BASE_NIGHT = preload("res://assets/image/background/pool_base_night.png")
-const POOL_NIGHT = preload("res://assets/image/background/pool_night.jpg")
+const POOL_NIGHT = preload("res://pak/images/pool_night.jpg")
 
 
 func init_pool(game_para:ResourceLevelData):

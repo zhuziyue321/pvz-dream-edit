@@ -1,9 +1,9 @@
 [gd_scene load_steps=11 format=3 uid="uid://do0x5atofbigv"]
 
 [ext_resource type="PackedScene" uid="uid://p2fwghratmjl" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_ky7bl"]
-[ext_resource type="Texture2D" uid="uid://ver1n4vt6qk6" path="res://assets/reanim/WinterMelon_projectile.png" id="2_bbool"]
+[ext_resource type="Texture2D" path="res://pak/reanim/WinterMelon_projectile.png" id="2_bbool"]
 [ext_resource type="Script" uid="uid://tyoqjgiclx1s" path="res://src/entities/bullet/bullet_winter_melon.gd" id="2_ydugh"]
-[ext_resource type="Texture2D" uid="uid://clo5rn3t7eue" path="res://assets/image/particles/bullet/WinterMelon_particles.png" id="3_bbool"]
+[ext_resource type="Texture2D" path="res://pak/images/WinterMelon_particles.png" id="3_bbool"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="4_ydugh"]
 [ext_resource type="Script" uid="uid://byv4nwv0cra33" path="res://src/entities/bullet/component/spatter_component_winter_melon.gd" id="5_s34ac"]
 

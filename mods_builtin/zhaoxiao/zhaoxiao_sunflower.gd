@@ -45,7 +45,7 @@ const NODE_PATH := ^"ChaoyangWatcher"
 ## 汗滴 sprite 的名字（探针按它找那颗汗）
 const SWEAT_NAME := &"ChaoyangSweat"
 ## 汗滴贴图：**直接借用本体禅境花园那颗「缺水」水珠**（原版素材，不是本模组新增的）
-const SWEAT_TEXTURE := preload("res://assets/image/garden/waterdrop.png")
+const SWEAT_TEXTURE := preload("res://pak/images/waterdrop.png")
 
 ## 花头贴图的名字前缀：花瓣 `SunFlower_leftpetal8` / `SunFlower_toppetals` …、脸 `Anim_idle` / `Anim_blink`
 const HEAD_PREFIX_PETAL := "SunFlower_"

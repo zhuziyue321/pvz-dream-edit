@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://cqflbd3ggini0"]
 
-[ext_resource type="Texture2D" uid="uid://nr65sy3ejdu8" path="res://assets/reanim/Tanglekelp_blink1.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_blink1.png" id="0_fuck"]
 
 [resource]
 resource_name = "Tanglekelp_blink1"

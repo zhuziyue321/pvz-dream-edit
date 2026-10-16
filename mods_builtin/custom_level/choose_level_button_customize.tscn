@@ -1,9 +1,9 @@
 [gd_scene load_steps=6 format=3]
 
 [ext_resource type="PackedScene" path="res://src/menus/choose_level/choose_level_button.tscn" id="1_lxp35"]
-[ext_resource type="Texture2D" path="res://assets/image/garden/Present.png" id="2_3rusv"]
+[ext_resource type="Texture2D" path="res://pak/images/Present.png" id="2_3rusv"]
 [ext_resource type="Script" path="choose_level_button_customize.gd" id="2_i0kqb"]
-[ext_resource type="Texture2D" path="res://assets/image/Almanac/Almanac_GroundDay.jpg" id="2_p0g7x"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_GroundDay.jpg" id="2_p0g7x"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_i0kqb"]
 

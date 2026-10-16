@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://btt5xj6i8o41j"]
 
-[ext_resource type="Texture2D" uid="uid://kewigqip7qgf" path="res://assets/reanim/Squash_eyebrows.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Squash_eyebrows.png" id="0_fuck"]
 
 [resource]
 resource_name = "Squash_blink"

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://vgg8iloyqu3e"]
 
 [ext_resource type="Script" uid="uid://bmdbvp327cg0q" path="res://src/fx/plant_effect/plant_start_effect.gd" id="1_ski41"]
-[ext_resource type="Texture2D" uid="uid://dokski45v5dh2" path="res://assets/reanim/splash_particle.png" id="2_5nnnb"]
+[ext_resource type="Texture2D" path="res://pak/reanim/splash_particle.png" id="2_5nnnb"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ofeam"]
 particle_flag_disable_z = true

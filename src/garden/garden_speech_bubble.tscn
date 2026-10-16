@@ -1,9 +1,9 @@
 [gd_scene load_steps=5 format=3 uid="uid://fhk3rqkadujf"]
 
 [ext_resource type="Script" uid="uid://tsl7jejg3jg7" path="res://src/garden/garden_speech_bubble.gd" id="1_vm6lc"]
-[ext_resource type="Texture2D" uid="uid://54rpfashjbpk" path="res://assets/image/garden/plantspeechbubble.png" id="2_xus3l"]
-[ext_resource type="Texture2D" uid="uid://ce2m54cahv50v" path="res://assets/image/garden/waterdrop.png" id="3_1plcy"]
-[ext_resource type="Texture2D" uid="uid://b5bo5s8mwuvuu" path="res://assets/image/garden/zen_need_icons.png" id="4_b24yh"]
+[ext_resource type="Texture2D" path="res://pak/images/plantspeechbubble.png" id="2_xus3l"]
+[ext_resource type="Texture2D" path="res://pak/images/waterdrop.png" id="3_1plcy"]
+[ext_resource type="Texture2D" path="res://pak/images/zen_need_icons.png" id="4_b24yh"]
 
 [node name="GardenSpeechBubble" type="Node2D"]
 script = ExtResource("1_vm6lc")

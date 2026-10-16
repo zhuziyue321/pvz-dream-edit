@@ -3,10 +3,10 @@
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_a6swv"]
 [ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://src/items/drop_body/zombie_arm1_drop.gd" id="2_1q4fh"]
 [ext_resource type="Script" uid="uid://caqagbuu2in1i" path="res://src/entities/character/components/iron_node/iron_node_armor.gd" id="2_2lc55"]
-[ext_resource type="Texture2D" uid="uid://bjsapu81odmg4" path="res://assets/reanim/Zombie_bucket3.png" id="3_4trg0"]
-[ext_resource type="Texture2D" uid="uid://is2g44uxfgvp" path="res://assets/reanim/Zombie_bucket1.png" id="3_5vx42"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bucket3.png" id="3_4trg0"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bucket1.png" id="3_5vx42"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="4_2lc55"]
-[ext_resource type="Texture2D" uid="uid://wcoa5tcaei3u" path="res://assets/reanim/Zombie_bucket2.png" id="5_1q4fh"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bucket2.png" id="5_1q4fh"]
 [ext_resource type="Script" uid="uid://djru3du5q47i5" path="res://src/entities/character/components/armor_component/component_armor.gd" id="9_armor"]
 
 [sub_resource type="Resource" id="Resource_1q4fh"]

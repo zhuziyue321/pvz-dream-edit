@@ -1,16 +1,16 @@
 [gd_scene format=3 uid="uid://cv4obfp5v8idm"]
 
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_icefire_shadow.png" id="1_q2on7"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_fireball.png" id="2_u32mg"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_fireball_chunks.png" id="3_j1h6q"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_fireball_multiply.png" id="4_6gioj"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_fireball_additive.png" id="5_mdti4"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_fireball_superglow.png" id="6_vgkdl"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_icefire_shadow.png" id="1_q2on7"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_fireball.png" id="2_u32mg"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_fireball_chunks.png" id="3_j1h6q"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_fireball_multiply.png" id="4_6gioj"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_fireball_additive.png" id="5_mdti4"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_fireball_superglow.png" id="6_vgkdl"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/ball/Zombie_boss_fireball_form.tres" id="7_mneta"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/ball/Zombie_boss_fireball_role.tres" id="8_hvdds"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/objects/zb_doctor_fire_ball.gd" id="ball_script"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/objects/zb_doctor_ground_particles.gd" id="ground_script"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/Zombie_boss_fireball_groundparticles.png" id="ground_texture"]
+[ext_resource type="Texture2D" path="res://pak/particles/Zombie_boss_fireball_groundparticles.png" id="ground_texture"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_dfxh7"]
 _data = {

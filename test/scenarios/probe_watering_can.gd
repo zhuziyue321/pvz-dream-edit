@@ -10,10 +10,10 @@ var _failed := 0
 
 const GARDEN_SCENE := "res://src/garden/garden.tscn"
 const PLANT_CELL_SCENE := preload("res://src/garden/plant_cell_garden.tscn")
-const NORM_CAN_PNG := "res://assets/reanim/ZenGarden_wateringcan1.png"
-const GOLD_CAN_PNG := "res://assets/reanim/ZenGarden_wateringcan1_gold.png"
-const NORM_ICON_PNG := "res://assets/image/garden/WateringCan.png"
-const GOLD_ICON_PNG := "res://assets/image/garden/WateringCanGold.png"
+const NORM_CAN_PNG := "res://pak/reanim/ZenGarden_wateringcan1.png"
+const GOLD_CAN_PNG := "res://pak/reanim/ZenGarden_wateringcan1_gold.png"
+const NORM_ICON_PNG := "res://pak/images/WateringCan.png"
+const GOLD_ICON_PNG := "res://pak/images/WateringCanGold.png"
 
 
 func run(a) -> void:

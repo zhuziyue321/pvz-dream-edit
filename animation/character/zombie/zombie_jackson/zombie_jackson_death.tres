@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://gkla8b47gdem"]
 
-[ext_resource type="Texture2D" uid="uid://idsahid8s358" path="res://assets/reanim/Zombie_Jackson_innerarm_hand.png" id="1_22n4q"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_Jackson_innerarm_hand.png" id="1_22n4q"]
 
 [resource]
 resource_name = "Zombie_Jackson_death"

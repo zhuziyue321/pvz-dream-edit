@@ -52,8 +52,8 @@ const PEA_EFFECT_NAME := ^"BulletEffect"
 const PEA_SPLAT_NAME := ^"Splats"
 
 ## 豌豆贴图 / 豌豆影子贴图：**直接借本体那两张原版素材**
-const PEA_TEXTURE := preload("res://assets/image/projectile/ProjectilePea.png")
-const PEA_SHADOW_TEXTURE := preload("res://assets/image/projectile/pea_shadows.png")
+const PEA_TEXTURE := preload("res://pak/images/ProjectilePea.png")
+const PEA_SHADOW_TEXTURE := preload("res://pak/images/pea_shadows.png")
 ## 影子相对豆子往下多少（与本体 `bullet_base.tscn` 里那颗影子同一个偏移）
 const SHADOW_OFFSET_Y := 50.0
 ## 影子贴图是「两张并排」的横条，取第一张（本体 `bullet_base.tscn` 用的 `hframes = 2`）

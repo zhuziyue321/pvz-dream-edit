@@ -1,7 +1,7 @@
 [gd_resource type="Animation" load_steps=3 format=3 uid="uid://bts7yxj1e4ok8"]
 
-[ext_resource type="Texture2D" uid="uid://cgr7dqab5jusn" path="res://assets/reanim/fire1.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://dawptb0j1rwae" path="res://assets/reanim/fire3.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire1.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire3.png" id="2_fuck"]
 
 [resource]
 resource_name = "fire_flame"

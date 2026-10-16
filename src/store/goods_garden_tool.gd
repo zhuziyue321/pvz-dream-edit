@@ -13,14 +13,14 @@ class_name GoodsGardenTool
 
 ## 各工具的商品图标(原版图标就在 assets/image/garden 下,不必另配商店图)
 const TOOL_ICON: Dictionary = {
-	GardenManager.E_GardenTool.GoldWateringCan: preload("res://assets/image/garden/WateringCanGold.png"),
-	GardenManager.E_GardenTool.Fertilizer: preload("res://assets/image/garden/Fertilizer.png"),
-	GardenManager.E_GardenTool.BugSpray: preload("res://assets/image/garden/bug_spray.png"),
-	GardenManager.E_GardenTool.Phonograph: preload("res://assets/image/garden/Phonograph.png"),
-	GardenManager.E_GardenTool.GardeningGlove: preload("res://assets/image/garden/Zen_GardenGlove.png"),
-	GardenManager.E_GardenTool.Chocolate: preload("res://assets/image/garden/chocolate.png"),
-	GardenManager.E_GardenTool.Snail: preload("res://assets/reanim/Stinky_shell.png"),
-	GardenManager.E_GardenTool.TreeFood: preload("res://assets/image/garden/TreeFood.png"),
+	GardenManager.E_GardenTool.GoldWateringCan: preload("res://pak/images/WateringCanGold.png"),
+	GardenManager.E_GardenTool.Fertilizer: preload("res://pak/images/Fertilizer.png"),
+	GardenManager.E_GardenTool.BugSpray: preload("res://pak/images/bug_spray.png"),
+	GardenManager.E_GardenTool.Phonograph: preload("res://pak/images/Phonograph.png"),
+	GardenManager.E_GardenTool.GardeningGlove: preload("res://pak/images/Zen_GardenGlove.png"),
+	GardenManager.E_GardenTool.Chocolate: preload("res://pak/images/chocolate.png"),
+	GardenManager.E_GardenTool.Snail: preload("res://pak/reanim/Stinky_shell.png"),
+	GardenManager.E_GardenTool.TreeFood: preload("res://pak/images/TreeFood.png"),
 }
 
 ## 少数工具的图标不用单张贴图,而是「取动画的某一帧」渲染出来(见 AnimationFrameUtil)

@@ -1,7 +1,7 @@
 [gd_scene load_steps=26 format=3 uid="uid://ds30bt2f2bdfi"]
 
 [ext_resource type="Script" uid="uid://b5dgbspbo2pkw" path="res://src/entities/character/components/zombie_death_bomb/zombie_death_bomb.gd" id="1_o8h0l"]
-[ext_resource type="Texture2D" uid="uid://nnp13qryaqjx" path="res://assets/image/particles/ExplosionCloud.png" id="2_p5grf"]
+[ext_resource type="Texture2D" path="res://pak/particles/ExplosionCloud.png" id="2_p5grf"]
 [ext_resource type="Shader" uid="uid://cikju0ectkkms" path="res://shaders/my_particle.gdshader" id="3_u7nrw"]
 
 [sub_resource type="Curve" id="Curve_xift2"]

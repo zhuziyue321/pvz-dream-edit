@@ -35,12 +35,12 @@ const WATERING_CAN := "watering_can"
 
 ## 名字 -> 贴图（res:// 绝对路径，硬约束 §1-5）
 const TEXTURE_MAP := {
-	TROPHY: preload("res://assets/image/ui/ui_trophy/trophy_hi_res.png"),
-	TACO: preload("res://assets/image/main_game_item/Taco.png"),
-	SHOVEL: preload("res://assets/image/ui/ui_card/Shovel.png"),
-	ALMANAC: preload("res://assets/image/main_game_item/Almanac.png"),
-	CAR_KEYS: preload("res://assets/image/main_game_item/CarKeys.png"),
-	WATERING_CAN: preload("res://assets/image/garden/WateringCan.png"),
+	TROPHY: preload("res://pak/images/trophy_hi_res.png"),
+	TACO: preload("res://pak/images/Taco.png"),
+	SHOVEL: preload("res://pak/images/Shovel.png"),
+	ALMANAC: preload("res://pak/images/Almanac.png"),
+	CAR_KEYS: preload("res://pak/images/CarKeys.png"),
+	WATERING_CAN: preload("res://pak/images/WateringCan.png"),
 }
 
 ## 名字 -> 点开时弹的提示文本（种子包类不写：提示是新植物那句，由植物中文名现拼）

@@ -1,12 +1,12 @@
 [gd_scene load_steps=8 format=3 uid="uid://cflpyoqris51r"]
 
 [ext_resource type="Script" uid="uid://b8ue3vl6tpnv5" path="res://src/fx/other_effect/doom_shroom_crater.gd" id="1_b5msc"]
-[ext_resource type="Texture2D" uid="uid://cjjpsp3rf8iiy" path="res://assets/image/main_game_item/crater.png" id="2_lyu5h"]
-[ext_resource type="Texture2D" uid="uid://ba4y2biat102e" path="res://assets/image/main_game_item/crater_fading.png" id="3_0r2rc"]
-[ext_resource type="Texture2D" uid="uid://cgjgew5hmb4t1" path="res://assets/image/main_game_item/crater_water_day.png" id="4_w6lri"]
-[ext_resource type="Texture2D" uid="uid://y7n580ctse8f" path="res://assets/image/main_game_item/crater_water_night.png" id="5_djkvw"]
-[ext_resource type="Texture2D" uid="uid://cnvhijhfqk180" path="res://assets/image/main_game_item/crater_roof_center.png" id="6_sae5k"]
-[ext_resource type="Texture2D" uid="uid://cjgtr754ui3ak" path="res://assets/image/main_game_item/crater_roof_left.png" id="7_5gbe7"]
+[ext_resource type="Texture2D" path="res://pak/images/crater.png" id="2_lyu5h"]
+[ext_resource type="Texture2D" path="res://pak/images/crater_fading.png" id="3_0r2rc"]
+[ext_resource type="Texture2D" path="res://pak/images/crater_water_day.png" id="4_w6lri"]
+[ext_resource type="Texture2D" path="res://pak/images/crater_water_night.png" id="5_djkvw"]
+[ext_resource type="Texture2D" path="res://pak/images/crater_roof_center.png" id="6_sae5k"]
+[ext_resource type="Texture2D" path="res://pak/images/crater_roof_left.png" id="7_5gbe7"]
 
 [node name="Crater" type="Node2D"]
 script = ExtResource("1_b5msc")

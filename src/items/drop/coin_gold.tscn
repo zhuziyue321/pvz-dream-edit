@@ -1,10 +1,10 @@
 [gd_scene load_steps=9 format=3 uid="uid://r6ne00t82732"]
 
 [ext_resource type="Script" uid="uid://browmxwsl8r2s" path="res://src/ui/coin/coin.gd" id="1_xah68"]
-[ext_resource type="Texture2D" uid="uid://c4utk40vdr681" path="res://assets/reanim/CoinGlow.png" id="2_uq70t"]
-[ext_resource type="Texture2D" uid="uid://bf2byxlg4hpjp" path="res://assets/reanim/coin_black_gold.png" id="3_63pb2"]
-[ext_resource type="Texture2D" uid="uid://bsrssqeqcqtkc" path="res://assets/reanim/coin_gold_dollar.png" id="4_4cgy0"]
-[ext_resource type="Texture2D" uid="uid://c1we27vcfkfkh" path="res://assets/reanim/coin_shading.png" id="5_rbw7l"]
+[ext_resource type="Texture2D" path="res://pak/reanim/CoinGlow.png" id="2_uq70t"]
+[ext_resource type="Texture2D" path="res://pak/reanim/coin_black_gold.png" id="3_63pb2"]
+[ext_resource type="Texture2D" path="res://pak/reanim/coin_gold_dollar.png" id="4_4cgy0"]
+[ext_resource type="Texture2D" path="res://pak/reanim/coin_shading.png" id="5_rbw7l"]
 [ext_resource type="BitMap" uid="uid://bxo2ge8hl0k6y" path="res://assets/reanim/coin_gold_dollar_mask.png" id="6_uq70t"]
 
 [sub_resource type="Animation" id="Animation_fuck"]

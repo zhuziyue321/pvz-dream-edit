@@ -1,9 +1,9 @@
 [gd_scene load_steps=11 format=3 uid="uid://f0wyiq6h4jnl"]
 
-[ext_resource type="Texture2D" uid="uid://daeova84ns1w2" path="res://assets/reanim/Sun3.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Sun3.png" id="0_fuck"]
 [ext_resource type="Script" uid="uid://cyhhqr0hmo2ov" path="res://src/ui/main_game_ui/sun.gd" id="1_d4kfy"]
-[ext_resource type="Texture2D" uid="uid://ca1rye2xsott2" path="res://assets/reanim/Sun2.png" id="1_fuck"]
-[ext_resource type="Texture2D" uid="uid://dhsxq0pua8s4" path="res://assets/reanim/Sun1.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Sun2.png" id="1_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Sun1.png" id="2_fuck"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 loop_mode = 1

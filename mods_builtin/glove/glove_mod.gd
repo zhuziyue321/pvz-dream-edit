@@ -36,7 +36,7 @@ const TEMP_LAYER_NODE := "%CanvasLayerTemp"
 const TEMP_CHARACTER_NODE := "%TemporaryCharacter"
 
 const GLOVE_SLOT_SCENE := preload("glove_slot.tscn")
-const GLOVE_TEXTURE := preload("res://assets/image/garden/Zen_GardenGlove.png")
+const GLOVE_TEXTURE := preload("res://pak/images/Zen_GardenGlove.png")
 ## 真手套在屏幕上的初始位置（与真铲子同排，进手持后才跟着鼠标走）
 const REAL_GLOVE_POSITION := Vector2(687, 67)
 

@@ -4,7 +4,7 @@ class_name ZombiquariumBrain
 ##
 ## 点鱼缸造一个脑子（花 ConstZombiquarium.BRAIN_SUN_COST 阳光），脑子从落点慢慢往下沉，
 ## 沉到缸底还没被吃掉就消失 —— 那一份阳光就白花了（原版表现，见灰机wiki「脑子掉到水底后会消失」）。
-## 贴图: res://assets/image/main_game_item/brain.png
+## 贴图: res://pak/images/brain.png
 
 ## 下沉速度（像素/秒）
 const SINK_SPEED := 26.0

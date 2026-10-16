@@ -1,12 +1,12 @@
 [gd_scene load_steps=11 format=3 uid="uid://bcqasfwaxiw13"]
 
 [ext_resource type="Script" uid="uid://dixf8yf216mis" path="res://src/garden/item/garden_item_03_bugspray.gd" id="1_hj0hu"]
-[ext_resource type="Texture2D" uid="uid://ce3i1wwcjdw7q" path="res://assets/reanim/ZenGarden_bugspray_trigger.png" id="2_1tw76"]
-[ext_resource type="Texture2D" uid="uid://bksn8fu5i71fd" path="res://assets/reanim/ZenGarden_bugspray_bottle.png" id="3_gtxwh"]
-[ext_resource type="Texture2D" uid="uid://b3dvdt6pbkb6x" path="res://assets/reanim/ZenGarden_bugspray_spray1.png" id="4_nhb4m"]
-[ext_resource type="Texture2D" uid="uid://bu1wigyla5jri" path="res://assets/reanim/ZenGarden_bugspray_spray2.png" id="5_0lwjr"]
-[ext_resource type="Texture2D" uid="uid://d1i6ylwpgdt8u" path="res://assets/reanim/ZenGarden_bugspray_spray3.png" id="6_v0kjx"]
-[ext_resource type="Texture2D" uid="uid://brds80qkcn6d0" path="res://assets/reanim/ZenGarden_bugspray_spray4.png" id="7_u7bf5"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_trigger.png" id="2_1tw76"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_bottle.png" id="3_gtxwh"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_spray1.png" id="4_nhb4m"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_spray2.png" id="5_0lwjr"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_spray3.png" id="6_v0kjx"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_bugspray_spray4.png" id="7_u7bf5"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 0.833333

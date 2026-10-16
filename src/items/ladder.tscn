@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://blly2ycuykg02"]
 
 [ext_resource type="Script" uid="uid://42p44atq8kh8" path="res://src/items/ladder.gd" id="1_7imw8"]
-[ext_resource type="Texture2D" uid="uid://btga2dyqmwvf0" path="res://assets/reanim/Zombie_ladder_5.png" id="2_7imw8"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_ladder_5.png" id="2_7imw8"]
 [ext_resource type="Script" uid="uid://cgdy515nfukla" path="res://src/entities/character/components/iron_node/iron_node.gd" id="3_0qafn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7imw8"]

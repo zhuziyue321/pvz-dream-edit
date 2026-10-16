@@ -2,7 +2,7 @@
 
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="1_xr4kl"]
 [ext_resource type="Script" uid="uid://ey22hrnnxts2" path="res://src/ui/coin/coin_bank.gd" id="2_q46qq"]
-[ext_resource type="Texture2D" uid="uid://cw2840cylma5o" path="res://assets/image/ui/coinbank.png" id="3_hsc68"]
+[ext_resource type="Texture2D" path="res://pak/images/coinbank.png" id="3_hsc68"]
 
 [node name="CoinBankLabel" type="Control"]
 layout_mode = 3

@@ -1,7 +1,7 @@
 [gd_resource type="Animation" load_steps=3 format=3 uid="uid://da8e21tx8kpxv"]
 
-[ext_resource type="Texture2D" uid="uid://d3fiedp7rmj02" path="res://assets/reanim/SunShroom_body.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://cwpdbv6tcn38g" path="res://assets/reanim/SunShroom_head.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SunShroom_body.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SunShroom_head.png" id="2_fuck"]
 
 [resource]
 resource_name = "SunShroom_idle"

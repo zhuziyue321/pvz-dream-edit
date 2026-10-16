@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://exjqcadhonwi"]
 
-[ext_resource type="Texture2D" uid="uid://6sig2vr6hn5j" path="res://assets/reanim/SunFlower_blink2.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SunFlower_blink2.png" id="0_fuck"]
 
 [resource]
 resource_name = "SunFlower_blink"

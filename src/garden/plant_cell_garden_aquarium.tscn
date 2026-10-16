@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://bp3u3o8nttci" path="res://src/garden/plant_cell_garden.tscn" id="1_gix5e"]
 [ext_resource type="Script" uid="uid://cp4gmc4sqpuxl" path="res://src/garden/plant_cell_garden_aquarium.gd" id="2_refwt"]
-[ext_resource type="Texture2D" uid="uid://d0hpo2yp78fwc" path="res://assets/image/plant/plantshadow.png" id="3_m66bu"]
+[ext_resource type="Texture2D" path="res://pak/images/plantshadow.png" id="3_m66bu"]
 
 [node name="PlantCellGardenAquarium" instance=ExtResource("1_gix5e")]
 script = ExtResource("2_refwt")

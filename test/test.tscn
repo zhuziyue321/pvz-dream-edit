@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://cl06mltmut6xf"]
 
 [ext_resource type="Script" uid="uid://8tiaxorwmdks" path="res://test/test.gd" id="1_m7npr"]
-[ext_resource type="Texture2D" uid="uid://bx8xtt6oantp1" path="res://assets/image/Almanac/Almanac_GroundPool.jpg" id="2_st4qh"]
-[ext_resource type="Texture2D" uid="uid://bj57iq2dgnb0g" path="res://assets/image/Almanac/Almanac_GroundRoof.jpg" id="3_51e2l"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_GroundPool.jpg" id="2_st4qh"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_GroundRoof.jpg" id="3_51e2l"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_st4qh"]
 radius = 169.358

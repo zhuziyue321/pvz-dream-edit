@@ -8,13 +8,13 @@ class_name WateringCan
 
 ## 待机时壶身贴图
 const CAN_TEXTURE: Dictionary = {
-	false: preload("res://assets/reanim/ZenGarden_wateringcan1.png"),
-	true: preload("res://assets/reanim/ZenGarden_wateringcan1_gold.png"),
+	false: preload("res://pak/reanim/ZenGarden_wateringcan1.png"),
+	true: preload("res://pak/reanim/ZenGarden_wateringcan1_gold.png"),
 }
 ## 工具栏按钮图标
 const BUTTON_ICON: Dictionary = {
-	false: preload("res://assets/image/garden/WateringCan.png"),
-	true: preload("res://assets/image/garden/WateringCanGold.png"),
+	false: preload("res://pak/images/WateringCan.png"),
+	true: preload("res://pak/images/WateringCanGold.png"),
 }
 ## 浇水动画(动画里的壶身贴图也是分红金两套)
 const WATER_ANIM: Dictionary = {

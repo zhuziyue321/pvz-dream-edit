@@ -48,8 +48,8 @@ const JACKPOT_DIAMOND := 300
 const TWO_SUN := 100
 const TWO_DIAMOND := 100
 
-const SEEDS_ATLAS := preload("res://assets/image/ui/ui_card/seeds.png")
-const OVERLAY_TEXTURE := preload("res://assets/image/ui/ui_card/SlotMachine_Overlay.png")
+const SEEDS_ATLAS := preload("res://pak/images/seeds.png")
+const OVERLAY_TEXTURE := preload("res://pak/images/SlotMachine_Overlay.png")
 const CHINESE_FONT := preload("res://assets/fonts/SIMSUN.TTC")
 
 var _mg: MainGameManager

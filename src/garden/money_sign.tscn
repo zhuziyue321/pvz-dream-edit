@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=3 uid="uid://02r6pim88mbc"]
 
-[ext_resource type="Texture2D" uid="uid://bma7kou87taa5" path="res://assets/image/garden/Zen_MoneySign.png" id="1_a55wt"]
+[ext_resource type="Texture2D" path="res://pak/images/Zen_MoneySign.png" id="1_a55wt"]
 [ext_resource type="Script" uid="uid://mnhn2ihvr6ts" path="res://src/garden/item/garden_item_07_money_sign.gd" id="1_atxcp"]
 [ext_resource type="Script" uid="uid://7qucqjvdq78q" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="2_iopsr"]
 [ext_resource type="Script" uid="uid://dlfnh7fjqyil6" path="res://data/dave/crazy_dave_dialog_resource.gd" id="3_dgja6"]

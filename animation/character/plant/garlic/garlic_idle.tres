@@ -1,13 +1,13 @@
 [gd_resource type="Animation" load_steps=9 format=3 uid="uid://bn3iqo6t7b63r"]
 
-[ext_resource type="Texture2D" uid="uid://c4tr5pxpgn1st" path="res://assets/reanim/Garlic_stem1.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://d1abmgqa60ngk" path="res://assets/reanim/Garlic_stem2.png" id="1_fuck"]
-[ext_resource type="Texture2D" uid="uid://njrw363r8de5" path="res://assets/reanim/Garlic_stem3.png" id="2_fuck"]
-[ext_resource type="Texture2D" uid="uid://dir7aktx8gr3j" path="res://assets/reanim/Garlic_stink1.png" id="4_fuck"]
-[ext_resource type="Texture2D" uid="uid://chms3djxdsswl" path="res://assets/reanim/Garlic_stink2.png" id="5_fuck"]
-[ext_resource type="Texture2D" uid="uid://wxs86px0blc" path="res://assets/reanim/Garlic_stink3.png" id="6_fuck"]
-[ext_resource type="Texture2D" uid="uid://chw0tktnbcn8v" path="res://assets/reanim/Garlic_stink4.png" id="7_fuck"]
-[ext_resource type="Texture2D" uid="uid://k4aatmbcppnb" path="res://assets/reanim/Garlic_blink1.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stem1.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stem2.png" id="1_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stem3.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stink1.png" id="4_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stink2.png" id="5_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stink3.png" id="6_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_stink4.png" id="7_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Garlic_blink1.png" id="8_fuck"]
 
 [resource]
 resource_name = "Garlic_idle"

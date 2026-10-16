@@ -1,12 +1,12 @@
 [gd_scene load_steps=19 format=3 uid="uid://cjokdb0hpsj81"]
 
 [ext_resource type="PackedScene" uid="uid://n2y27ai1nm5f" path="res://src/entities/character/plant/plant_down_base.tscn" id="1_k4p72"]
-[ext_resource type="Texture2D" uid="uid://d0hpo2yp78fwc" path="res://assets/image/plant/plantshadow.png" id="2_qkrp1"]
-[ext_resource type="Texture2D" uid="uid://cpuhiwnvj34aw" path="res://assets/reanim/Pot_bottom.png" id="3_uwedu"]
-[ext_resource type="Texture2D" uid="uid://1kbfcfjfc6ri" path="res://assets/reanim/Pot_stem.png" id="4_5fk0t"]
-[ext_resource type="Texture2D" uid="uid://clwvntcysv04j" path="res://assets/reanim/Pot_leaf1.png" id="5_t43al"]
-[ext_resource type="Texture2D" uid="uid://bdfonjr6km5kt" path="res://assets/reanim/Pot_leaf2.png" id="6_jl7nk"]
-[ext_resource type="Texture2D" uid="uid://bjmbxk07m4w1b" path="res://assets/reanim/Pot_top.png" id="7_pff5m"]
+[ext_resource type="Texture2D" path="res://pak/images/plantshadow.png" id="2_qkrp1"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_bottom.png" id="3_uwedu"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_stem.png" id="4_5fk0t"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_leaf1.png" id="5_t43al"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_leaf2.png" id="6_jl7nk"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_top.png" id="7_pff5m"]
 [ext_resource type="Animation" uid="uid://gm80836k87vo" path="res://animation/character/plant/flower_pot/pot_idle.tres" id="8_hutbc"]
 [ext_resource type="Animation" uid="uid://bxl4tn5ge1opm" path="res://animation/character/plant/flower_pot/pot_waterplants.tres" id="9_hul03"]
 

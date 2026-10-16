@@ -11,6 +11,9 @@ debug_channel_auto_log.txt
 .dsh_*
 /_tmp_*.gd
 
+# Godot 编译 reanim 的临时目录（编译产物，不入库）
+assets/all_reanim/tmp/
+
 # 无头跑批 / 泄漏检测留下的重定向输出（清理时直接删）
 /_import_err.txt
 /_import_out.txt

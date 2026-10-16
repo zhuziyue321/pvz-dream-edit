@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://drqoxi3pwi0np" path="res://src/store/goods.gd" id="1_l7kkb"]
 [ext_resource type="Theme" uid="uid://brc7iy7wte3nn" path="res://data/ui/themes/norm_ui_theme.tres" id="1_sllwg"]
-[ext_resource type="Texture2D" uid="uid://dc2kt6m7ukquh" path="res://assets/image/store/Store_PriceTag.png" id="5_6tca7"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_PriceTag.png" id="5_6tca7"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sllwg"]
 

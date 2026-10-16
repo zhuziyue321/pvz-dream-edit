@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://cl0exgq5cc480"]
 
-[ext_resource type="Texture2D" uid="uid://dw41vpl3xij30" path="res://assets/image/garden/aquarium1.jpg" id="1_gaetq"]
+[ext_resource type="Texture2D" path="res://pak/images/aquarium1.jpg" id="1_gaetq"]
 [ext_resource type="Script" uid="uid://r3i58bb3k04m" path="res://src/garden/garden_bg_page.gd" id="2_gaetq"]
 [ext_resource type="PackedScene" uid="uid://c37t6y03lap40" path="res://src/garden/plant_cell_garden_aquarium.tscn" id="3_gaetq"]
 

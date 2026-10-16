@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://xvg3184rd4s"]
 
-[ext_resource type="Texture2D" uid="uid://d3etuf1sy65a1" path="res://assets/reanim/Imitater_blink1.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_blink1.png" id="0_fuck"]
 
 [resource]
 resource_name = "Imitater_blink"

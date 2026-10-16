@@ -1,8 +1,8 @@
 [gd_scene load_steps=6 format=3 uid="uid://dthq42y7g8j85"]
 
 [ext_resource type="Script" uid="uid://bhlpq22spa1sn" path="res://src/almanac/panel_container.gd" id="1_a1io1"]
-[ext_resource type="Texture2D" uid="uid://hb4b6ujaahoc" path="res://assets/image/Almanac/Almanac_GroundDay.jpg" id="2_2g2oc"]
-[ext_resource type="Texture2D" uid="uid://b6t4ree7mqqnx" path="res://assets/image/Almanac/Almanac_PlantCard.png" id="3_kdrdk"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_GroundDay.jpg" id="2_2g2oc"]
+[ext_resource type="Texture2D" path="res://pak/images/Almanac_PlantCard.png" id="3_kdrdk"]
 [ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets/fonts/SIMSUN.TTC" id="4_wmr3e"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_jly7p"]

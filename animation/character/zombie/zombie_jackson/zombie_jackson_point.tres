@@ -1,7 +1,7 @@
 [gd_resource type="Animation" load_steps=3 format=3 uid="uid://ywiyomcxv8ri"]
 
-[ext_resource type="Texture2D" uid="uid://idsahid8s358" path="res://assets/reanim/Zombie_Jackson_innerarm_hand.png" id="1_o2dj5"]
-[ext_resource type="Texture2D" uid="uid://db8gu1fks7r2t" path="res://assets/reanim/Zombie_Jackson_innerarm_hand2.png" id="2_608xk"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_Jackson_innerarm_hand.png" id="1_o2dj5"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_Jackson_innerarm_hand2.png" id="2_608xk"]
 
 [resource]
 resource_name = "Zombie_Jackson_point"

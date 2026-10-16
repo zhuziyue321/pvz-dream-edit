@@ -1,8 +1,8 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_start_menu/Present.png" id="1_present"]
+[ext_resource type="Texture2D" path="res://pak/images/Present.png" id="1_present"]
 [ext_resource type="BitMap" path="res://assets/image/ui/ui_start_menu/Present_mask.png" id="2_mask"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_start_menu/PresentOpen.png" id="3_open"]
+[ext_resource type="Texture2D" path="res://pak/images/PresentOpen.png" id="3_open"]
 [ext_resource type="Script" path="custom_level_entry_button.gd" id="4_script"]
 
 [node name="CustomLevelEntryButton" type="TextureButton"]

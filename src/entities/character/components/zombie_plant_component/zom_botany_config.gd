@@ -89,9 +89,9 @@ static func _static_init() -> void:
 		PlantIds.PEA_SHOOTER_SINGLE,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_top.png"), Vector2(0, 8), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_Head.png"), Vector2(0, -6), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_stalk_top.png"), Vector2(0, 8), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_Head.png"), Vector2(0, -6), 0.9),
 		],
 		2, 2000
 	),
@@ -100,7 +100,7 @@ static func _static_init() -> void:
 		PlantIds.WALL_NUT,
 		C_PLANT_HP_SHELL,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Wallnut_body.png")),
+			PlantSprite.new(preload("res://pak/reanim/Wallnut_body.png")),
 		],
 		3, 1500,
 		Vector2(24, -30), 0.6
@@ -110,9 +110,9 @@ static func _static_init() -> void:
 		PlantIds.SQUASH,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Squash_body.png"), Vector2(0, 6)),
-			PlantSprite.new(preload("res://assets/reanim/Squash_eyes.png"), Vector2(-6, -2)),
-			PlantSprite.new(preload("res://assets/reanim/Squash_stem.png"), Vector2(2, -24)),
+			PlantSprite.new(preload("res://pak/reanim/Squash_body.png"), Vector2(0, 6)),
+			PlantSprite.new(preload("res://pak/reanim/Squash_eyes.png"), Vector2(-6, -2)),
+			PlantSprite.new(preload("res://pak/reanim/Squash_stem.png"), Vector2(2, -24)),
 		],
 		3, 800
 	),
@@ -121,9 +121,9 @@ static func _static_init() -> void:
 		PlantIds.JALAPENO,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Jalapeno_body.png")),
-			PlantSprite.new(preload("res://assets/reanim/Jalapeno_eye1.png"), Vector2(-6, -4)),
-			PlantSprite.new(preload("res://assets/reanim/Jalapeno_stem.png"), Vector2(4, -26)),
+			PlantSprite.new(preload("res://pak/reanim/Jalapeno_body.png")),
+			PlantSprite.new(preload("res://pak/reanim/Jalapeno_eye1.png"), Vector2(-6, -4)),
+			PlantSprite.new(preload("res://pak/reanim/Jalapeno_stem.png"), Vector2(4, -26)),
 		],
 		3, 600
 	),
@@ -132,9 +132,9 @@ static func _static_init() -> void:
 		PlantIds.GATLING_PEA,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/GatlingPea_barrel.png"), Vector2(0, 4), 0.85),
-			PlantSprite.new(preload("res://assets/reanim/GatlingPea_head.png"), Vector2(0, -6), 0.85),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/GatlingPea_barrel.png"), Vector2(0, 4), 0.85),
+			PlantSprite.new(preload("res://pak/reanim/GatlingPea_head.png"), Vector2(0, -6), 0.85),
 		],
 		4, 500
 	),
@@ -143,9 +143,9 @@ static func _static_init() -> void:
 		PlantIds.SNOW_PEA,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/PeaShooter_stalk_top.png"), Vector2(0, 8), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/SnowPea_head.png"), Vector2(0, -6), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_stalk_bottom.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/PeaShooter_stalk_top.png"), Vector2(0, 8), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/SnowPea_head.png"), Vector2(0, -6), 0.9),
 		],
 		3, 1200
 	),
@@ -154,8 +154,8 @@ static func _static_init() -> void:
 		PlantIds.TORCH_WOOD,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Torchwood_body.png"), Vector2(0, 4), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/Torchwood_eyes1.png"), Vector2(-6, -6), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Torchwood_body.png"), Vector2(0, 4), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Torchwood_eyes1.png"), Vector2(-6, -6), 0.9),
 		],
 		3, 800
 	),
@@ -164,8 +164,8 @@ static func _static_init() -> void:
 		PlantIds.MAGNET_SHROOM,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Magnetshroom_stem.png"), Vector2(0, 24), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/Magnetshroom_head1.png"), Vector2(0, -2), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Magnetshroom_stem.png"), Vector2(0, 24), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Magnetshroom_head1.png"), Vector2(0, -2), 0.9),
 		],
 		3, 600
 	),
@@ -174,7 +174,7 @@ static func _static_init() -> void:
 		PlantIds.PUMPKIN,
 		C_PLANT_HP_SHELL,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Pumpkin_front.png")),
+			PlantSprite.new(preload("res://pak/reanim/Pumpkin_front.png")),
 		],
 		3, 1000,
 		Vector2(24, -28), 0.6
@@ -184,8 +184,8 @@ static func _static_init() -> void:
 		PlantIds.CABBAGE_PULT,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Cabbagepult_stalk1.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/Cabbagepult_head.png"), Vector2(0, -4), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Cabbagepult_stalk1.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Cabbagepult_head.png"), Vector2(0, -4), 0.9),
 		],
 		3, 1200
 	),
@@ -194,8 +194,8 @@ static func _static_init() -> void:
 		PlantIds.COB_CANNON,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/CobCannon_husk1.png"), Vector2(0, 12), 0.8),
-			PlantSprite.new(preload("res://assets/reanim/CobCannon_cob.png"), Vector2(6, -12), 0.8),
+			PlantSprite.new(preload("res://pak/reanim/CobCannon_husk1.png"), Vector2(0, 12), 0.8),
+			PlantSprite.new(preload("res://pak/reanim/CobCannon_cob.png"), Vector2(6, -12), 0.8),
 		],
 		5, 400
 	),
@@ -204,8 +204,8 @@ static func _static_init() -> void:
 		PlantIds.MELON_PULT,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Melonpult_stalk.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/Melonpult_body.png"), Vector2(0, -2), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Melonpult_stalk.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/Melonpult_body.png"), Vector2(0, -2), 0.9),
 		],
 		4, 700
 	),
@@ -214,8 +214,8 @@ static func _static_init() -> void:
 		PlantIds.WINTER_MELON,
 		C_PLANT_HP_DEFAULT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/WinterMelon_stalk.png"), Vector2(0, 26), 0.9),
-			PlantSprite.new(preload("res://assets/reanim/WinterMelon_melon.png"), Vector2(0, -2), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/WinterMelon_stalk.png"), Vector2(0, 26), 0.9),
+			PlantSprite.new(preload("res://pak/reanim/WinterMelon_melon.png"), Vector2(0, -2), 0.9),
 		],
 		5, 500
 	),
@@ -224,7 +224,7 @@ static func _static_init() -> void:
 		PlantIds.TALL_NUT,
 		C_PLANT_HP_TALL_NUT,
 		[
-			PlantSprite.new(preload("res://assets/reanim/Tallnut_body.png")),
+			PlantSprite.new(preload("res://pak/reanim/Tallnut_body.png")),
 		],
 		4, 2000,
 		Vector2(24, -30), 0.6

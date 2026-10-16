@@ -1,9 +1,9 @@
 [gd_scene load_steps=12 format=3 uid="uid://c3s7jbfbsys6d"]
 
 [ext_resource type="PackedScene" uid="uid://cit8bsc5op7f0" path="res://src/entities/bullet/bullet_linear_base.tscn" id="1_0vx1j"]
-[ext_resource type="Texture2D" uid="uid://yjc7pkf5hdn2" path="res://assets/image/particles/bullet/PuffShroom_puff1.png" id="2_eod4s"]
+[ext_resource type="Texture2D" path="res://pak/particles/PuffShroom_puff1.png" id="2_eod4s"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_nxlx4"]
-[ext_resource type="Texture2D" uid="uid://bq2t7ki1icbpq" path="res://assets/image/particles/bullet/PuffShroom_puff2.png" id="4_rtp2o"]
+[ext_resource type="Texture2D" path="res://pak/particles/PuffShroom_puff2.png" id="4_rtp2o"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_yix8j"]
 

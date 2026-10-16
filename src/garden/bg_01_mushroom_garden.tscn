@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://rxfipnfad63l"]
 
-[ext_resource type="Texture2D" uid="uid://b1ep2uxfhmii3" path="res://assets/image/garden/Background_MushroomGarden.jpg" id="1_lq3y3"]
+[ext_resource type="Texture2D" path="res://pak/images/Background_MushroomGarden.jpg" id="1_lq3y3"]
 [ext_resource type="Script" uid="uid://r3i58bb3k04m" path="res://src/garden/garden_bg_page.gd" id="2_ivykr"]
 [ext_resource type="PackedScene" uid="uid://bp3u3o8nttci" path="res://src/garden/plant_cell_garden.tscn" id="2_lq3y3"]
 

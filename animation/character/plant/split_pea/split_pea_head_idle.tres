@@ -1,7 +1,7 @@
 [gd_resource type="Animation" load_steps=3 format=3 uid="uid://q7dxwst27jof"]
 
-[ext_resource type="Texture2D" uid="uid://b00drwni3ja82" path="res://assets/reanim/PeaShooter_Head.png" id="8_fuck"]
-[ext_resource type="Texture2D" uid="uid://txlm4fwvygkx" path="res://assets/reanim/PeaShooter_mouth.png" id="9_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PeaShooter_Head.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PeaShooter_mouth.png" id="9_fuck"]
 
 [resource]
 resource_name = "SplitPea_head_idle"

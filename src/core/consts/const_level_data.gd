@@ -17,12 +17,12 @@ enum GameBg {
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Night_Roof —— 僵王关所在场景是独立的
 ## 「Night Roof(夜屋顶)」,与白天 Roof 是同一张屋顶、只是夜色底图,故单独一张 background6boss)
 const GameBgTextureMap: Dictionary = {
-	GameBg.FrontDay: preload("res://assets/image/background/background1.jpg"),
-	GameBg.FrontNight: preload("res://assets/image/background/background2.jpg"),
-	GameBg.Pool: preload("res://assets/image/background/background3.jpg"),
-	GameBg.Fog: preload("res://assets/image/background/background4.jpg"),
-	GameBg.Roof: preload("res://assets/image/background/background5.jpg"),
-	GameBg.Boss: preload("res://assets/image/background/background6boss.jpg"),
+	GameBg.FrontDay: preload("res://pak/images/background1.jpg"),
+	GameBg.FrontNight: preload("res://pak/images/background2.jpg"),
+	GameBg.Pool: preload("res://pak/images/background3.jpg"),
+	GameBg.Fog: preload("res://pak/images/background4.jpg"),
+	GameBg.Roof: preload("res://pak/images/background5.jpg"),
+	GameBg.Boss: preload("res://pak/images/background6boss.jpg"),
 }
 #endregion
 

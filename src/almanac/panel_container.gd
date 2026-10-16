@@ -3,12 +3,12 @@ class_name AlmanacCharacterShowPanel
 ## 图鉴植物信息描述
 
 const CharacterBgMap = {
-	"Day": preload("res://assets/image/Almanac/Almanac_GroundDay.jpg"),
-	"Ice":preload("res://assets/image/Almanac/Almanac_GroundIce.jpg"),
-	"Night": preload("res://assets/image/Almanac/Almanac_GroundNight.jpg"),
-	"Pool": preload("res://assets/image/Almanac/Almanac_GroundPool.jpg"),
-	"Fog": preload("res://assets/image/Almanac/Almanac_GroundNightPool.jpg"),
-	"Roof": preload("res://assets/image/Almanac/Almanac_GroundRoof.jpg")
+	"Day": preload("res://pak/images/Almanac_GroundDay.jpg"),
+	"Ice":preload("res://pak/images/Almanac_GroundIce.jpg"),
+	"Night": preload("res://pak/images/Almanac_GroundNight.jpg"),
+	"Pool": preload("res://pak/images/Almanac_GroundPool.jpg"),
+	"Fog": preload("res://pak/images/Almanac_GroundNightPool.jpg"),
+	"Roof": preload("res://pak/images/Almanac_GroundRoof.jpg")
 }
 
 ## 背景

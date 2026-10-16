@@ -1,11 +1,11 @@
 [gd_scene load_steps=10 format=3 uid="uid://dgayxx7mveh2r"]
 
 [ext_resource type="Script" uid="uid://6w88m5027upd" path="res://src/garden/item/garden_item_04_phonograph.gd" id="1_fcjh5"]
-[ext_resource type="Texture2D" uid="uid://dc4rrt4tokouc" path="res://assets/reanim/ZenGarden_phonograph_base.png" id="2_ysbp8"]
-[ext_resource type="Texture2D" uid="uid://cctdtq6ch6kvj" path="res://assets/reanim/ZenGarden_phonograph_shaft1.png" id="3_6klx7"]
-[ext_resource type="Texture2D" uid="uid://cm5k0n4137jmt" path="res://assets/reanim/ZenGarden_phonograph_shaft2.png" id="4_1qubl"]
-[ext_resource type="Texture2D" uid="uid://hub3sbb45uo8" path="res://assets/reanim/ZenGarden_phonograph_record.png" id="5_pr500"]
-[ext_resource type="Texture2D" uid="uid://c8kmnjj0coqbo" path="res://assets/reanim/ZenGarden_phonograph_needle.png" id="6_dydoh"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_phonograph_base.png" id="2_ysbp8"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_phonograph_shaft1.png" id="3_6klx7"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_phonograph_shaft2.png" id="4_1qubl"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_phonograph_record.png" id="5_pr500"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_phonograph_needle.png" id="6_dydoh"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 1.2

@@ -1,14 +1,14 @@
 [gd_resource type="Animation" load_steps=10 format=3 uid="uid://bq1crd2bn6vvo"]
 
-[ext_resource type="Texture2D" uid="uid://c63tf7upqqxus" path="res://assets/reanim/Imitater_root2.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://bqw13oc1ficg7" path="res://assets/reanim/Imitater_root3.png" id="1_fuck"]
-[ext_resource type="Texture2D" uid="uid://wox6kcig3h35" path="res://assets/reanim/Imitater_body.png" id="2_fuck"]
-[ext_resource type="Texture2D" uid="uid://bkjsjbi47lxlv" path="res://assets/reanim/Imitater_root1.png" id="3_fuck"]
-[ext_resource type="Texture2D" uid="uid://d3etuf1sy65a1" path="res://assets/reanim/Imitater_blink1.png" id="4_fuck"]
-[ext_resource type="Texture2D" uid="uid://bnccv7wjkdsph" path="res://assets/reanim/Imitater_hat.png" id="5_fuck"]
-[ext_resource type="Texture2D" uid="uid://c583jsodj755w" path="res://assets/reanim/Imitater_spin1.png" id="6_fuck"]
-[ext_resource type="Texture2D" uid="uid://cbe27xose7nad" path="res://assets/reanim/Imitater_spin3.png" id="8_fuck"]
-[ext_resource type="Texture2D" uid="uid://bgwpaabjbuv8m" path="res://assets/reanim/Imitater_spin5.png" id="10_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_root2.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_root3.png" id="1_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_body.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_root1.png" id="3_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_blink1.png" id="4_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_hat.png" id="5_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_spin1.png" id="6_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_spin3.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Imitater_spin5.png" id="10_fuck"]
 
 [resource]
 resource_name = "Imitater_explode"

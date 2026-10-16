@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://dwapvt7508kup"]
 
-[ext_resource type="Texture2D" uid="uid://b3ddxb6ikwr4q" path="res://assets/reanim/PuffShroom_blink2.png" id="4_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PuffShroom_blink2.png" id="4_fuck"]
 
 [resource]
 resource_name = "PuffShroom_sleep"

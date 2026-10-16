@@ -2,9 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="1_14ilb"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="2_tk85s"]
-[ext_resource type="Texture2D" uid="uid://but82r6h7qmdr" path="res://assets/reanim/Zombie_snorkle_whitewater2.png" id="3_eaw8a"]
-[ext_resource type="Texture2D" uid="uid://ddlkkrp74v64f" path="res://assets/reanim/Zombie_outerarm_upper2.png" id="3_mgxbi"]
-[ext_resource type="Texture2D" uid="uid://dlj11o7l81ptp" path="res://assets/reanim/Zombie_flag3.png" id="4_tlscm"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_snorkle_whitewater2.png" id="3_eaw8a"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_outerarm_upper2.png" id="3_mgxbi"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_flag3.png" id="4_tlscm"]
 
 [sub_resource type="Resource" id="Resource_y5im1"]
 script = ExtResource("2_tk85s")

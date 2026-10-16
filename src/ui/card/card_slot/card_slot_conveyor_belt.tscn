@@ -1,7 +1,7 @@
 [gd_scene load_steps=16 format=3 uid="uid://p2ospfmeb27t"]
 
-[ext_resource type="Texture2D" uid="uid://cpweorxgjagtw" path="res://assets/image/ui/ui_card/ConveyorBelt_backdrop.png" id="1_38655"]
-[ext_resource type="Texture2D" uid="uid://clu7agu73dxr8" path="res://assets/image/ui/ui_card/ConveyorBelt.png" id="2_jyq52"]
+[ext_resource type="Texture2D" path="res://pak/images/ConveyorBelt_backdrop.png" id="1_38655"]
+[ext_resource type="Texture2D" path="res://pak/images/ConveyorBelt.png" id="2_jyq52"]
 [ext_resource type="Script" uid="uid://bhd301j1lfe7r" path="res://src/ui/card/card_slot/card_slot_conveyor/card_slot_conveyor_belt_gear.gd" id="2_nb3kr"]
 [ext_resource type="Script" uid="uid://h4kkw30hjgsr" path="res://src/ui/card/card_slot/card_slot_conveyor/card_slot_conveyor_belt.gd" id="2_p880x"]
 [ext_resource type="PackedScene" uid="uid://d1nnrhr8k1tel" path="res://src/ui/card/card_slot/card_random_pool.tscn" id="5_aafbt"]

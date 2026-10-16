@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dn36gktmqp2h7"]
 
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/objects/zb_doctor_death_explosion_effect.gd" id="1_effect"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/BossExplosion3.png" id="3_flash"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/BossExplosion1.png" id="4_fire"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/BossExplosion2.png" id="5_smoke"]
+[ext_resource type="Texture2D" path="res://pak/particles/BossExplosion3.png" id="3_flash"]
+[ext_resource type="Texture2D" path="res://pak/particles/BossExplosion1.png" id="4_fire"]
+[ext_resource type="Texture2D" path="res://pak/particles/BossExplosion2.png" id="5_smoke"]
 
 [sub_resource type="Animation" id="Animation_explode"]
 resource_name = "explode"

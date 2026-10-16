@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://dhwp0yu3idgds"]
 
-[ext_resource type="Texture2D" uid="uid://b4t56wxmfhp6u" path="res://assets/reanim/Jalapeno_cheek.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_cheek.png" id="0_fuck"]
 
 [resource]
 resource_name = "Jalapeno_blink"

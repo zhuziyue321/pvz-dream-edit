@@ -1,12 +1,12 @@
 [gd_resource type="Animation" format=3 uid="uid://bu1x360pe3s5x"]
 
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_thumb2.png" id="6_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_finger2.png" id="8_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_finger1.png" id="9_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_thumb1.png" id="10_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_arm_upper2.png" id="11_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_lower.png" id="12_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_upper.png" id="13_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_thumb2.png" id="6_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_finger2.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_finger1.png" id="9_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_thumb1.png" id="10_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_arm_upper2.png" id="11_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_lower.png" id="12_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_upper.png" id="13_fuck"]
 
 [resource]
 resource_name = "Zombie_boss_spawn_1"

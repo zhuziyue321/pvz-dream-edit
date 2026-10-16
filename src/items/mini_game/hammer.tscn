@@ -1,10 +1,10 @@
 [gd_scene load_steps=9 format=3 uid="uid://3anktsw826yt"]
 
 [ext_resource type="Script" uid="uid://kadjgg4bxb66" path="res://src/items/mini_game/hammer.gd" id="1_dearv"]
-[ext_resource type="Texture2D" uid="uid://la64qjorh8nt" path="res://assets/image/particles/Pow.png" id="3_5f0x4"]
-[ext_resource type="Texture2D" uid="uid://bqtnl31pv3rv3" path="res://assets/reanim/Hammer_3.png" id="4_345eo"]
-[ext_resource type="Texture2D" uid="uid://qtifu6lsmq6x" path="res://assets/reanim/hammer_1.png" id="5_ljud5"]
-[ext_resource type="Texture2D" uid="uid://dweon5ml8otw5" path="res://assets/reanim/Hammer_2.png" id="6_cb3xe"]
+[ext_resource type="Texture2D" path="res://pak/particles/Pow.png" id="3_5f0x4"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Hammer_3.png" id="4_345eo"]
+[ext_resource type="Texture2D" path="res://pak/reanim/hammer_1.png" id="5_ljud5"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Hammer_2.png" id="6_cb3xe"]
 [ext_resource type="Animation" uid="uid://cf18nflpwmmfk" path="res://animation/item/hammer/hammer_whack_zombie.tres" id="7_ga6kt"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_3meaf"]

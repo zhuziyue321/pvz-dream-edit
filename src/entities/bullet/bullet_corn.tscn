@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://d24cn74ohttaw"]
 
 [ext_resource type="PackedScene" uid="uid://p2fwghratmjl" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_02pep"]
-[ext_resource type="Texture2D" uid="uid://bqviq28gmuns3" path="res://assets/reanim/Cornpult_kernal.png" id="2_u3g04"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Cornpult_kernal.png" id="2_u3g04"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_88k1t"]
 
 [node name="Bullet010Corn" instance=ExtResource("1_02pep")]

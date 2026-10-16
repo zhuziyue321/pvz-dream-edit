@@ -2,9 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://p2fwghratmjl" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_flpwn"]
 [ext_resource type="Script" uid="uid://cnanc03sgexdu" path="res://src/entities/bullet/bullet_butter.gd" id="2_saeop"]
-[ext_resource type="Texture2D" uid="uid://ckgvs70ot3cw4" path="res://assets/reanim/Cornpult_butter.png" id="2_wo6mn"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Cornpult_butter.png" id="2_wo6mn"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_hnx64"]
-[ext_resource type="Texture2D" uid="uid://d3dop6rp8kn7b" path="res://assets/image/particles/bullet/Star_particles.png" id="4_ehgm0"]
+[ext_resource type="Texture2D" path="res://pak/particles/Star_particles.png" id="4_ehgm0"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_o220a"]
 particles_animation = true

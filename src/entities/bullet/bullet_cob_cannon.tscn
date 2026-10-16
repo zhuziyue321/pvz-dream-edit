@@ -2,11 +2,11 @@
 
 [ext_resource type="PackedScene" uid="uid://bnfv6m0ut4477" path="res://src/entities/bullet/bullet_base.tscn" id="1_sm07q"]
 [ext_resource type="Script" uid="uid://db8qe0oie413h" path="res://src/entities/bullet/bullet_cob_cannon.gd" id="1_ymsek"]
-[ext_resource type="Texture2D" uid="uid://c0b2nxclwkjxn" path="res://assets/reanim/CobCannon_cob.png" id="3_nsvt0"]
+[ext_resource type="Texture2D" path="res://pak/reanim/CobCannon_cob.png" id="3_nsvt0"]
 [ext_resource type="Script" uid="uid://l0umdgng0y2m" path="res://src/entities/character/components/bomb_component/component_bomb_norm.gd" id="4_e6ktu"]
 [ext_resource type="Script" uid="uid://ofqutiv0x4ke" path="res://src/fx/plant_effect/plant_effect_bomb_con_cannon.gd" id="5_nsvt0"]
-[ext_resource type="Texture2D" uid="uid://dvjyos6h31dsr" path="res://assets/image/particles/bullet/BlastMark.png" id="6_l1osl"]
-[ext_resource type="Texture2D" uid="uid://c2bnelgwkkidj" path="res://assets/image/main_game_item/CobCannon_popcorn.png" id="7_ymsek"]
+[ext_resource type="Texture2D" path="res://pak/particles/BlastMark.png" id="6_l1osl"]
+[ext_resource type="Texture2D" path="res://pak/images/CobCannon_popcorn.png" id="7_ymsek"]
 [ext_resource type="Script" uid="uid://c33weydmxt3pr" path="res://src/entities/character/components/can_attack_status_component/component_can_attack_status.gd" id="90_canas01"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7pesq"]

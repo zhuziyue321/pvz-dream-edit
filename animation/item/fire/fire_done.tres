@@ -1,10 +1,10 @@
 [gd_resource type="Animation" load_steps=6 format=3 uid="uid://cd1retcew0plf"]
 
-[ext_resource type="Texture2D" uid="uid://dihl3ncdqlxqy" path="res://assets/reanim/fire4.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://wjvkiildm3y1" path="res://assets/reanim/fire5.png" id="2_fuck"]
-[ext_resource type="Texture2D" uid="uid://ceo7walwui7p" path="res://assets/reanim/fire6.png" id="4_fuck"]
-[ext_resource type="Texture2D" uid="uid://b7wm4kuraomej" path="res://assets/reanim/fire7.png" id="6_fuck"]
-[ext_resource type="Texture2D" uid="uid://cyxid1u6gds6f" path="res://assets/reanim/fire8.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire4.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire5.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire6.png" id="4_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire7.png" id="6_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/fire8.png" id="8_fuck"]
 
 [resource]
 resource_name = "fire_done"

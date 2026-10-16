@@ -1,6 +1,6 @@
 [gd_resource type="Animation" load_steps=2 format=3 uid="uid://ck2kbwlqef03k"]
 
-[ext_resource type="Texture2D" uid="uid://dhb33lor5gb5w" path="res://assets/reanim/IceShroom_blink1.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/IceShroom_blink1.png" id="0_fuck"]
 
 [resource]
 resource_name = "IceShroom_blink"

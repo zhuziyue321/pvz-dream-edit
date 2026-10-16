@@ -1,9 +1,9 @@
 [gd_scene load_steps=7 format=3 uid="uid://b2y2ygq62yaag"]
 
 [ext_resource type="Script" uid="uid://cc2pukv2rh1pk" path="res://src/items/ice_zombie_effect.gd" id="1_q33bu"]
-[ext_resource type="Texture2D" uid="uid://b8wyfl4uolim5" path="res://assets/image/main_game_item/icetrap.png" id="2_pnb1i"]
-[ext_resource type="Texture2D" uid="uid://dsfa44kvaul2b" path="res://assets/image/main_game_item/icetrap2.png" id="3_oux6n"]
-[ext_resource type="Texture2D" uid="uid://ce5qywnpuq2ob" path="res://assets/image/particles/icetrap_particles.png" id="4_05hx1"]
+[ext_resource type="Texture2D" path="res://pak/images/icetrap.png" id="2_pnb1i"]
+[ext_resource type="Texture2D" path="res://pak/images/icetrap2.png" id="3_oux6n"]
+[ext_resource type="Texture2D" path="res://pak/images/icetrap_particles.png" id="4_05hx1"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_81wjr"]
 particles_animation = true

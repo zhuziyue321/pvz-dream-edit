@@ -1,10 +1,10 @@
 [gd_resource type="Animation" load_steps=6 format=3 uid="uid://b46fv0d5ot0mh"]
 
-[ext_resource type="Texture2D" uid="uid://dvlvifhp7gqg6" path="res://assets/reanim/SnowPea_crystals1.png" id="8_fuck"]
-[ext_resource type="Texture2D" uid="uid://cwt4uqjqsibcq" path="res://assets/reanim/SnowPea_crystals2.png" id="9_fuck"]
-[ext_resource type="Texture2D" uid="uid://djckbtre6csg1" path="res://assets/reanim/SnowPea_crystals3.png" id="10_fuck"]
-[ext_resource type="Texture2D" uid="uid://btm8ff66rlov2" path="res://assets/reanim/SnowPea_head.png" id="11_fuck"]
-[ext_resource type="Texture2D" uid="uid://duih4ey3fvuom" path="res://assets/reanim/SnowPea_mouth.png" id="12_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SnowPea_crystals1.png" id="8_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SnowPea_crystals2.png" id="9_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SnowPea_crystals3.png" id="10_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SnowPea_head.png" id="11_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SnowPea_mouth.png" id="12_fuck"]
 
 [resource]
 resource_name = "SnowPea_head_idle"

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/store/goods_lawn_mover.gd" id="1_mover"]
 [ext_resource type="PackedScene" uid="uid://oia7m8j6yhjl" path="res://src/store/goods.tscn" id="2_goods"]
-[ext_resource type="Texture2D" uid="uid://dqkdqqq613r0c" path="res://assets/reanim/PoolCleaner_body1.png" id="3_icon"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PoolCleaner_body1.png" id="3_icon"]
 [ext_resource type="Resource" path="res://data/dave/dialog_detail/store/pool_cleaner.tres" id="4_dialog"]
 [ext_resource type="Script" path="res://src/ui/animation_frame_icon.gd" id="5_frameicon"]
 [ext_resource type="PackedScene" uid="uid://vhxn4alby3ow" path="res://src/items/lawn_mower/pool_cleaner.tscn" id="6_mover_scene"]

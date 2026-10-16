@@ -1,8 +1,8 @@
 [gd_scene load_steps=12 format=3 uid="uid://djf6h2hex3vpx"]
 
 [ext_resource type="Script" uid="uid://qf80xhqf2ko6" path="res://src/fx/other_effect/dirt_new_zombie_appear_from_ground.gd" id="1_mwrc2"]
-[ext_resource type="Texture2D" uid="uid://dhawpqhvsxd83" path="res://assets/image/particles/dirtsmall.png" id="2_a25vj"]
-[ext_resource type="Texture2D" uid="uid://igrk4hwpobli" path="res://assets/image/particles/dirtbig.png" id="3_4y6vl"]
+[ext_resource type="Texture2D" path="res://pak/images/dirtsmall.png" id="2_a25vj"]
+[ext_resource type="Texture2D" path="res://pak/images/dirtbig.png" id="3_4y6vl"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_d86ws"]
 particles_animation = true

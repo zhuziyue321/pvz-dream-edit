@@ -36,6 +36,9 @@ import argparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "src")
 TEST = os.path.join(ROOT, "test")
+ANIMATION = os.path.join(ROOT, "animation")
+DATA = os.path.join(ROOT, "data")
+MODS_BUILTIN = os.path.join(ROOT, "mods_builtin")
 PAK = os.path.join(ROOT, "pak")
 
 ASSET_PATH_RE = re.compile(r'res://assets/([^\s"\')]+)')
@@ -120,7 +123,7 @@ def rewrite_tscn(text, pak_idx, changes, fallbacks):
 
 def process_file(fp, pak_idx, apply, stats, fallbacks):
     ext = os.path.splitext(fp)[1]
-    if ext not in (".gd", ".tscn"):
+    if ext not in (".gd", ".tscn", ".tres"):
         return
     try:
         with open(fp, "r", encoding="utf-8", errors="ignore") as fh:
@@ -175,11 +178,11 @@ def main():
 
     stats = {"files": 0, "refs": 0}
     fallbacks = []
-    targets = [scope_abs] if scope_abs else [SRC, TEST]
+    targets = [scope_abs] if scope_abs else [SRC, TEST, ANIMATION, DATA, MODS_BUILTIN]
     for base in targets:
         for dirpath, _, files in os.walk(base):
             for f in files:
-                if f.endswith(".gd") or f.endswith(".tscn"):
+                if f.endswith((".gd", ".tscn", ".tres")):
                     process_file(os.path.join(dirpath, f), pak_idx, args.apply, stats, fallbacks)
 
     print("=" * 60)

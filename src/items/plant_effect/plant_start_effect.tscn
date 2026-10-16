@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://cernv2ifofl2k"]
 
 [ext_resource type="Script" uid="uid://bmdbvp327cg0q" path="res://src/fx/plant_effect/plant_start_effect.gd" id="1_7mymf"]
-[ext_resource type="Texture2D" uid="uid://dhawpqhvsxd83" path="res://assets/image/particles/dirtsmall.png" id="2_u0aek"]
+[ext_resource type="Texture2D" path="res://pak/images/dirtsmall.png" id="2_u0aek"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_2len5"]
 particles_animation = true

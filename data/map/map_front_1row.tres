@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bjr52bp0ry7u" path="res://data/map/map_row_data.gd" id="1_dafkd"]
 [ext_resource type="Script" uid="uid://bdkqk3y2isyir" path="res://data/map/map_data.gd" id="2_gg6a6"]
 [ext_resource type="Script" uid="uid://ssxxwnoaav3a" path="res://src/world/background/map_bg_anim_front.gd" id="3_bgfront"]
-[ext_resource type="Texture2D" uid="uid://bgv7ax50hda8y" path="res://assets/image/background/background1unsodded.jpg" id="4_unsod"]
+[ext_resource type="Texture2D" path="res://pak/images/background1unsodded.jpg" id="4_unsod"]
 [ext_resource type="Texture2D" uid="uid://gdgupvmdvt1x" path="res://assets/image/background/sod1row.png" id="5_sod"]
 [ext_resource type="PackedScene" path="res://src/world/background/main_game_bg_front_5row.tscn" id="8_bgscene"]
 

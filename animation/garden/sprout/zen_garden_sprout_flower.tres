@@ -1,9 +1,9 @@
 [gd_resource type="Animation" load_steps=5 format=3 uid="uid://f0fk32ns714k"]
 
-[ext_resource type="Texture2D" uid="uid://bilk171gldfxp" path="res://assets/reanim/PotatoMine_rock3.png" id="0_fuck"]
-[ext_resource type="Texture2D" uid="uid://bjkgc0td8i23h" path="res://assets/reanim/sprout_body.png" id="1_fuck"]
-[ext_resource type="Texture2D" uid="uid://co2k82lctyh32" path="res://assets/reanim/PotatoMine_rock1.png" id="2_fuck"]
-[ext_resource type="Texture2D" uid="uid://chxtr5qny28xw" path="res://assets/reanim/sprout_petal.png" id="3_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PotatoMine_rock3.png" id="0_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/sprout_body.png" id="1_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PotatoMine_rock1.png" id="2_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/sprout_petal.png" id="3_fuck"]
 
 [resource]
 resource_name = "ZenGarden_sprout_flower"

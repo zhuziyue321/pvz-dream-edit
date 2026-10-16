@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://src/zombiquarium/zombiquarium_manager.gd" id="1_mgr"]
-[ext_resource type="Texture2D" uid="uid://dw41vpl3xij30" path="res://assets/image/garden/aquarium1.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://pak/images/aquarium1.jpg" id="2_bg"]
 
 [node name="Zombiquarium" type="Node2D"]
 z_as_relative = false

@@ -23,8 +23,8 @@ func _export_combined_image():
 #
 #func apply_mask_and_save():
 	## 加载图片资源
-	#var base_image = load("res://assets/reanim/CrazyDave_body1.jpg")  # 被遮罩的主图
-	#var mask_image = load("res://assets/reanim/CrazyDave_body1_.png")  # 遮罩图（用R通道）
+	#var base_image = load("res://pak/reanim/CrazyDave_body1.jpg")  # 被遮罩的主图
+	#var mask_image = load("res://pak/reanim/CrazyDave_body1_.png")  # 遮罩图（用R通道）
 	#
 	## 转换为Image类型
 	#var base = base_image.get_image()

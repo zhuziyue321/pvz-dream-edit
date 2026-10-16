@@ -2,12 +2,12 @@
 
 [ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_upperbody.png" id="13_fuck"]
 [ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_neck.png" id="14_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_innerjaw.png" id="15_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_mouthglow.png" id="16_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_eyeglow.png" id="19_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_head2.png" id="21_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_antenna.png" id="22_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_outerarm_upper.png" id="30_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerjaw.png" id="15_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow.png" id="16_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_eyeglow.png" id="19_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_head2.png" id="21_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_antenna.png" id="22_fuck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_upper.png" id="30_fuck"]
 
 [resource]
 resource_name = "Zombie_boss_head_leave"

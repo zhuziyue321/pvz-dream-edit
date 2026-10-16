@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://buvouxkkc7wot"]
 
-[ext_resource type="Texture2D" uid="uid://cejtuu5a1uvft" path="res://assets/image/garden/Zen_WheelBarrow.png" id="1_e5nea"]
+[ext_resource type="Texture2D" path="res://pak/images/Zen_WheelBarrow.png" id="1_e5nea"]
 [ext_resource type="Script" uid="uid://cjkwfuxysd5ai" path="res://src/garden/item/garden_item_08_wheel_barrow.gd" id="1_r61dk"]
 [ext_resource type="Script" uid="uid://6vbmkjgmo5v0" path="res://src/garden/plant_cell_garden.gd" id="3_dmymv"]
 

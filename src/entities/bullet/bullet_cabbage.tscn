@@ -1,10 +1,10 @@
 [gd_scene load_steps=10 format=3 uid="uid://w07jl2vu12d4"]
 
 [ext_resource type="PackedScene" uid="uid://p2fwghratmjl" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_tg8in"]
-[ext_resource type="Texture2D" uid="uid://ch84133e8r30q" path="res://assets/reanim/Cabbagepult_cabbage.png" id="2_ob6g3"]
-[ext_resource type="Texture2D" uid="uid://dexaplwj5wryv" path="res://assets/image/particles/bullet/pea_splats.png" id="3_jb7sh"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Cabbagepult_cabbage.png" id="2_ob6g3"]
+[ext_resource type="Texture2D" path="res://pak/particles/pea_splats.png" id="3_jb7sh"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_u0gh7"]
-[ext_resource type="Texture2D" uid="uid://b127q3vhqs7n8" path="res://assets/image/particles/bullet/Pea_particles.png" id="4_u0gh7"]
+[ext_resource type="Texture2D" path="res://pak/particles/Pea_particles.png" id="4_u0gh7"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_o220a"]
 particles_animation = true

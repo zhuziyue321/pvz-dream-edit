@@ -1,10 +1,10 @@
 [gd_scene load_steps=11 format=3 uid="uid://brbdbxg2tocla"]
 
 [ext_resource type="Script" uid="uid://b17126kyvx43n" path="res://src/ui/main_game_ui/ui_flag_progress_bar.gd" id="1_dtp4m"]
-[ext_resource type="Texture2D" uid="uid://de2yt1rux7boj" path="res://assets/image/ui/ui_progress_bar/FlagMeterParts.png" id="1_l32th"]
-[ext_resource type="Texture2D" uid="uid://cebvui8j81gxi" path="res://assets/image/ui/ui_progress_bar/FlagMeter.png" id="2_ea7cx"]
+[ext_resource type="Texture2D" path="res://pak/images/FlagMeterParts.png" id="1_l32th"]
+[ext_resource type="Texture2D" path="res://pak/images/FlagMeter.png" id="2_ea7cx"]
 [ext_resource type="Script" uid="uid://doq1iak45j5xk" path="res://src/ui/main_game_ui/ui_flag_progress_bar_flag.gd" id="3_dtp4m"]
-[ext_resource type="Texture2D" uid="uid://dvi4pcgdfyfim" path="res://assets/image/ui/ui_progress_bar/FlagMeterLevelProgress.png" id="5_bkxnl"]
+[ext_resource type="Texture2D" path="res://pak/images/FlagMeterLevelProgress.png" id="5_bkxnl"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_42xtw"]
 atlas = ExtResource("2_ea7cx")

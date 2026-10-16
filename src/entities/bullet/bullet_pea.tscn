@@ -1,10 +1,10 @@
 [gd_scene load_steps=10 format=3 uid="uid://gncshyivuwtb"]
 
 [ext_resource type="PackedScene" uid="uid://cit8bsc5op7f0" path="res://src/entities/bullet/bullet_linear_base.tscn" id="1_hs85o"]
-[ext_resource type="Texture2D" uid="uid://c4rbih2yuv0vx" path="res://assets/image/projectile/ProjectilePea.png" id="2_0kdi0"]
+[ext_resource type="Texture2D" path="res://pak/images/ProjectilePea.png" id="2_0kdi0"]
 [ext_resource type="Script" uid="uid://b8deeas2k62vb" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_womrk"]
-[ext_resource type="Texture2D" uid="uid://dexaplwj5wryv" path="res://assets/image/particles/bullet/pea_splats.png" id="4_og4bd"]
-[ext_resource type="Texture2D" uid="uid://b127q3vhqs7n8" path="res://assets/image/particles/bullet/Pea_particles.png" id="5_jvdm4"]
+[ext_resource type="Texture2D" path="res://pak/particles/pea_splats.png" id="4_og4bd"]
+[ext_resource type="Texture2D" path="res://pak/particles/Pea_particles.png" id="5_jvdm4"]
 
 [sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_jt8vs"]
 particles_animation = true
