@@ -2,8 +2,11 @@
 ## 提交前检查（pre-commit 钩子）
 ##
 ## 拦三类**明确不该进历史**的东西（都是 V-02 自检清单里原本靠人眼看的项）：
-##   1. 危险模式：根目录以引号开头的终端产物、*.tmp、error_log.txt、
-##      package(-lock).json、debug_channel_log.txt、_import_(err|out).txt、test/_tmp_*
+##   1. 危险模式：根目录以引号开头的终端产物、根目录零散点文件（终端重定向产物的
+##      典型形态 —— **仓库自身的 `.gitignore` / `.gitattributes` / `.editorconfig`
+##      / `.gdignore` 属例外**，见下方 `KEEP_ROOT_DOTFILES` 放行名单）、*.tmp、
+##      error_log.txt、package(-lock).json、debug_channel_log.txt、_import_(err|out).txt、
+##      test/_tmp_*
 ##   2. 孤儿 .uid：暂存了 .uid，但对应的主文件既不在暂存区、也不在工作区
 ##      （Godot 编辑器删主文件后会留下这种垃圾，历史上曾一次留下 17 个）
 ##   3. 超大文件：单文件 > 5 MB（避免把素材 / 二进制误提交；确需提交用 --no-verify）
@@ -33,10 +36,16 @@ fi
 fail=0
 
 ## --- 1. 危险模式 --------------------------------------------------------------
+## 第 3 个参数是**放行名单**（ERE，可选）：命中它的暂存路径从本项检查里剔除。
+## 用途：像「根目录点文件」这种通配模式，总会误伤仓库自身必须能提交的配置文件。
 check_pattern() {
     pattern="$1"
     desc="$2"
+    allow="${3:-}"
     hits=$(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM | grep -E "$pattern" || true)
+    if [ -n "$allow" ] && [ -n "$hits" ]; then
+        hits=$(printf '%s\n' "$hits" | grep -Ev "$allow" || true)
+    fi
     if [ -n "$hits" ]; then
         echo "[pre-commit] $desc"
         printf '%s\n' "$hits" | sed 's/^/             /'
@@ -44,7 +53,11 @@ check_pattern() {
     fi
 }
 
-check_pattern "^\.[^/]*$" "不应入库：根目录零散文案（终端重定向产物的典型形态）"
+## 仓库自身已入库的根目录点文件：必须能随仓库一起改（改 .gitignore 是常规操作，
+## 2026-10-16 被本模式误拦过一次）。终端产物（`.dsh_*` 等）不在此列，仍会被拦。
+KEEP_ROOT_DOTFILES='^\.(gitignore|gitattributes|editorconfig|gdignore)$'
+
+check_pattern "^\.[^/]*$" "不应入库：根目录零散文案（终端重定向产物的典型形态）" "$KEEP_ROOT_DOTFILES"
 check_pattern "^'" "不应入库：文件名以引号开头（终端重定向产物）"
 check_pattern "\.tmp$" "不应入库：Godot 崩溃残留 *.tmp"
 check_pattern "(^|/)error_log\.txt$" "不应入库：Godot 运行日志 error_log.txt"

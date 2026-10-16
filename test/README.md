@@ -17,6 +17,7 @@
 
 - **`pre-push`**：推送前跑 `check_scripts.ps1`，不过不让推。
 - **`pre-commit`**：拦住明确不该入库的东西 —— 危险文件名（终端重定向产物 / `*.tmp` / `error_log.txt` / `package*.json` / 调试日志 / 跑批临时物）、孤儿 `.uid`、单文件 > 5 MB；一次暂存 > 30 个文件时打印提醒（不拦）。
+  「根目录零散点文件」那一项带**放行名单** —— 仓库自身的 `.gitignore` / `.gitattributes` / `.editorconfig` / `.gdignore` 不算危险文件（2026-10-16 修过一次误拦：改 `.gitignore` 反被自己挡住）。
   它**不做**「路径是否属于本次任务」的判断（钩子拿不到那个输入），那部分仍靠 V-02 人工自检。
 
 换机器 / 重克隆后重做一次：`cp test/git_hooks/pre-commit test/git_hooks/pre-push .git/hooks/`，或 `git config core.hooksPath test/git_hooks`。
