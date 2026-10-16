@@ -1,0 +1,68 @@
+# ☁️ 云端 CI：编译门禁 + 玩法探针（docs/TODO清单.md 的 H-11）
+#
+# 为什么要有它：硬约束 §1-7 要求「交付前跑一次编译门禁」，但此前唯一的保障是本机
+# `.git/hooks/pre-push`（H-01）—— 换机器 / 没复制钩子 / `--no-verify` 就没了保障。
+# `test/README.md` 更正过一条旧结论：本仓 `assets/` **在版本控制内**
+# （`git ls-files assets` = 5339），所以云端 checkout 之后资源是齐的，CI 技术上可行。
+#
+# 它证明什么：每个脚本都能编译（`check_scripts.ps1`）+ 选定的行为探针仍然 PASS。
+# 它**不**证明什么：能玩。编译门禁自己写明抓不到「基类上不存在的方法」与分析类告警；
+# 探针只覆盖它断言过的东西（规范细则存档 E-02）。画风 / 手感 / 时序仍要人开窗口看。
+#
+# ⚠️ 本文件**尚未在 GitHub runner 上实跑过**（本地无法验证 runner 环境）：
+#    · 引擎下载地址与压缩包内的 exe 名按 Godot 4.x 官方 release 的惯例写；
+#      换版本时改 GODOT_VERSION 即可，找不到 exe 时下个 step 会明确报错而不是静默假绿。
+#    · 探针只跑**快子集**（`probe_init` + `probe_gameplay_core`），因为全量 118 条
+#      单条最长 180s，批量耗时未实测过；测出预算后再把 FILTER 放宽（或拆成 nightly job）。
+#    · 首次推送后请按下面「验证方法」确认，再摘掉本条警告。
+#
+# 验证方法（第一次推上去后）：
+#   1. Actions 页面看 `gate` job 两个 step 都绿；
+#   2. 故意把某个 `.gd` 改成语法错误推一次 —— 编译门禁那步必须变红；
+#   3. 本地对照跑：`powershell -File test/run_all_scenarios.ps1 -Filter 'probe_init,probe_gameplay_core'`
+#      应与 runner 上同样的 PASS 集合一致。
+
+name: gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  ## 唯一口径 = project.godot 的 config/features（本机引擎实测 4.6.2-stable）
+  GODOT_VERSION: 4.6.2-stable
+  ## 探针子集：逗号分隔，不带 .gd（见 test/run_all_scenarios.ps1 -Filter）
+  PROBE_FILTER: probe_init,probe_gameplay_core
+
+jobs:
+  gate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Godot ${{ env.GODOT_VERSION }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = "https://github.com/godotengine/godot/releases/download/$env:GODOT_VERSION/Godot_v$env:GODOT_VERSION-win64.exe.zip"
+          Write-Host "downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile godot.zip
+          Expand-Archive -Path godot.zip -DestinationPath godot -Force
+          # 压缩包里除主 exe 外还有 *_console.exe，别把控制台版当引擎传下去
+          $exe = Get-ChildItem -Path godot -Filter 'Godot*.exe' -Recurse |
+                 Where-Object { $_.Name -notlike '*console*' } | Select-Object -First 1
+          if (-not $exe) { throw "no Godot exe found in the archive" }
+          "GODOT_EXE=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          & $exe.FullName --version
+
+      - name: Compile gate (test/check_scripts.ps1)
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File test/check_scripts.ps1 -Godot "$env:GODOT_EXE"
+
+      - name: Behaviour probes (fast subset)
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 `
+            -Filter "$env:PROBE_FILTER" -Godot "$env:GODOT_EXE"
