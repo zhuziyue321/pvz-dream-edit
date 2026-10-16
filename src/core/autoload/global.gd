@@ -2,6 +2,12 @@ extends Node
 
 ## 约定：业务/UI 只通过本脚本暴露的引用访问（如 `Global.user_manager`、`Global.save_service`、`Global.config_service`），
 ## 不要直接 `get_node` / `%` 访问 Global 场景里的子节点，避免绕过门面、破坏初始化顺序假设。
+##
+## **字段边界约定（U-32）**：本单例只放「跨局持久状态 + 注册表/服务引用」。
+## 凡「这一局」的运行期对象（关卡参数、本局倍速、当前对局上下文）一律从
+## `GameContext.curr_main_game` 取，不要在本文件新增「本局」字段。
+## 存量本局字段（见下方 `game_para` / `time_scale`）标记「@本局」并给出迁移去向，
+## 新代码调用它们前先确认是否应改走 `GameContext`。
 
 ## 全局注册表（Character/MainScene/Bullet/Item registry）
 # 这里提供便捷的 registry 引用给全局使用者
@@ -54,9 +60,11 @@ func reload_session_for_current_user() -> void:
 ##
 ## 现在一律走 `GameContext`，或在角色 / 子弹 / 组件里用各自的 `get_main_game()`。
 
+## @本局（U-32）：当前关卡运行期参数，应迁到 `GameContext.curr_main_game`；新代码勿从 Global 取
 var game_para:ResourceLevelData
 
 ## 游戏倍速
+## @本局（U-32）：本局倍速，应迁到 `GameContext`；跨局无此语义，新代码勿从 Global 取
 var time_scale := 1.0
 
 

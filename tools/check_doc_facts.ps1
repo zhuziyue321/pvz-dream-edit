@@ -13,7 +13,11 @@
            a file is actually TRACKED by git (ignored ones are fine on disk);
         B. the autoload count in project.godot vs what AGENTS.md / 架构总览.md claim;
         C. scale numbers (script / doc / scenario counts) vs what the docs claim;
-        D. .md links between the top-level docs (broken links are a doc drift too).
+        D. .md links between the top-level docs (broken links are a doc drift too);
+        E. the "assets/ is not in version control" claim vs `git ls-files assets`
+           (2026-10-16, TODO H-12: three top-level docs claimed assets/ was not in
+           git while thousands of asset files were tracked, and this script - which
+           was written to catch exactly this class of drift - did not cover it).
 
     Design rule: a pattern that no longer matches the doc is reported as SKIP,
     NOT as a failure - doc wording changes are allowed (see E-08). Only a
@@ -89,6 +93,34 @@ foreach ($f in $leftoverPatterns) {
         Write-Host ("[doc-facts] OK   leftover on disk but ignored: {0}" -f $f)
     }
 }
+
+# --- A2. assets-in-version-control claim --------------------------------------
+## Deliberately limited to the top-level docs: the work records under docs/ are
+## records of what was true at the time, not claims about the tree today.
+## NOTE on encoding: this script is saved as UTF-8 *with BOM*, so PowerShell 5.1
+## reads it correctly even though it already contains Chinese file names (e.g.
+## 架构总览.md) elsewhere. The \uXXXX escapes below are therefore optional - kept
+## only so the regex reads cleanly next to its English `what` label. (Correcting
+## my earlier wrong note that this file had to be ASCII-only.)
+$assetsActual = @(git -c core.quotepath=false ls-files -- assets 2>$null).Count
+$staleClaims = @(
+    @{ re = '\u4e0d\u5165\s*git';       what = 'not in git' },          # 不入 git
+    @{ re = '\u81ea\u884c\u51c6\u5907'; what = 'prepare it yourself' }  # 自行准备
+)
+foreach ($doc in @('AGENTS.md', 'README.md', '架构总览.md')) {
+    if (-not (Test-Path -LiteralPath $doc)) { continue }
+    $script:checks++
+    $text = Get-Content -LiteralPath $doc -Raw -Encoding UTF8
+    $bad = @($staleClaims | Where-Object { $text -match $_.re })
+    if ($bad.Count -gt 0) {
+        $script:problems++
+        Write-Host ('[doc-facts] FAIL {0} still claims assets/ is {1}' -f $doc, (($bad | ForEach-Object { $_.what }) -join ', ')) -ForegroundColor Red
+    } elseif ($ShowOk) {
+        Write-Host ('[doc-facts] OK   assets claim in {0}' -f $doc)
+    }
+}
+$v = DocNumber 'AGENTS.md' '`git ls-files assets`\s*=\s*(\d+)'
+if ($null -eq $v) { Skip 'AGENTS.md assets count' 'pattern not found' } else { Report 'AGENTS.md assets count' $v $assetsActual }
 
 # --- B. autoload count --------------------------------------------------------
 $autoloadActual = @(Get-Content -LiteralPath 'project.godot' -Encoding UTF8 |

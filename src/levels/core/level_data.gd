@@ -20,8 +20,13 @@ var level_id: String = "test"
 var save_game_name: String
 ## 存档键：显式写死后就不再依赖选关场景的遍历顺序（旧版由 set_choose_level 现场拼出）
 ## 留空 = 回退到旧的自动拼法 str(game_mode)_str(level_page)_str(level_id)，所以 V1 关卡不用改
-## 迁移方式：按当前运行时逻辑把值**反算出来写死**进 .tres —— 值一模一样，玩家的存档一个都不会丢
-## （见 test/scenarios/tool_migrate_save_key.gd）
+## 迁移方式：**读权威值再写死**（不要推算 —— level_id 来自选关场景遍历按钮的顺序）：
+##   `test/scenarios/tool_dump_save_keys.gd`（只读，跑一遍 4 个选关场景 dump 出权威键）
+##   → `test/scenarios/tool_write_save_keys.gd`（写入）
+##   → `test/scenarios/probe_save_key.gd`（**另起一个进程**回读校验，同进程内关卡资源被选关场景引用、缓存顶不掉）
+## ⚠️ 2026-10-16 核实：写入工具当前仍面向 `.tres` 关卡，而关卡 V2 已改成 `.gd`（`src/levels/` 下 `.tres` 实测 = 0），
+##   迁移前要先把写入目标改成 `.gd` 里 `save_key = "..."` 那一行（见 docs/TODO清单.md 的 U-22）。
+## ⚠️ 只补 `save_key`，**不要**顺手把 `format_version` 改成 2 —— 那是「字段怎么读」的开关，属行为变更。
 @export var save_key: String = ""
 
 ## 初始化选关数据

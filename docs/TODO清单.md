@@ -3,7 +3,7 @@
 # TODO 清单
 
 > **[面向 AI Agent]** ｜ **触发条件**：被安排做清理 / 还债类任务；想找「还能做什么」；有人问「仓库里还剩哪些待办」；删代码前判断某条 TODO 是不是垃圾
-> **读完你能**：① 列出当前仓库全部 `TODO` 注释（2 条，§2）及其精确位置；② 列出当前「不统一实现 / 逻辑不全 / 可优化」的架构债（**22 条**：U 系列 13 + L 系列 8 + O 系列 1，见 §3；U-01~U-13 已于 2026-10-11 销项，见 §4）；③ 知道 **H 系列（仓库卫生与工程流程）H-01 ~ H-09 已于 2026-10-16 全部销项**（逐条处置见 §4；新条目从 `H-10` 起编号）；④ 判断某条 TODO 是「有效待办」还是「可删的痕迹」；⑤ 知道新增 / 销项一条时改哪里
+> **读完你能**：① 列出当前仓库全部 `TODO` 注释（2 条，§2）及其精确位置；② 列出当前「不统一实现 / 逻辑不全 / 可优化」的架构债（**23 条**：U 系列 14 + L 系列 8 + O 系列 1，见 §3；U-01~U-13 已于 2026-10-11 销项，见 §4）；③ 知道 **H 系列（仓库卫生与工程流程）H-01 ~ H-09 已于 2026-10-16 全部销项**（逐条处置见 §4），以及 **H-10 ~ H-15（2026-10-16 工程体检新增）** 的方向与前置条件；④ 判断某条 TODO 是「有效待办」还是「可删的痕迹」；⑤ 知道新增 / 销项一条时改哪里；⑥ 知道本轮整改的**分批顺序**与每批的验收口径（§6）
 > **强制级别**：**参考**（本文件只是一张清单，不是硬约束） ｜ **不读的风险**：把「本实现与原版的差异线索」当垃圾注释删掉；或重复实现已经在某处 TODO 里记过的东西
 > **关联**：[项目规范.md](项目规范.md) · [参考存档/未使用代码与资源清单.md](参考存档/未使用代码与资源清单.md) · [../架构总览.md](../架构总览.md)（§12 技术债清单）
 
@@ -52,10 +52,11 @@
 > 档位 = 风险（**A** 会致数据/行为不一致 · **B** 违反硬约束或架构主线 · **C** 命名与表达 / 参考级）。
 > 编号：`U-` = 不统一 / 重复实现，`L-` = 逻辑不全 / 未接线，`O-` = 可优化（性能）。
 
-### 3.1 U 系列：不统一实现 / 重复实现（U-14 ~ U-31，现存 13 条；U-19 / U-21 / U-28 / U-29 / U-30 已销项）
+### 3.1 U 系列：不统一实现 / 重复实现（U-14 ~ U-32，现存 14 条；U-19 / U-21 / U-28 / U-29 / U-30 已销项）
 
 > 来源：2026-10-11 第二轮全仓扫描（U-01 ~ U-13 已销项，去向见 §4）。
 > **U-31 来自 2026-10-13 亡语专项复核**（`character_base.gd` 的 `death_language()` 链 + 6 个重写点全量核对）。
+> **U-32 来自 2026-10-16 工程体检**（`Global.` 引用面实测，口径 = `src/**/*.gd` 文件数）。
 
 | 编号 | 档 | 位置 / 范围 | 不统一的现象 | 处理建议 |
 | --- | --- | --- | --- | --- |
@@ -65,13 +66,14 @@
 | **U-17** | C | `components/zamboni/zamboni_death_bomb.gd:24-33` vs `components/zombie_death_bomb/zombie_death_bomb.gd:8-16` | 两份「死亡爆炸」：`activate_it()` 逐行相同（`reparent(get_sibling_layer())` → 两个 `GPUParticles2D.emitting = true` → `await finished` → `queue_free()`），仅 Zamboni 多一个 `explode()`；**且 Zamboni 只 `await gpu_particles_2d.finished`、漏了 `_2`**（Zombie 版 await 两个）→ 提前 `queue_free()` 会截断第二个粒子的尾巴 | 合并为一份，炸飞做可选开关；补上第二个 `await`。**2026-10-11 已补第二个 `await`**（已核实 `zombie_death_bomb.tscn` 里两个粒子都是 `one_shot = true` / `lifetime = 0.6`，`finished` 必来）。**合并未做** —— 没有 `zamboni_death_bomb.tscn`，两个脚本都挂在 `zombie_death_bomb.tscn` 的实例上由 `zombie_zamboni.tscn` / `zombie_catapult.tscn` 覆写脚本，改成继承要动 `.tscn` 里的脚本覆盖，且 `explode()` 依赖 `$Body`（需确认场景里有没有这个子节点），要开游戏确认 |
 | **U-18** | B | `components/swim_box_component/component_swim_box.gd:1` | 放在 `components/` 下却是 `extends Node2D`（不继承 `ComponentNormBase`）—— **U-05 的漏网之鱼**（当时只清了 `drop_body/` `jackson/`）。同文件 `appear_splash()` / `appear_splash_special_pos()` 整段复制，只差一个取位节点 | 接不接入二选一，并在文件头写清理由（照 U-05 的先例）；两个水花函数抽公共 `appear_splash_at(pos_node)`。**2026-10-11：水花已抽公共 `appear_splash_at(pos_node)`（等价改写）；接入与否的理由已写进文件头** —— 关键更正：`ComponentNormBase` 自己就是 `extends Node2D`，所以「因为要 Node2D 才不能接入」这个理由**不成立**，真正的差别只有启用/禁用框架；是否接入属行为变更（走 `component_ready()` + 各路启用因素后，场景连的信号回调还在不在要重判），需开游戏确认 |
 | **U-20** | A | `src/levels/core/level_data.gd:35` ↔ `src/core/autoload/global_game_state.gd:129-134` | 存档键**两套推导并存**：正推是 `str(game_mode)+"_"+str(level_page)+"_"+str(level_id)`（`level_id` 默认 `"test"`，`level_data.gd:18`），反推却硬编码 `"%d_%d_%04d"` 并 `int(parts[2])`。`level_id` 不是 4 位数字时两条路对不上 → 进度写进去读不出来 | 收敛成一组 `make_save_key()` / `parse_save_key()` 静态函数 + 一个格式常量，两边共用 |
-| **U-22** | A | `src/levels/mode_*` | `save_key` 覆盖率**严重不齐**：`mode_minigame` 20/20、`mode_puzzle` 20/20、`mode_adventure` **4/54**（只有 `adventure_01_01~01_04`）、`mode_survival` **0/15**。其余关卡全靠 `save_key == ""` 时回退旧拼法（`level_data.gd:24`），而旧拼法依赖 `level_id` 在选关页里按按钮顺序发放 —— 顺序一变就整体错位 | 用 `test/scenarios/tool_migrate_save_key.gd` 批量补齐写死，一次性解掉「存档键依赖选关顺序」这颗雷 |
+| **U-22** | A | `src/levels/mode_*` | `save_key` 覆盖率**严重不齐**（**2026-10-16 重测**，口径 = 该模式目录下含 `save_key =` 的 `.gd` 文件数 / 该目录 `.gd` 文件数）：`mode_minigame` 20/25、`mode_puzzle` 20/20、`mode_adventure` **4/54**（只有 `adventure_01_01~01_04`）、`mode_survival` **0/15**。其余关卡全靠 `save_key == ""` 时回退旧拼法（`level_data.gd:35-36`），而旧拼法依赖 `level_id` 在选关页里按按钮顺序发放 —— 顺序一变就整体错位。<br>⚠️ **迁移工具链已过时**（2026-10-16 核实）：本行原指 `test/scenarios/tool_migrate_save_key.gd`，该文件**不存在**；现役两个工具是 `tool_dump_save_keys.gd`（只读，读权威值）与 `tool_write_save_keys.gd`（写入），但**两者都面向 `.tres` 关卡**（`tool_write_save_keys.gd:68` 写 `resource_path` 的 `.tres`），而 `src/levels/` 下实测 `.tres` 数 = **0**（关卡 V2 已全部改成 `.gd` + `_init()` 赋值）。 | 先**修工具**再迁：① 把 `tool_write_save_keys.gd` 的写入目标改成「`.gd` 里 `save_key = "..."` 那一行」（文本级替换，不是重存资源）；② 用 `tool_dump_save_keys` 从 4 个选关场景读权威值（**不要推算**，见该文件头）；③ 补齐后跑 `probe_save_key` 回读校验（**必须另起进程**，同进程内关卡资源被选关场景引用、缓存顶不掉）；④ **只补 `save_key`，`format_version` 不要顺手改成 2** —— 那是「字段怎么读」的开关，属行为变更，要单独评测 |
 | **U-23** | C | `src/levels/mode_survival/`（15 关） | 同一模式里场景设置**三套写法**：04/09/14 用 `scene_name = SceneSettingRegistry.SCENE_FOG`；泳池/屋顶/夜晚 9 关用旧字段 `game_BG + game_BGM`；01/06/11 三关**什么都没配**（`survival_flag_01_day.gd` 连 `_init()` 都没有） | 15 关统一改 `scene_name`（`apply_scene_setting()` 已支持覆盖），清掉手写 `game_BG` / `game_BGM` |
 | **U-24** | C | `src/menus/start_menu/start_menu_option_dialog.gd:20-25,29-41` ↔ `src/ui/ui_main_game_menu/main_game_menu_option_dialog.gd:35-40,51-68` | 两个选项面板**逐行重复**：`music_sound_signal()` 一字不差，`appear_menu()` / `return_button_pressed()` 各写一份；灰色常量 `Color(0.687,0.687,0.687,1.0)` 在 `start_menu_root.gd:10` 与 `main_game_menu_option_dialog.gd:17` 各抄一遍，注释里还互相引用对方 | 抽 `OptionDialogBase`；灰色常量提到 `src/core/consts/` |
 | **U-25** | A | `src/ui/card/card_slot/card_slot_norm/card_slot_battle.gd:15-18,26` ↔ `src/levels/mode_minigame/minigame_03_slot_machine_ui.gd:56,77,203,219` | 老虎机关**两本阳光账**：卡槽 `sun_value`(:26) 与老虎机 UI `_sun_value`(:77) **同时订阅 `ADD_SUN_VALUE`**，收阳光两边各加一遍；花钱只扣 UI 那份（:219），卡槽那份不扣 | 老虎机直接读写 `CardSlotController` 的阳光，删掉本地 `_sun_value` |
 | **U-26** | C | `src/zombiquarium/zombiquarium_manager.gd:167-183`（`:209` 也是） | 同一个 getter 里两套阳光来源：`_card_slot_battle.sun_value`（挂主游戏）vs `_local_sun`（独立预览），花 / 赚各走一条 if 分支，口径会漂移 | 独立预览时也挂一份 wallet 适配器，删掉 `_local_sun` 分支 |
 | **U-27** | C | `src/items/drop_body/zombie_arm1_drop.gd` ↔ `src/items/drop_body/zombie_hand_drop.gd` | 两个文件**逐字相同**（`x_v = randf_range(-15, 15)` / `velocity = Vector2(x_v, 0)` / 同一行注释掉的 `#rotation_speed=randf_range(1.3,2.1)`），复制粘贴产物 | 合并成一个脚本，另一处改参数或改名引用。**2026-10-11 复核后判定「不做」**：两个脚本内容相同但挂在不同节点上（各自的贴图/动画在场景里），合并要改 8 个 `.tscn` 的 `ext_resource` **uid + path 成对替换**（`arm1` = `uid://cj4hccewpwgyv`、`hand` = `uid://33sxeu6n870x`），其中 `zombie_paper` / `zombie_ladder` / `zombie_football` / `zombie_digger` 4 个场景**同时引用了两个脚本**。改错 uid 就是僵尸场景**静默丢脚本**，收益（少 10 行重复）< 风险，留作参考 |
 | **U-31** | B | `character_base.gd:245-256`（亡语链）+ 6 个重写点：`plant_cherry_bomb.gd:7` / `plant_jalapeno.gd:7` / `plant_ice_shroom.gd:7` / `plant_doom_shroom.gd:12` / `plant_potato_mine.gd:40` / `zombie_bobsled.gd:64` | 「死亡时效果」散在 6 个角色子类里各写一份：5 个植物是**逐字相同**的 `bomb_component.judge_death_bomb()`，雪橇僵尸是散架放 4 个兵。基类 `death_language()` 是空钩子且**没有「已触发过」的记录** —— 幂等各靠各的（植物侧靠 `BombComponentBase.is_bomb`、僵王侧 `zb_base.gd:124` 靠 `is_death`）。效果逻辑没进组件，违反「角色 = base + 若干组件」的架构主线 | 让 `BombComponentBase` 自己订阅宿主死亡（`component_bomb_base.gd` 已有 `is_auto_bomb_in_death` 开关），子类只留「死了要不要补爆」的导出项；僵尸侧散架同样下沉成组件，或至少在基类补一个 `is_death_language_done` 幂等位 |
+| **U-32** | C | `src/**/*.gd`（**110 个文件**引用 `Global.`，2026-10-16 实测口径：`Get-ChildItem src -Recurse -Filter *.gd` 中内容命中 `\bGlobal\.` 的文件数） | `Global` 是**唯一**没有边界的单例：跨局持久状态（存档 / 用户 / 配置）与「这一局」的运行期对象（`game_para` / 各类 manager / registry）都从这里取。U-01 已把「当前这一局」的真相源迁到 `GameContext.curr_main_game`（473 处），但 `Global` 一侧**没有配套划边界** —— 于是同一个语义又有两条入口，且新代码默认还是写 `Global.` | 给 `Global` 定一条可判定的边界：**只放跨局持久状态 + 注册表引用**；凡「这一局」的对象一律从 `GameContext` 取。落地方式：① 先列出 `Global` 现有字段并逐个归类（持久 / 本局）；② 本局类字段标记 `@deprecated` 注释并给出 `GameContext` 对应写法；③ 新字段评审时按此判定。**不建议**一次性大改（473 处已有先例，得再开一轮） |
 
 
 > U-30 剩余部分（`zombie_boss/doctor/` 与 `zombie_boss/zb_doctor_objects/` 目录前缀不一致）判定**不动**：纯可读性收益、改动面是文件名与 100+ 处引用，与 U-11 的前缀缩写同一处理，留作参考。
@@ -127,7 +129,78 @@
 
 **当时的处置顺序（据档位与损失风险）**：H-02（先落盘）→ H-01（补门禁）→ H-08（红探针）→ H-06（清垃圾）→ H-03 / H-04 / H-07（文档对账）。**已全部完成，逐条见 §4**。
 
+### 3.5 H 系列（续）：H-10 ~ H-15（2026-10-16 工程体检新增）
+
+> 来源：2026-10-16 一次「项目优缺点体检」——按「架构一致性 / 文档 / 自动化测试 / 内容扩展成本 / 工程流程」五个维度实测，
+> **只登记新发现的缺口**；已登记过的（L-12~L-15、U-22、U-31、§12.3 第 9 / 15 项）不重复开条，只在 §6 排批次。
+> 格式同 H 系列：**同时写「文档怎么说」与「实测是多少」**，口径一律可复现命令。
+> **与 H-01~H-09 的区别**：那 9 条是「仓库卫生」（脏文件 / 数字漂移 / CI 缺位）；这 6 条是**防线与流程强度**（能证明什么、改起来多贵）。
+>
+> **2026-10-16 当日销项 4 条**：H-10（玩法链路探针）/ H-12（assets 口径 + 检查器新增断言 + 断链）/ H-13（E-09 提交粒度）/ H-15（工作记录主题入口）已做，逐条处置见 §4。
+> 本节**只剩 2 条未完成**：H-11（CI 已写未在 runner 验证）/ H-14（接线检查器未写）。按 §5 约定，销项即从本表移走，不留已完成条目。
+
+| 编号 | 档 | 文档怎么说 | 实测是多少 | 方向（含前置条件） |
+| --- | -- | --- | --- | --- |
+| **H-11** | B | 硬约束 §1-7 要求交付前跑门禁；`test/README.md` 说「只做本地钩子（更快、无需 runner）」 | `Test-Path .github` 原为 **False**（无云端 CI）；`git ls-files assets` = **5339**（素材在版本控制内）→ H-01 已更正「assets 不入库所以跑不了 CI」的旧结论，**云端 CI 技术上可行**，当前只是没做 | **已落地一半**（2026-10-16）：新增 `.github/workflows/ci.yml`（编译门禁 + 快子集探针 `probe_init,probe_gameplay_core`；引擎按 `GODOT_VERSION` 从官方 release 下载，找不到 exe 直接抛错而不是静默假绿）。**⚠️ 未完成**：该文件**尚未在 GitHub runner 上实跑过**（本地无法验证 runner 环境）。首推后按文件头「验证方法」三步确认（① 两个 step 全绿；② 故意改坏一个 `.gd` 必须让门禁变红；③ 与本地同 filter 的跑批结果一致），确认后再摘掉文件头警告 + 把本条销项。本地 `pre-push` 保留做快反馈 |
+| **H-14** | B | `架构总览.md` §14 列了「新增一个 X 要动哪几处」（植物 7 处 / 僵尸 5 处 / 关卡 4 处）；`levels/` 走 `LevelRegistry`（`src/levels/AGENTS.md`） | ① 选关页**仍是硬引用**：4 个选关页 ~105 条 `.tscn` 按钮引用，`LevelRegistry` 只做了「登记 + 名字校验」，未驱动生成（§12.3 第 9 项）；② `save_key` 覆盖不齐（U-22 重测：adventure 4/54、survival 0/15、minigame 20/25）；③ **漏登记的兜底只有评审** —— §14 是一张**人读的表**，没有任何检查器证明「新单位 7 处都登记了」 | **① 已完成（2026-10-16）**：`tools/check_content_wiring.ps1` 已写，遍历 `PlantIds.ALL` / `ZombieIds.ALL` 校验「注册表数值表有条目 + 场景 preload 文件存在」，缺一项即 exit 1（192 项校验 `result=PASS`）；**注入验证**：把 `plant_pea_shooter_single.tscn` 改名 → 报 `FAIL plant PEA_SHOOTER_SINGLE: scene missing`，改动已还原（`git status` 干净）。已知例外：植物 `WATER_BOWL`（运行期由模组注入的空槽位，故意不在数值表，脚本里显式放行）；僵尸 42 个 ALL id 全部在 `ZOMBIE_INFO` 中。⚠️ 原方向里的「**动画目录存在**」本次**未做** —— 动画目录命名与 id 非简单对应（`puff_shroom` → `plant_puff.tscn`），需先确认约定再补，避免写出假绿检查（H-09 教训）；② 选关页注册表化（视觉配置要靠开窗口比对，单开一轮，**未做**）；③ `save_key` 补齐归 U-22（**未做**） |
+
+
 ---
+
+### 3.6 本轮（2026-10-16 后续）项目优缺点综合体检
+
+> 来源：2026-10-16 一次「项目优缺点」定向体检 —— 基于 AGENTS.md / 项目规范.md / 本清单 / 编译门禁脚本，
+> 并抽样 `src/entities/character/components/component_move.gd` 与 `src/entities/character/character_base.gd` 实测。
+> 与 H-10~H-15 的区别：那 6 条是「防线与流程强度」；本条是「优缺点的整体结论 + 落档」，
+> **优点确认已落地、缺点与既有 U/L/H 条目交叉引用**，不重复开条（仅新增 H-16 一条检查器缺口）。
+
+**总体判断**：架构主线与治理成熟度在同类项目中属上游；主要短板不在「设计」而在
+「设计 → 代码的执行一致性」与「少数 A 档玩法债的落地」。
+
+| 维度 | 结论 | 对应条目（已在清单内） |
+| --- | --- | --- |
+| 优点：架构落地 | 数据驱动 + 组件化真正落地，组件职责边界清晰（如 `component_move.gd` 的 `E_MoveFactor` 因素开关） | — |
+| 优点：文档体系 | 225+ md 带「面向 AI Agent」元信息头，路由表可机读 | H-03 / H-04 / H-12（已销项，口径已对账） |
+| 优点：工程纪律 | 两道编译门禁 + pre-push + doc_facts + content_wiring 检查器 | H-01 / H-09 / H-14①（已销项 / 部分） |
+| 优点：债透明 | 每条带档位 / 文件:行号 / 分批顺序 | 全文 |
+| 缺点：规范-代码漂移 | 组件仍拼宿主相对路径，硬约束 §1-2 在代码中被绕过，门禁抓不到 | **U-14**（复核：2026-10-16 后续抽样 `component_move.gd:8` 仍 `get_node_or_null("../Body/BodyCorrect/_ground")`，`host_node_of()` 全仓 0 使用） |
+| 缺点：A 档玩法债 | 亡语链靠时序侥幸兜着 | **L-12 / L-13 / L-14 / U-31**（批次 3，⬜ 未开始） |
+| 缺点：存档键 | 覆盖不齐 + 迁移工具已失效 | **U-20 / U-22**（批次 4，⬜ 未开始） |
+| 缺点：单例边界 | `Global.` 混用跨局 / 本局，无划界 | **U-32**（批次 5，参考级） |
+| 缺点：重复实现 | 死亡爆炸 / 速度同步 / 选项面板 / 老虎机阳光账 | **U-16 / U-17 / U-24 / U-25**（批次 5，参考级） |
+| 缺点：防线窄 | 118 探针仅 `probe_gameplay_core` 证明「打起来了」；选关页仍硬引用 | **H-10（已做）/ H-14②③（未做）** |
+| 缺点：文档即负担 | 文档与代码双向漂移仍在发生 | H-03 / H-04 / H-12（已对账，但需持续维护） |
+
+**本次新发现缺口（新增条目）**
+
+| 编号 | 档 | 文档怎么说 | 实测是多少 | 方向 |
+| --- | -- | --- | --- | --- |
+| **H-16** | B | 硬约束 §1-2 要求组件只经 `owner` / 信号 / 配置通信；U-14 已记「组件拼 `$"../X"`」 | 抽样 `component_move.gd:8` 仍 `get_node_or_null("../Body/BodyCorrect/_ground")`；`host_node_of()` 全仓 0 使用；`check_content_wiring.ps1` / `check_scripts.ps1` 均**不检查**此类「组件内硬编码宿主相对路径」 | 新增 `tools/check_component_wiring.ps1`：扫 `components/` 下 `.gd`，命中 `get_node_or_null("../` / `$"../` / `owner.get_node` 即 exit 1（命中即在 `host_node_of` 白名单外的报红）；先把现有违规列出来，再逐条改走 `host_node_of()`。⚠️ 落地 `host_node_of()` 属行为变更，须开游戏实测（U-14 复核已注明），不在检查器本身范围内 |
+
+**依次修复优先级（整合项目原 §6 批次 + 本次强调）**
+
+| 顺序 | 条目 | 备注 |
+| --- | --- | --- |
+| 1 | **L-12** | 小改：基类 `character_death_disappear()` 置 `is_can_death_language = false`；改完跑编译门禁 + `probe_gameplay_core`，**需开游戏人工回归**（读档清理 / 手套兜底 / 樱桃自爆） |
+| 2 | **H-16 检查器** | 先写静态检查器把违规暴露出来（不自动改代码），低风险 |
+| 3 | **U-32** | 给 `Global` 加边界注释 + 字段分类（只加注释，低风险） |
+| 4 | **L-13 / L-14 / U-31** | 亡语链其余，需设计决策 + 开游戏实测 |
+| 5 | **U-22 / U-20** | 修工具 + 补 `save_key` + 收敛存档键推导，数据风险高，需另起进程回读 |
+| 6 | **U-14 / U-16 / U-17 / U-24 / U-25 / H-14②③** | 参考级，按收益 / 风险逐条评估，多数需开游戏 |
+
+> 说明：当前为无头环境，可机械验证的是「编译门禁 PASS + 无头探针 PASS（若适用）」；
+> 凡涉及角色 / 死亡 / 存档 / 组件通信的改动，文档均要求开真实游戏实测（V-01 例外写法：附人工验证方法）。
+> 因此「依次修复」在无头环境下只能交付到「编译 + 无头探针通过 + 代码注释标注需实测」，完整验证需人工开游戏。
+
+### 本轮（2026-10-16 后续）已执行（低风险可机械验证三项）
+
+| 条目 | 状态 | 验证方式 |
+| --- | --- | --- |
+| **L-12** | ✅ 代码已改：基类 `character_death_disappear()` 置 `is_can_death_language = false`（`src/entities/character/character_base.gd:351`）；僵尸自身版本已含该开关、未动 | 编译门禁 PASS（`real compile errors = 0`，scenarios 119 PASS）；**⚠️ 行为变更，需开游戏实测**（爆炸植物自爆亡语 / 读档清理 `plant_cell.gd` / 手套兜底 `hand_component_glove.gd`），验证方法见代码注释 |
+| **U-32** | ✅ 已完成：Global 顶部补「字段边界约定」+ `game_para` / `time_scale` 标 `@本局` 并给出 `GameContext` 迁移去向（纯注释，零行为变更） | 编译门禁 PASS；文档与代码同步 |
+| **H-16** | ✅ 检查器已写：`tools/check_component_wiring.ps1`（默认报告模式 exit 0，`-Strict` 可接门禁 exit 1）；首跑暴露 **14 处**违规（对应 U-14 / U-15 全部存量：`component_move.gd:8`、`component_anim_norm.gd:25`、`component_attack_bullet_base.gd:5`、`bullet_movement_track.gd:5`、`component_armor_plant_head.gd:13`、`component_zombie_plant.gd:43` 等） | 运行验证：插入 `get_node_or_null("../Foo")` 必出现一条 VIOLATION（自证拦得住）；exit 0 报告模式符合「先暴露后严格」路线 |
+
+> 待办（留待开游戏环境 / 后续轮次）：① L-12 的游戏实测回归；② H-16 暴露的 14 处违规逐条改走 `host_node_of()`（每条属行为变更，需开游戏）；③ §3.6 批次 4~6 的 A 档玩法债（L-13 / L-14 / U-31 亡语链、U-20 / U-22 存档键、U-14 落地、U-16 / U-17 / U-24 / U-25 重复实现、H-14②③）按原 §6 分批顺序推进；④ H-16 待违规清空后再传 `-Strict` 接入 `check_scripts.ps1` / pre-push。
 
 ## 4. 已销项的历史 TODO（不要按旧文档去找）
 
@@ -178,6 +251,10 @@
 | **H-07** Godot 版本口径不一 | `project.godot` 4.6 / README 4.5.1 / 测试脚本 4.6.2 | 已做：**以 `project.godot` 的 `config/features`（`"4.6"`）为唯一口径**，README 与架构总览照此改写。**顺带修掉一个真问题**：`run_autopilot.ps1` 的默认引擎路径指向**不存在**的 `Godot_v4.6.2-stable_win64.exe`（`check_scripts.ps1` 早已改成 `godot.exe`），已统一为同一份并补「找不到引擎即 `exit 2`」，不再静默假绿 |
 | **H-08** 两条红探针长期挂账 | `probe_bullet_camp` / `probe_plant` | 已做：① `probe_bullet_camp` 经运行期取证判定**错在探针**（期望值误用已废弃的 layer 11 = 1024），改为 `256 + 512` 并写明数字口径 → `result=PASS failed=0`；② `probe_plant` 的种植环节**带窗口也失效**（合成 `Input.parse_input_event` 的限制，非游戏 bug），改为按可靠的坐标换算判 `result=PASS`，种植单独记 `plant_result=SKIP`。同步修正 `架构总览.md` §11.3 原先「差的那一位是 1024 层（植物层）」的错误结论。**附带踩坑**：跑批前若有残留 Godot 进程，会读到陈旧输出、表现为「传 A 却跑了 B」的假象 —— **先杀进程再跑** |
 | **H-09** 文档事实没有自动比对 | 文档里的规模数字与「已删 / 不存在」类断言全靠人肉体检 | 已做（2026-10-16）：新增 `tools/check_doc_facts.ps1` —— 按**已入库文件**口径把文档声称的数字与实测对账（autoload 数、`src/` `data/` `docs/` `test/` 的计数、架构总览 §15 表、`docs/README` 份数），并校验顶层文档之间的 `.md` 链接；有差异即 exit 1。**首跑就抓出 4 处真实漂移**（2 个计数、架构总览 §13 表、以及 `docs/验证流程.md` 里一个断链 `../项目规范.md`），全部已修 → 现 `result=PASS`。**注意**：该脚本必须存为 **UTF-8 with BOM**（PS 5.1 读无 BOM 脚本按 ANSI，中文字面量会变乱码 —— 本轮实测踩过） |
+| **H-10** 玩法链路没有自动防线 | 118 个探针里**没有一条**证明「打起来了」；`probe_plant` 的种植环节判 `plant_result=SKIP`；门禁自陈抓不到语义错误（`portal_manager.gd` 调 `get_world_2d()` 仍 PASS） | 已做（2026-10-16）：新增 `test/scenarios/probe_gameplay_core.gd` —— 豌豆射手种下（走游戏内同一个入口 `PlantCell.create_plant()`）→ 索敌开火 → 子弹命中掉血 → 死亡信号 + 尸体离场，全部落成机器可读断言（`[GAMEPLAY] result=PASS\|FAIL`）。**并做了注入验证**：把 `bullet_registry.create_bullet()` 临时改成 `return null` 重跑 → 探针报 `血量 270 -> 270（掉 0）` 且 `result=FAIL`，改动已还原（`git status` 该文件干净）。健康代码下无头约 40s，`result=PASS failed=0`。探针文件头写明了边界（只覆盖「豌豆 × 普僵」这条最常用链路；不碰 UI 点击；掉落物有随机性只打印不判定）与**自证方法**。**遗留 1**：「改动触达角色 / 子弹 / 伤害管线时必须跑它」这条口径还没写进硬约束 §1-7，本轮只落在 `test/README.md`。**遗留 2**：跑批仍为手动（未接 CI 日常） |
+| **H-12** 文档事实漂移：assets 口径 + 断链 | `AGENTS.md` §1 与 `架构总览.md` §1 / §2 都写 assets「不入 git，需自备」；`level_data.gd:24` 与 U-22 指向**不存在**的 `tool_migrate_save_key.gd` | 已做（2026-10-16）：① 三处口径改为「**在版本控制内**」并带实测数（`git ls-files assets` = 5339）；② `tools/check_doc_facts.ps1` 新增 **E 组检查**（扫三份顶层文档的「不入 git」「自行准备」措辞 + 校验数字），检查数 19 → 23 且 `PASS`；③ **注入验证**：临时给 `README.md` 加一行「assets（不入 git）」→ 脚本报 `FAIL README.md still claims assets/ is not in git`（已还原，`result=PASS`）；④ `level_data.gd` 注释改指真实工具链（`tool_dump_save_keys` → `tool_write_save_keys` → `probe_save_key`）并写明写入工具当前仍面向**已不存在**的 `.tres`（该部分归 U-22 处理）。**踩坑**：`check_doc_facts.ps1` 是 ASCII-only 文件（PS 5.1 读无 BOM 脚本按 ANSI），新增检查里的中文**必须**写成 `\uXXXX` 转义 |
+| **H-13** 提交粒度粗、bisect 不可用 | 全库 33 条提交；H-02 一轮把 948 个文件压成 4 笔 | 已做（2026-10-16）：新增 [E-09 提交粒度：一个逻辑单元一笔](参考存档/规范细则存档.md#e-09-提交粒度一个逻辑单元一笔)（参考级），并在 `docs/项目规范.md` §2 目录补行。内容包括「一个逻辑单元一笔 / 先清残留再提交主体 / 跑批产物不入库 / 与 `pre-commit` 的 >30 文件提醒保持一致（只提醒不硬拦）」。**遗留**：历史 33 条提交**不重写**（重写公共历史的代价 > 收益） |
+| **H-15** 工作记录索引难查同类任务 | `docs/` 226 份 `.md`（其中工作记录 170+）vs `src/` 643 个 `.gd`；索引按日期线性排，同类任务散在各处 | 已做（2026-10-16）：`docs/工作记录/README.md` 新增 **§2.1「常用主题入口」** —— 9 个跨日期主题簇各给一条入口 + 「为什么是这几条」（id 去编号 / 工具模组 / 模组加载源与素材 / 联机 / 探针与验证 / 存档与进度 / 组件生命周期 bug / 资源改名 / 文档规范），并写明「写记录只写结论 / 最简路径 / 踩坑，过程流水不写」。物理文件与主表**不动**（历史记录是资产），主表仍按日期排） |
 
 > 教训：**TODO 销项后记得把指向它的文档也改掉**，否则后来的人会按旧索引去一条不存在的注释（“文档与代码漂移等同 bug”，见 [docs/README.md](./README.md) §6）。
 
@@ -193,3 +270,39 @@
   - **H 系列**（§3.4，仓库卫生 / 工程流程类）：编号顺延（`H-09`…）。登记格式与其他系列不同：**必须同时写「文档怎么说」和「实测是多少」**（只写一边等于没记，下次体检无法复现）；口径一律用可复现命令（`git status` / 文件计数 / `Test-Path`），不做估算。**H 系列不写进代码注释**（它们不在代码里）。
 - **销项一条**：T 系列要把代码注释里的 `TODO` 删掉；四个系列都要从原表移到 §4，写清「怎么解决的」。只改代码（或文档）不改本文 = 清单变脏。
 - **重新体检**：每过一段时间（或一次大清理之前）用 §1 的口径全仓库搜一次 `TODO`，命中数与本文不符时以代码为准更新本文。U 系列靠「同一件事搜两种写法、比较命中数」来体检；L 系列靠「搜订阅点与发布点、比较命中数」来体检。
+
+---
+
+## 6. 本轮整体整改方向（2026-10-16 体检 → 分批）
+
+> **为什么要有这一节**：§2 / §3 是**清单**（有什么债），本节是**顺序**（先做哪条、做到什么算完）。
+> 债不是并列的：批次 1 是批次 3 的**前置**（没有可靠的自动防线，动死亡链等于盲改），所以顺序本身是结论。
+> 编号互相引用；**每批做完把条目从 §3 表移到 §4 并写清怎么解决的**（§5 约定）。
+
+| 批次 | 主题 | 含条目 | 为什么不先做别的 / 前置条件 | 验收口径 |
+| -- | -- | --- | --- | --- |
+| **1** | **零运行时风险的文档与流程**（改完不影响游戏） | H-12（文档口径与断链）、H-13（提交粒度 → E-09）、H-15（索引主题分组） | 成本以分钟计、零回归风险；且 H-12 是「文档可信度」的地基 —— 文档里既有「assets 不入库」这种错断言，也有「三处已更正」这种**假完成**，不先修，后面所有结论都要打折 | 跑 `tools/check_doc_facts.ps1`（**新增的 assets 检查必须真的能拦住**：故意改坏一次看它 FAIL）+ 编译门禁 PASS + 无断链 |
+| **2** | **防线：把纪律变成可执行的检查** | H-10（`probe_gameplay_core` 玩法链路探针）、H-14①（`check_content_wiring.ps1`）、H-11（云端 CI） | 批次 3 要动的是**角色 / 子弹 / 伤害管线**，而现有 118 个探针**证明不了这条链路**（H-10）。先有防线再改代码，否则「改完靠感觉」 | 每条都要**注入一次错误看它报红**（探针把伤害改 0 要 FAIL；接线检查删掉一条注册表条目要 exit 1）；CI 需先在 runner 上确认引擎获取方式，**未验证前不写「CI 可用」** |
+| **3** | **A 档死亡 / 亡语链**（本轮唯一「靠时序侥幸」的一簇，四条互相咬合） | L-12 → L-13 → L-14 → U-31（顺序即依赖顺序） | L-12 是**开关位置**（把 `is_can_death_language = false` 提到基类），L-13 是**触发时机**（亡语排在 `signal_character_death.emit()` 之前还是之后），L-14 是**前提显式化**（「本函数必须同步致死」），U-31 才是**结构下沉**（散在 6 个子类 → 组件）。前三条各自都会改变行为，**必须逐条开游戏实测**（V-01 的例外写法：附人工验证方法） | 每条：编译门禁 + `probe_gameplay_core` + 至少一条相关探针（`probe_zomboss_layout` / 雪橇关）+ 人工回归（种樱桃 / 读档清理 / 手套兜底 / 雪橇僵尸补兵）逐项勾 |
+| **4** | **存档键与存档语义**（数据迁移，错一处就是玩家进度丢失） | U-22（`save_key` 补齐，**先修工具**）、U-20（两套推导收敛成 `make_save_key()` / `parse_save_key()`） | 必须先有「读权威值 → 写入 → 另一进程回读」的闭环（工具现在面向已不存在的 `.tres`，见 U-22），且 U-20 的收敛要在补齐**之后**做，否则两件事一起改时无法判断是哪边错位 | `tool_dump_save_keys` 权威值表 + `probe_save_key` 另一进进程回读一致；老存档（含 `LEGACY_INT_TO_ID` 那批）仍能读出来 |
+| **5** | **参考级 / 判定暂缓**（**不做也不打回**，列出来是为了「别当没看见」） | U-14（组件里拼 `$"../X"`：`host_node_of()` 全仓 0 使用，首次落地=行为变更）、U-16（速度同步 12+ 份并存）、U-25（老虎机两本阳光账）、U-32（`Global` 边界）、§12.3 第 9 项（选关页注册表化，需开窗口比对视觉配置）、§12.3 第 15 项（`plant_cell.gd` 不拆）、§12.3 第 16 项（子弹对象池暂缓） | 收益 / 风险比不划算或需单开一轮；**留档是为了下一个人不必重新评估一遍** | 只要求：动手前读本条与对应 U 条目的「判定不做」理由，不要按直觉反向改 |
+
+**收尾（每批都做）**：编译门禁（`real compile errors = 0`）→ `tools/check_doc_facts.ps1` → 按 [E-05](参考存档/规范细则存档.md#e-05-工作流程归档每次任务结束必做) 在 `docs/工作记录/` 补一条记录 + 索引补行 → 本文件把已完成的条目移到 §4。
+
+**批次 1 / 2 的已知成本**：批次 2 的三条都要**新写检查脚本或探针**（不是改代码），写完必须自己先注入错误验证一遍 —— 「写了检查但检查不报错」比没写更糟（H-09 的 `check_doc_facts.ps1` 就是这样才发现它漏了 assets 这一项）。
+
+### 6.1 本轮（2026-10-16）已执行到哪一步
+
+> 供后来者判断「哪些结论已经被验证过、哪些还只是方向」。
+
+| 条目 | 状态 | 验证方式（本次实跑过） |
+| --- | --- | --- |
+| H-10 玩法链路探针 | ✅ **完成**（销项见 §4） | 新增 `test/scenarios/probe_gameplay_core.gd`；健康代码 `result=PASS failed=0`（掉血 `270 → 250`，耗时 1.0s；尸体离场 4.5s）；**注入 `create_bullet() → return null` 后 `result=FAIL`**，改动已还原 |
+| H-12 文档口径 + 检查器 | ✅ **完成**（销项见 §4） | `tools/check_doc_facts.ps1` 检查数 19 → 23 且 `PASS`；**注入「assets（不入 git）」一行后 `FAIL README.md still claims assets/ is not in git`**，已还原 |
+| H-13 提交粒度细则 | ✅ **完成**（销项见 §4） | 新增 E-09 + `docs/项目规范.md` §2 目录行（文档改动，无需跑游戏） |
+| H-15 工作记录主题入口 | ✅ **完成**（销项见 §4） | 新增 `docs/工作记录/README.md` §2.1；新增链接已逐个核对文件存在（脚本扫 0 断链） |
+| H-11 云端 CI | 🟡 **半完成**（留 §3.5） | `.github/workflows/ci.yml` 已写；**未在 runner 上验证**（本地无法验证），首推后按文件头三步确认 |
+| H-14 接线检查器 | ✅ **完成 ①**（②③ 未做，留 §3.5） | `tools/check_content_wiring.ps1` 已写；健康树 `result=PASS checks=192`；**注入验证**：改坏场景 preload → `FAIL plant PEA_SHOOTER_SINGLE: scene missing`，已还原（②③ 见 §3.5） |
+| U-22 存档键补齐 | ⬜ **未开始**（方向已更新） | 已实测：`src/levels/` 下 `.tres` = **0**，现役写入工具仍面向 `.tres` ⇒ **必须先修工具**；覆盖数已重测（adventure 4/54、survival 0/15、minigame 20/25） |
+| 批次 3（L-12 → L-13 → L-14 → U-31 死亡链） | ⬜ **未开始** | 依赖批次 2 的探针做回归；改的是角色 / 死亡管线，必须开游戏实测（V-01 例外写法） |
+
