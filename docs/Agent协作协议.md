@@ -57,8 +57,22 @@ git worktree add ../pvz-agent-a agent/plant-pack-a
 **禁止**
 
 - 禁止在 `main` 之外直接 `git push` 到任何远端（本仓库默认无远端，纯本地协作）。
-- 禁止 `git add -A` 后提交 `.godot/`、`test/_userdir/`、`*.tmp` —— 已被 `.gitignore` 挡住，提交前自查 `git status --short`。
+- **禁止用 `git add -A` 或通配符暂存**：`'./*.md'` 这类写法在 git pathspec 里 `./` 会被规范化掉，`*.md` **跨目录匹配**，会把无关文件一并暂存。一律**逐路径** `git add -- <文件>`，提交前看 `git diff --cached --name-status`（见 [V-02](../参考存档/规范细则存档.md#v-02-提交前自检清单)）。
+- 禁止提交 `.godot/`、`test/_userdir/`、`*.tmp` —— 已被 `.gitignore` 挡住，但仍要自查 `git status --short`。
 - 禁止 `git commit --amend` 改写已交给 main 的历史。
+
+### 1.1 开工声明：让并行的人看得见
+
+> **本文档原来只管「怎么划边界」，管不了「怎么看见对方」。** 这一节补上后者。
+
+**背景（2026-10-16 实际踩到）**：两个会话在同一工作树上并行时**彼此完全不可见** —— 一方 `git add` 之后另一方发现暂存区里冒出陌生文件；一次误用通配符 `git add` 更把 4 个与本次任务无关、属于另一个会话的文档一起暂存并提交（已 `git reset --soft HEAD~1` 掉头重做）。
+
+**要求**
+
+- **开工第一步**：`git status --short`，把每个改动标成「我的 / 不是我的」。**不是我的一个都不碰**（不改、不暂存、不提交、也不还原）。
+- **建议**开工时留一处**能被看见的声明**（写在 `docs/工作记录/` **之外**，避免污染该目录的索引体系）：谁 / 在改哪些目录或文件 / 起始时间；收工或合并后删掉。不需要精确，只需要可见。
+- **发现暂存区里有不属于自己的文件**时，**不要** `git restore --staged .` 一锅端（会连带撤掉别人的暂存）；改用 `git commit -- <只列自己的路径>` 精确提交。
+- **同一文件里混有别人的改动**时（例如 `docs/工作记录/README.md` 正被对方改、你又要补索引行）：**不要提交该文件**，把「待补」写进自己的记录文件，等对方落盘后再补。
 
 ---
 
@@ -68,11 +82,11 @@ git worktree add ../pvz-agent-a agent/plant-pack-a
 
 | 文件 | 行数 | 被引用 | 所有者 | 并行策略 |
 |------|------|--------|--------|----------|
-| `src/core/autoload/character_registry.gd` | 756 | 67 | **main 独占** | 仅枚举插入走 §3 配额；数据字典（P2）后续搬出后再下放 |
-| `src/core/autoload/bullet_registry.gd` | ~60 | 多 | **main 独占** | 子弹 id 已改 StringName（2026-10-13），只在 `BulletIds` + `BULLET_SCENE_PATHS` 各加一行，**不再占编号段** |
+| `src/core/autoload/character_registry.gd` | 545 | 多 | **main 独占** | 仅枚举插入走 §3 配额；数据字典（P2）后续搬出后再下放 |
+| `src/core/autoload/bullet_registry.gd` | 163 | 多 | **main 独占** | 子弹 id 已改 StringName（2026-10-13），只在 `BulletIds` + `BULLET_SCENE_PATHS` 各加一行，**不再占编号段** |
 | `project.godot`（autoload / layer 段） | — | 全体 | **main 独占** | 新 autoload 一律 main 加 |
 | `src/core/autoload/all_cards.tscn` | — | 全体 | **main 独占** | 新卡片预制 main 登记 |
-| `src/managers/main_game_manager.gd` | 589 | 多 | main 为主 | 改波次/关卡先和 main 对齐 |
+| `src/managers/main_game_manager.gd` | 805 | 多 | main 为主 | 改波次/关卡先和 main 对齐 |
 | `test/scenarios/`（行为回归探针） | — | — | **main 独占** | worker 需要新探针时交给 main |
 
 > 这些文件**不要分配给 worker**。worker 若需要登记新单位，把「枚举名 + 编号」按 §3 配额占好位后，
@@ -215,9 +229,15 @@ Agent 标识:        A / B / C / D
 
 ---
 
-## 附录：现状速查（基线 commit 2957342）
+## 附录：现状速查（2026-10-16 实测）
 
-- 全仓脚本 333 个（`.gd`），最大业务脚本 `character_registry.gd` 756 行，被 67 个文件引用。
-- autoload 单例 9 个：`Log Global SoundManager SceneRegistry AllCards GlobalUtils EventBus TreePauseManager DebugChannel`。
-- 验证方式：**编译门禁必过**（`test/check_scripts.ps1`）；**打开游戏（带窗口）实测为建议**，改动较小 / 确定不会出问题 → 不开。
-- 红线 14 条见 [项目规范.md](项目规范.md) §8；仓库已无静态检查器，靠评审 + 打开游戏实测兜底。
+- `src/`：**643** 个 `.gd` + **239** 个 `.tscn`。**规模数字的唯一来源**在 [架构总览.md §15](../架构总览.md)，本节不复制（[E-08](../参考存档/规范细则存档.md)）。
+- 最大业务脚本（总行数含空行与注释）：`items/plant_cell.gd` **921**、`levels/core/level_data.gd` **817**、`managers/zombie_manager/zombie_manager.gd` **725**；完整表见架构总览 §15.1。
+- autoload 单例 **11** 个：`Log` `Global` `SoundManager` `SceneRegistry` `AllCards` `GlobalUtils` `EventBus` `DamageSystem` `TreePauseManager` `ModManager` `DebugChannel`（口径 = `project.godot` 的 `[autoload]` 段）。
+- 验证方式：**编译门禁必过**（`test/check_scripts.ps1`，已挂本地 `pre-push` 钩子 —— 见 `test/git_hooks/pre-push`）；**打开游戏（带窗口）实测为建议**，改动较小 / 确定不会出问题 → 不开。
+- 红线见 [项目规范.md](项目规范.md) §1（**8** 条）；仓库已无静态检查器，靠评审 + 打开游戏实测兜底。
+
+> **本节的命名口径已过时**：§2.2 / §3 里写的 `plant_NNN_*.gd` / `zombie_NNN_*.gd` 是**编号入文件名**时代的写法。
+> 现在**编号是注册表 id，不写进文件名**（`plant_pea_shooter_single.gd` 这样），且植物 / 僵尸 / 僵王 / 子弹 id 已全部改为
+> StringName（`PlantIds` / `ZombieIds` / `ZombieBossIds` / `BulletIds`），§3 的编号段配额对它们**不再适用**（见该节 2026-10-14 的补充说明）。
+> 读 §2.2 / §3 时把 `*_NNN_*` 理解为「按单位各自独立的文件」，其余结论仍成立。

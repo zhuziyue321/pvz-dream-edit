@@ -333,6 +333,7 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 | **Godot 在 Windows 是 GUI 子系统程序**                   | 直接 `& godot ...` 把输出丢进虚空，stdout 一个字都抓不到                                  | **必须重定向到文件**（`>` 给的是真实句柄）；带窗口跑同样适用                                                                                                                            |
 | **`-Windowed` 配 `res://test/inject/scenario.gd`** | PowerShell 一直不返回（注入模式跑完不退出）                                              | 关掉游戏窗口，或改用方式 A / `a.quit_game()`                                                                                                                              |
 | `$PSScriptRoot` 为空                                | `-File` 传相对路径时 `Split-Path $PSScriptRoot -Parent` 报错，脚本一行没跑              | 用绝对路径调用，或退到 `(Get-Location).Path`                                                                                                                             |
+| **跑批前没清残留 Godot 进程** | `run_autopilot.ps1` 把**上一次的输出**当本次结果打屏（「传 A 却跑 B」、`exitCode` 对不上） | 跑批前后各查一次 `Get-Process *godot*`（见 §十「跑批前自检」）；核对 stdout 里的「场景脚本」是不是自己传的那个 |
 | **不验证改动是否落盘**                                     | 补丁静默 no-op，而编译检查照样全绿 → 连续 3 次"假成功"                                       | **写完自证**：`ANCHOR_FOUND=` / `NOW_HAS_WARP=` 之类标记                                                                                                               |
 | `String.raw` 里的 `\t`                              | 不是真 Tab，`.Replace` 匹配不上                                                  | 用 `[char]9` / `[char]10` 构造                                                                                                                                   |
 | `$args` 是保留变量                                     | `Start-Process` 静默失败                                                     | 换名字                                                                                                                                                           |
@@ -419,6 +420,30 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 ---
 
 ## 十、跑批命令（照着抄）
+
+### 跑批前自检（先看这一条，否则会读到上一次的结果）
+
+`run_autopilot.ps1` 的 stdout / stderr 用的是**固定路径**（`%TEMP%\pvz_autopilot\ap_out.txt`），
+而 **Godot 没注入 autopilot 时会一直驻留**（没人调 `quit_game()`）。两者叠加会产生一种**会骗人的失败**：
+
+- 上一次的进程还活着 → 占着输出文件 → 本次 `cmd` 打不开它（stderr 出 `The process cannot access the file`）→
+  脚本把**上一次的旧内容当成本次结果**读回来并打屏；
+- 症状：「我传的是 `probe_bullet_camp`，怎么跑出来 `probe_zhaoxiao_cherry`」「`exitCode` 对不上」「报告里是别的探针的日志」。
+
+**做法（跑批前后各一条命令）**：
+
+```powershell
+# 1) 跑之前：清残留引擎进程（执行后数量应为 0）
+Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+(Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Measure-Object).Count
+
+# 2) 跑之后：再查一次；不为 0 说明这次没正常退出，它的输出不可信
+```
+
+> **判据（比看 `result=` 更早、更硬）**：stdout 里 `---- STDOUT ----` 之后第一条应当是
+> `Godot Engine v4.6.2...`，且**紧接着**出现
+> `[调试通道] 已注入 autopilot，场景脚本 = res://test/scenarios/<你传的那个>.gd`。
+> 没有这行 = autopilot 根本没注入 → 本次输出无效（而且那个进程会一直驻留到你去杀它）。
 
 ### 打开游戏（主力，带窗口）
 
