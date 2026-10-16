@@ -24,6 +24,15 @@ func run(a) -> void:
 
 
 ## 直线子弹（豌豆）：场景额外带 layer1 World（判斜坡），换阵营后要保留
+##
+## 【数字口径，2026-10-16 更正过一次，别再照直觉改回去】
+## 僵尸方的 mask = 256 + 512（曾错写成 256 + 1024）：
+##   · 256 = layer 9  PlantHurtBoxReal —— 僵尸方要打植物
+##   · 512 = layer 10 ZombieHurtBoxReal —— **也要**打，因为魅惑僵尸（归属植物方）与普通僵尸
+##     同在 layer 10，敌我改由 BulletCampConfig.get_owner_camp() / is_enemy() 判断
+##   · 1024 = layer 11 Deprecated_BeHypnotizedReal —— **已废弃层**（project.godot 里就叫
+##     Deprecated_*），不再属于任何阵营的受击层，不该出现在 mask 里
+## 权威定义见 bullet_camp_config.gd 的 C_CampEnemyMask / C_AllCampMaskBits 及其注释。
 func _check_linear(a) -> void:
 	var b := _make_bullet(a, BulletIds.PEA, {
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: CharacterRegistry.CharacterType.Plant,
@@ -34,7 +43,7 @@ func _check_linear(a) -> void:
 	_expect(a, "豌豆[植物方] mask", b.area_2d_attack.collision_mask, 512 + 1)
 	set_camp(b, CharacterRegistry.CharacterType.Zombie)
 	_expect(a, "豌豆[僵尸方] layer", b.area_2d_attack.collision_layer, 128)
-	_expect(a, "豌豆[僵尸方] mask", b.area_2d_attack.collision_mask, 256 + 1024 + 1)
+	_expect(a, "豌豆[僵尸方] mask", b.area_2d_attack.collision_mask, 256 + 512 + 1)
 	_expect(a, "豌豆[僵尸方] get_bullet_paras 带出阵营",
 		b.get_bullet_paras()[Bullet000NormBase.E_InitParasAttr.BulletCamp],
 		CharacterRegistry.CharacterType.Zombie)
@@ -42,6 +51,7 @@ func _check_linear(a) -> void:
 
 
 ## 抛物线子弹（篮球：场景原本手改成僵尸方），切回植物方也要能用
+## 僵尸方 mask 同上：256 + 512（篮球场景本身不带额外 mask 位，故无 +1）
 func _check_parabola(a) -> void:
 	var b := _make_bullet(a, BulletIds.BASKETBALL, {
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: CharacterRegistry.CharacterType.Zombie,
@@ -49,7 +59,7 @@ func _check_parabola(a) -> void:
 	if b == null:
 		return
 	_expect(a, "篮球[僵尸方] layer", b.area_2d_attack.collision_layer, 128)
-	_expect(a, "篮球[僵尸方] mask", b.area_2d_attack.collision_mask, 256 + 1024)
+	_expect(a, "篮球[僵尸方] mask", b.area_2d_attack.collision_mask, 256 + 512)
 	set_camp(b, CharacterRegistry.CharacterType.Plant)
 	_expect(a, "篮球[植物方] layer", b.area_2d_attack.collision_layer, 8)
 	_expect(a, "篮球[植物方] mask", b.area_2d_attack.collision_mask, 512)

@@ -1,0 +1,35 @@
+#!/bin/sh
+## 推送前编译门禁（pre-push 钩子）
+##
+## 作用：`git push` 之前自动跑一次 `test/check_scripts.ps1`，跑不过就不让推。
+##      这就是硬约束 §1-7「交付前跑一次编译门禁」的自动化落点 —— 不靠人记。
+##
+## 启用方式（二选一，一次性）：
+##   A. 复制到 .git/hooks/pre-push（本仓已复制好，换机器 / 重克隆后要再做一次）
+##        cp test/git_hooks/pre-push .git/hooks/pre-push
+##   B. 让 git 直接指向本目录（推荐，以后改这里就生效）
+##        git config core.hooksPath test/git_hooks
+##
+## 跳过本次检查：`git push --no-verify`
+##
+## 为什么不做成 GitHub Actions：
+##   本仓 `assets/` 因版权原因不入库（需自备），云端 checkout 出来没有素材，
+##   `--import` 会因引用不到贴图而报错 —— 那是有 CI 也拿不到的假红。
+##   本地钩子跑在同一台有素材的机器上，才是这个门禁唯一站得住的地方。
+##
+## 局限（照抄 test/check_scripts.ps1 的自述，别把它当成万能）：
+##   · 只编译可达脚本，新写还没被引用的脚本可能漏掉；
+##   · 抓不到「方法在基类上不存在」「参数个数 / 类型不匹配」这类语义错误；
+##   · 抓不到 GDScript 分析类告警（未使用变量 / 未使用信号等）。
+##   它证明「能编译」，不证明「能玩」—— 玩法改动仍要打开游戏实测。
+
+powershell -ExecutionPolicy Bypass -File test/check_scripts.ps1
+status=$?
+
+if [ "$status" -ne 0 ]; then
+    echo ""
+    echo "[pre-push] 编译门禁未通过（exit $status），已阻止本次 push。"
+    echo "[pre-push] 修完之后再推；确需跳过用：git push --no-verify"
+fi
+
+exit $status

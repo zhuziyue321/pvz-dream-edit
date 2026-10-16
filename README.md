@@ -9,11 +9,11 @@
 
 ## 当前版本简述
 
-- **引擎与运行**：Godot 4 / GDScript，`gl_compatibility` 渲染，视口 800×600；打开 `project.godot` 即可运行。
+- **引擎与运行**：Godot 4.6 / GDScript（引擎版本口径以 `project.godot` 的 `config/features` 为准），`gl_compatibility` 渲染，视口 800×600；打开 `project.godot` 即可运行。
 - **架构主线**：**数据驱动 + 组件化** —— 主场景只有一份，地图 / 格子 / 僵尸行 / 波次全部由 `ResourceMapData` + `ResourceLevelData` 在运行时装配；角色 = base 场景 + 若干 `ComponentNormBase` 组件，状态本体在组件里，宿主只做转发。
 - **已实装内容**：冒险模式 1-1 ~ 5-10（5-10 为僵王博士 Dr. Zomboss：出兵 / 踩踏 / 扔房车 / 空投蹦极 / 冰火球 / 低头受击窗口）、迷你游戏、解谜、生存四类模式，另含僵尸迷阵（含旋风）与僵尸水族馆等衍生玩法。
 - **关卡系统**：关卡 = 数据（`.tres`）+ 关卡脚本；卡槽 / 传送带 / 进度条口径 / 场景设置（底图、BGM、昼夜）均可由关卡侧配置或覆盖。玩家自制关卡放 `data/levels/params/`（`ResourceLevelData`，见 `src/levels/core/level_data.gd`）。
-- **规模**：`src/` 618 个 `.gd` + 240 个 `.tscn`；`data/` 116 个 `.tres`；`animation/` 505 个 `.tres`；`test/` 103 个 `.gd`（含 95 个自动回归场景）。
+- **规模**：`src/` 643 个 `.gd` + 239 个 `.tscn`；`data/` 122 个 `.tres`；`animation/` 497 段动画；`test/` 126 个 `.gd`（含 118 个自动回归场景）。
 - **文档**：面向 Agent 的文档体系（`docs/` 顶层规则 + `docs/参考存档/` 机制说明 + `docs/工作记录/` 逐次任务记录），`src/` `data/` 等目录下另有指针文件。
 
 欢迎在本开源项目基础上做属于自己的 PVZ 同人改版。有兴趣交流可加 QQ 群：**1046565016**。

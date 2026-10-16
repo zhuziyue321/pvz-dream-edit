@@ -20,7 +20,11 @@
 #>
 param(
     [Parameter(Mandatory = $true)][string]$Scenario,
-    [string]$Godot = 'C:\Users\a a\Desktop\Godot_v4.6.2-stable_win64.exe',
+    ## Unified with test/check_scripts.ps1 on 2026-10-16. The old default pointed at
+    ## 'Godot_v4.6.2-stable_win64.exe', which does not exist on this machine (the real
+    ## binary is 'godot.exe') - so a batch run silently failed to launch the engine.
+    ## check_scripts.ps1 already hit the same trap and was fixed; keep the two in sync.
+    [string]$Godot = 'C:\Users\a a\Desktop\godot.exe',
     [string]$Project = '',
     [switch]$Windowed,
     [int]$MaxSeconds = 300,
@@ -28,6 +32,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+## Fail loudly when the engine binary is missing: otherwise cmd just prints
+## "not recognized" and we end up reading a stale/empty output file (silent green).
+if (-not (Test-Path -LiteralPath $Godot)) {
+    Write-Host ('[autopilot] Godot executable not found: {0}' -f $Godot) -ForegroundColor Red
+    Write-Host '[autopilot] pass -Godot "<real path>" or fix the default in this script' -ForegroundColor Red
+    exit 2
+}
 if (-not $Project) {
     if ($PSScriptRoot) { $Project = (Split-Path $PSScriptRoot -Parent) } else { $Project = (Get-Location).Path }
 }
