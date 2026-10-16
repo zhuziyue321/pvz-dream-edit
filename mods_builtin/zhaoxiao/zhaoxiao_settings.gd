@@ -39,9 +39,6 @@ const CHERRY_NAME_NEW := "烟熏樱桃"
 #region 烟熏
 ## 烟熏一次持续多少秒
 const SMOKE_TIME := 30.0
-## 烟熏僵尸脚底下那株「隐形诱饵」相对僵尸原点的位置
-## （本体植物的受击框在 `(0, -40)`、尺寸 40×80，与僵尸对位即可）
-const SMOKE_DECOY_OFFSET := Vector2(0.0, 0.0)
 #endregion
 
 

@@ -14,12 +14,16 @@ extends Node
 ##       跳过去之后 `Idle→Walk` 的条件 `not is_idle` 被我们压住 ⇒ 站得住。
 ##       植物没了 / 被铲掉时 `is_attack` 自己落回 false ⇒ 我们放开 `is_idle`，本体自动走回 Walk。
 ##
-## **② 被僵尸索敌**：
-##   脚底下挂一株**隐形诱饵**（本体工具植物 `PlantIds.INVISIBLE`，见 `plant_invisible.gd`），
-##   把它的 `damage_link` 指到宿主 —— 别的僵尸的啃咬检测会把它当**植物**（诱饵是植物方），
-##   于是它们停下来啃诱饵；而啃在诱饵身上的伤害被**原样转给宿主**，诱饵自己不掉血。
-##   ⚠️ 诱饵必须在**同一个假格子**里登记（见 `_spawn_decoy()`），否则本体的索敌问
-##      「这一格该打哪一株」时会拿到空值、僵尸就不会停下。
+## **② 被同类索敌**：
+##   给宿主标上本体那个通用口子 `Character000Base.is_enemy_to_all_camps` ——
+##   它**只改「能不能被打」**（对任何阵营都算敌人），归属阵营 / 朝向 / 表现 / 死亡计数全不动：
+##     · 僵尸方的啃咬检测于是把它当敌人 ⇒ 同类会走过来啃它（`is_enemy(Zombie, 它)` 为真）；
+##     · 植物方的植物与子弹**照旧**打得中它（`is_enemy(Plant, 它)` 也为真）。
+##   ⚠️ **不要**改用 `is_hypno` 那条路：那是**换边**，换了之后玩家的植物就不打它了，
+##      还会连带转身、染色、死亡时按「魅惑僵尸」登记。
+##   （本模组最早是用「脚底挂一株本体隐形植物当诱饵 + 伤害转移」做同一件事的，
+##     那条路也验证可行，但要多造一株植物；本体给了上面这个口子之后换成了它。
+##     那株隐形植物留在本体当调试 / 工具植物，见 `plant_invisible.gd`。）
 ##
 ## ⚠️ 本类是普通 `Node`（不是 `Character000Base` / `ComponentNormBase` 的子类），
 ##    `_ready()` 按 Godot 常态写即可 —— 硬约束 §1-3 只管那两类角色 / 组件。
@@ -30,9 +34,6 @@ const Settings := preload("zhaoxiao_settings.gd")
 const NODE_NAME := &"SmokedStatus"
 ## 同一个名字的 NodePath 形态（`get_node_or_null()` 只收 NodePath）
 const NODE_PATH := ^"SmokedStatus"
-## 诱饵节点名 / NodePath
-const DECOY_NAME := &"SmokeDecoy"
-const DECOY_PATH := ^"SmokeDecoy"
 ## 动画状态机里「待机」那个状态名（本体各僵尸通用：Idle / Walk / eat / Death …）
 const IDLE_STATE := &"Idle"
 ## 动画状态机 playback 的参数路径（与 `component_anim_norm.gd` 的常量同源）
@@ -44,8 +45,6 @@ var _zombie: Zombie000Base
 var _eater: AttackComponentZombieNorm
 ## 动画树与它的状态机 playback（拿不到就不切动画，只保留「停下 + 不啃」）
 var _playback: AnimationNodeStateMachinePlayback
-## 脚下那株隐形诱饵
-var _decoy: PlantInvisible
 ## 倒计时
 var _timer: Timer
 
@@ -53,6 +52,8 @@ var _timer: Timer
 var _attack_value_before := -1
 ## 现在是不是我们把动画摁在待机上（撤离时要放开）
 var _is_forcing_idle := false
+## 已经撤离过了（终态：不再回摁任何东西）
+var _is_stopped := false
 
 
 #region 生命周期
@@ -67,7 +68,8 @@ func _ready() -> void:
 	var anim_tree := _zombie.get_node_or_null(^"AnimationTree") as AnimationTree
 	if anim_tree != null:
 		_playback = anim_tree.get(PLAYBACK_PARAM) as AnimationNodeStateMachinePlayback
-	_spawn_decoy()
+	## 让同类也来索敌它（见文件头 ②）：只标「谁都能打它」，不动它的归属阵营
+	_zombie.is_enemy_to_all_camps = true
 	_start_timer()
 	set_process(true)
 
@@ -98,7 +100,7 @@ func _on_smoke_timer_timeout() -> void:
 
 #region 每帧：摁住啃咬伤害 + 按「贴没贴到植物」切待机
 func _process(_delta: float) -> void:
-	if not is_instance_valid(_zombie):
+	if _is_stopped or not is_instance_valid(_zombie):
 		return
 	_keep_bite_damage_zero()
 	var should_idle := _zombie.is_attack
@@ -120,11 +122,14 @@ func _keep_bite_damage_zero() -> void:
 
 
 ## 切到「站着待机」（贴到植物了）
+##
+## ⚠️ 入口是 `start()` 不是 `play()`：Godot 4 把 Godot 3 的 `play()` 改名成了 `start()`，
+## 写 `play()` 会在运行期报 `Nonexistent function 'play' in base 'AnimationNodeStateMachinePlayback'`。
 func _force_idle() -> void:
 	_is_forcing_idle = true
 	_zombie.is_idle = true
 	if _playback != null:
-		_playback.play(IDLE_STATE)
+		_playback.start(IDLE_STATE)
 
 
 ## 放开待机（植物没了 / 被铲了）：本体自己会从 Idle 走回 Walk
@@ -134,70 +139,22 @@ func _release_idle() -> void:
 #endregion
 
 
-#region 隐形诱饵：让别的僵尸「看得到、啃得到」宿主
-## 在宿主脚下挂一株隐形诱饵，并把它的伤害转移指到宿主
-##
-## 造法照本体 `PlantCell.create_plant()` 的顺序：**先 `init_plant()` 再 `add_child()`**
-## （反了的话 `character_init_type` 还是默认值，`_ready()` 会走错初始化分支）。
-## ⚠️ `CharacterInitType` 必须是 `IsNorm`：展示态（`IsShow`）会**关掉受击框**
-##   （`Character000Base.ready_show()`），那就谁都索敌不到它了。
-## ⚠️ 那个 `PlantCell` 是个**没入树的假格子**：它只当坐标载体（`row_col` 决定 `lane`），
-##   不入 `PlantCellManager.all_plant_cells` ⇒ 不占真实格子、不进存档、不影响种植。
-func _spawn_decoy() -> void:
-	var scene := _decoy_scene()
-	if scene == null:
-		Log.warn("招笑版模组：拿不到隐形植物场景，本次烟熏只有「站立 + 不啃」那半")
-		return
-	var decoy := scene.instantiate() as PlantInvisible
-	if decoy == null:
-		return
-	var cell := PlantCell.new()
-	cell.row_col = Vector2i(_zombie.lane, 0)
-	decoy.name = DECOY_NAME
-	## 打在诱饵身上的伤害原样转给宿主 —— 「僵尸啃诱饵」等于「啃被烟熏的那只」
-	decoy.damage_link = _zombie
-	decoy.init_plant({
-		Plant000Base.E_PInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
-		Plant000Base.E_PInitAttr.PlantCell: cell,
-		Plant000Base.E_PInitAttr.IsImitaterMaterial: false,
-	})
-	## 诱饵必须登记在这个假格子的 Norm 槽里：本体索敌会问「这一格该打哪一株」
-	## （`DetectTargetStrategy.get_first_be_hit_plant_in_cell`），查的就是这个槽
-	cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm] = decoy
-	_zombie.add_child(decoy)
-	decoy.position = Settings.SMOKE_DECOY_OFFSET
-	_decoy = decoy
-
-
-## 诱饵场景：**走注册表按 id 取**（硬约束 §1-4：别在业务代码里散落「id → 场景」映射表）
-func _decoy_scene() -> PackedScene:
-	return Global.character_registry.get_plant_info(
-		PlantIds.INVISIBLE, CharacterRegistry.PlantInfoAttribute.PlantScenes) as PackedScene
-#endregion
-
-
 #region 撤离
 ## 把烟熏做的事全部还回去（探针也会直接调它，不必等 30 秒）
+##
+## ⚠️ 第一件事就是**关掉每帧逻辑**：`_process()` 每帧都在按「有没有贴到植物」回摁 `is_idle`，
+## 只撤一次会被它下一帧又摁回去 —— 探针直接调本方法时尤其明显（它不会像计时器那条路
+## 一样紧接着 `queue_free()`）。所以本方法是**终态**：调过一次就再也不回摁任何东西。
 func stop_smoke() -> void:
+	_is_stopped = true
+	set_process(false)
 	if is_instance_valid(_zombie):
 		if _is_forcing_idle:
 			_release_idle()
 		if _eater != null and _attack_value_before >= 0:
 			_eater.curr_attack_value_per_min = _attack_value_before
-	_remove_decoy()
+		## 撤掉「谁都能打它」：它回到原样（只有敌对方打得中）
+		_zombie.is_enemy_to_all_camps = false
 
 
-## 拆掉诱饵
-##
-## 走**正常死亡流程**而不是直接 `queue_free()`：它会发 `signal_character_death`，
-## 正咬着它的那些僵尸靠这条信号重判目标 —— 不然它们的 `enemy_can_be_attacked`
-## 会一直指着一个已释放的实例，表现为「烟熏没了但那只僵尸还站在那儿啃空气」。
-func _remove_decoy() -> void:
-	if not is_instance_valid(_decoy):
-		_decoy = null
-		return
-	_decoy.damage_link = null
-	_decoy.hp_component_plant.is_death_free = true
-	_decoy.character_death()
-	_decoy = null
 #endregion

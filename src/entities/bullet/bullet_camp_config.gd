@@ -81,10 +81,17 @@ static func get_owner_camp(character:Node) -> CharacterRegistry.CharacterType:
 
 
 ## camp 方是否把 character 当作敌人（同阵营一律不是敌人；魅惑使归属阵营反转）
+##
+## 例外：被标了「谁都能打它」（`Character000Base.is_enemy_to_all_camps`）的角色，
+## 对**任何阵营**都是敌人。这是留给模组的通用口子（见该字段的注释），
+## 默认没人标 ⇒ 原版行为一字不变。
 static func is_enemy(camp:CharacterRegistry.CharacterType, character:Node) -> bool:
 	var enemy_camp := get_enemy_camp(camp)
 	if enemy_camp == CharacterRegistry.CharacterType.Null:
 		return false
+	var target := character as Character000Base
+	if target != null and target.is_enemy_to_all_camps:
+		return true
 	return get_owner_camp(character) == enemy_camp
 
 

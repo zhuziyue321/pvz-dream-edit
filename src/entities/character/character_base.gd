@@ -75,6 +75,14 @@ static var _next_entity_id:int = 1
 
 ## 是否被魅惑
 var is_hypno:bool = false
+## 是否「谁都能打它」：**临时**对任何阵营都被当成敌人（默认 false = 原版行为）
+##
+## 留给模组 / 特效类玩法的通用口子（现用：招笑版「烟熏」—— 让被烟熏的僵尸临时被同类索敌）。
+## ⚠️ 与 `is_hypno` 的区别：`is_hypno` 是**换边**（归属变成植物方，连带转身、染色、
+## 不再吃植物的攻击、死亡时按魅惑登记）；本字段**只改「能不能被打」**，
+## 它自己的归属阵营、朝向、表现、死亡计数一律不动。
+## 谁置位谁负责还原（模组在效果结束时置回 false）。
+var is_enemy_to_all_camps := false
 ## 该角色是否被设定为隐形（通用外观项，由僵尸初始化参数 E_ZInitAttr.IsInvisible 下发）
 ## 只表示「设定」：当前是否真的隐形看 BodyCharacter.is_invisible
 var is_invisible := false
