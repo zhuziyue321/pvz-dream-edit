@@ -1,0 +1,42 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_start_menu/Present.png" id="1_present"]
+[ext_resource type="BitMap" path="res://assets/image/ui/ui_start_menu/Present_mask.png" id="2_mask"]
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_start_menu/PresentOpen.png" id="3_open"]
+[ext_resource type="Script" path="custom_level_entry_button.gd" id="4_script"]
+
+[node name="CustomLevelEntryButton" type="TextureButton"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -38.0
+offset_top = 356.0
+offset_right = 42.0
+offset_bottom = 436.0
+grow_horizontal = 2
+mouse_default_cursor_shape = 2
+texture_normal = ExtResource("1_present")
+texture_click_mask = ExtResource("2_mask")
+stretch_mode = 5
+script = ExtResource("4_script")
+
+[node name="default" type="TextureRect" parent="."]
+layout_mode = 1
+offset_right = 80.0
+offset_bottom = 80.0
+texture = ExtResource("1_present")
+stretch_mode = 2
+
+[node name="mouse" type="TextureRect" parent="."]
+visible = false
+layout_mode = 1
+offset_left = -14.0
+offset_top = -21.0
+offset_right = 94.0
+offset_bottom = 96.0
+texture = ExtResource("3_open")
+stretch_mode = 2
+
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

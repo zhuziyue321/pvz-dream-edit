@@ -1,0 +1,104 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="hammer_in_ui.gd" id="1_hammerui"]
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_card/ShovelBank.png" id="2_bank"]
+[ext_resource type="Texture2D" path="res://assets/reanim/Hammer_2.png" id="3_handle"]
+[ext_resource type="Texture2D" path="res://assets/reanim/hammer_1.png" id="4_head"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hammer"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coolbg"]
+bg_color = Color(0, 0, 0, 0.25098)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coolfill"]
+bg_color = Color(0, 0, 0, 0.501961)
+
+[node name="UIHammer" type="TextureRect"]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 140.0
+offset_right = 210.0
+offset_bottom = 72.0
+grow_horizontal = 0
+texture = ExtResource("2_bank")
+script = ExtResource("1_hammerui")
+
+[node name="Icon" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Handle" type="TextureRect" parent="Icon"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 62.0
+offset_bottom = 60.0
+pivot_offset = Vector2(26, 10)
+rotation = -0.785398
+texture = ExtResource("3_handle")
+
+[node name="Head" type="TextureRect" parent="Icon"]
+layout_mode = 0
+offset_left = 32.0
+offset_top = 9.0
+offset_right = 62.0
+offset_bottom = 45.0
+pivot_offset = Vector2(15, 18)
+rotation = 0.785398
+texture = ExtResource("4_head")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CoolMask" type="ProgressBar" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+max_value = 1.0
+value = 0.0
+fill_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_coolbg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_coolfill")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBoxEmpty_hammer")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_hammer")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hammer")
+theme_override_styles/hover_pressed = SubResource("StyleBoxEmpty_hammer")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_hammer")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_hammer")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 54.0
+offset_top = 50.0
+offset_right = 72.0
+offset_bottom = 73.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+text = "H"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="Button" to="." method="_on_button_pressed"]

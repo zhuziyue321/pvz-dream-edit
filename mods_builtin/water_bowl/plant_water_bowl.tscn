@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_flower_pot.tscn" id="1_pot"]
+[ext_resource type="Script" path="water_bowl_plant.gd" id="2_wb"]
+
+[node name="Plant050WaterBowl" instance=ExtResource("1_pot")]
+script = ExtResource("2_wb")
+plant_type = &"water_bowl"
+own_condition_bit = 64
+is_water = true
