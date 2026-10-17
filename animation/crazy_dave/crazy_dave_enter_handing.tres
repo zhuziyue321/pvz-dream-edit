@@ -17,7 +17,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_foot2.png" id="14_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_foot1.png" id="15_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_body2.png" id="16_fuck"]
-[ext_resource type="Texture2D" uid="uid://ba6ct4kgq284k" path="res://assets/reanim/CrazyDave_body1.png" id="17_fuck"]
+[ext_resource type="Texture2D" uid="uid://ba6ct4kgq284k" path="res://assets_custom/reanim/CrazyDave_body1.png" id="17_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_zombie_grabhand.png" id="18_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_pot_inside.png" id="19_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/CrazyDave_head.png" id="20_fuck"]

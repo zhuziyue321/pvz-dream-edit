@@ -1,7 +1,7 @@
 [gd_resource type="Animation" format=3 uid="uid://c67jj3mevbemr"]
 
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_upperbody.png" id="13_fuck"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_neck.png" id="14_fuck"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_upperbody.png" id="13_fuck"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_neck.png" id="14_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerjaw.png" id="15_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow.png" id="16_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow_red.png" id="17_fuck"]

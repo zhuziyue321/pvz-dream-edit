@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://bndwnonimphr5"
+path="res://.godot/imported/SelectorScreen_Flower2_Mask.png-091c347233715bd819bb23ebd5f78dbc.res"
+
+[deps]
+
+source_file="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_Flower2_Mask.png"
+dest_files=["res://.godot/imported/SelectorScreen_Flower2_Mask.png-091c347233715bd819bb23ebd5f78dbc.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

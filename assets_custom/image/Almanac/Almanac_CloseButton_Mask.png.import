@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://dpjf3mqsip8ql"
+path="res://.godot/imported/Almanac_CloseButton_Mask.png-7016180ad46a3269d9f357cbf344fcf3.res"
+
+[deps]
+
+source_file="res://assets_custom/image/Almanac/Almanac_CloseButton_Mask.png"
+dest_files=["res://.godot/imported/Almanac_CloseButton_Mask.png-7016180ad46a3269d9f357cbf344fcf3.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

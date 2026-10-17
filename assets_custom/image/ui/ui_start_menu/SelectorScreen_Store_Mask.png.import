@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://cra43htuprgvi"
+path="res://.godot/imported/SelectorScreen_Store_Mask.png-be0e9c02c45a1472555a08a1566547b0.res"
+
+[deps]
+
+source_file="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_Store_Mask.png"
+dest_files=["res://.godot/imported/SelectorScreen_Store_Mask.png-be0e9c02c45a1472555a08a1566547b0.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

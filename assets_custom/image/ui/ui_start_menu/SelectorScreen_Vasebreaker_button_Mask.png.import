@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://g4wl1of4q8sx"
+path="res://.godot/imported/SelectorScreen_Vasebreaker_button_Mask.png-a906fddb00015e11c76e2f18c93e6f02.res"
+
+[deps]
+
+source_file="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_Vasebreaker_button_Mask.png"
+dest_files=["res://.godot/imported/SelectorScreen_Vasebreaker_button_Mask.png-a906fddb00015e11c76e2f18c93e6f02.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

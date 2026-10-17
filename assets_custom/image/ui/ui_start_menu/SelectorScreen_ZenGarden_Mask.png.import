@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://c6dx0o3boywqr"
+path="res://.godot/imported/SelectorScreen_ZenGarden_Mask.png-c46f25caad525711c1ac72f0c179988f.res"
+
+[deps]
+
+source_file="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_ZenGarden_Mask.png"
+dest_files=["res://.godot/imported/SelectorScreen_ZenGarden_Mask.png-c46f25caad525711c1ac72f0c179988f.res"]
+
+[params]
+
+create_from=1
+threshold=0.5

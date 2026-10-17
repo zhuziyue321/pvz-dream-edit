@@ -29,6 +29,9 @@ addons/todo_controller/config/config.tres
 # 不属于本仓库 Godot 工程，不入库（3124 个文件，绝大部分是 .import / .png / .xml）
 /新建游戏项目/
 
+# 临时工作区（解包 / 素材实验的中间产物，不入库）
+/tmp/
+
 # agents
 agents.state.json
 .openagentpack/versions/

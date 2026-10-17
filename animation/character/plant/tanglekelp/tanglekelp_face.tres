@@ -11,7 +11,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm5.png" id="8_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm6.png" id="9_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm7.png" id="10_fuck"]
-[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets/reanim/Tanglekelp_arm 8.png" id="11_fuck"]
+[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets_custom/reanim/Tanglekelp_arm 8.png" id="11_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_blink1.png" id="12_fuck"]
 
 [resource]

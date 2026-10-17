@@ -1,6 +1,6 @@
 [gd_resource type="Theme" load_steps=3 format=3 uid="uid://brc7iy7wte3nn"]
 
-[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets/fonts/SIMSUN.TTC" id="1_i0iew"]
+[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets_custom/fonts/SIMSUN.TTC" id="1_i0iew"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_iukld"]
 

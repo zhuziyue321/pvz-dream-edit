@@ -1,0 +1,16 @@
+[remap]
+
+importer="bitmap"
+type="BitMap"
+uid="uid://b4qpudotkqgmb"
+path="res://.godot/imported/Zen_NextGarden_Mask.png-b81f44e894fd2832f78e8a7901f960ed.res"
+
+[deps]
+
+source_file="res://assets_custom/image/garden/Zen_NextGarden_Mask.png"
+dest_files=["res://.godot/imported/Zen_NextGarden_Mask.png-b81f44e894fd2832f78e8a7901f960ed.res"]
+
+[params]
+
+create_from=1
+threshold=0.5
