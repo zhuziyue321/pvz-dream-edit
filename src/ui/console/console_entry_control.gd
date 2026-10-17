@@ -22,14 +22,12 @@ const SLIDER_NAME_WIDTH := 150.0
 const SLIDER_WIDTH := 120.0
 const SLIDER_VALUE_WIDTH := 45.0
 
-## 按钮背景：灰色背景图片
-const BUTTON_BG_TEXTURE := preload("res://assets/image/ui/ui_main_game_menu/UI_BG/button_BG.png")
 ## 按钮文字颜色：绿色
 const BUTTON_FONT_COLOR := Color(0, 1, 0, 1)
 const BUTTON_DISABLED_FONT_COLOR := Color(0, 0.5, 0, 1)
 
 ## 输入框样式：与「输入玩家名称」输入框一致（棕底 + 黄边 + 绿字）
-const INPUT_FONT := preload("res://assets/fonts/方正少儿_GBK.ttf")
+const INPUT_FONT := preload("res://assets_custom/fonts/方正少儿_GBK.ttf")
 const INPUT_FONT_COLOR := Color(0, 1, 0.1882353, 1)
 
 
@@ -222,30 +220,34 @@ func clear() -> void:
 
 
 #region 样式
-## 给按钮套上「灰色背景图片 + 绿色字」的样式
+## 给按钮套上「三段式灰底 + 绿色字」的样式
 ## （控制台的翻页按钮、模组页面的列表按钮也用它 —— 全仓按钮长相一致）
+## 背景不是一张拉满的贴图，而是挂一个 `PVZButtonBG` 画三段式贴图
+## （左帽 + 中段 + 右帽，按下整套换按下态）—— 单张拉伸会把两端帽檐拉变形
 static func apply_button_style(button: Button) -> void:
-	var bg := _create_button_stylebox()
-	button.add_theme_stylebox_override("normal", bg)
-	button.add_theme_stylebox_override("hover", bg)
-	button.add_theme_stylebox_override("pressed", bg)
-	button.add_theme_stylebox_override("disabled", bg)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var bg := PVZButtonBG.new()
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.add_child(bg)
+	button.button_down.connect(func() -> void:
+		bg.set_pressed(true)
+	)
+	button.button_up.connect(func() -> void:
+		bg.set_pressed(false)
+	)
+	## Button 自身的样式框全置空（背景交给 bg 画）；
+	## 文字内边距沿用原来 StyleBoxTexture 的 texture_margin（16/16/16/20），别让文字移位
+	var empty := StyleBoxEmpty.new()
+	empty.content_margin_left = 16.0
+	empty.content_margin_top = 16.0
+	empty.content_margin_right = 16.0
+	empty.content_margin_bottom = 20.0
+	for state in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
+		button.add_theme_stylebox_override(state, empty)
 	button.add_theme_color_override("font_color", BUTTON_FONT_COLOR)
 	button.add_theme_color_override("font_hover_color", BUTTON_FONT_COLOR)
 	button.add_theme_color_override("font_pressed_color", BUTTON_FONT_COLOR)
 	button.add_theme_color_override("font_disabled_color", BUTTON_DISABLED_FONT_COLOR)
 	button.add_theme_color_override("font_focus_color", BUTTON_FONT_COLOR)
-
-
-static func _create_button_stylebox() -> StyleBoxTexture:
-	var sb := StyleBoxTexture.new()
-	sb.texture = BUTTON_BG_TEXTURE
-	sb.texture_margin_left = 16.0
-	sb.texture_margin_top = 16.0
-	sb.texture_margin_right = 16.0
-	sb.texture_margin_bottom = 20.0
-	return sb
 
 
 ## 输入框：棕底 + 黄边 + 绿字

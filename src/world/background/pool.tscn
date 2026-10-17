@@ -1,7 +1,7 @@
 [gd_scene load_steps=15 format=3 uid="uid://bq5t78cjcpj7y"]
 
 [ext_resource type="Script" uid="uid://cmnt7djyt1387" path="res://src/items/pool.gd" id="1_h0rrj"]
-[ext_resource type="Texture2D" uid="uid://cy06xphee71mv" path="res://assets/image/background/pool_base.png" id="2_wjd4q"]
+[ext_resource type="Texture2D" path="res://pak/images/pool_base.png" id="2_wjd4q"]
 [ext_resource type="Shader" uid="uid://bew3j0byymgpy" path="res://shaders/my_shader/main_game_pool.gdshader" id="3_exjdu"]
 [ext_resource type="Texture2D" path="res://pak/images/pool.jpg" id="4_op0xy"]
 [ext_resource type="Shader" uid="uid://1wkg6t4ewiw0" path="res://shaders/my_shader/pool_drop.gdshader" id="5_ie0cy"]

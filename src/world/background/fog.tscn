@@ -1,7 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://bs55ei6xiuugg"]
 
 [ext_resource type="Script" uid="uid://bxyerjiylvs75" path="res://src/items/fog.gd" id="1_cdld5"]
-[ext_resource type="Texture2D" uid="uid://c2x7ap7l7br41" path="res://assets/image/main_game_item/fog.png" id="2_s6h7y"]
+[ext_resource type="Texture2D" path="res://pak/images/fog.png" id="2_s6h7y"]
 [ext_resource type="Shader" uid="uid://bro4j3auml6rk" path="res://shaders/my_shader/full_fog.gdshader" id="3_f8gsd"]
 
 [sub_resource type="Gradient" id="Gradient_w0h7h"]

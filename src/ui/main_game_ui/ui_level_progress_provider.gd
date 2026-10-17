@@ -14,16 +14,6 @@ class_name LevelProgressProvider
 var controller: LevelProgressBarController
 
 
-## 绑定：被控制器装上时调用一次（建旗帜这类一次性准备写在这里）
-func on_bind() -> void:
-	pass
-
-
-## 解绑：换源 / 关卡退出时调用（断信号、清缓存）
-func on_unbind() -> void:
-	pass
-
-
 ## 进度百分比（0~100）：控制器每帧取一次
 func get_progress() -> float:
 	return 0.0

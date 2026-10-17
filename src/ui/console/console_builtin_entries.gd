@@ -111,7 +111,8 @@ static func _register_display_entries(registry) -> void:
 
 static func _register_debug_entries(registry) -> void:
 	_add(registry, ConsoleEntry.create_toggle(&"open_all_level", "开放所有关卡")
-		.set_tooltip("解锁全部冒险 / 迷你 / 解谜 / 生存关卡，以及主菜单的花园 / 图鉴 / 商店入口")
+		.set_tooltip("解锁全部分支模式（迷你 / 解谜 / 生存）关卡，以及主菜单的花园 / 图鉴 / 商店入口；" +
+			"冒险模式没有选关界面、按进度只能打下一关，不受本开关影响（要跳关用「通关所有冒险关卡」）")
 		.set_category(CATEGORY_DEBUG)
 		.set_order(10)
 		.bind(func() -> bool: return Global.config_service.open_all_level,

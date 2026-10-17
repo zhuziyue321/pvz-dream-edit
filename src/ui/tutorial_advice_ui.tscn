@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/ui/tutorial_advice_ui.gd" id="1_advice"]
 [ext_resource type="Script" path="res://src/ui/tutorial_pointer.gd" id="2_pointer"]
-[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets/fonts/方正少儿_GBK.ttf" id="3_font"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="3_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_advice"]
 content_margin_left = 14.0

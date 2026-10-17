@@ -5,7 +5,6 @@
 [ext_resource type="Texture2D" path="res://pak/images/Challenge_Background.jpg" id="3_mxft5"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="4_78h4s"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="5_4s1si"]
-[ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="6_g2rg4"]
 
 [node name="CanvasLayer" type="CanvasLayer" unique_id=1554379172]
 layer = 128
@@ -67,7 +66,6 @@ texture_normal = ExtResource("4_78h4s")
 texture_pressed = ExtResource("5_4s1si")
 texture_hover = ExtResource("5_4s1si")
 texture_focused = ExtResource("5_4s1si")
-texture_click_mask = ExtResource("6_g2rg4")
 
 [node name="Label" type="Label" parent="OptionBG/TextureButton" unique_id=686878322]
 layout_mode = 0

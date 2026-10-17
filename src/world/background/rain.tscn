@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://b3046a6pkwswm" path="res://src/world/background/main_game_rain.gd" id="2_1e5if"]
 [ext_resource type="Shader" uid="uid://rose81jro0dj" path="res://shaders/my_shader/weather_fog.gdshader" id="3_ere4b"]
 [ext_resource type="Shader" uid="uid://b3itfb2rdekpl" path="res://shaders/my_shader/weather_fog2.gdshader" id="4_t3bv5"]
-[ext_resource type="Texture2D" uid="uid://bl3b3jltltajj" path="res://assets/image/particles/rain_drop.png" id="5_ke767"]
+[ext_resource type="Texture2D" uid="uid://bl3b3jltltajj" path="res://assets_custom/image/particles/rain_drop.png" id="5_ke767"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_0himu"]
 shader = ExtResource("1_226xs")

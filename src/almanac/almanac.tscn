@@ -4,22 +4,18 @@
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="1_pt714"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_IndexBack.jpg" id="2_db05o"]
 [ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button.png" id="4_ikq35"]
-[ext_resource type="BitMap" uid="uid://ccmgmr2kpk10u" path="res://assets/image/ui/ui_card/SeedChooser_Button_Mask.png" id="5_db05o"]
-[ext_resource type="Texture2D" uid="uid://b48l4yjq0j5mo" path="res://assets/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="6_pt714"]
-[ext_resource type="BitMap" uid="uid://cxokl66i7qyda" path="res://assets/image/ui/ui_main_game_menu/UI_BG/button_BG_mask.png" id="7_2p4k2"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="6_pt714"]
 [ext_resource type="PackedScene" uid="uid://wte35drumapp" path="res://src/entities/character/plant/plant_sun_flower.tscn" id="8_pt714"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="8_u1nrc"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="9_ji74r"]
-[ext_resource type="BitMap" uid="uid://dpjf3mqsip8ql" path="res://assets/image/Almanac/Almanac_CloseButton_Mask.png" id="10_dyjda"]
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://src/entities/character/zombie/zombie_norm.tscn" id="11_2p4k2"]
 [ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="11_pn30t"]
-[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets/fonts/SIMSUN.TTC" id="12_jlxhy"]
+[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets_custom/fonts/SIMSUN.TTC" id="12_jlxhy"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_PlantBack.jpg" id="12_u1nrc"]
 [ext_resource type="Script" uid="uid://dwfqmpx1wwbvb" path="res://src/almanac/plant_page.gd" id="13_pt714"]
 [ext_resource type="PackedScene" uid="uid://dthq42y7g8j85" path="res://src/almanac/almanac_character_show_panel.tscn" id="14_ji74r"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_IndexButton.png" id="15_0vkb5"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_IndexButtonHighlight.png" id="16_pt714"]
-[ext_resource type="BitMap" uid="uid://bu8dpvt5qxwnc" path="res://assets/image/Almanac/Almanac_IndexButton_Mask.png" id="17_2p4k2"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_ZombieBack.jpg" id="18_ji74r"]
 [ext_resource type="Script" uid="uid://bb1xg8pc7k07h" path="res://src/almanac/zombie_page.gd" id="20_u1nrc"]
 [ext_resource type="Script" uid="uid://da5bqdygbavi6" path="res://src/almanac/extra_plant_page.gd" id="21_extra"]
@@ -97,7 +93,6 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("4_ikq35")
 texture_pressed = ExtResource("4_ikq35")
-texture_click_mask = ExtResource("5_db05o")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="StartPage/Panel/PlantButton"]
@@ -154,7 +149,6 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("6_pt714")
 texture_pressed = ExtResource("6_pt714")
-texture_click_mask = ExtResource("7_2p4k2")
 stretch_mode = 0
 script = ExtResource("11_pn30t")
 
@@ -211,7 +205,6 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("4_ikq35")
 texture_pressed = ExtResource("4_ikq35")
-texture_click_mask = ExtResource("5_db05o")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="StartPage/Panel3/ExtraPlantButton"]
@@ -299,7 +292,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("15_0vkb5")
 texture_pressed = ExtResource("16_pt714")
 texture_hover = ExtResource("16_pt714")
-texture_click_mask = ExtResource("17_2p4k2")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="PlantPage/ReturnButton"]
@@ -425,7 +417,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("15_0vkb5")
 texture_pressed = ExtResource("16_pt714")
 texture_hover = ExtResource("16_pt714")
-texture_click_mask = ExtResource("17_2p4k2")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="ZombiePage/ReturnButton"]
@@ -513,7 +504,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("15_0vkb5")
 texture_pressed = ExtResource("16_pt714")
 texture_hover = ExtResource("16_pt714")
-texture_click_mask = ExtResource("17_2p4k2")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="ExtraPlantPage/ReturnButton"]
@@ -550,7 +540,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("8_u1nrc")
 texture_pressed = ExtResource("9_ji74r")
 texture_hover = ExtResource("9_ji74r")
-texture_click_mask = ExtResource("10_dyjda")
 script = ExtResource("11_pn30t")
 
 [node name="Label" type="Label" parent="ExitButton"]

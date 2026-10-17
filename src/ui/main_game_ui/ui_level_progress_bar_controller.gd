@@ -32,15 +32,12 @@ func setup(mg: MainGameManager) -> void:
 
 ## 换数据源（关卡流程中途换口径 / 关卡脚本自己接管）；传 null = 只收起进度条
 func set_provider(new_provider: LevelProgressProvider) -> void:
-	if provider != null:
-		provider.on_unbind()
 	provider = new_provider
 	_flag_num = -1
 	if provider == null:
 		progress_bar.visible = false
 		return
 	provider.controller = self
-	provider.on_bind()
 
 
 ## 关卡整体开关：整关都不显示进度条时关掉它（数据源之外再叠的一层总闸）

@@ -96,7 +96,7 @@ func move_to(target_pos: Vector2, duration: float) -> Signal:
 
 
 ## 相机三个停靠点全部按「背景图」算，不写死魔数：
-## 背景贴图 1400x600（res://assets/image/background/*.jpg），背景 Sprite2D 是
+## 背景贴图 1400x600（res://pak/images/*.jpg），背景 Sprite2D 是
 ## centered = false、position = (-210, 0)（见 src/world/background/*.tscn），
 ## 所以背景占的世界区间是 x ∈ [-210, 1190]、y ∈ [0, 600]。
 ## 视口 800x600（project.godot），anchor_mode = FixedTopLeft →
