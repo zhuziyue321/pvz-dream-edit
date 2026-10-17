@@ -9,7 +9,7 @@ extends RefCounted
 ## 机器可读汇总：最后一行 [ZOMBOSSICE] result=PASS|FAIL failed=<n>
 
 const LEVEL_05_10 := "res://src/levels/mode_adventure/adventure_05_10.gd"
-## 冰冻附带的通用伤害，与 Character000Base.be_ice_freeze 一致
+## 冰冻附带的伤害（测试夹具），与 plant_ice_shroom.tscn 的角色 attack_value 一致
 const ICE_FREEZE_DAMAGE := 20
 ## 本次冰冻时长 / 解冻后减速时长，单位为游戏秒
 const FREEZE_TIME := 2.0
@@ -87,7 +87,7 @@ func _check_ice_shroom_freeze(a, mg, boss, hp) -> void:
 	var before: int = hp.curr_hp
 	## 同一帧内开关受击窗口并结算，避免状态机在两帧之间把它关掉。
 	_open_hurt_window(boss)
-	mg.zombie_manager.ice_all_zombie(FREEZE_TIME, DECELERATE_TIME)
+	mg.zombie_manager.ice_all_zombie(FREEZE_TIME, DECELERATE_TIME, ICE_FREEZE_DAMAGE)
 	await a.wait(0.3)
 	var dealt: int = before - hp.curr_hp
 	a.log("  寒冰菇 -> 掉血 %d（前/后=%d/%d）" % [dealt, before, hp.curr_hp])

@@ -62,6 +62,8 @@ func _check_battle_progress(a) -> void:
 	await a.wait(1.0)
 
 	_check(a, "开战后进度条显示", bar.visible, "visible=false")
+	## 旗帜数 = 每 10 波一面，整除取整
+	@warning_ignore("integer_division")
 	var flag_num: int = mg.game_para.max_wave / 10
 	_check(a, "旗帜数 = max_wave/10 = %d" % flag_num, bar.flag_arr.size() == flag_num,
 		"实际 = " + str(bar.flag_arr.size()))

@@ -11,7 +11,7 @@ extends RefCounted
 const LEVEL_05_10 := "res://src/levels/mode_adventure/adventure_05_10.gd"
 ## 豌豆的单发伤害，与 bullet_pea.tscn 的 attack_value 一致
 const PEA_DAMAGE := 20
-## 火爆辣椒对僵王的伤害，与 ZombieManager.jalapeno_bomb_lane_zombie 一致
+## 火爆辣椒对僵王的伤害（测试夹具），与 plant_jalapeno.tscn 的角色 attack_value 一致
 const JALAPENO_DAMAGE := 1800
 
 var _failed := 0
@@ -79,7 +79,7 @@ func _check_jalapeno_hits_boss(a, mg, boss, hp) -> void:
 	hp.curr_hp = hp.max_hp
 	_open_hurt_window(boss)
 	var before: int = hp.curr_hp
-	mg.zombie_manager.jalapeno_bomb_lane_zombie(0)
+	mg.zombie_manager.jalapeno_bomb_lane_zombie(0, JALAPENO_DAMAGE)
 	await a.wait(0.3)
 	var dealt: int = before - hp.curr_hp
 	a.log("  第 0 行辣椒 -> 掉血 %d" % dealt)

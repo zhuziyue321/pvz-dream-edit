@@ -54,6 +54,17 @@
     下划线前缀本来就豁免。扫出的候选人工复核后按「删掉 / 加 `_` 前缀」处理，
     比在编辑器里一条条翻快得多。
 
+    KNOWN LIMITATION 4 (实测 2026-10-17)：**别用 `--check-only --script` 单独验运行期
+    load 的脚本**（模组 / test/scenarios 探针那一类）。两条实测结论：
+      · `--check-only --script res://xxx.gd` 只做 parse 一层：往脚本里写一个
+        「基类上不存在的成员访问」（对照组 `c.zombie_type`，`c: Character000Base`）
+        照样 exit 0、一声不吭 —— 成员解析 / 方法调用这类语义错误它抓不到；
+      · 该方式甚至**不执行**脚本：一个 `extends SceneTree` + `_initialize()` 里
+        `print()` 的探针跑完一行输出都没有（疑似 `--script` 被主场景顶掉），
+        想靠它跑单元断言是幻觉。
+    要验运行期 load 的脚本，用下面的第二道（`test/scenarios/probe_*.gd` +
+    `run_autopilot.ps1 -Scenario <name>`），它真加载、真执行、还能造角色实例。
+
     A curated list of messages that are noisy but harmless is skipped (see $Known below).
     Exit code: 0 = no unexpected errors, 1 = at least one real compile problem.
 #>
@@ -95,8 +106,7 @@ $Known = @(
     'were leaked at exit',
     'leaked \d+ bytes',
     'resources still in use at exit',
-    'RID allocations of type',
-    "Invalid access to property or key 'card_type' on a base object of type 'Control \(Card\)'"
+    'RID allocations of type'
 )
 
 ## Anything that means a script genuinely failed to build.

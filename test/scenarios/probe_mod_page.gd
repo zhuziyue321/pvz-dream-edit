@@ -5,7 +5,7 @@ const GloveMod := preload("res://mods_builtin/glove/glove_mod.gd")
 const ModBase := preload("res://mods_builtin/mod_base.gd")
 ## 探针：模组页面（`src/ui/mod_page/`）
 ##
-## 验六件事：
+## 验七件事：
 ##   1. 入口：主菜单 → 选项 → 控制台（`StartMenuOptionDialog/Button4`，按钮文字就是「控制台」），
 ##      本页面挂在这个控制台上（`StartMenuOptionDialog/Button4/ModPage`，默认隐藏），
 ##      控制台的入口页会多一个「模组」按钮；选项面板里不再有单独的「模组」按钮
@@ -18,6 +18,10 @@ const ModBase := preload("res://mods_builtin/mod_base.gd")
 ##   6. 存档文件：开关与模组自己的设置**同段**落在 `user://<用户名>/mod_config.ini`，
 ##      再读回来（换用户 / 重开游戏那条路）开关与设置都要还在
 ##      （外加一条反断言：控制台里已经没有「模组」「联机」这两栏）
+##   7. 依赖列表：详情**末尾**有「依赖的模组」一块；没声明依赖时写一句
+##      「不依赖其它模组」（现役只有生态版声明了依赖：依赖「紫卡直接种植」，先核对这条真实声明）；
+##      再给手套临时换一份「依赖锤子」的脚本，验未登记 id 被剔除、
+##      依赖按钮点了跳转到锤子的详情、打开手套时锤子被一并打开（跑完还原脚本与开关）
 
 const MOD_PAGE_TSCN := "res://src/ui/mod_page/mod_page.tscn"
 ## 模组存档文件里手套那一段的键名（与 `GloveMod.SETTING_KEY_COOLDOWN_TIME` 同值，探针自带一份，
@@ -25,6 +29,9 @@ const MOD_PAGE_TSCN := "res://src/ui/mod_page/mod_page.tscn"
 const SETTING_TIME_KEY := "cooldown_time"
 ## 模组存档文件名（与 `ModManager.MOD_SAVE_FILE` 同值，在**当前用户**目录下）
 const MOD_SAVE_FILE := "mod_config.ini"
+## 详情末尾那块「依赖的模组」的名字（与 `ModPage.DEPENDENCY_BOX_NAME` 同值；
+## 页面自己造的，探针靠名字找它 —— 它前面有几行随模组而变，靠下标不稳）
+const DEPENDENCY_BOX_NAME := "DependencyBox"
 
 var _failed := 0
 
@@ -187,6 +194,106 @@ func run(a) -> void:
 		_check(a, "控制台里已经没有「模组」「联机」这两栏", leftover.is_empty())
 	#endregion
 
+	#region 7 依赖列表（详情末尾）
+	## 模组可在 `ModBase.get_mod_dependencies()` 里声明依赖哪些模组：
+	##   · 详情**末尾**有一块「依赖的模组」，每个依赖一个按钮，点了跳过去；
+	##   · 打开本模组时依赖被一并打开（`ModManager.set_mod_enabled()` 里递归补开）。
+	## 现役模组里只有**生态版**声明了依赖（依赖「紫卡直接种植」，2026-10-17 加）——
+	## 先核对该真实声明（管理器过滤过的：未登记 id / 依赖自己会被剔除），
+	## 再给手套**临时**换一份「依赖锤子 + 一个未登记 id」的脚本把这三端都跑一遍，
+	## 跑完还原脚本与开关，不把后面的探针带歪。
+	_click(_find_list_button(page, "手套"))
+	var dep_box := _dependency_box(page)
+	_check(a, "详情末尾有「依赖的模组」那一块", dep_box != null)
+	if dep_box != null:
+		var dep_lines := _label_texts(dep_box)
+		a.log("[MODPAGE] 依赖块=%s" % str(dep_lines))
+		_check(a, "没声明依赖时写一句（不依赖其它模组）", dep_lines.any(func(t: String) -> bool:
+			return t.contains("不依赖其它模组")))
+	var others_with_deps: Array = []
+	for mod_id in ModManager.all_mods:
+		if mod_id == ModIds.ECO:
+			continue
+		if not ModManager.get_mod_dependencies(mod_id).is_empty():
+			others_with_deps.append(str(mod_id))
+	var eco_deps := ModManager.get_mod_dependencies(ModIds.ECO)
+	a.log("[MODPAGE] 生态版声明的依赖=%s" % str(eco_deps))
+	_check(a, "只有生态版声明依赖，且依赖正是「紫卡直接种植」",
+		others_with_deps.is_empty()
+		and eco_deps.size() == 1 and eco_deps[0] == ModIds.PURPLE_DIRECT_PLANT)
+
+	## 锤子可能被上一次探针 / 玩家留在开着状态：先归零（下面「自动补开」那一端要按未启用起跑）
+	if ModManager.is_mod_enabled(ModIds.HAMMER):
+		ModManager.set_mod_enabled(ModIds.HAMMER, false)
+		ModManager.save_mods()
+
+	## 给手套临时换一份脚本：声明依赖**锤子** + 一个未登记的 id（后者应被管理器剔除）。
+	## id 用字面量写（这份脚本是探针临场造的，引用不到本文件的常量）——
+	## 下面的断言拿 `ModIds.*` 比，写歪了会当场 FAIL，不会静默混过去。
+	var glove_mod = ModManager.get_mod(ModIds.GLOVE)
+	var glove_script: Script = glove_mod.get_script()
+	var dep_script := GDScript.new()
+	dep_script.source_code = """
+extends "res://mods_builtin/mod_base.gd"
+
+func get_mod_id() -> StringName:
+	return &"glove"
+
+func get_mod_dependencies() -> Array[StringName]:
+	return [&"no_such_mod", &"hammer"]
+"""
+	var reload_err := dep_script.reload()
+	_check(a, "临时依赖脚本能编译", reload_err == OK)
+	if reload_err == OK and glove_mod != null:
+		glove_mod.set_script(dep_script)
+		var glove_deps := ModManager.get_mod_dependencies(ModIds.GLOVE)
+		a.log("[MODPAGE] 手套声明的依赖（未登记的已剔除）=%s" % str(glove_deps))
+		_check(a, "未登记的依赖 id 被剔除，只剩锤子",
+			glove_deps.size() == 1 and glove_deps[0] == ModIds.HAMMER)
+		## 页面是换脚本之前建的：重建一次，依赖块才按新声明长出来
+		page.build_mod_page()
+		var dep_button: Button = null
+		for button in _buttons_in(_dependency_box(page)):
+			if button.text.contains("锤子"):
+				dep_button = button
+		_check(a, "依赖块里列出锤子（带开关状态）", dep_button != null)
+		if dep_button != null:
+			_check(a, "依赖按钮上带着锤子的开关状态（未启用）", dep_button.text.contains("未启用"))
+			dep_button.pressed.emit()
+			_check(a, "点依赖按钮跳转到锤子的详情", page._selected_mod_id == ModIds.HAMMER)
+			var hammer_name: String = ModManager.get_mod(ModIds.HAMMER).get_mod_name()
+			var detail_title := page.detail_box.get_child(0) as Label
+			_check(a, "跳过去后详情标题就是锤子", detail_title != null and detail_title.text == hammer_name)
+		## 自动补开：打开手套 → 锤子被一并打开（列表状态与依赖按钮上的状态都跟着变）
+		## ⚠️ 这里不能再按名字点列表按钮：换了临时脚本后手套的显示名变成 "glove"
+		## （临时脚本没重写 get_mod_name()）—— 按 id 直接选中，与页面跳转同一条路
+		page._selected_mod_id = ModIds.GLOVE
+		page.build_mod_page()
+		ModManager.set_mod_enabled(ModIds.GLOVE, true)
+		_check(a, "打开手套时依赖的锤子被一并打开", ModManager.is_mod_enabled(ModIds.HAMMER))
+		page.build_mod_page()
+		## 「已启用」是「未启用」的子串：断言要带括号写全，不然两端都算过
+		_check(a, "依赖按钮上的状态跟着变成已启用", _buttons_in(_dependency_box(page)).any(
+			func(b: Button) -> bool: return b.text.contains("锤子") and b.text.contains("（已启用）")))
+		## 还原：脚本换回去 → 两个模组都关掉 → 存档照旧 → 页面按还原后的样子重建
+		glove_mod.set_script(glove_script)
+		ModManager.set_mod_enabled(ModIds.GLOVE, false)
+		ModManager.set_mod_enabled(ModIds.HAMMER, false)
+		ModManager.save_mods()
+		page.build_mod_page()
+		_check(a, "还原脚本后又回到「不依赖其它模组」", _label_texts(_dependency_box(page)).any(
+			func(t: String) -> bool: return t.contains("不依赖其它模组")))
+		## 真实声明也走同一套渲染：选中生态版，依赖块里应列出「紫卡直接种植」（带开关状态）——
+		## 顺带盯住 id 有没有写歪（写歪了管理器会剔除，按钮上就变成「模组不存在」）
+		page._selected_mod_id = ModIds.ECO
+		page.build_mod_page()
+		var eco_dep_button: Button = null
+		for button in _buttons_in(_dependency_box(page)):
+			if button.text.contains("紫卡直接种植"):
+				eco_dep_button = button
+		_check(a, "生态版的依赖块列出「紫卡直接种植」", eco_dep_button != null)
+		#endregion
+
 	page.queue_free()
 	_finish(a)
 
@@ -242,16 +349,37 @@ func _find_list_button(page: ModPage, mod_name: String) -> Button:
 	return null
 
 
-## 详情里「模组自己那一块」= 详情区**最后**一个子节点
+## 详情里「模组自己那一块」= 详情区里排在「依赖的模组」那一块**前面**的那个子节点
 ## （页面造的是 名称 / 开关 / 说明，模组没启用时中间还会插一句「先启用上面的开关」的提示，
-##  所以模组给的那一块不固定是第几个 —— 但它**恒在最后**，取最后一个才稳）
+##  末尾恒有页面自己造的依赖列表 `DependencyBox` —— 取它前一个才稳）
 func _mod_control(page: ModPage) -> Control:
 	if page == null or page.detail_box == null:
 		return null
 	var children := page.detail_box.get_children()
+	for i in children.size():
+		if children[i].name == DEPENDENCY_BOX_NAME and i > 0:
+			return children[i - 1] as Control
+	## 没有依赖块（不该发生）：退回最后一个
 	if children.is_empty():
 		return null
 	return children[-1] as Control
+
+
+## 详情末尾那块「依赖的模组」（页面自己造的，名字固定）
+func _dependency_box(page: ModPage) -> Node:
+	if page == null or page.detail_box == null:
+		return null
+	return page.detail_box.get_node_or_null(NodePath(DEPENDENCY_BOX_NAME))
+
+
+## 一棵控件树里所有按钮（依赖块里按文字认那个依赖按钮）
+func _buttons_in(root: Node) -> Array[Button]:
+	var result: Array[Button] = []
+	if root is Button:
+		result.append(root as Button)
+	for child in root.get_children():
+		result.append_array(_buttons_in(child))
+	return result
 
 
 ## 一棵控件树里所有**能交互**的控件（按钮 / 勾选框 / 输入框 / 滑条）

@@ -359,16 +359,18 @@ func _check_card_negotiation(a) -> void:
 #region 8. 退出关卡 / 通关裁决
 func _check_leave_and_verdict(a) -> void:
 	a.log("")
-	a.log("--- 8. 退出关卡 ⇒ 也在同一个选关页；通关裁决以房主为准 ---")
+	a.log("--- 8. 退出关卡 ⇒ 退回该模式该回的场景；通关裁决以房主为准 ---")
 
-	## 退回哪个选关页：mode 值本身就是那个选关页的场景 id
+	## 退回哪个场景：mode 值本身就是那个选关页的场景 id
 	var adv := NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.ChooseLevelAdventure)
-	_check(a, "冒险模式退回冒险选关页", adv.contains("adventure_choose_level"), adv)
+	_check(a, "冒险模式没有选关页，退回主菜单", adv.contains("start_menu"), adv)
 	var mini := NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.ChooseLevelMiniGame)
 	_check(a, "迷你模式退回迷你选关页", mini.contains("mini_game_choose_level"), mini)
 	_check(a, "mode 没记录时不乱跑（返回空）", NetplayMod.choose_level_scene_of_mode(0).is_empty())
-	_check(a, "不是选关页的场景 id 不接受", NetplayMod.choose_level_scene_of_mode(
-		MainSceneRegistry.MainScenes.StartMenu).is_empty())
+	_check(a, "认不出选关页的 mode 也回主菜单（不扣在关卡里）",
+		NetplayMod.choose_level_scene_of_mode(
+			MainSceneRegistry.MainScenes.StartMenu).contains("start_menu"),
+		NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.StartMenu))
 
 	## 客户端写不写档：只看房主裁决过没有
 	var verdicts := {"101_0_0001": true}

@@ -1,16 +1,26 @@
 extends RefCounted
-## 探针：主菜单「未解锁入口」的表现 —— 花园 / 图鉴 / 商店未解锁时直接隐藏,模式按钮置灰保留
+## 探针：主菜单「按进度变化的入口」的表现 —— 花园 / 图鉴 / 商店未解锁时直接隐藏,模式按钮置灰保留
 ## 覆盖：
 ##   1. 新档（0 关）：花园、图鉴、商店 visible=false
 ##   2. 通关到 2-3(13) 图鉴仍隐藏 / 2-4(14) 图鉴出现 —— 门槛 14
 ##   3. 通关到 3-3(23) 商店仍隐藏 / 3-4(24) 商店出现 —— 门槛 24
 ##   4. 通关到 5-4(44) 花园仍隐藏 / 5-5(45) 花园出现 —— 门槛 45
 ##   5. 模式按钮（迷你游戏 22 / 解谜 36 / 生存 50）未解锁时是置灰而不是隐藏
+##   6. 冒险模式按钮：通关 1-1 前是「开始冒险模式」贴图且不显示关卡号，之后换成
+##      「冒险模式」贴图并填写当前关卡（几杠几，全部通关停在 5-10）
 ## 机器可读汇总：最后一行 [MENUUNLOCK] result=PASS|FAIL failed=<n>
 
 const PATH_GARDEN := "BG_Right/Item/TextureButton"
 const PATH_ALMANAC := "BG_Right/Item/TextureButton2"
 const PATH_SHOP := "BG_Right/Item/TextureButton3"
+
+## 冒险模式按钮与它上面的关卡号
+const PATH_ADVENTURE_BUTTON := "BG_Right/Menu/Button1"
+const PATH_ADVENTURE_LEVEL_VIEW := "BG_Right/Menu/Button1/LevelText"
+const PATH_ADVENTURE_FIRST_NUMBER := "BG_Right/Menu/Button1/LevelText/FirstNumber"
+const PATH_ADVENTURE_SECOND_NUMBER := "BG_Right/Menu/Button1/LevelText/SecondNumber"
+const TEX_START_ADVENTURE := preload("res://pak/reanim/SelectorScreen_StartAdventure_Button1.png")
+const TEX_ADVENTURE := preload("res://pak/reanim/SelectorScreen_Adventure_button.png")
 
 ## 模式按钮节点 -> 解锁所需关卡序号(与 ConstUnlockLevel 对齐)
 const MODE_BUTTONS: Dictionary[String, int] = {
@@ -88,8 +98,23 @@ func run(a) -> void:
 	_check_visible(a, menu, PATH_ALMANAC, true, "通关 5-10")
 	_check_visible(a, menu, PATH_SHOP, true, "通关 5-10")
 
-	# ------------------------------------------------ STEP6 切换用户后按新存档重算
-	a.log("STEP6 切到 0 进度的新用户：花园 / 图鉴 / 商店必须重新隐藏")
+	# ------------------------------------------------ STEP6 冒险模式按钮的贴图与关卡号
+	a.log("STEP6 冒险模式按钮：通关 1-1 前是「开始冒险模式」，之后是带关卡号的「冒险模式」")
+	_mark_cleared(state, 0)
+	menu._update_mode_lock_state()
+	_check_adventure_button(a, menu, TEX_START_ADVENTURE, false, "", "新档 0 关")
+	_mark_cleared(state, 1)
+	menu._update_mode_lock_state()
+	_check_adventure_button(a, menu, TEX_ADVENTURE, true, "1-2", "通关 1-1")
+	_mark_cleared(state, 13)
+	menu._update_mode_lock_state()
+	_check_adventure_button(a, menu, TEX_ADVENTURE, true, "2-4", "通关到 2-3")
+	_mark_cleared(state, 50)
+	menu._update_mode_lock_state()
+	_check_adventure_button(a, menu, TEX_ADVENTURE, true, "5-10", "通关全部 5-10")
+
+	# ------------------------------------------------ STEP7 切换用户后按新存档重算
+	a.log("STEP7 切到 0 进度的新用户：花园 / 图鉴 / 商店必须重新隐藏")
 	var panel := menu.get_node_or_null("User") as User
 	if panel == null:
 		_check(a, "找到 User 面板", false, "节点缺失")
@@ -117,8 +142,37 @@ func run(a) -> void:
 	_check_visible(a, menu, PATH_GARDEN, false, "切到 0 进度新用户")
 	_check_visible(a, menu, PATH_ALMANAC, false, "切到 0 进度新用户")
 	_check_visible(a, menu, PATH_SHOP, false, "切到 0 进度新用户")
+	_check_adventure_button(a, menu, TEX_START_ADVENTURE, false, "", "切到 0 进度新用户")
 
 	_finish(a)
+
+
+## 冒险模式按钮：贴图与关卡号（几杠几）是否符合当前进度
+func _check_adventure_button(a, menu: Node, want_tex: Texture2D, want_view: bool,
+		want_level: String, tag: String) -> void:
+	var btn := menu.get_node_or_null(PATH_ADVENTURE_BUTTON) as TextureButton
+	if btn == null:
+		_check(a, PATH_ADVENTURE_BUTTON + " 存在", false, "节点缺失")
+		return
+	_check(a, "%s 时的冒险模式按钮贴图" % tag, btn.texture_normal == want_tex,
+		"实际=" + str(btn.texture_normal) + " 期望=" + str(want_tex))
+	var view := menu.get_node_or_null(PATH_ADVENTURE_LEVEL_VIEW) as Control
+	if view == null:
+		_check(a, PATH_ADVENTURE_LEVEL_VIEW + " 存在", false, "节点缺失")
+		return
+	_check(a, "%s 时关卡号是否显示" % tag, view.visible == want_view,
+		"实际 visible=" + str(view.visible))
+	if not want_view:
+		return
+	## 关卡号是两个数字分开挂的(贴图自带的短横当分隔符), 这里拼回"几杠几"来比
+	var first := menu.get_node_or_null(PATH_ADVENTURE_FIRST_NUMBER) as Label
+	var second := menu.get_node_or_null(PATH_ADVENTURE_SECOND_NUMBER) as Label
+	if first == null or second == null:
+		_check(a, "关卡号两个数字节点存在", false, "节点缺失")
+		return
+	var got := "%s-%s" % [first.text, second.text]
+	_check(a, "%s 时的关卡号文本" % tag, got == want_level,
+		"实际=%s 期望=%s" % [got, want_level])
 
 
 ## 逐个模式按钮核对「置灰而非隐藏」

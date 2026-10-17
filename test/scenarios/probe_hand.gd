@@ -509,32 +509,13 @@ func _right_click(a, p: Vector2) -> void:
 	await a.frames(2)
 
 
-## 启动 → 选关 → 进主游戏场景
+## 启动 → 冒险模式 → 进主游戏场景
+## （冒险模式**没有选关界面**：点木牌直接进该打的那一关，新档 = 1-1，见 StartMenuRoot._start_adventure_level）
 func _goto_level(a) -> bool:
 	await a.wait_stable("/root/StartMenu/BG_Right/Menu/Button1", 8.0)
 	await a.click_first("Menu/Button1")
-	if not await a.wait_scene("choose_level", 12.0):
-		return false
-	var gcl: Node = a.get_node_or_null("/root/ChooseLevel/AllPage/GridContainer")
-	if gcl == null:
-		return false
-	var chosen := ""
-	for ch in gcl.get_children():
-		var nm := str(ch.name)
-		if not nm.begins_with("ChooseLevelButton"):
-			continue
-		var btn := ch.get_node_or_null("TextureButton")
-		if btn == null or (btn as BaseButton).disabled:
-			continue
-		if nm == "ChooseLevelButton":
-			chosen = nm
-			break
-		if chosen == "":
-			chosen = nm
-	if chosen == "":
-		return false
-	await a.press_first(chosen + "/TextureButton")
-	return await a.wait_scene("main_game", 10.0)
+	## 木牌点下去先播 3 秒僵尸手破土过场才切场景，超时给足
+	return await a.wait_scene("main_game", 20.0)
 
 
 ## 选卡阶段选一张卡（和 probe_plant 一致，选 Card5）

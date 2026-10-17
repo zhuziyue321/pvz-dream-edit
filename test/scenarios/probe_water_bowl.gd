@@ -78,8 +78,8 @@ func run(a) -> void:
 		return
 	var per_page: int = candidate.all_card_page_array[0].get_child_count()
 	a.log("   每页 %d 张卡，共 %d 页" % [per_page, candidate.all_card_page_array.size()])
-	## 排列顺序由待选卡槽自己算：普通植物在前，调试模式 / 模组新增追加在后
-	var ordered := candidate._build_ordered_plant_types()
+	## 排列顺序取自数据层快照（待选卡槽按它排页）：普通植物在前，调试模式 / 模组新增追加在后
+	var ordered := AllCards.get_plant_types_in_choose_order()
 	var bowl_order: int = ordered.find(WATER_BOWL)
 	_check(a, "水盆排在普通植物之后（属于追加的那批）",
 		bowl_order >= ordered.size() - ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES.size() - 1,
@@ -90,6 +90,8 @@ func run(a) -> void:
 	## 页码 = 顺序下标 / 每页格数（页数按植物总数算，见 _create_card_pages）
 	var bowl_page: int = candidate.all_card_page_array.find(
 		container.get_parent().get_parent() if container != null else null)
+	## 下面这条断言里的除法是整除取整，与 card_slot_candidate 的排页口径一致
+	@warning_ignore("integer_division")
 	_check(a, "水盆的页码 = 顺序下标 / 每页格数", bowl_page == bowl_order / per_page,
 		"第 %d 页 / 共 %d 页" % [bowl_page + 1, candidate.all_card_page_array.size()])
 	slot_root.free()

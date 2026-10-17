@@ -40,6 +40,8 @@ func run(a) -> void:
 			_check(a, "保龄球 %d 有卡位" % plant_type, false, "没有任何卡位")
 			continue
 		var card_id: int = AllCards.plant_card_ids[plant_type]
+		## 页码 = card_id / 每页格数，整除取整（与 card_slot_candidate 的排页口径一致）
+		@warning_ignore("integer_division")
 		var page: int = card_id / per_page + 1
 		var slot_in_page: int = card_id % per_page + 1
 		_check(a, "调试植物 %d 落在第 2 页" % plant_type, page == 2,

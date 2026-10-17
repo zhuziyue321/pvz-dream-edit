@@ -2,7 +2,7 @@ extends RefCounted
 ## 探针：冒险模式「首次通关掉落本关奖励」代替奖杯
 ## 覆盖：
 ##   1. 首次通关 1-2：由僵尸掉一包种子（樱桃炸弹），此时不出奖杯
-##   2. 点开种子包 -> 直接结算（不再抛奖杯），回冒险模式选关界面
+##   2. 点开种子包 -> 直接结算（不再抛奖杯），回主菜单（冒险模式没有选关界面）
 ##   3. 反例：重打 1-2 不再掉奖励，直接出奖杯
 ##   4. 首次通关 1-4：掉的是铲子（adventure_01_04.gd 里写的道具类奖励，仍走礼物盒）
 ##   5. 首次通关 2-4：掉的是大图鉴（adventure_02_04.gd 里写的道具类奖励，原版行为），
@@ -45,8 +45,8 @@ func run(a) -> void:
 	a.log("STEP2 点开奖励（应直接结算，不再抛奖杯）")
 	new_drop._on_texture_button_pressed()
 	await a.wait(8.0)
-	_check(a, "点开奖励后直接结算回选关界面",
-		"adventure_choose_level" in a.get_tree().current_scene.scene_file_path,
+	_check(a, "点开奖励后直接结算回主菜单",
+		"start_menu" in a.get_tree().current_scene.scene_file_path,
 		str(a.get_tree().current_scene.scene_file_path))
 	_check(a, "1-2 已写成通关",
 		state.curr_all_level_state_data.get("101_0_0002", {}).get("IsSuccess", false))

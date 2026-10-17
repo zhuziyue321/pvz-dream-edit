@@ -181,7 +181,8 @@ func _finish(a) -> void:
 	a.quit_game()
 
 
-## 直接用关卡数据进 1-2 主游戏（1-2 不是选关界面里第一个按钮，走菜单到不了）
+## 直接用关卡数据进 1-2 主游戏
+## （走菜单进的是「按进度该打的那一关」，本探针要的是 1-2 本身，所以自己拼进关参数）
 func _enter_level(a, wait_tutorial: bool) -> bool:
 	if wait_tutorial:
 		## 先等引擎把真实主场景（开始菜单）稳定下来

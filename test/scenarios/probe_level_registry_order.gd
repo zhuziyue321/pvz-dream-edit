@@ -58,6 +58,25 @@ func run(a) -> void:
 			broken.append(level_id)
 	_check(a, "登记的关卡都能 get_level() 取出实例", broken.is_empty(), "，".join(broken.slice(0, 3)))
 
+	## 二周目变体护栏（见 LevelRegistry.ROUND_VARIANT_SUFFIX / docs/参考存档/二周目.md）：
+	## 变体只是「同一关的另一套脚本」，必须**不进** ids_by_mode ——
+	## 混进来的话上面的「正式冒险关恰好 50 关」与「第 n 位 == 第 n 关」会立刻炸。
+	var missing_variant: Array[String] = []
+	for n in range(1, ADVENTURE_LEVEL_TOTAL + 1):
+		var base_id := LevelRegistry.get_adventure_level_id(n)
+		if not LevelRegistry.has_level(base_id + LevelRegistry.ROUND_VARIANT_SUFFIX):
+			missing_variant.append(base_id)
+	_check(a, "50 关都有自己的二周目变体脚本（adventure_XX_YY_round2）",
+		missing_variant.is_empty(), "，".join(missing_variant.slice(0, 3)))
+	var variant_ok: bool = (LevelRegistry.get_adventure_level_id(1, 2) == "adventure_01_01_round2"
+		and LevelRegistry.get_adventure_level_id(1, 1) == "adventure_01_01")
+	_check(a, "按周目取脚本：周目 2 拿变体、周目 1 拿正本", variant_ok,
+		LevelRegistry.get_adventure_level_id(1, 2))
+	var variant_leaked := ids.filter(func(id: String) -> bool:
+		return id.ends_with(LevelRegistry.ROUND_VARIANT_SUFFIX))
+	_check(a, "变体不进 ids_by_mode（不算「一关」，不占选关顺序）",
+		variant_leaked.is_empty(), "，".join(variant_leaked.slice(0, 3)))
+
 	## 序号反查：1..50 每关都要能取到「查声明用的副本」
 	var no_data: Array[int] = []
 	for n in range(1, ADVENTURE_LEVEL_TOTAL + 1):

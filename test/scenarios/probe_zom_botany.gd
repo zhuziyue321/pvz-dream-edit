@@ -68,6 +68,11 @@ func _check_scenes(a) -> void:
 			continue
 		var zombie: Zombie000Base = scene.instantiate()
 		_expect(a, "场景 " + str(zombie_type) + " 的 zombie_type", zombie.zombie_type, zombie_type)
+		## 换头组件挂在 `Body/BodyCorrect/Anim_head/Anim_head1`（僵尸自己的头）下面：
+		## 场景结构（继承的 base 或部件改名）一动，这条路径就没了 —— 而它失效的表现是
+		## 「僵尸顶着一颗没被替换的人头」，静态检查查不出来，所以在这里钉住
+		_expect(a, "场景 " + str(zombie_type) + " 有可被替换的僵尸头节点",
+			zombie.get_node_or_null(^"Body/BodyCorrect/Anim_head/Anim_head1") is Sprite2D, true)
 		if zombie.get_node_or_null(^"HpComponent") == null:
 			_failed += 1
 			a.log("  FAIL 植物僵尸 " + str(zombie_type) + " 没有 HpComponent")

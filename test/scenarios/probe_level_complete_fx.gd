@@ -4,7 +4,8 @@ extends RefCounted
 ##   1. 实机：进 1-4 —— 本关首次通关奖励是道具类（铲子），掉的是礼物盒 Present
 ##   2. 实机：这条掉落物被打上 is_level_complete_drop（说明它在本关的结算线上）
 ##   3. 实机：点开后 CanvasLayerWhiteScreen 亮起，掉落物的屏幕坐标逐渐逼近屏幕中心
-##   4. 实机：白屏 alpha 单调涨到 1（完全白了）之后掉落物被释放、关卡切到选关界面（结算）
+##   4. 实机：白屏 alpha 单调涨到 1（完全白了）之后掉落物被释放、关卡切走结算
+##      （冒险模式没有选关界面，切走的目标是主菜单，见 MgmRewardManager.win_main_game）
 ## 机器可读汇总：最后一行 [LEVELCOMPLETEFX] result=PASS|FAIL failed=<n>
 
 const ADV := MainSceneRegistry.MainScenes.ChooseLevelAdventure

@@ -118,14 +118,10 @@ func _count_advice_ui_except(except) -> int:
 
 
 ## 启动 -> 冒险模式 -> 第 1 关
+## （冒险模式**没有选关界面**：点木牌直接进该打的那一关，新档 = 1-1，见 StartMenuRoot._start_adventure_level）
 func _goto_level(a) -> bool:
 	await a.wait_stable("/root/StartMenu/BG_Right/Menu/Button1", 8.0)
 	await a.click_first("Menu/Button1")
-	if not await a.wait_scene("choose_level", 12.0):
-		return false
-	var gcl: Node = a.get_node_or_null("/root/ChooseLevel/AllPage/GridContainer")
-	if gcl == null:
-		return false
-	await a.press_first("ChooseLevelButton/TextureButton")
-	return await a.wait_scene("main_game", 10.0)
+	## 木牌点下去先播 3 秒僵尸手破土过场才切场景，超时给足
+	return await a.wait_scene("main_game", 20.0)
 #endregion

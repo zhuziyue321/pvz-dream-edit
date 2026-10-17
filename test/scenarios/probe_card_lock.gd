@@ -20,6 +20,10 @@ func run(a) -> void:
 	## 新档：只有豌豆射手
 	state.curr_plant.assign([PlantIds.PEA_SHOOTER_SINGLE])
 	state.curr_all_level_state_data = {}
+	## 周目钉回首周目：二周目起这一关加载的是另一套脚本（adventure_XX_YY_round2.gd），
+	## 它有「锁定前 3 个随机卡槽」的差异；本探针要测的是**一周目的全锁**，别被周目带偏
+	## （见 docs/参考存档/二周目.md §6）
+	state.curr_adventure_round = GlobalGameState.DEFAULT_ADVENTURE_ROUND
 
 	if not await _goto_level(a):
 		a.log("!! 进不了关卡")
@@ -245,14 +249,10 @@ func _find_node_of_class(root: Node, cls: String) -> Node:
 
 
 ## 启动 -> 冒险模式 -> 第 1 关
+## （冒险模式**没有选关界面**：点木牌直接进该打的那一关，新档 = 1-1，见 StartMenuRoot._start_adventure_level）
 func _goto_level(a) -> bool:
 	await a.wait_stable("/root/StartMenu/BG_Right/Menu/Button1", 8.0)
 	await a.click_first("Menu/Button1")
-	if not await a.wait_scene("choose_level", 12.0):
-		return false
-	var gcl: Node = a.get_node_or_null("/root/ChooseLevel/AllPage/GridContainer")
-	if gcl == null:
-		return false
-	await a.press_first("ChooseLevelButton/TextureButton")
-	return await a.wait_scene("main_game", 10.0)
+	## 木牌点下去先播 3 秒僵尸手破土过场才切场景，超时给足
+	return await a.wait_scene("main_game", 20.0)
 #endregion

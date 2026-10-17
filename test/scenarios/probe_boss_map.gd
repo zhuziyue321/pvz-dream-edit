@@ -223,6 +223,8 @@ func _check_level_runtime(a) -> bool:
 				row_areas != null and row_areas.get_child_count() == EXPECT_ROW_NUM,
 				str(row_areas.get_child_count() if row_areas != null else -1))
 		## 按 x 取斜面相对 y（僵尸入场落位 / 抛物线影子都查它）：取场地中间列能取到有限值
+		## 中间列下标 = 列数 / 2，整除取整
+		@warning_ignore("integer_division")
 		var mid_x: float = para.map_data.col_x[EXPECT_COL_NUM / 2] + 30.0
 		var slope_y: float = slope.get_all_slope_y(mid_x)
 		_check(a, "按 x 能取到斜面 y", is_finite(slope_y), "x=%.1f y=%s" % [mid_x, str(slope_y)])

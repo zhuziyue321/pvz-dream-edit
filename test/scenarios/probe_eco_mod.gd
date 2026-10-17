@@ -1,15 +1,17 @@
 extends RefCounted
-## 探针：模组「原版平衡」（10 条同人调整）
+## 探针：模组「生态版」（10 条同人调整）
 ##
 ## ① 数据层（装模组前后各读一遍）：豌豆射手 / 咖啡豆 / 吸金磁的阳光、仙人掌子弹的穿透数
 ## ② 实例层：进一个白天关，直接调 `PlantCell.create_plant()` 造出植物来验 ——
 ##    寒冰菇伤害、机枪的补发数、卷心菜的三行检测区、吸金磁的吸铁组件（max_iron = 3）
 ## ③ 光照：火炬树桩点亮十字四格、路灯花点亮周围八格、向日葵按光照每级多产 5 阳光
+## ④ 依赖：生态版声明依赖「紫卡直接种植」—— 打开生态版时它被一并打开（只补开、不连锁关），
+##    跑完按开跑前的状态还原，别把后面的探针带歪
 ##
 ## ★ 关掉模组要把数值还原成原版，所以每一条都**装前装后各验一次**（只验"改成了新值"
 ##   等于没验：写死常量也能过）。
 ##
-## 机器可读汇总：最后一行 [BALANCE] result=PASS|FAIL failed=<n>
+## 机器可读汇总：最后一行 [ECO] result=PASS|FAIL failed=<n>
 
 const LEVEL := "res://src/levels/mode_adventure/adventure_01_01.gd"
 
@@ -23,7 +25,7 @@ var _failed := 0
 
 func run(a) -> void:
 	a.log("")
-	a.log("========== 探针：模组「原版平衡」==========")
+	a.log("========== 探针：模组「生态版」==========")
 	var registry := Global.character_registry
 
 	# ------------------------------------------------ STEP1 装之前是原版
@@ -41,7 +43,11 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP2 装上之后
 	a.log("STEP2 装上模组 → 数据层那几条生效")
-	ModManager.set_mod_enabled(ModIds.BALANCE, true)
+	## 生态版依赖紫卡直接种植：开跑前记下它的开关，STEP6 照这个还原
+	var purple_was_enabled := ModManager.is_mod_enabled(ModIds.PURPLE_DIRECT_PLANT)
+	ModManager.set_mod_enabled(ModIds.ECO, true)
+	_check(a, "打开生态版时依赖的「紫卡直接种植」被一并打开",
+		ModManager.is_mod_enabled(ModIds.PURPLE_DIRECT_PLANT))
 	_check(a, "豌豆射手阳光 = 75", _sun(registry, PlantIds.PEA_SHOOTER_SINGLE) == 75,
 		str(_sun(registry, PlantIds.PEA_SHOOTER_SINGLE)))
 	_check(a, "咖啡豆阳光 = 25", _sun(registry, PlantIds.COFFEE_BEAN) == 25,
@@ -123,9 +129,8 @@ func run(a) -> void:
 	if ice == null:
 		_check(a, "种得下寒冰菇", false, "格子不可用")
 	else:
-		var bomb: BombComponentBase = ice.get_node_or_null(^"BombComponent") as BombComponentBase
-		_check(a, "寒冰菇伤害 = 100", bomb != null and bomb.bomb_value == 100,
-			"null" if bomb == null else str(bomb.bomb_value))
+		## 寒冰菇伤害由角色攻击力承载（`BombComponentIce` 读 `owner_plant.attack_value`）
+		_check(a, "寒冰菇伤害 = 100", ice.attack_value == 100, str(ice.attack_value))
 
 	var gatling: Plant000Base = _plant(manager, 0, 1, PlantIds.GATLING_PEA)
 	if gatling == null:
@@ -165,7 +170,10 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP6 关掉模组
 	a.log("STEP6 关掉模组 → 数据层回到原版")
-	ModManager.set_mod_enabled(ModIds.BALANCE, false)
+	ModManager.set_mod_enabled(ModIds.ECO, false)
+	## 依赖是「只补开、不连锁关」：紫卡直种不会跟着生态版一起关 —— 按开跑前的状态还原，
+	## 别把后面的探针带歪（开关是持久化的，帧末那次存档照此写）
+	ModManager.set_mod_enabled(ModIds.PURPLE_DIRECT_PLANT, purple_was_enabled)
 	_check(a, "豌豆射手阳光回到 %d" % VANILLA_SUN_PEA,
 		_sun(registry, PlantIds.PEA_SHOOTER_SINGLE) == VANILLA_SUN_PEA,
 		str(_sun(registry, PlantIds.PEA_SHOOTER_SINGLE)))
@@ -234,5 +242,5 @@ func _check(a, text: String, ok: bool, extra: String = "") -> void:
 
 func _finish(a) -> void:
 	a.log("")
-	a.log("[BALANCE] result=%s failed=%d" % ["PASS" if _failed == 0 else "FAIL", _failed])
+	a.log("[ECO] result=%s failed=%d" % ["PASS" if _failed == 0 else "FAIL", _failed])
 	a.finish(true)

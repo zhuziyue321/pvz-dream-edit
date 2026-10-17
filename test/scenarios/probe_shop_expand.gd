@@ -2,9 +2,9 @@ extends RefCounted
 ## 探针：冒险模式 4-4 掉落玉米卷 / 商店扩充 / 通关后直接进商店
 ## 覆盖：
 ##   1. 4-4 关卡资源配了掉落解锁道具（通关时掉落 + 提示 + 玉米卷贴图），且掉落入口真的掉出来
-##   2. 首次通关 4-4 后**直接进商店**（不回选关界面），商店扩展阶段 0 -> 1
+##   2. 首次通关 4-4 后**直接进商店**（不回主菜单），商店扩展阶段 0 -> 1
 ##   3. 扩充后忧郁蘑菇 / 香蒲上架（未扩充时不上架）
-##   4. 重打 4-4 不再跳商店，按原流程回选关界面（跳转只触发一次）
+##   4. 重打 4-4 不再跳商店，按原流程回主菜单（冒险模式没有选关界面；跳转只触发一次）
 ## 机器可读汇总：最后一行 [SHOPEXPAND] result=PASS|FAIL failed=<n>
 
 var _failed := 0
@@ -102,7 +102,7 @@ func run(a) -> void:
 		_check(a, "香蒲售价 10000", g_044.price == 10000, str(g_044.price))
 
 	# ------------------------------------------------ STEP4 反例：重打 4-4 不跳商店
-	a.log("STEP4 重打 4-4（应回选关界面）")
+	a.log("STEP4 重打 4-4（应回主菜单）")
 	var p2 = (load(LEVEL_PATH) as GDScript).new()
 	p2.set_choose_level(ADV, 3, "0034")
 	Global.game_para = p2
@@ -116,7 +116,8 @@ func run(a) -> void:
 	GameContext.curr_main_game.shortcut_win_main_game()
 	await a.wait(3.0)
 	var path2: String = str(a.get_tree().current_scene.scene_file_path)
-	_check(a, "重打 4-4 后回选关界面(不跳商店)", "adventure_choose_level" in path2, path2)
+	## 冒险模式没有选关界面：不跳商店时按通关流程回主菜单
+	_check(a, "重打 4-4 后回主菜单(不跳商店)", "start_menu" in path2, path2)
 
 	_finish(a)
 
