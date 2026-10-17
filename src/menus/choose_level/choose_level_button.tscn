@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://pak/images/Challenge_Blank.png" id="1_xlup7"]
 [ext_resource type="Script" uid="uid://cnagiy3yxjooh" path="res://src/menus/choose_level/choose_level_button.gd" id="2_cv4rv"]
-[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets/fonts/方正少儿_GBK.ttf" id="6_cc2hn"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="6_cc2hn"]
 [ext_resource type="Texture2D" path="res://pak/images/Challenge_Window.png" id="6_o7rat"]
 [ext_resource type="Texture2D" path="res://pak/images/Challenge_Window_Highlight.png" id="7_63bjb"]
 [ext_resource type="Texture2D" path="res://pak/images/lock.png" id="7_80wmn"]

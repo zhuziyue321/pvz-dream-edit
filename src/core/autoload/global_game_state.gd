@@ -31,6 +31,11 @@ const DEFAULT_GARDEN_DATA: Dictionary = {
 const DEFAULT_CURR_ALL_LEVEL_STATE_DATA: Dictionary = {}
 ## 冒险模式选关一页几关(5 页 × 10 关 = 50 关),存档名里的页码就是这么算出来的
 const ADVENTURE_LEVEL_PER_PAGE := 10
+## 冒险模式周目:1 = 首周目。每通关一次 5-10 就 +1,没有上限(见 advance_adventure_round)
+const DEFAULT_ADVENTURE_ROUND := 1
+## 关卡记录里「这一关是第几周目通的」那个键
+## 老存档 / 非冒险模式的记录没有它 —— 一律当周目 1,也就是「以前通的」
+const LEVEL_STATE_DATA_ROUND_KEY := "Round"
 """
 ## 一个关卡的游戏状态的例子
 var curr_one_level_state_data:Dictionary = {
@@ -61,6 +66,10 @@ var is_wall_nut_first_aid_bought: bool = DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT
 var is_first_coin_advice_shown: bool = DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN
 var garden_data: Dictionary = DEFAULT_GARDEN_DATA.duplicate(true)
 var curr_all_level_state_data: Dictionary = DEFAULT_CURR_ALL_LEVEL_STATE_DATA.duplicate(true)
+## 冒险模式周目(1 = 首周目): 通关 5-10 后 +1,之后从 1-1 重打一轮(见 advance_adventure_round)
+## ★ 存档键**不含**周目: 每周目的进度靠关卡记录里的 "Round" 跟它比较来区分,不是靠换存档键
+## (换键等于把「10 关一页、按钮序号 == 关卡序号」那条老口径改掉,会静默挪移所有人的进度)
+var curr_adventure_round: int = DEFAULT_ADVENTURE_ROUND
 var selected_cards: Array = []
 
 ## 已解锁的植物:
@@ -84,6 +93,7 @@ func reset_to_defaults() -> void:
 	is_first_coin_advice_shown = DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN
 	garden_data = DEFAULT_GARDEN_DATA.duplicate(true)
 	curr_all_level_state_data = DEFAULT_CURR_ALL_LEVEL_STATE_DATA.duplicate(true)
+	curr_adventure_round = DEFAULT_ADVENTURE_ROUND
 	selected_cards = []
 	curr_plant = ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
 	curr_zombie = DEFAULT_CURR_ZOMBIE.duplicate()
@@ -164,8 +174,13 @@ func _sync_debug_mode_zombie_cards() -> void:
 func _sync_debug_mode_plants() -> void:
 	if is_debug_mode:
 		unlock_plants(ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES)
+		## ★ 解锁 ≠ 可选:这四株属于「追加类」植物,光解锁不会进选卡界面 ——
+		## 还要进一次「可选植物列表」才进(见 AllCards.add_selectable_plant)
+		for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
+			AllCards.add_selectable_plant(plant_type)
 		return
 	for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
+		AllCards.remove_selectable_plant(plant_type)
 		lock_plant(plant_type)
 
 ## 从「上次选卡」里摘掉一株已不可选的植物
@@ -193,7 +208,11 @@ func unlock_plant_on_adventure_level(adventure_level:int) -> Array[StringName]:
 		plants.append(reward_plant)
 	return unlock_plants(plants)
 
-## 已通关的最大冒险模式关卡序号,没有通关过冒险关卡时返回 0
+## 已通关的最大冒险模式关卡序号,**历史最高**(跨周目),没有通关过冒险关卡时返回 0
+##
+## ⚠️ 这是「解锁门」的口径,不是「本周目进度」——所有解锁(铲子 / 图鉴 / 花园 / 商店 /
+## 商店扩展 / 紫卡 / 迷你 / 解谜 / 生存)都读它,所以二周目**不清任何记录**就能让已解锁的东西全部继承;
+## 「本周目打哪一关」读另一个函数 get_adventure_round_cleared_level()。
 func get_max_success_adventure_level() -> int:
 	var max_level := 0
 	for save_game_name in curr_all_level_state_data:
@@ -204,6 +223,61 @@ func get_max_success_adventure_level() -> int:
 		if adventure_level > max_level:
 			max_level = adventure_level
 	return max_level
+
+
+## 某一关记录里的周目(记录没有这个键时当周目 1:老存档 / 非冒险模式的记录都属于「以前通的」)
+static func get_round_on_level_state_data(level_state_data: Dictionary) -> int:
+	return int(level_state_data.get(LEVEL_STATE_DATA_ROUND_KEY, DEFAULT_ADVENTURE_ROUND))
+
+
+## 本周目已通关的最大冒险关卡序号(0 = 本周目一关都还没通)
+##
+## ⚠️ 与 get_max_success_adventure_level() 的分工(**别混用**):
+##   · 本函数看「本周目」——决定该打哪一关、主菜单木牌显示哪一关;
+##   · 那个看「历史最高」——决定各类解锁门(见那处注释)。
+##
+## 二周目的「进度清零」是**算出来的,不是删出来的**:进二周目只把 curr_adventure_round +1,
+## 一条记录都不删 —— 老记录的 Round 小于当前周目,自然就不算「本周目已通关」。
+## 这样已解锁的东西(植物按记录重建、商店 / 花园状态另存)全部原样继承,
+## 也不会误删迷你 / 解谜 / 生存的进度(它们本来就不是冒险模式的键)。
+func get_adventure_round_cleared_level() -> int:
+	var max_level := 0
+	for save_game_name in curr_all_level_state_data:
+		var level_state_data: Dictionary = curr_all_level_state_data[save_game_name]
+		if not level_state_data.get("IsSuccess", false):
+			continue
+		var adventure_level: int = get_adventure_level_on_save_game_name(str(save_game_name))
+		if adventure_level <= max_level:
+			continue
+		if get_round_on_level_state_data(level_state_data) < curr_adventure_round:
+			continue
+		max_level = adventure_level
+	return max_level
+
+
+## 是否已经是二周目及以后(二周目起换用这一关自己的脚本 adventure_XX_YY_round2.gd,
+## 那边 1-1 ~ 1-3 直接给满 5 行草皮, 见 docs/参考存档/二周目.md §6)
+func is_from_second_round() -> bool:
+	return curr_adventure_round >= DEFAULT_ADVENTURE_ROUND + 1
+
+
+## 本周目的冒险模式是否已全部通关(1-1 ~ 5-10 都通了)
+func is_adventure_round_finished() -> bool:
+	return get_adventure_round_cleared_level() >= ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL
+
+
+## 通关本周目的最后一关(5-10)后进下一周目: 周目 +1 并落盘,返回是否真的进了下一周目。
+##
+## 由 MgmRewardManager.win_main_game() 在写完通关存档之后调用,**幂等**:
+## 本周目没全通时什么都不做(所以重打 5-10 / 在别的关卡结算都不会误进下一周目)。
+## 「重新从 1-1 开始」不用在这里做任何事 —— 它是 get_adventure_round_cleared_level() 的过滤结果。
+func advance_adventure_round() -> bool:
+	if not is_adventure_round_finished():
+		return false
+	curr_adventure_round += 1
+	Global.save_service.save_now()
+	Log.info(str("冒险模式第 ") + str(curr_adventure_round) + str(" 周目开始：木牌上的关卡号回到 1-1，已解锁内容全部保留"))
+	return true
 
 ## 从关卡存档名(game_mode_level_page_level_id)中取冒险模式关卡序号,非冒险模式返回 0
 func get_adventure_level_on_save_game_name(save_game_name:String) -> int:
@@ -226,6 +300,44 @@ func get_adventure_save_game_name(adventure_level:int) -> String:
 	var level_page := floori(float(adventure_level - 1) / float(ADVENTURE_LEVEL_PER_PAGE))
 	return "%d_%d_%04d" % [MainSceneRegistry.MainScenes.ChooseLevelAdventure, level_page, adventure_level]
 
+## 冒险模式当前该打的那一关的序号(1-1 = 1 …… 5-10 = 50)
+## = **本周目**已通关的最大序号 + 1(新档 / 刚进二周目 = 1-1) —— 与主菜单木牌上的关卡号同一口径
+## (ConstUnlockLevel.get_adventure_button_level),两者对不上就是「木牌写 1-2 却进了别的关」。
+##
+## 走的是本周目进度(get_adventure_round_cleared_level),不是历史最高:二周目进档时历史最高还是 50,
+## 拿它当口径会把玩家直接丢回 5-10。
+func get_curr_adventure_level_to_play() -> int:
+	return ConstUnlockLevel.get_adventure_button_level(get_adventure_round_cleared_level())
+
+
+## 拼出「冒险模式当前该打的那一关」的进关参数：**进冒险模式直接拿它开打**
+##
+## 冒险模式没有选关界面(见 docs/参考存档/选关界面与解锁.md)，所以这份参数由这里现场拼 ——
+## 它与「以前在选关界面上点那一关的按钮」得到的参数完全一致：
+##   · 关卡本体按序号走 LevelRegistry(硬约束 §1-4，业务代码不写 res:// 关卡路径)；
+##   · 选关三件套仍走 set_choose_level()，页码 / 关卡号沿用「10 关一页、按钮序号 == 关卡序号」的旧口径
+##     —— 没写 save_key 的老关卡**就靠这两个值拼出存档键**，换算法等于把玩家的通关进度整体挪位
+##     (护栏见 test/scenarios/probe_level_registry_order.gd)。
+func build_curr_adventure_level_para() -> ResourceLevelData:
+	return build_adventure_level_para(get_curr_adventure_level_to_play())
+
+
+## 拼出冒险模式第 adventure_level 关的进关参数；序号没有对应的关卡 / 关卡取不出来返回 null
+func build_adventure_level_para(adventure_level: int) -> ResourceLevelData:
+	## 按**当前周目**取关卡：二周目及以后优先拿这一关的二周目变体脚本
+	## （adventure_XX_YY_round2，见 LevelRegistry.ROUND_VARIANT_SUFFIX 与 docs/参考存档/二周目.md）
+	var level_id := LevelRegistry.get_adventure_level_id(adventure_level, curr_adventure_round)
+	if level_id.is_empty():
+		Log.error("冒险模式关卡序号非法：%d" % adventure_level)
+		return null
+	var level_para := LevelRegistry.get_level(level_id)
+	if level_para == null:
+		return null
+	var level_page := floori(float(adventure_level - 1) / float(ADVENTURE_LEVEL_PER_PAGE))
+	level_para.set_choose_level(
+		MainSceneRegistry.MainScenes.ChooseLevelAdventure, level_page, "%04d" % adventure_level)
+	return level_para
+
 ## 某一关是否已经通关过：**按关卡存档名查**
 ## level_save_key: 关卡存档名（ResourceLevelData.save_game_name，V2 关卡就是它在 _init() 里写死的 save_key）
 ## 从来没有打过 / 打过但没通的关卡返回 false
@@ -242,6 +354,10 @@ func is_level_success(level_save_key:String) -> bool:
 ## 放在这里而不是存档子管理器，是因为它只碰全局关卡数据、跟当前这一局无关，
 ## 因此在选关界面 / 主菜单也能按（不需要有 MainGameManager 在场）。
 ## 跟「真打完一局」绑定的副作用（钉耙消耗、多轮存档重置）这里不做 —— 快捷键并没有真打。
+##
+## 写的是**当前周目**的通关（记录里带 "Round"），所以在二周目按它 = 把二周目打通到 5-10；
+## **不会**顺手进下一周目 —— 周目只在 win_main_game() 真的打完 5-10 时 +1
+## （想快速看到二周目：本快捷键 + 进 5-10 再 Ctrl+D 0 通关本关）。
 ## 返回本次写成通关的关卡数量
 func success_all_adventure_level() -> int:
 	var success_num := 0
@@ -251,6 +367,7 @@ func success_all_adventure_level() -> int:
 			continue
 		var curr_level_state_data: Dictionary = curr_all_level_state_data.get(save_game_name, {})
 		curr_level_state_data["IsSuccess"] = true
+		curr_level_state_data[LEVEL_STATE_DATA_ROUND_KEY] = curr_adventure_round
 		curr_all_level_state_data[save_game_name] = curr_level_state_data
 		var new_unlock: Array[StringName] = unlock_plant_on_adventure_level(adventure_level)
 		for plant_type: StringName in new_unlock:

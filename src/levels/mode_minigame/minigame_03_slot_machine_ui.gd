@@ -50,7 +50,7 @@ const TWO_DIAMOND := 100
 
 const SEEDS_ATLAS := preload("res://pak/images/seeds.png")
 const OVERLAY_TEXTURE := preload("res://pak/images/SlotMachine_Overlay.png")
-const CHINESE_FONT := preload("res://assets/fonts/SIMSUN.TTC")
+const CHINESE_FONT := preload("res://assets_custom/fonts/SIMSUN.TTC")
 
 var _mg: MainGameManager
 var _sun_value: int = 0

@@ -357,12 +357,19 @@ func _on_zombie_dead(zombie: Zombie000Base) -> void:
 		curr_zombie_num -= 1
 		all_zombies_2d[zombie.lane].erase(zombie)
 
-		## 如果到了最后一波刷新,且僵尸全部死亡
-		## 清场只代表「本轮战斗打完」，不再判胜（胜利由关卡流程决定，见 MgmRewardManager）
+		## L-13：战斗结束判定延迟到帧末（call_deferred），让同一帧内由亡语
+		## call_deferred 创建的衍生单位（如雪橇僵尸裂出的 4 兵）先入列，
+		## 再判定「本轮是否清空」，避免补兵被算到已结束的战斗之外。
+		## ⚠️ 依赖 MessageQueue FIFO：亡语创建需在死亡信号 emit 之前入队（见 character_base.character_death）。
 		if is_end_wave and curr_zombie_num == 0:
-			EventBus.push_event(ConstEventName.BATTLE_FINISHED, [zombie.global_position])
-			if is_instance_valid(multi_round_end_wave_timer):
-				multi_round_end_wave_timer.stop()
+			call_deferred("_check_end_wave_finished", zombie.global_position)
+
+## L-13：延迟到帧末再判定本轮是否打完，配合亡语补兵（见 _on_zombie_dead）
+func _check_end_wave_finished(pos: Vector2) -> void:
+	if is_end_wave and curr_zombie_num == 0:
+		EventBus.push_event(ConstEventName.BATTLE_FINISHED, [pos])
+		if is_instance_valid(multi_round_end_wave_timer):
+			multi_round_end_wave_timer.stop()
 #endregion
 
 #region 波次刷新
@@ -622,8 +629,8 @@ func delete_prepare_show_zombies():
 ## 对所有僵尸和所有存活僵王结算一次伤害并附加冰冻；各僵王自行检查受击窗口。[br]
 ## [param time_ice] 完全冻结时长，单位为游戏秒。[br]
 ## [param time_decelerate] 解冻后的减速时长，单位为游戏秒。[br]
-## [param damage] 本次伤害（寒冰菇炸弹组件的 `bomb_value`），冰冻只是它的附加控制效果。
-func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int = 20):
+## [param damage] 本次伤害（寒冰菇自己的角色攻击力 `attack_value`），冰冻只是它的附加控制效果。
+func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int):
 	## 冰消珊瑚
 	is_ice = true
 	start_ice_timer(time_ice)
@@ -660,8 +667,9 @@ func jalapeno_bomb_item_lane(lane:int):
 		ice_road.ice_road_disappear()
 
 ## 火爆辣椒处理整行普通僵尸，并攻击所有存活僵王；僵王检查受击窗口，不限制行号。[br]
-## [param lane] 辣椒所在的零起始行号，仅用于选择受影响的普通僵尸。
-func jalapeno_bomb_lane_zombie(lane:int):
+## [param lane] 辣椒所在的零起始行号，仅用于选择受影响的普通僵尸。[br]
+## [param damage] 本次辣椒伤害（火爆辣椒自己的角色攻击力 `attack_value`）。
+func jalapeno_bomb_lane_zombie(lane:int, damage:int):
 	# 倒序遍历当前行，普通僵尸被炸死时可能立即从列表移除。
 	for i in range(all_zombies_2d[lane].size()-1,-1,-1) :
 		if is_instance_valid(all_zombies_2d[lane][i]):
@@ -671,12 +679,12 @@ func jalapeno_bomb_lane_zombie(lane:int):
 			## be_bomb 是普通僵尸的「灰烬 + 立即删除」流程，会把正在播死亡演出的僵王直接抹掉。
 			if zombie is ZB000Base:
 				continue
-			zombie.be_bomb(1800, true)
+			zombie.be_bomb(damage, true)
 	# 任意行的辣椒都可命中僵王，使用专用入口检查受击窗口并保留完整死亡演出。
 	# 使用快照，某只僵王死亡不会影响其余实例遍历。
 	for boss: ZB000Base in get_living_bosses():
 		if is_instance_valid(boss):
-			boss.be_jalapeno(1800)
+			boss.be_jalapeno(damage)
 
 ## 三叶草吹走空中僵尸
 func blover_blow_away_in_sky_zombie():

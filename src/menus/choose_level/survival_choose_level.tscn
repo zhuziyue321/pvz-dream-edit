@@ -35,7 +35,6 @@
 [ext_resource type="PackedScene" uid="uid://g6ybgmhkx6rj" path="res://src/entities/character/plant/plant_cabbage_pult.tscn" id="37_ttjhx"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="40_mfip2"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="41_5u2b0"]
-[ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="42_wgaqh"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1i0xb"]
 
@@ -1069,7 +1068,6 @@ offset_bottom = 553.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("40_mfip2")
 texture_pressed = ExtResource("41_5u2b0")
-texture_click_mask = ExtResource("42_wgaqh")
 
 [node name="Label" type="Label" parent="MainMenu"]
 layout_mode = 1

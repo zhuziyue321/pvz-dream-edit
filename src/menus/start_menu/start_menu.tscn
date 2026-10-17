@@ -2,34 +2,27 @@
 
 [ext_resource type="Script" uid="uid://dkbq8o27gtu37" path="res://src/menus/start_menu/start_menu_root.gd" id="1_2isde"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG.jpg" id="1_s2p02"]
-[ext_resource type="Texture2D" uid="uid://s50psykd6k1t" path="res://assets/image/ui/ui_start_menu/SelectorScreen_BG_Right.png" id="2_j2mjb"]
-[ext_resource type="Texture2D" uid="uid://dxwjoggjnramu" path="res://assets/image/ui/ui_start_menu/SelectorScreen_BG_Center.png" id="2_jjhxv"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Right.png" id="2_j2mjb"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Center.png" id="2_jjhxv"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud1.png" id="2_xll4c"]
-[ext_resource type="AudioStream" uid="uid://bhwjr5o1d2cb8" path="res://assets/audio/BGM/crazy_dave.mp3" id="2_yl4bl"]
+[ext_resource type="AudioStream" uid="uid://bhwjr5o1d2cb8" path="res://assets_custom/audio/BGM/crazy_dave.mp3" id="2_yl4bl"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud2.png" id="3_2isde"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_StartAdventure_Button1.png" id="3_jrmm2"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud4.png" id="4_at8of"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_StartAdventure_Highlight.png" id="4_qq5l0"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud5.png" id="5_fbvip"]
 [ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="5_j2mjb"]
-[ext_resource type="BitMap" uid="uid://dait70qma6c1u" path="res://assets/image/ui/ui_start_menu/SelectorScreen_StartAdventure_Button1_Mask.png" id="5_jrmm2"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud6.png" id="6_qphvj"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud7.png" id="7_6enlx"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Survival_button.png" id="7_udhvq"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Survival_highlight.png" id="8_kfgfy"]
-[ext_resource type="BitMap" uid="uid://bfavwrykaa6kh" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Survival_button_Mask.png" id="9_cppkq"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Challenges_button.png" id="10_intoo"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Challenges_highlight.png" id="11_kjwot"]
-[ext_resource type="BitMap" uid="uid://bqs3fvtgj7ub2" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Challenges_button_Mask.png" id="12_sb5fe"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Vasebreaker_button.png" id="13_f134t"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_vasebreaker_highlight.png" id="14_614ej"]
-[ext_resource type="BitMap" uid="uid://g4wl1of4q8sx" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Vasebreaker_button_Mask.png" id="15_k7y68"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Flower1.png" id="16_oe188"]
-[ext_resource type="BitMap" uid="uid://6aej6sucjx4a" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Flower1_Mask.png" id="17_bkc8k"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Flower2.png" id="18_p37de"]
-[ext_resource type="BitMap" uid="uid://bndwnonimphr5" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Flower2_Mask.png" id="19_0gy64"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Flower3.png" id="20_rdc4m"]
-[ext_resource type="BitMap" uid="uid://w2jtfego7tpg" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Flower3_Mask.png" id="21_we678"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Options1.png" id="22_fkqsy"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Options2.png" id="23_c836s"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Help1.png" id="24_2ir4x"]
@@ -39,11 +32,9 @@
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_ZenGarden.png" id="28_0sp34"]
 [ext_resource type="Script" uid="uid://dcleglawsa2mw" path="res://src/menus/start_menu/start_menu_flower_button.gd" id="28_lvy6c"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_ZenGardenHighlight.png" id="29_jjhxv"]
-[ext_resource type="BitMap" uid="uid://c6dx0o3boywqr" path="res://assets/image/ui/ui_start_menu/SelectorScreen_ZenGarden_Mask.png" id="30_3w04d"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Almanac.png" id="31_sxpcx"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_AlmanacHighlight.png" id="32_ortyp"]
-[ext_resource type="BitMap" uid="uid://dmojvwlyh8417" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Almanac_Mask.png" id="33_qniwh"]
-[ext_resource type="Texture2D" uid="uid://dup7h3yp7mvuw" path="res://assets/image/ui/ui_start_menu/SelectorScreen_BG_Left.png" id="37_at8of"]
+[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Left.png" id="37_at8of"]
 [ext_resource type="Texture2D" path="res://pak/images/plantspeechbubble.png" id="41_l67l0"]
 [ext_resource type="Script" uid="uid://i4n5co3domph" path="res://src/menus/start_menu/garden_water_flag.gd" id="42_lvy6c"]
 [ext_resource type="Texture2D" path="res://pak/images/waterdrop.png" id="43_sa52e"]
@@ -61,25 +52,22 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_WoodSign1.png" id="52_63h8x"]
 [ext_resource type="Texture2D" path="res://pak/images/reloaded/mainmenu/SelectorScreen_WoodSign2.png" id="53_ry5e1"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Store.png" id="53_wymjr"]
-[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets/fonts/方正少儿_GBK.ttf" id="54_343qg"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="54_343qg"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_StoreHighlight.png" id="54_ojqr6"]
 [ext_resource type="Texture2D" path="res://pak/images/reloaded/mainmenu/SelectorScreen_WoodSign2_press.png" id="54_yl4bl"]
-[ext_resource type="BitMap" uid="uid://mu5gublnox4q" path="res://assets/image/ui/ui_start_menu/SelectorScreen_WoodSign2_Mask.png" id="55_31n4o"]
-[ext_resource type="BitMap" uid="uid://cra43htuprgvi" path="res://assets/image/ui/ui_start_menu/SelectorScreen_Store_Mask.png" id="55_ito2j"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_WoodSign3.png" id="56_b7wor"]
 [ext_resource type="PackedScene" uid="uid://cp0kgnsx20pyh" path="res://src/ui/dialog.tscn" id="57_ry5e1"]
 [ext_resource type="PackedScene" uid="uid://cngkuh03v6yty" path="res://src/ui/dialog_confirm.tscn" id="58_confirm"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="59_e0j7q"]
-[ext_resource type="Texture2D" uid="uid://toxyk2jadqam" path="res://assets/image/ui/ui_main_game_menu/option_dialog.png" id="60_343qg"]
+[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="60_343qg"]
 [ext_resource type="Script" uid="uid://batxx0jfofa74" path="res://src/menus/start_menu/start_menu_option_dialog.gd" id="61_pnpk5"]
-[ext_resource type="Texture2D" uid="uid://blge6mwmus5fv" path="res://assets/image/ui/ui_main_game_menu/btn_dialog_back_2.png" id="62_5qe3w"]
+[ext_resource type="Texture2D" path="res://pak/images/options_backtogamebutton0.png" id="62_5qe3w"]
 [ext_resource type="PackedScene" uid="uid://5v0fdtao52jl" path="res://src/ui/control_canvas_layer.tscn" id="62_e0j7q"]
 [ext_resource type="Script" uid="uid://byfoq607wecwj" path="res://src/menus/start_menu/wood_sign.gd" id="63_gis02"]
-[ext_resource type="BitMap" uid="uid://bhg7gejfpw036" path="res://assets/image/ui/ui_main_game_menu/btn_dialog_back_2_mask.png" id="63_xxpiq"]
 [ext_resource type="Script" uid="uid://61qhr6plpibr" path="res://src/menus/start_menu/user.gd" id="75_altii"]
-[ext_resource type="Texture2D" uid="uid://dsobv4ixy06yp" path="res://assets/image/ui/ui_main_game_menu/UI_BG/combined_result.png" id="75_ito2j"]
+[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="75_ito2j"]
 [ext_resource type="Texture2D" path="res://pak/images/dialog_header.png" id="76_nu6d8"]
-[ext_resource type="Texture2D" uid="uid://b48l4yjq0j5mo" path="res://assets/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="77_nu6d8"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="77_nu6d8"]
 [ext_resource type="Script" uid="uid://bubdoydqtlc6d" path="res://src/menus/start_menu/panel_create_new_user.gd" id="79_xqlaa"]
 [ext_resource type="Script" uid="uid://b6dhsamdijupk" path="res://src/menus/start_menu/panel_rename_user.gd" id="81_dj5t5"]
 [ext_resource type="Script" uid="uid://cwusfudks6mhf" path="res://src/ui/dialog_error.gd" id="82_krdmy"]
@@ -1412,6 +1400,19 @@ font = ExtResource("54_343qg")
 font_size = 21
 font_color = Color(0, 1, 0, 1)
 
+[sub_resource type="LabelSettings" id="LabelSettings_advlv"]
+font = ExtResource("54_343qg")
+font_size = 24
+font_color = Color(0.78431374, 0.7882353, 0.8509804, 1)
+outline_size = 1
+outline_color = Color(0.78431374, 0.7882353, 0.8509804, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_advround"]
+font = ExtResource("54_343qg")
+font_size = 22
+outline_size = 4
+outline_color = Color(0, 0, 0, 1)
+
 [sub_resource type="LabelSettings" id="LabelSettings_dj5t5"]
 font = ExtResource("54_343qg")
 font_size = 24
@@ -1633,8 +1634,47 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_jrmm2")
 texture_pressed = ExtResource("4_qq5l0")
 texture_hover = ExtResource("4_qq5l0")
-texture_click_mask = ExtResource("5_jrmm2")
 script = ExtResource("5_j2mjb")
+
+[node name="LevelText" type="Control" parent="BG_Right/Menu/Button1"]
+visible = false
+layout_mode = 0
+offset_left = 146.0
+offset_top = 15.0
+offset_right = 206.0
+offset_bottom = 37.0
+mouse_filter = 2
+
+[node name="FirstNumber" type="Label" parent="BG_Right/Menu/Button1/LevelText"]
+layout_mode = 0
+offset_left = -2.0
+offset_top = 2.0
+offset_right = 19.0
+offset_bottom = 24.0
+mouse_filter = 2
+label_settings = SubResource("LabelSettings_advlv")
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SecondNumber" type="Label" parent="BG_Right/Menu/Button1/LevelText"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 3.0
+offset_right = 53.0
+offset_bottom = 25.0
+mouse_filter = 2
+label_settings = SubResource("LabelSettings_advlv")
+vertical_alignment = 1
+
+[node name="RoundText" type="Label" parent="BG_Right/Menu/Button1/LevelText"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 2.0
+offset_right = 240.0
+offset_bottom = 24.0
+mouse_filter = 2
+label_settings = SubResource("LabelSettings_advround")
+vertical_alignment = 1
 
 [node name="Button2" type="TextureButton" parent="BG_Right/Menu" unique_id=328292847]
 layout_mode = 1
@@ -1650,7 +1690,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("7_udhvq")
 texture_pressed = ExtResource("8_kfgfy")
 texture_hover = ExtResource("8_kfgfy")
-texture_click_mask = ExtResource("9_cppkq")
 script = ExtResource("5_j2mjb")
 
 [node name="Button3" type="TextureButton" parent="BG_Right/Menu" unique_id=557463343]
@@ -1667,7 +1706,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("10_intoo")
 texture_pressed = ExtResource("11_kjwot")
 texture_hover = ExtResource("11_kjwot")
-texture_click_mask = ExtResource("12_sb5fe")
 script = ExtResource("5_j2mjb")
 
 [node name="Button4" type="TextureButton" parent="BG_Right/Menu" unique_id=1000885998]
@@ -1684,7 +1722,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("13_f134t")
 texture_pressed = ExtResource("14_614ej")
 texture_hover = ExtResource("14_614ej")
-texture_click_mask = ExtResource("15_k7y68")
 script = ExtResource("5_j2mjb")
 
 [node name="Flower" type="Control" parent="BG_Right" unique_id=321955551]
@@ -1713,7 +1750,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("16_oe188")
 texture_pressed = ExtResource("16_oe188")
 texture_hover = ExtResource("16_oe188")
-texture_click_mask = ExtResource("17_bkc8k")
 script = ExtResource("28_lvy6c")
 
 [node name="Button2" type="TextureButton" parent="BG_Right/Flower" unique_id=132857899]
@@ -1728,7 +1764,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("18_p37de")
 texture_pressed = ExtResource("18_p37de")
 texture_hover = ExtResource("18_p37de")
-texture_click_mask = ExtResource("19_0gy64")
 script = ExtResource("28_lvy6c")
 
 [node name="Button3" type="TextureButton" parent="BG_Right/Flower" unique_id=1743611085]
@@ -1741,7 +1776,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("20_rdc4m")
 texture_pressed = ExtResource("20_rdc4m")
 texture_hover = ExtResource("20_rdc4m")
-texture_click_mask = ExtResource("21_we678")
 script = ExtResource("28_lvy6c")
 
 [node name="Option" type="Control" parent="BG_Right" unique_id=1553159727]
@@ -1820,7 +1854,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("28_0sp34")
 texture_pressed = ExtResource("29_jjhxv")
 texture_hover = ExtResource("29_jjhxv")
-texture_click_mask = ExtResource("30_3w04d")
 script = ExtResource("5_j2mjb")
 
 [node name="GardenConditionFlag" type="TextureRect" parent="BG_Right/Item/TextureButton" unique_id=750186919]
@@ -1928,28 +1961,26 @@ centered = false
 
 [node name="TextureButton2" type="TextureButton" parent="BG_Right/Item" unique_id=783228993]
 layout_mode = 0
-offset_left = 176.0
-offset_top = 14.999634
-offset_right = 275.0
-offset_bottom = 113.99963
+offset_left = 211.0
+offset_top = -5.000366
+offset_right = 310.0
+offset_bottom = 93.99963
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("31_sxpcx")
 texture_pressed = ExtResource("32_ortyp")
 texture_hover = ExtResource("32_ortyp")
-texture_click_mask = ExtResource("33_qniwh")
 script = ExtResource("5_j2mjb")
 
 [node name="TextureButton3" type="TextureButton" parent="BG_Right/Item" unique_id=1430078172]
 layout_mode = 0
-offset_left = 287.0
-offset_top = 56.999626
-offset_right = 418.68
-offset_bottom = 152.43936
+offset_left = 292.0
+offset_top = 46.999626
+offset_right = 423.68
+offset_bottom = 142.43936
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("53_wymjr")
 texture_pressed = ExtResource("54_ojqr6")
 texture_hover = ExtResource("54_ojqr6")
-texture_click_mask = ExtResource("55_ito2j")
 ignore_texture_size = true
 script = ExtResource("5_j2mjb")
 
@@ -2140,7 +2171,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("53_ry5e1")
 texture_pressed = ExtResource("54_yl4bl")
 texture_hover = ExtResource("54_yl4bl")
-texture_click_mask = ExtResource("55_31n4o")
 script = ExtResource("5_j2mjb")
 
 [node name="TextureRect3" type="TextureRect" parent="WoodSign" unique_id=1690003935]
@@ -2280,7 +2310,6 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("62_5qe3w")
 texture_pressed = ExtResource("62_5qe3w")
-texture_click_mask = ExtResource("63_xxpiq")
 script = ExtResource("5_j2mjb")
 
 [node name="Label" type="Label" parent="StartMenuOptionDialog/Return" unique_id=878105660]

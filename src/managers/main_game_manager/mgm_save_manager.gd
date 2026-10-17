@@ -81,6 +81,11 @@ func update_level_state_data_success():
 	## 更新全局关卡数据
 	var curr_level_state_data:Dictionary = Global.global_game_state.curr_all_level_state_data.get(game_para.save_game_name, {})
 	curr_level_state_data["IsSuccess"] = true
+	## 冒险模式: 记下「这次通关属于哪个周目」——二周目起同一关会再通一次,
+	## 靠这个键区分「本周目是否已通过」(见 GlobalGameState.get_adventure_round_cleared_level)。
+	## 非冒险模式的记录不带这个键(它们没有周目这回事)。
+	if Global.global_game_state.get_adventure_level_on_save_game_name(game_para.save_game_name) > 0:
+		curr_level_state_data[GlobalGameState.LEVEL_STATE_DATA_ROUND_KEY] = Global.global_game_state.curr_adventure_round
 	Global.global_game_state.curr_all_level_state_data[game_para.save_game_name] = curr_level_state_data
 	## 冒险模式通关后解锁该关对应的植物
 	unlock_plant_on_level_success()

@@ -16,6 +16,8 @@ func _init() -> void:
 	## 本关专用地图：5 行草坪里只有中间 3 行铺了草皮（1-2 / 1-3 共用这一张）
 	## 地图由关卡自己指定，不再靠「为本关单开一个场景枚举」来区分（见 docs/参考存档/地图实现.md）
 	map_data = preload("res://data/map/map_front_5row.tres") as ResourceMapData
+	## 二周目起直接给满 5 行草皮（原版口径，见 docs/参考存档/二周目.md）
+	map_data_from_second_round = preload("res://data/map/map_front.tres") as ResourceMapData
 	## 本关通关掉落：樱桃炸弹（种子包）
 	level_complete_loot = "cherry_bomb_seed_packet"
 

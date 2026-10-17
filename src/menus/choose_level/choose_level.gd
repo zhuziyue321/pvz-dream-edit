@@ -16,7 +16,7 @@ var all_pages_array : Array[GridContainer]
 @export var curr_page := 0
 
 ## 选卡bgm
-var bgm_choose_card: AudioStream = preload("res://assets/audio/BGM/choose_your_seeds.mp3")
+var bgm_choose_card: AudioStream = preload("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
 
 func _ready() -> void:
 	open_level_num = calc_open_level_num()
@@ -81,14 +81,13 @@ func _check_against_registry() -> void:
 		% [MainSceneRegistry.MainScenes.keys()[game_mode], missing.size(), ", ".join(missing)])
 
 ## 本模式初始开放的关卡数量: -1 = 全部开放, 0 = 模式未解锁(全部锁住)
-## 冒险模式只开放 1 关; 迷你游戏与解谜模式按冒险模式进度解锁(3-2 / 4-6),首批各开放 3 关;
+## 迷你游戏与解谜模式按冒险模式进度解锁(3-2 / 4-6),首批各开放 3 关;
 ## 首次通关冒险模式(5-10)后, 迷你游戏与解谜模式的剩余关卡、生存模式全部开放;
 ## 控制台打开"开放所有关卡"时一律全开放
+## (冒险模式没有选关界面, 不走这里: 进冒险模式按进度直接进下一关, 见 StartMenuRoot._start_adventure_level)
 func calc_open_level_num() -> int:
 	if Global.config_service.open_all_level:
 		return -1
-	if game_mode == MainSceneRegistry.MainScenes.ChooseLevelAdventure:
-		return 1
 	if not Global.global_game_state.is_mode_unlocked(game_mode):
 		return 0
 	if Global.global_game_state.is_mode_all_level_open(game_mode):

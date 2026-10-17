@@ -16,8 +16,33 @@ const MODE_BUTTON_PATHS: Dictionary[String, MainSceneRegistry.MainScenes] = {
 	"BG_Right/Menu/Button4": MainSceneRegistry.MainScenes.ChooseLevelSurvival,
 }
 
+## 冒险模式按钮(木牌)在通关 1-1 前 / 后用的两套贴图, 见 _apply_adventure_button_state()
+const ADVENTURE_BUTTON_PATH := "BG_Right/Menu/Button1"
+const START_ADVENTURE_TEXTURE := preload("res://pak/reanim/SelectorScreen_StartAdventure_Button1.png")
+const START_ADVENTURE_HIGHLIGHT_TEXTURE := preload("res://pak/reanim/SelectorScreen_StartAdventure_Highlight.png")
+const ADVENTURE_TEXTURE := preload("res://pak/reanim/SelectorScreen_Adventure_button.png")
+const ADVENTURE_HIGHLIGHT_TEXTURE := preload("res://pak/reanim/SelectorScreen_Adventure_highlight.png")
+
+## 冒险模式按钮上那行关卡号(几杠几): 挂在木牌下面的 LevelText, 未通关 1-1 时整块不显示
+## 两个数字各挂一个 Label: 贴图自带的短横就是分隔符(原版也这么画, 见 pak/images/SelectorScreen_LevelNumbers.png),
+## 分开挂才能各自微调位置 —— 位置是照着木牌上的字眼调的, 见 start_menu.tscn
+const ADVENTURE_LEVEL_VIEW_PATH := "BG_Right/Menu/Button1/LevelText"
+const ADVENTURE_LEVEL_FIRST_NUMBER_PATH := "BG_Right/Menu/Button1/LevelText/FirstNumber"
+const ADVENTURE_LEVEL_SECOND_NUMBER_PATH := "BG_Right/Menu/Button1/LevelText/SecondNumber"
+## 关卡号右边的周目标记("2周目"), 只有二周目及以后才显示 —— 挂在同一块 LevelText 下,
+## 于是「没开打冒险模式」时跟关卡号一起隐藏(见 _apply_adventure_round_text)
+const ADVENTURE_LEVEL_ROUND_PATH := "BG_Right/Menu/Button1/LevelText/RoundText"
+
 ## 主菜单点冒险模式的僵尸手破土过场场景(由 assets/reanim/Zombie_hand.reanim 经 R2Ga 转换生成)
-const ZOMBIE_HAND_SCENE := preload("res://assets/reanim/Zombie_hand.tscn")
+const ZOMBIE_HAND_SCENE := preload("res://assets_custom/reanim/Zombie_hand.tscn")
+## 破土手相对原位的位移: 左移 75px、下移 10px
+const ZOMBIE_HAND_OFFSET := Vector2(-75.0, 10.0)
+## 破土过场时长: 动画本身约 0.8s, 破土后画面继续停留到 3s 再进选关
+const ZOMBIE_HAND_TRANSITION_TIME := 3.0
+## 破土音效(与僵尸出土共用同一份)
+const ZOMBIE_HAND_SFX := &"dirt_rise"
+## 手伸出瞬间的僵尸笑声(原版 EVILLAUGH, 见 pak/properties/resources.xml)
+const ZOMBIE_HAND_LAUGH_SFX := &"evillaugh"
 ## 过场播放中, 防止重复点击冒险模式
 var _adventure_transitioning := false
 
@@ -77,8 +102,8 @@ func _is_shop_enterable() -> bool:
 	return Global.global_game_state.is_shop_unlocked()
 
 
-## 按冒险模式进度处理主菜单入口:模式按钮置灰(迷你游戏 3-2 / 解谜 4-6 / 生存 5-10),
-## 图鉴 / 商店按钮则整体隐藏(见 _apply_item_lock_state)
+## 按当前存档刷新主菜单各入口:冒险模式按钮换贴图 / 填关卡号(见 _apply_adventure_button_state),
+## 模式按钮置灰(迷你游戏 3-2 / 解谜 4-6 / 生存 5-10),图鉴 / 商店按钮则整体隐藏(见 _apply_item_lock_state)
 func _update_mode_lock_state() -> void:
 	for node_path in MODE_BUTTON_PATHS:
 		var button := get_node_or_null(NodePath(node_path)) as TextureButton
@@ -89,7 +114,58 @@ func _update_mode_lock_state() -> void:
 			button.modulate = Color.WHITE
 		else:
 			button.modulate = LOCKED_BUTTON_COLOR
+	_apply_adventure_button_state()
 	_apply_item_lock_state()
+
+
+## 冒险模式按钮: 没通关过 1-1 时是"开始冒险模式"木牌(不显示关卡号),
+## 通关 1-1 后换成"冒险模式"木牌 + 木牌上填**本周目**正在打的关卡(如 1-2; 二周目起另标周目)
+## 换贴图不换节点: 两块木牌尺寸几乎一样, 点击遮罩继续用"开始冒险模式"那张(见 start_menu.tscn)
+func _apply_adventure_button_state() -> void:
+	var button := get_node_or_null(NodePath(ADVENTURE_BUTTON_PATH)) as TextureButton
+	if button == null:
+		return
+
+	## 「已开打」看的是**历史最高**(通关过 1-1 就一直是带关卡号的木牌, 二周目不退回"开始冒险模式")
+	var started: bool = ConstUnlockLevel.is_adventure_started(
+		Global.global_game_state.get_max_success_adventure_level())
+	button.texture_normal = ADVENTURE_TEXTURE if started else START_ADVENTURE_TEXTURE
+	button.texture_hover = ADVENTURE_HIGHLIGHT_TEXTURE if started else START_ADVENTURE_HIGHLIGHT_TEXTURE
+	button.texture_pressed = button.texture_hover
+
+	var level_view := get_node_or_null(NodePath(ADVENTURE_LEVEL_VIEW_PATH)) as Control
+	if level_view == null:
+		return
+	level_view.visible = started
+	if not started:
+		return
+	## 关卡号看**本周目**进度: 二周目从头开始, 木牌上写的是 1-1(不是我方历史的 5-10)
+	var level_num := ConstUnlockLevel.get_adventure_button_level(
+		Global.global_game_state.get_adventure_round_cleared_level())
+	_set_adventure_level_number(ADVENTURE_LEVEL_FIRST_NUMBER_PATH,
+		ConstUnlockLevel.get_adventure_level_page_num(level_num))
+	_set_adventure_level_number(ADVENTURE_LEVEL_SECOND_NUMBER_PATH,
+		ConstUnlockLevel.get_adventure_level_index_num(level_num))
+	_apply_adventure_round_text()
+
+
+## 关卡号右边的周目标记: 一周目不显示(玩家看不到"周目"这回事), 二周目起显示 "2周目"
+## 文案只在木牌上用, 想读周目本身请用 GlobalGameState.curr_adventure_round
+func _apply_adventure_round_text() -> void:
+	var label := get_node_or_null(NodePath(ADVENTURE_LEVEL_ROUND_PATH)) as Label
+	if label == null:
+		return
+	var adventure_round: int = Global.global_game_state.curr_adventure_round
+	label.visible = adventure_round >= GlobalGameState.DEFAULT_ADVENTURE_ROUND + 1
+	if label.visible:
+		label.text = str(adventure_round) + str("周目")
+
+
+## 关卡号的一个数字: 分开挂是为了两个数字能各自挪位置(见 start_menu.tscn 的 LevelText)
+func _set_adventure_level_number(node_path: String, num: int) -> void:
+	var label := get_node_or_null(NodePath(node_path)) as Label
+	if label != null:
+		label.text = str(num)
 
 
 ## 花园 / 图鉴 / 商店未解锁时直接从道具栏隐藏:没拿到就是没有这个入口,不留置灰按钮、也不留点击提示
@@ -137,26 +213,44 @@ func show_lock_tip(text:String):
 	dialog_label.text = text
 	dialog.appear_dialog()
 
-## 开始游戏(冒险模式): 先播僵尸手破土过场, 播完再进选关
+## 开始游戏(冒险模式): 先播僵尸手破土过场, 播完直接进该打的那一关
 func _on_button_1_pressed() -> void:
 	if _adventure_transitioning:
 		return
 	_adventure_transitioning = true
 	_play_zombie_hand_transition()
 
-## 主菜单点冒险模式后的僵尸手破土过场, 播完再进选关
+## 主菜单点冒险模式后的僵尸手破土过场, 播完等待 3s 再进关卡
 func _play_zombie_hand_transition() -> void:
 	var hand: Node2D = ZOMBIE_HAND_SCENE.instantiate()
+	hand.position = ZOMBIE_HAND_OFFSET
 	hand.z_index = 1000
 	add_child(hand)
+	SoundManager.play_other_SFX(ZOMBIE_HAND_SFX)
+	SoundManager.play_other_SFX(ZOMBIE_HAND_LAUGH_SFX)
 	var anim_player := hand.get_node("AnimLib") as AnimationPlayer
-	anim_player.animation_finished.connect(_on_zombie_hand_finished.bind(hand))
 	anim_player.play("ALL_ANIMS")
+	await get_tree().create_timer(ZOMBIE_HAND_TRANSITION_TIME).timeout
+	## 等待期间场景可能已被切走, 手节点随之释放
+	if is_instance_valid(hand):
+		hand.queue_free()
+	_start_adventure_level()
 
-func _on_zombie_hand_finished(_anim_name: String, hand: Node2D) -> void:
-	hand.queue_free()
-	Global.game_para = null
-	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelAdventure))
+
+## 进「该打的那一关」: 冒险模式没有选关界面, 按进度只能打下一关
+## (没通关过 = 1-1, 之后就是主菜单木牌上那个关卡号; 打通 5-10 后进下一周目, 又回到 1-1)
+##
+## 关卡本体与进关参数由 GlobalGameState 现场拼(它才是进度的持有者),
+## 这里只负责取参数 + 切到本关的主游戏场景 —— 与旧选关界面点按钮后做的事完全一样。
+func _start_adventure_level() -> void:
+	var level_para := Global.global_game_state.build_curr_adventure_level_para()
+	if level_para == null:
+		## 关卡取不出来就留在主菜单(不要切到空场景), 并放开过场闸门让玩家能再点一次
+		Log.error("主菜单：取不到冒险模式该打的关卡参数，留在原地")
+		_adventure_transitioning = false
+		return
+	Global.game_para = level_para
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(level_para.game_sences))
 
 
 ## 迷你游戏(冒险模式 3-2 通关后解锁)

@@ -71,6 +71,8 @@ func save_now() -> void:
 		"is_wall_nut_first_aid_bought": global_game_state.is_wall_nut_first_aid_bought,
 		"is_first_coin_advice_shown": global_game_state.is_first_coin_advice_shown,
 		"curr_all_level_state_data": global_game_state.curr_all_level_state_data,
+		## 冒险模式周目: 老存档没有这个键 -> 读档时按默认值 1 处理(见 load_global_game_data)
+		"curr_adventure_round": global_game_state.curr_adventure_round,
 		"selected_cards": global_game_state.selected_cards,
 		"curr_plant": global_game_state.curr_plant,
 		"curr_zombie": global_game_state.curr_zombie,
@@ -127,6 +129,8 @@ func load_global_game_data() -> void:
 	## 花园植物的 id / 枚举同样是这个坑:植物类型在老存档里是数字编号,现在一律是 StringName id
 	state.normalize_garden_plant_cell_data()
 	state.curr_all_level_state_data = data.get("curr_all_level_state_data", state.DEFAULT_CURR_ALL_LEVEL_STATE_DATA).duplicate(true)
+	## 周目数: 老存档没有这个键 -> 1(首周目),不用进 _migrate_save_data
+	state.curr_adventure_round = int(data.get("curr_adventure_round", state.DEFAULT_ADVENTURE_ROUND))
 	state.selected_cards = _normalize_selected_cards(data.get("selected_cards", []))
 	## 已解锁植物: 存档里的解锁记录 + 按已通关冒险关卡重新推导(兼容旧档与手动改档),取并集
 	state.curr_plant = _build_curr_plant(data, state)

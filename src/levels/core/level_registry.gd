@@ -41,7 +41,21 @@ const MODE_BY_DIR: Dictionary = {
 ## 其余一切 .gd（Node2D 的场景脚本、进度条数据源、UI…）**文件名长得再像关卡也不是关卡**
 const LEVEL_BASE_CLASS_NAMES: Array[String] = ["LevelScriptBase", "ResourceLevelData"]
 
+## 二周目变体的文件名后缀：`adventure_01_01_round2.gd` 这类**同一关的二周目版本**
+##
+## 它们与正本一起放在 `mode_adventure/`（文件名 = 正本的 id + 本后缀），
+## 但**不算「一关」**：只登记进 _round_variant_path_by_id，不进 _path_by_id / _mode_by_id。
+## 为什么单独放一张表：id 是选关页与存档语义的锚点，冒险关必须恰好 50 个、
+## 第 n 位 == 第 n 关（护栏 test/scenarios/probe_level_registry_order.gd）；
+## 变体混进去就会让 id 清单变成 100 个，那个护栏与选关页一起失效。
+##
+## 周目**没有上限**（三周目、四周目…），但变体只有这一套 —— 二周目及以后都用它
+## （原版口径：二周目起的差异此后一直存在）。
+const ROUND_VARIANT_SUFFIX := "_round2"
+
 static var _path_by_id: Dictionary = {}
+## 二周目变体：id（`adventure_01_01_round2`）-> 脚本路径；只在按周目路由时查
+static var _round_variant_path_by_id: Dictionary = {}
 static var _mode_by_id: Dictionary = {}
 static var _is_scanned := false
 
@@ -51,6 +65,7 @@ static var _is_scanned := false
 static func rescan() -> void:
 	_path_by_id.clear()
 	_mode_by_id.clear()
+	_round_variant_path_by_id.clear()
 	_scan_dir(LEVEL_DIR, MainSceneRegistry.MainScenes.Null)
 	_is_scanned = true
 
@@ -78,6 +93,12 @@ static func _scan_dir(dir_path: String, mode: MainSceneRegistry.MainScenes) -> v
 				name = dir.get_next()
 				continue
 			var id := name.get_basename()
+			## 二周目变体只进变体表：能被 get_level() 取到（按周目路由要用），
+			## 但不进 ids_by_mode / all_ids，不算「一关」（理由见 ROUND_VARIANT_SUFFIX）
+			if id.ends_with(ROUND_VARIANT_SUFFIX):
+				_round_variant_path_by_id[id] = dir_path.path_join(name)
+				name = dir.get_next()
+				continue
 			if _path_by_id.has(id):
 				Log.warn("LevelRegistry: 关卡 id 重复 %s（后者覆盖前者）" % id)
 			_path_by_id[id] = dir_path.path_join(name)
@@ -114,7 +135,7 @@ static func _ensure_scanned() -> void:
 #region 查询
 static func has_level(level_id: String) -> bool:
 	_ensure_scanned()
-	return _path_by_id.has(level_id)
+	return _path_by_id.has(level_id) or _round_variant_path_by_id.has(level_id)
 
 
 ## 全部关卡 id（内置 + 已登记的自制关），已排序
@@ -142,6 +163,8 @@ static func ids_by_mode(mode: MainSceneRegistry.MainScenes) -> Array[String]:
 ## （运行时报 "Invalid call to function 'get_path' in base 'GDScript'. Expected 0 argument(s)"）
 static func get_level_path(level_id: String) -> String:
 	_ensure_scanned()
+	if _round_variant_path_by_id.has(level_id):
+		return _round_variant_path_by_id[level_id]
 	return _path_by_id.get(level_id, "")
 
 
@@ -183,6 +206,32 @@ static func get_level(level_id: String) -> ResourceLevelData:
 
 static var _data_by_adventure_level: Dictionary = {}
 static var _is_adventure_level_scanned := false
+
+
+## 冒险关卡序号(1-1 = 1 …… 5-10 = 50) -> 关卡 id(`adventure_<大关>_<小关>`，id 就是文件名)
+##
+## 是下面 `_parse_adventure_level()` 的逆运算，也是「进冒险模式直接打某一关」的入口：
+## 冒险模式**没有选关界面**（见 docs/参考存档/选关界面与解锁.md），进关方拿不到选关场景里的关卡脚本，
+## 只能凭序号反查 id，再走 get_level() 取关卡实例（见 GlobalGameState.build_adventure_level_para）。
+## 序号非法返回空字符串。
+##
+## [param adventure_round] 周目（1 = 首周目）。**二周目及以后**优先返回这一关的二周目变体
+## （`adventure_<大关>_<小关>_round2`，见 ROUND_VARIANT_SUFFIX）；这一关没有变体文件就回退正本。
+## 变体只是**换个脚本**：存档键仍由 set_choose_level() 按序号拼，与正本同一份
+## （二周目的进度靠记录里的 "Round" 区分，见 docs/参考存档/二周目.md §3）。
+static func get_adventure_level_id(adventure_level: int, adventure_round: int = 1) -> String:
+	if adventure_level <= 0:
+		return ""
+	## 用浮点除法再向下取整：页码本就是向下取整的结果，这样写可避免 GDScript 的 integer_division 警告
+	var level_page := floori(float(adventure_level - 1) / float(GlobalGameState.ADVENTURE_LEVEL_PER_PAGE))
+	var small := adventure_level - level_page * GlobalGameState.ADVENTURE_LEVEL_PER_PAGE
+	var base_id := "adventure_%02d_%02d" % [level_page + 1, small]
+	if adventure_round >= GlobalGameState.DEFAULT_ADVENTURE_ROUND + 1:
+		_ensure_scanned()
+		var variant_id := base_id + ROUND_VARIANT_SUFFIX
+		if _round_variant_path_by_id.has(variant_id):
+			return variant_id
+	return base_id
 
 
 ## 冒险关卡序号(1-1 = 1 …… 5-10 = 50) -> 本关关卡实例；没有这一关返回 null

@@ -274,7 +274,7 @@ func is_runtime_plant(plant_type: StringName) -> bool:
 ## （实测就地写会报 `ERROR: Dictionary is in read-only state.`），改不动；
 ## 又不能预先在表里替模组写一份 —— 本体不 import 模组。所以运行期要改数值只能走这张覆盖表。
 ##
-## ★ 这是留给模组的口子（"原版平衡"这类**只调数值**的同人改动）：
+## ★ 这是留给模组的口子（"生态版"这类**只调数值**的同人改动）：
 ##   本体不认识任何一个模组，谁覆盖、覆盖成什么由调用方决定；撤得掉
 ##   （`clear_runtime_plant_stats()`），关掉模组 = 数值回到原版。
 ##

@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=3 uid="uid://cqo7ru5lo8e6g"]
+[gd_scene load_steps=49 format=3 uid="uid://cqo7ru5lo8e6g"]
 
 [ext_resource type="Theme" uid="uid://cx302yraw066y" path="res://data/ui/themes/choose_level_theme.tres" id="1_ehgxy"]
 [ext_resource type="Script" uid="uid://jru6xfv7g4f1" path="res://src/menus/choose_level/choose_level.gd" id="1_o008e"]
@@ -14,7 +14,6 @@
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_12_column.gd" id="24_iqxly"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="25_ta0hi"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="26_fvivu"]
-[ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="27_2sh17"]
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_01_zom_botany.gd" id="30_zombotany"]
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_05_beghouled.gd" id="101_beghouled"]
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_06_invisi_ghoul.gd" id="102_invisi"]
@@ -29,24 +28,78 @@
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_18_bowling_2.gd" id="111_bowling2"]
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_19_pogo_party.gd" id="112_pogo"]
 [ext_resource type="Script" path="res://src/levels/mode_minigame/minigame_20_zomboss_revenge.gd" id="113_zomboss"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_00.png" id="201_thumb00"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_01.png" id="202_thumb01"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_05.png" id="203_thumb05"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_07.png" id="204_thumb07"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_08.png" id="205_thumb08"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_12.png" id="206_thumb12"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_14.png" id="208_thumb14"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_15.png" id="209_thumb15"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_17.png" id="210_thumb17"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_18.png" id="211_thumb18"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_19.png" id="212_thumb19"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_20.png" id="213_thumb20"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_21.png" id="214_thumb21"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_02.png" id="215_thumb02"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_03.png" id="216_thumb03"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_04.png" id="217_thumb04"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_06.png" id="218_thumb06"]
-[ext_resource type="Texture2D" path="res://assets/image/ui/ui_challenge/Challenge_Thumbnails/Challenge_Thumbnail_16.png" id="220_thumb16"]
+[ext_resource type="Texture2D" path="res://pak/images/Challenge_Thumbnails.jpg" id="atlas_thumbs"]
+[sub_resource type="AtlasTexture" id="AtlasThumb_0"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(0, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_1"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(80, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_2"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(160, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_3"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(240, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_4"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(320, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_5"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(400, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_6"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(480, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_7"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(560, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_8"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(640, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_12"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(960, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_14"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1120, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_15"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1200, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_16"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1280, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_17"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1360, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_18"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1440, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_19"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1520, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_20"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1600, 0, 80, 65)
+
+[sub_resource type="AtlasTexture" id="AtlasThumb_21"]
+atlas = ExtResource("atlas_thumbs")
+region = Rect2(1680, 0, 80, 65)
 
 [node name="ChooseLevel" type="Control"]
 layout_mode = 3
@@ -115,7 +168,7 @@ columns = 5
 [node name="ChooseLevelButton_ZomBotany" parent="AllPage/GridContainer" index="0" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("30_zombotany")
-preview_icon = ExtResource("201_thumb00")
+preview_icon = SubResource("AtlasThumb_0")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton_ZomBotany/TextureButton" index="0"]
 text = "植物僵尸"
@@ -123,7 +176,7 @@ text = "植物僵尸"
 [node name="ChooseLevelButton" parent="AllPage/GridContainer" index="1" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("5_mrsyh")
-preview_icon = ExtResource("218_thumb06")
+preview_icon = SubResource("AtlasThumb_6")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton/TextureButton" index="0"]
 text = "坚果保龄球"
@@ -131,7 +184,7 @@ text = "坚果保龄球"
 [node name="ChooseLevelButton_SlotMachine" parent="AllPage/GridContainer" index="2" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("14_5d8uv")
-preview_icon = ExtResource("215_thumb02")
+preview_icon = SubResource("AtlasThumb_2")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton_SlotMachine/TextureButton" index="0"]
 text = "拉霸"
@@ -139,7 +192,7 @@ text = "拉霸"
 [node name="ChooseLevelButton4" parent="AllPage/GridContainer" index="3" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("16_rivfv")
-preview_icon = ExtResource("216_thumb03")
+preview_icon = SubResource("AtlasThumb_3")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton4/TextureButton" index="0"]
 text = "种子雨"
@@ -147,7 +200,7 @@ text = "种子雨"
 [node name="ChooseLevelButton6" parent="AllPage/GridContainer" index="4" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("101_beghouled")
-preview_icon = ExtResource("202_thumb01")
+preview_icon = SubResource("AtlasThumb_1")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton6/TextureButton" index="0"]
 text = "僵尸迷阵"
@@ -155,7 +208,7 @@ text = "僵尸迷阵"
 [node name="ChooseLevelButton7" parent="AllPage/GridContainer" index="5" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("102_invisi")
-preview_icon = ExtResource("205_thumb08")
+preview_icon = SubResource("AtlasThumb_8")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton7/TextureButton" index="0"]
 text = "隐形战争"
@@ -163,7 +216,7 @@ text = "隐形战争"
 [node name="ChooseLevelButton8" parent="AllPage/GridContainer" index="6" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("103_stars")
-preview_icon = ExtResource("203_thumb05")
+preview_icon = SubResource("AtlasThumb_5")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton8/TextureButton" index="0"]
 text = "观星"
@@ -171,7 +224,7 @@ text = "观星"
 [node name="ChooseLevelButton9" parent="AllPage/GridContainer" index="7" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("104_aquarium")
-preview_icon = ExtResource("204_thumb07")
+preview_icon = SubResource("AtlasThumb_7")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton9/TextureButton" index="0"]
 text = "僵尸水族馆"
@@ -179,7 +232,7 @@ text = "僵尸水族馆"
 [node name="ChooseLevelButton10" parent="AllPage/GridContainer" index="8" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("105_twist")
-preview_icon = ExtResource("213_thumb20")
+preview_icon = SubResource("AtlasThumb_20")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton10/TextureButton" index="0"]
 text = "僵尸迷阵旋风"
@@ -187,7 +240,7 @@ text = "僵尸迷阵旋风"
 [node name="ChooseLevelButton3" parent="AllPage/GridContainer" index="9" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("13_bkyeq")
-preview_icon = ExtResource("206_thumb12")
+preview_icon = SubResource("AtlasThumb_12")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton3/TextureButton" index="0"]
 text = "小小大僵尸"
@@ -195,7 +248,7 @@ text = "小小大僵尸"
 [node name="ChooseLevelButton11" parent="AllPage/GridContainer" index="10" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("106_portal")
-preview_icon = ExtResource("209_thumb15")
+preview_icon = SubResource("AtlasThumb_15")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton11/TextureButton" index="0"]
 text = "斗转星移"
@@ -203,7 +256,7 @@ text = "斗转星移"
 [node name="ChooseLevelButton5" parent="AllPage/GridContainer" index="11" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("24_iqxly")
-preview_icon = ExtResource("217_thumb04")
+preview_icon = SubResource("AtlasThumb_4")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton5/TextureButton" index="0"]
 text = "排山倒海"
@@ -211,7 +264,7 @@ text = "排山倒海"
 [node name="ChooseLevelButton12" parent="AllPage/GridContainer" index="12" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("107_bobsled")
-preview_icon = ExtResource("210_thumb17")
+preview_icon = SubResource("AtlasThumb_17")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton12/TextureButton" index="0"]
 text = "全面冻结"
@@ -219,7 +272,7 @@ text = "全面冻结"
 [node name="ChooseLevelButton13" parent="AllPage/GridContainer" index="13" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("108_nimble")
-preview_icon = ExtResource("211_thumb18")
+preview_icon = SubResource("AtlasThumb_18")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton13/TextureButton" index="0"]
 text = "僵尸快跑"
@@ -227,7 +280,7 @@ text = "僵尸快跑"
 [node name="ChooseLevelButton2" parent="AllPage/GridContainer" index="14" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("8_fgi2n")
-preview_icon = ExtResource("220_thumb16")
+preview_icon = SubResource("AtlasThumb_16")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton2/TextureButton" index="0"]
 text = "打僵尸"
@@ -235,7 +288,7 @@ text = "打僵尸"
 [node name="ChooseLevelButton14" parent="AllPage/GridContainer" index="15" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("109_laststand")
-preview_icon = ExtResource("214_thumb21")
+preview_icon = SubResource("AtlasThumb_21")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton14/TextureButton" index="0"]
 text = "坚不可摧"
@@ -243,7 +296,7 @@ text = "坚不可摧"
 [node name="ChooseLevelButton15" parent="AllPage/GridContainer" index="16" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("110_zombotany2")
-preview_icon = ExtResource("201_thumb00")
+preview_icon = SubResource("AtlasThumb_0")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton15/TextureButton" index="0"]
 text = "植物僵尸2"
@@ -251,7 +304,7 @@ text = "植物僵尸2"
 [node name="ChooseLevelButton16" parent="AllPage/GridContainer" index="17" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("111_bowling2")
-preview_icon = ExtResource("218_thumb06")
+preview_icon = SubResource("AtlasThumb_6")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton16/TextureButton" index="0"]
 text = "坚果保龄球2"
@@ -259,7 +312,7 @@ text = "坚果保龄球2"
 [node name="ChooseLevelButton17" parent="AllPage/GridContainer" index="18" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("112_pogo")
-preview_icon = ExtResource("208_thumb14")
+preview_icon = SubResource("AtlasThumb_14")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton17/TextureButton" index="0"]
 text = "蹦蹦舞会"
@@ -267,7 +320,7 @@ text = "蹦蹦舞会"
 [node name="ChooseLevelButton18" parent="AllPage/GridContainer" index="19" instance=ExtResource("9_xsph7")]
 layout_mode = 2
 level_script = ExtResource("113_zomboss")
-preview_icon = ExtResource("212_thumb19")
+preview_icon = SubResource("AtlasThumb_19")
 
 [node name="Label" parent="AllPage/GridContainer/ChooseLevelButton18/TextureButton" index="0"]
 text = "僵尸博士的复仇"
@@ -288,7 +341,6 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("25_ta0hi")
 texture_pressed = ExtResource("26_fvivu")
-texture_click_mask = ExtResource("27_2sh17")
 
 [node name="Label" type="Label" parent="MainMenu"]
 layout_mode = 1
@@ -326,7 +378,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("13_v8ms4")
 texture_pressed = ExtResource("14_xsph7")
 texture_hover = ExtResource("14_xsph7")
-texture_click_mask = ExtResource("27_2sh17")
 
 [node name="Label" type="Label" parent="Last"]
 layout_mode = 1
@@ -358,7 +409,6 @@ mouse_default_cursor_shape = 2
 texture_normal = ExtResource("13_v8ms4")
 texture_pressed = ExtResource("14_xsph7")
 texture_hover = ExtResource("14_xsph7")
-texture_click_mask = ExtResource("27_2sh17")
 
 [node name="Label" type="Label" parent="Next"]
 layout_mode = 1

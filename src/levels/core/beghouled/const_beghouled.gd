@@ -65,8 +65,8 @@ const CRATER_FILL_SUN := 200
 ## 刷新 / 填坑两张自定义种子包的整卡贴图：从 seeds.png 裁出来的专用卡面（50×70 整张，
 ## 图案已画好，直接当卡面用，**不再往上叠任何东西**）
 ## 僵尸迷阵（迷你 05）与僵尸迷阵 旋风（迷你 09）的卡槽第 4 / 第 5 格共用这两张
-const PACKET_REFRESH_TEXTURE: Texture2D = preload("res://assets/image/ui/ui_card/SeedPacket_Beghouled_Refresh.png")
-const PACKET_FILL_TEXTURE: Texture2D = preload("res://assets/image/ui/ui_card/SeedPacket_Beghouled_Fill.png")
+const PACKET_REFRESH_TEXTURE: Texture2D = preload("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Refresh.png")
+const PACKET_FILL_TEXTURE: Texture2D = preload("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Fill.png")
 
 ## 死局提示：原版刷新前没有文案，这里为了让玩家明白「为什么盘面突然变了」，
 ## 提示出现后停留 NO_MOVE_TIP_WAIT 秒再刷新整盘（自定义，非 wiki 口径）

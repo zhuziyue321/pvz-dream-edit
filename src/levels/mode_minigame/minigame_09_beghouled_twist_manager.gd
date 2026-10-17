@@ -81,7 +81,12 @@ func _rotate_block(block: Array[PlantCell], clockwise: bool) -> void:
 	for block_cell in block:
 		plants.append(get_cell_plant(block_cell))
 	## 先全部拿出来，避免同一格被反复覆盖
+	## ⚠️ 两次旋转之间（_try_twist 里的 ROTATE_WAIT）植物可能已被僵尸吃掉，
+	##    转回来的那次调用会读到已死的引用 —— 一律当空格处理，不能让整块旋转中断
 	for i in range(4):
+		if not is_instance_valid(plants[i]):
+			plants[i] = null
+			continue
 		block[i].move_take_plant(plants[i])
 	## 新位置上的植物下标
 	var new_indices: Array[int]
@@ -90,8 +95,11 @@ func _rotate_block(block: Array[PlantCell], clockwise: bool) -> void:
 	else:
 		new_indices = [1, 3, 0, 2]
 	for i in range(4):
-		var place := block[i].move_get_put_place(plants[new_indices[i]])
-		block[i].move_put_plant(plants[new_indices[i]], place)
+		var plant := plants[new_indices[i]]
+		if plant == null:
+			continue
+		var place := block[i].move_get_put_place(plant)
+		block[i].move_put_plant(plant, place)
 
 
 ## 覆盖基类：是否存在「旋转一次 2×2 就能凑成连线」的走法

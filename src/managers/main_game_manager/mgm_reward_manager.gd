@@ -335,6 +335,14 @@ func win_main_game():
 	if game_para.game_round != 1:
 		main_game.save_manager.re_main_game()
 
+	## 二周目：本关是冒险模式的最后一关（5-10）-> 进下一周目（进度按周目过滤，见 GlobalGameState）
+	## 先按「本关是不是 5-10」挡一道，免得迷你 / 解谜 / 生存关卡通关时也来碰周目；
+	## advance_adventure_round() 自己还会再核一遍「本周目 1-1 ~ 5-10 全都通了」，所以：
+	##   · 调试把存档写成"半通"时不会误进;   · 重打 5-10 也不会连着进两周目（进完周目进度就归零了）。
+	## 放在跳商店 / 图鉴判定**之前**：进不进下一周目与商店那两跳各管各的。
+	if _get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
+		Global.global_game_state.advance_adventure_round()
+
 	if is_need_goto_store_on_win(is_shop_unlocked_before, shop_expand_stage_before):
 		GlobalUtils.change_scene(
 			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store)
@@ -347,7 +355,10 @@ func win_main_game():
 		)
 		return
 
-	## 本关的选关场景没登记时退回主菜单（走访问器的 fallback 参数，不再自己读 MainScenesMap）
+	## 通关后回哪：本模式的选关场景；**冒险模式没有选关界面**（它的槽位故意没登记场景，
+	## 见 MainSceneRegistry），于是这里退回主菜单 —— 主菜单木牌上就是下一关的关卡号，
+	## 再点一次木牌就进下一关（见 StartMenuRoot._apply_adventure_button_state / _start_adventure_level）。
+	## 走访问器的 fallback 参数，不再自己读 MainScenesMap。
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(game_para.game_mode, MainSceneRegistry.MainScenes.StartMenu))
 
 

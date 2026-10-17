@@ -29,6 +29,10 @@ const MODE_UNLOCK_ADVENTURE_LEVEL: Dictionary[MainSceneRegistry.MainScenes, int]
 }
 #endregion
 
+## 冒险模式"已开打"的门槛: 通关 1-1 之后主菜单的冒险模式按钮才会从「开始冒险模式」木牌
+## 换成「冒险模式」木牌 + 木牌上填当前关卡号(见 start_menu_root.gd 的 _apply_adventure_button_state)
+const ADVENTURE_STARTED_ADVENTURE_LEVEL := 1
+
 ## 铲子解锁: 通关冒险模式 1-4 后疯狂戴夫把铲子交给玩家,1-1 ~ 1-4 期间没有铲子
 const SHOVEL_UNLOCK_ADVENTURE_LEVEL := 4
 
@@ -92,6 +96,24 @@ static func get_current_adventure_level(max_success_adventure_level: int) -> int
 	return maxi(1, max_success_adventure_level + 1)
 
 
+## 冒险模式是否已开打(通关过 1-1): 此前主菜单只给"开始冒险模式"木牌,
+## 通关后换成带当前关卡号的"冒险模式"木牌(见 start_menu_root.gd 的 _apply_adventure_button_state)
+static func is_adventure_started(max_success_adventure_level: int) -> bool:
+	return max_success_adventure_level >= ADVENTURE_STARTED_ADVENTURE_LEVEL
+
+
+## 要显示在主菜单冒险模式按钮上的关卡号(= 进关要打的那一关): 本周目已通关的最大序号 + 1,
+## 夹到最后一关 —— 打完 5-10 没有"下一关", 显示成 6-1 是不存在的关卡。
+##
+## 传入的必须是**本周目的进度**(GlobalGameState.get_adventure_round_cleared_level()), 不是历史最高:
+## 二周目进档时历史最高还是 50, 拿它当口径会把玩家直接丢回 5-10。
+## (正常流程下这个夹取只在"本周目已全通、但周目还没 +1"的那一瞬生效 ——
+##  真打完 5-10 会立刻进下一周目, 见 GlobalGameState.advance_adventure_round)
+static func get_adventure_button_level(max_success_adventure_level: int) -> int:
+	return mini(get_current_adventure_level(max_success_adventure_level),
+		ADVENTURE_FINAL_ADVENTURE_LEVEL)
+
+
 ## 金钱是否已解锁(当前正在打的冒险关卡序号 >= 2-1,即通关 1-10 后进 2-1 就开始掉钱)
 static func is_money_unlocked(max_success_adventure_level: int) -> bool:
 	return get_current_adventure_level(max_success_adventure_level) >= MONEY_UNLOCK_ADVENTURE_LEVEL
@@ -147,4 +169,15 @@ static func is_mode_all_level_open(game_mode: MainSceneRegistry.MainScenes, max_
 static func get_adventure_level_name(adventure_level: int) -> String:
 	if adventure_level <= 0:
 		return ""
-	return "%d-%d" % [int((adventure_level - 1) / 10.0) + 1, (adventure_level - 1) % 10 + 1]
+	return "%d-%d" % [get_adventure_level_page_num(adventure_level), get_adventure_level_index_num(adventure_level)]
+
+
+## 冒险模式关卡序号 -> 大关号(如 24 -> 3, 即 3-4 里的 3)
+## 主菜单冒险模式按钮上的关卡号是分两个数字画的, 这是左边那个
+static func get_adventure_level_page_num(adventure_level: int) -> int:
+	return int((adventure_level - 1) / 10.0) + 1
+
+
+## 冒险模式关卡序号 -> 小关号(如 24 -> 4, 即 3-4 里的 4), 主菜单按钮上右边那个数字
+static func get_adventure_level_index_num(adventure_level: int) -> int:
+	return (adventure_level - 1) % 10 + 1

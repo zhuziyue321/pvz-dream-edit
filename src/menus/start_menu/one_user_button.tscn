@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://5yk8fhfwgwo0"]
 
-[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets/fonts/方正少儿_GBK.ttf" id="1_h34de"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="1_h34de"]
 [ext_resource type="Script" uid="uid://udah4tu4vf0o" path="res://src/menus/start_menu/one_user_button.gd" id="2_vtk8y"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_nu6d8"]

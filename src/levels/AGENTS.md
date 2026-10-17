@@ -48,6 +48,7 @@
 - **一关专属机制写在关卡脚本里，不进游戏本体**：只有这一关（或极少数关）用到的特殊机制**必须**写在本目录 `mode_*/<关卡>.gd`（继承 `LevelScriptBase`）里 —— 属性 `_init()`、流程 `run_flow()`、专属物品与格子限制 `init_level_items()`；被 ≥2~3 关复用时才上浮成通用字段 / 组件 / 规则（硬约束 §1-8；细则见 [规范细则存档 D-07](../../docs/参考存档/规范细则存档.md#d-07-关卡脚本-vs-游戏本体一次性机制的落位)）。
 - **一关不止一个脚本时，辅助脚本跟着关卡本体走**：只服务这一关的脚本（场景节点 / 绘制层 / UI / 进度条数据源）**必须**与本体的 `<关卡>.gd` 放**同一个 `mode_*/` 目录**，且**文件名以关卡文件名为前缀**（`minigame_07_seeing_stars.gd` → `minigame_07_seeing_stars_progress_provider.gd`）（硬约束 §1-8；细则见 [D-07](../../docs/参考存档/规范细则存档.md#d-07-关卡脚本-vs-游戏本体一次性机制的落位)）。
 - **关卡的识别走白名单，不看文件名**：`LevelRegistry` 只在脚本继承链上出现 `LevelScriptBase` / `ResourceLevelData` 时才登记成关卡（`LEVEL_BASE_CLASS_NAMES` / `is_level_script()`），带前缀的辅助脚本不会被误登记（见 [关卡格式V2.md §3.4](../../docs/参考存档/关卡格式V2.md#34-关卡注册表-levelregistryp0-已落地)）。
+- **二周目变体是一关自己的另一套脚本**：`adventure_XX_YY_round2.gd`（文件名 = 正本 id + `LevelRegistry.ROUND_VARIANT_SUFFIX`）与正本**同目录**，按周目由 `LevelRegistry.get_adventure_level_id(序号, 周目)` 选中；它**只进变体表、不进 `ids_by_mode()`**（不算「一关」）。改二周目的某一关就改这个文件，**不要**去改一周目正本（细则见 [二周目.md](../../docs/参考存档/二周目.md) §6）。
 - **被 ≥2 关共用的关卡侧代码进 `core/<玩法>/`**：不再属于「某一关专属」时**不**硬套关卡名前缀，按玩法分子目录放进 `core/`（先例 `core/zomboss/`，现有 `core/beghouled/`、`core/hammer_zombie/`）；只有 1 关用的时候才按上一条进 `mode_*/`（硬约束 §1-8；细则见 [D-07](../../docs/参考存档/规范细则存档.md#d-07-关卡脚本-vs-游戏本体一次性机制的落位)）。
 - **关卡路径不要硬编码**：一律走 `LevelRegistry`（`src/levels/core/level_registry.gd`，`LEVEL_DIR = "res://src/levels"`），业务代码不散落 `res://` 关卡路径（硬约束 §1-4）。
 - **关卡 id = 文件名 basename**，与玩家自制关卡（`user://custom_level/`）共用一套 id 规则。

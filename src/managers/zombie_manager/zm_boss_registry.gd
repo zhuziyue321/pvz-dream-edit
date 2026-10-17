@@ -316,5 +316,3 @@ func clear_bosses_for_next_round() -> void:
 	for boss: ZB000Base in bosses:
 		boss.queue_free()
 	manager.signal_living_bosses_changed.emit()
-
-

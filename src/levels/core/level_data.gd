@@ -78,6 +78,13 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 ## 本关卡使用的地图数据：格子、僵尸行、小推车类型全由它决定（见 docs/参考存档/地图实现.md）
 ## 留空时按 game_sences 取场景默认地图
 @export var map_data: ResourceMapData
+## 二周目及以后用的地图数据：留空 = 沿用 map_data（绝大多数关卡都留空）
+## ★ 现在它是【兜底】：二周目起加载的是**另一套关卡脚本**（adventure_XX_YY_round2.gd，
+##   见 docs/参考存档/二周目.md §6），变体脚本自己把 map_data 写成满草皮图；
+##   只有「这一关没有变体文件、回退到正本」时才会走到这里。
+## 原用途（原版那条「二周目起 1-1 ~ 1-3 直接给满 5 行草皮」）只有那三关填了它，
+## 由 resolve_map_data() 在子管理器按图建格之前换过去。
+@export var map_data_from_second_round: ResourceMapData
 ## 游戏背景
 @export var game_BG: ConstLevelData.GameBg = ConstLevelData.GameBg.FrontDay
 ## 游戏背景音乐
@@ -270,6 +277,15 @@ func apply_scene_setting() -> void:
 ## 模仿者是「同一张卡换个壳」（card_plant_type 不变），跟着一起禁掉，
 ## 消费见 CardSlotCandidate.set_plant_card_banned
 @export var banned_plant_types_in_choose_card: Array[StringName] = []
+## 开局锁定的随机卡槽数量：前 N 个出战卡槽由系统从「本关能用的植物」里**随机**塞入，
+## 玩家只能编辑第 N+1 个槽起的部分。0（默认）= 不锁，行为与以前完全一样。
+##
+## 内容是「本关长什么样」，所以写关卡脚本 _init()（二周目关卡 adventure_XX_YY_round2.gd 写 3）。
+## 由 _resolve_locked_random_cards() 在 init_para() 里算进 prechosen_cards，
+## 填槽与锁定**全部复用** CardSlotNorm.init_pre_choosed_card()，UI 侧不用改（见 docs/参考存档/二周目.md）。
+## ★ 与 is_locked_card_slot（全锁、跳过整个选卡界面）是两件事：这里只锁前几槽，
+##   所以不置 is_locked_card_slot，玩家对后面的槽照旧有编辑权。
+@export_range(0, 15) var locked_random_card_num: int = 0
 ## 卡槽是否被锁死(冒险模式:卡槽数 >= 已拥有植物卡数时,按顺序固定选卡,玩家无选择权)
 ## 运行期算出来的,不进 .tres:由 _resolve_adventure_locked_cards() 置位,
 ## 消费方是 is_no_choose_permission()(锁死 = 没有选卡权,直接跳过选卡阶段)
@@ -402,6 +418,8 @@ func init_para() -> void:
 	resolve_map_data()
 	_apply_card_mode_constraints()
 	_resolve_adventure_locked_cards()
+	## 顺序在「冒险全锁」之后：那条路会 clear 掉 prechosen_cards（见 _resolve_locked_random_cards）
+	_resolve_locked_random_cards()
 	_init_zombie_refresh_from_whitelist()
 	## 罐子配置：先恢复第 1 批的原始配置（上次玩到后面几批时顶层字段被改过），再重新快照
 	reset_pot_config_first_round()
@@ -456,10 +474,43 @@ func _resolve_adventure_locked_cards() -> void:
 	is_locked_card_slot = true
 
 
+## 把「前 N 个随机卡槽」算成 prechosen_cards —— locked_random_card_num > 0 的关卡用
+## （二周目关卡 adventure_XX_YY_round2.gd 都写 3，见 docs/参考存档/二周目.md）
+##
+## 只负责**挑哪几张**：入槽、锁死（预选卡点不动、选卡阶段取消不了）都由现有的
+## CardSlotNorm.init_pre_choosed_card() 完成，这里不碰 UI。
+##
+## ⚠️ 三条边界（踩了就会从「锁前 3 槽」变成「整关跳过选卡」或塞进禁选植物）：
+##   1. 不置 is_locked_card_slot —— 置了 is_no_choose_permission() 就返回 true，整个选卡界面不出现；
+##   2. 至少给玩家留 1 个槽（N 夹到 卡槽数 - 1），否则卡槽被预选卡填满，同样退化成跳过选卡；
+##   3. 随机池要剔掉本关禁选的植物（禁选是在卡位生成之后才生效，预选这条路绕不过它）。
+func _resolve_locked_random_cards() -> void:
+	if locked_random_card_num <= 0:
+		return
+	## 冒险模式的「全锁」（卡槽数 >= 已拥有植物卡数）把 prechosen_cards 全填满了，不再接手
+	if is_locked_card_slot:
+		return
+	if not can_choosed_card or not has_norm_card_slot():
+		return
+	var owned_cards: Array[StringName] = Global.global_game_state.curr_plant.duplicate()
+	for banned_plant_type: StringName in banned_plant_types_in_choose_card:
+		owned_cards.erase(banned_plant_type)
+	if owned_cards.is_empty():
+		return
+	## 随机走 GameRng：联机 / 回归要能靠同一颗种子复现（见 game_rng.gd 的说明）
+	GameRng.shuffle(owned_cards)
+	var lock_num: int = mini(locked_random_card_num, get_max_choosed_card_num() - 1)
+	if lock_num <= 0:
+		return
+	prechosen_cards = ResourceCardReference.create_plant_list(owned_cards.slice(0, lock_num))
+
+
 ## 卡槽数在关卡运行期发生变化时(夜晚关卡开场戴夫卖出卡槽扩充)重新结算预选卡
 ## 卡槽数变大可能让"锁定卡槽"失效(已拥有植物卡数 <= 新的卡槽数),所以要重跑一次
+## 同理「前 N 个随机卡槽」的 N 也是按卡槽数夹的,卡槽数变了要重挑
 func refresh_pre_choosed_card_on_card_slot_change() -> void:
 	_resolve_adventure_locked_cards()
+	_resolve_locked_random_cards()
 
 
 ## 系统预选卡的有效数量
@@ -562,6 +613,14 @@ func _init_zombie_refresh_from_whitelist() -> void:
 ## 解析地图数据。主游戏场景在 _enter_tree 就会调用它，
 ## 保证各子管理器 _ready（生成格子/僵尸行）时 map_data 已经就绪
 func resolve_map_data() -> void:
+	## 二周目起换底图：只认关卡自己填了 map_data_from_second_round 的那几关
+	## （原版 1-1 ~ 1-3 在二周目直接给满 5 行草皮）。
+	## ★ 现在这是**兜底**：二周目起加载的是另一套关卡脚本（adventure_XX_YY_round2.gd），
+	##   变体自己就把 map_data 写成满草皮图了；只有回退到正本时才走到这里（见 docs/参考存档/二周目.md §6）。
+	## 为什么换在这里而不是进关前拼参数：进关的路不止「主菜单点木牌」一条（联机 / 探针 / 调试都自己拼参数），
+	## 关卡数据自己看周目才不会漏；而且这里是**子管理器按图建格之前**唯一的时机。
+	if map_data_from_second_round != null and Global.global_game_state.is_from_second_round():
+		map_data = map_data_from_second_round
 	if map_data != null:
 		return
 	map_data = Global.main_scene_registry.get_default_map_data(game_sences) as ResourceMapData

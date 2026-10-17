@@ -42,20 +42,19 @@
 [ext_resource type="Script" path="res://src/managers/drop_item_manager/dim_seed_packet.gd" id="23_dspkt"]
 [ext_resource type="Script" path="res://src/managers/drop_item_manager/dim_chocolate.gd" id="23_choco"]
 [ext_resource type="Texture2D" path="res://pak/images/background4_gameover_mask.png" id="23_401pl"]
-[ext_resource type="Texture2D" uid="uid://vcaw16pvdqga" path="res://assets/image/ui/ui_remind_word/ZombiesWon.png" id="23_vyo3a"]
+[ext_resource type="Texture2D" path="res://pak/reanim/ZombiesWon_.png" id="23_vyo3a"]
 [ext_resource type="Script" uid="uid://dhkfw0onmxcyf" path="res://src/world/camera/main_game_camera.gd" id="24_b4qea"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="25_aop5g"]
 [ext_resource type="Script" uid="uid://duv8spyw6f44n" path="res://src/managers/zombie_manager/zm_zombie_choose_row_system.gd" id="25_iuyhw"]
 [ext_resource type="Script" path="res://src/managers/portal_manager.gd" id="71_portal"]
 [ext_resource type="Script" uid="uid://3j46ottso760" path="res://src/ui/main_game_ui/main_game_menu_button.gd" id="26_84h1o"]
-[ext_resource type="Texture2D" uid="uid://toxyk2jadqam" path="res://assets/image/ui/ui_main_game_menu/option_dialog.png" id="27_w5iw5"]
+[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="27_w5iw5"]
 [ext_resource type="Texture2D" path="res://pak/images/background5_gameover_mask.png" id="28_71hfq"]
 [ext_resource type="Script" uid="uid://djkmy1xylm8hs" path="res://src/ui/ui_main_game_menu/main_game_menu_option_dialog.gd" id="28_mddbc"]
 [ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="29_8fvtd"]
 [ext_resource type="Script" uid="uid://lu0twrv0u1t0" path="res://src/ui/card/card_slot/canvas_layer_card_slot.gd" id="30_b6ai2"]
 [ext_resource type="PackedScene" uid="uid://b2xxhep8oyipk" path="res://src/items/coin_bank_label.tscn" id="30_xh73d"]
-[ext_resource type="BitMap" uid="uid://bhg7gejfpw036" path="res://assets/image/ui/ui_main_game_menu/btn_dialog_back_2_mask.png" id="30_xvvqk"]
-[ext_resource type="Texture2D" uid="uid://blge6mwmus5fv" path="res://assets/image/ui/ui_main_game_menu/btn_dialog_back_2.png" id="33_w0404"]
+[ext_resource type="Texture2D" path="res://pak/images/options_backtogamebutton0.png" id="33_w0404"]
 [ext_resource type="Script" uid="uid://c5llwle352r6f" path="res://src/managers/card_manager.gd" id="34_5pjpf"]
 [ext_resource type="PackedScene" uid="uid://cp0kgnsx20pyh" path="res://src/ui/dialog.tscn" id="34_8fvtd"]
 [ext_resource type="PackedScene" uid="uid://5v0fdtao52jl" path="res://src/ui/control_canvas_layer.tscn" id="34_ifnc6"]
@@ -64,7 +63,7 @@
 [ext_resource type="Texture2D" path="res://pak/images/ShovelBank.png" id="42_pmw6j"]
 [ext_resource type="Script" uid="uid://drl7ywtxslsbm" path="res://src/ui/card/shovel_in_ui.gd" id="43_erab5"]
 [ext_resource type="Script" uid="uid://bkaiiq5qsbt5j" path="res://src/items/level_info.gd" id="46_y1sge"]
-[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets/fonts/方正少儿_GBK.ttf" id="48_27j16"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="48_27j16"]
 [ext_resource type="Script" uid="uid://5unqafehbil7" path="res://src/fx/other_effect/canvas_layer_effect.gd" id="51_qfhda"]
 [ext_resource type="Script" uid="uid://l5xf5880s78e" path="res://src/ui/main_game_ui/label_zombie_sum.gd" id="59_b2sx0"]
 [ext_resource type="Script" uid="uid://bafp0ax1lmlge" path="res://src/entities/character/components/detect_component/component_detect.gd" id="61_b2sx0"]
@@ -1184,7 +1183,6 @@ grow_vertical = 0
 mouse_filter = 1
 texture_normal = ExtResource("33_w0404")
 texture_pressed = ExtResource("33_w0404")
-texture_click_mask = ExtResource("30_xvvqk")
 script = ExtResource("29_8fvtd")
 
 [node name="Label" type="Label" parent="CanvasLayerUI/All_UI/MainGameMenuOptionDialog/Return"]

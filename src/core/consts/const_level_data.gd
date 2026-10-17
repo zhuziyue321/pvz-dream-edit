@@ -44,15 +44,15 @@ enum GameBGM {
 
 ## BGM 资源路径
 const GameBGMMap: Dictionary[GameBGM, String] = {
-	GameBGM.FrontDay: "res://assets/audio/BGM/grasswalk.mp3",
-	GameBGM.FrontNight: "res://assets/audio/BGM/moongrains.mp3",
-	GameBGM.Pool: "res://assets/audio/BGM/watery_graves.mp3",
-	GameBGM.Fog: "res://assets/audio/BGM/rigor_mormist.mp3",
-	GameBGM.Roof: "res://assets/audio/BGM/graze_the_roof.mp3",
-	GameBGM.MiniGame: "res://assets/audio/BGM/loonboon.mp3",
-	GameBGM.Boss: "res://assets/audio/BGM/brainiac_maniac.mp3",
-	GameBGM.Puzzle: "res://assets/audio/BGM/cerebrawl.mp3",
-	GameBGM.UltimateBattle: "res://assets/audio/BGM/ultimate_battle.mp3",
+	GameBGM.FrontDay: "res://assets_custom/audio/BGM/grasswalk.mp3",
+	GameBGM.FrontNight: "res://assets_custom/audio/BGM/moongrains.mp3",
+	GameBGM.Pool: "res://assets_custom/audio/BGM/watery_graves.mp3",
+	GameBGM.Fog: "res://assets_custom/audio/BGM/rigor_mormist.mp3",
+	GameBGM.Roof: "res://assets_custom/audio/BGM/graze_the_roof.mp3",
+	GameBGM.MiniGame: "res://assets_custom/audio/BGM/loonboon.mp3",
+	GameBGM.Boss: "res://assets_custom/audio/BGM/brainiac_maniac.mp3",
+	GameBGM.Puzzle: "res://assets_custom/audio/BGM/cerebrawl.mp3",
+	GameBGM.UltimateBattle: "res://assets_custom/audio/BGM/ultimate_battle.mp3",
 	GameBGM.NoBGM: "",
 }
 #endregion

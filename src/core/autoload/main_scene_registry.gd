@@ -11,6 +11,10 @@ enum MainScenes{
 	MainGameRoof,
 
 	StartMenu = 100,
+	## 冒险模式**没有选关界面**（按进度只能打下一关，见 GlobalGameState.build_curr_adventure_level_para）：
+	## 这个枚举值在 MainScenesMap 里**故意没有登记场景**，它只作为冒险模式的 id 用
+	## —— 存档键（"101_x_xxxx"）与 ResourceLevelData.game_mode 都是按数值存的，
+	## 一旦改了数值，所有人的通关进度与关卡数据都会对不上号。
 	ChooseLevelAdventure,
 	ChooseLevelMiniGame,
 	ChooseLevelPuzzle,
@@ -33,7 +37,6 @@ enum MainScenes{
 	MainScenes.MainGameRoof: "res://src/main/main_game_base.tscn",
 
 	MainScenes.StartMenu: "res://src/menus/start_menu/start_menu.tscn",
-	MainScenes.ChooseLevelAdventure: "res://src/menus/choose_level/adventure_choose_level.tscn",
 	MainScenes.ChooseLevelMiniGame: "res://src/menus/choose_level/mini_game_choose_level.tscn",
 	MainScenes.ChooseLevelPuzzle: "res://src/menus/choose_level/puzzle_choose_level.tscn",
 	MainScenes.ChooseLevelSurvival: "res://src/menus/choose_level/survival_choose_level.tscn",

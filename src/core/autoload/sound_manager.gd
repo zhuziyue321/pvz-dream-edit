@@ -53,7 +53,7 @@ const SFXBeAttackMap := {
 		preload("res://pak/sounds/plastichit2.ogg")
 	],
 	TypeBeAttackSFX.Shield: [
-		preload("res://assets/audio/SFX/bullet/shieldhit1.ogg"),
+		preload("res://assets_custom/audio/SFX/bullet/shieldhit1.ogg"),
 		preload("res://pak/sounds/shieldhit2.ogg")
 	],
 }
@@ -73,7 +73,7 @@ enum TypeBulletSFX{
 const SFXBulletMap := {
 	TypeBulletSFX.Null: null,
 	TypeBulletSFX.Pea: [
-		preload("res://assets/audio/SFX/bullet/splat1.ogg"),
+		preload("res://assets_custom/audio/SFX/bullet/splat1.ogg"),
 		preload("res://pak/sounds/splat2.ogg"),
 		preload("res://pak/sounds/splat3.ogg")
 	],
@@ -104,11 +104,11 @@ const SFXCharacterMap := {
 	## -------------------------------植物-------------------------------
 	## 豌豆射手发射字典
 	&"Throw":[
-		preload("res://assets/audio/SFX/plant/throw1.ogg"),
+		preload("res://assets_custom/audio/SFX/plant/throw1.ogg"),
 		preload("res://pak/sounds/throw2.ogg")
 	],
 	## 向日葵发射阳光
-	&"Throw1":preload("res://assets/audio/SFX/plant/throw1.ogg"),
+	&"Throw1":preload("res://assets_custom/audio/SFX/plant/throw1.ogg"),
 	## 樱桃炸弹爆炸
 	&"CherryBomb":preload("res://pak/sounds/cherrybomb.ogg"),
 	## 土豆雷爆炸
@@ -417,6 +417,10 @@ const SFXOtherMap := {
 	&"prize": preload("res://pak/sounds/prize.ogg"),
 	## -------- 僵尸出土 ------------
 	&"dirt_rise": preload("res://pak/sounds/dirt_rise.ogg"),
+	## 主菜单"僵尸手破土"过场里手伸出时的僵尸笑声(原版 EVILLAUGH)
+	## 数据来源: 原版解包资源清单 pak/properties/resources.xml
+	##           (<Sound id="EVILLAUGH" path="evillaugh" />), 音频本体 pak/sounds/evillaugh.ogg
+	&"evillaugh": preload("res://pak/sounds/evillaugh.ogg"),
 	## --------- 花瓶破碎     -------------
 	&"vase_breaking": preload("res://pak/sounds/vase_breaking.ogg"),
 

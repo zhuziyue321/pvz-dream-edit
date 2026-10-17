@@ -228,7 +228,7 @@ var is_keep_system_cursor_visible := false
 #region bgm
 @export_group("bgm")
 ## 选卡bgm
-var bgm_choose_card: AudioStream = preload("res://assets/audio/BGM/choose_your_seeds.mp3")
+var bgm_choose_card: AudioStream = preload("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
 ## 主游戏bgm
 var bgm_main_game: AudioStream
 #endregion
