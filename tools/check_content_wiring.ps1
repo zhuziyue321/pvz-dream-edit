@@ -103,6 +103,32 @@ foreach ($id in $zombieAll) {
     if ($has) { CheckScene 'zombie' $id $zombieInfo[$id] }
 }
 
+# --- 子弹 (U-39) -------------------------------------------------------------
+# 子弹的「id -> 场景」映射不在 data/ 下，而在 BulletRegistry.BULLET_SCENE_PATHS
+# （硬约束 §1-4 的注册表独占：这张表刻意不 @export，见 bullet_registry.gd 的注释）。
+# 所以这里校验三件事：
+#   (1) BulletIds.ALL 的每条都在 BULLET_SCENE_PATHS 里有条目；
+#   (2) 该条目指到的场景文件存在；
+#   (3) 反向：表里有、则 ALL 里也必须有 —— 漏加 ALL 常量时 get_bullet_scenes() 照样能取，
+#       但「自检 / 预热 / 调试」都扫不到它（BulletIds.ALL 自己的注释就是这么写的）。
+$bulletAll = GetAllIds (Join-Path $RepoRoot 'src/core/consts/bullet_ids.gd')
+$bulletRegTxt = Get-Content -LiteralPath (Join-Path $RepoRoot 'src/core/autoload/bullet_registry.gd') -Raw -Encoding UTF8
+$bulletMap = @{}
+foreach ($m in [regex]::Matches($bulletRegTxt, 'BulletIds\.([A-Z][A-Z0-9_]*)\s*:\s*"([^"]+)"')) {
+    $bulletMap[$m.Groups[1].Value] = $m.Groups[2].Value
+}
+foreach ($id in $bulletAll) {
+    $has = $bulletMap.ContainsKey($id)
+    CheckEntry 'bullet' $id $has
+    if ($has) { CheckScene 'bullet' $id $bulletMap[$id] }
+}
+foreach ($id in $bulletMap.Keys) {
+    if ($id -in $bulletAll) { continue }
+    $checks++
+    $problems++
+    Write-Host ('[wiring] FAIL bullet {0}: in BULLET_SCENE_PATHS but not in BulletIds.ALL' -f $id) -ForegroundColor Red
+}
+
 # --- 汇总 ------------------------------------------------------------------
 Write-Host ''
 if ($problems -gt 0) {
