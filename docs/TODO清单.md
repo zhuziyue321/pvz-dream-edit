@@ -3,7 +3,7 @@
 # TODO 清单
 
 > **[面向 AI Agent]** ｜ **触发条件**：被安排做清理 / 还债类任务；想找「还能做什么」；有人问「仓库里还剩哪些待办」；删代码前判断某条 TODO 是不是垃圾
-> **读完你能**：① 列出当前仓库全部 `TODO` 注释（2 条，§2）及其精确位置；② 列出当前「不统一实现 / 逻辑不全 / 可优化」的架构债（**23 条**：U 系列 14 + L 系列 8 + O 系列 1，见 §3；U-01~U-13 已于 2026-10-11 销项，见 §4）；③ 知道 **H 系列（仓库卫生与工程流程）H-01 ~ H-09 已于 2026-10-16 全部销项**（逐条处置见 §4），以及 **H-10 ~ H-15（2026-10-16 工程体检新增）** 的方向与前置条件；④ 判断某条 TODO 是「有效待办」还是「可删的痕迹」；⑤ 知道新增 / 销项一条时改哪里；⑥ 知道本轮整改的**分批顺序**与每批的验收口径（§6）
+> **读完你能**：① 列出当前仓库全部 `TODO` 注释（2 条，§2）及其精确位置；② 列出当前「不统一实现 / 逻辑不全 / 可优化」的架构债（**37 条**：U 系列 21 + L 系列 15 + O 系列 1，见 §3；其中 U-35 / U-37 / U-40 / L-21 / L-22 来自 §3.7 子弹专项体检 2026-10-16，**U-41 ~ U-43 / L-23 / L-24 来自 §3.8 攻击逻辑专项体检 2026-10-17**，同批的 U-36 / U-38 / U-39 / **U-44** 已销项、见 §4；U-01~U-13 已于 2026-10-11 销项，见 §4）；③ 知道 **H 系列（仓库卫生与工程流程）H-01 ~ H-09 已于 2026-10-16 全部销项**（逐条处置见 §4），以及 **H-10 ~ H-17（2026-10-16 工程体检新增，含 §3.6 的 H-16 / §3.5 的 H-17）** 的方向与前置条件；④ 判断某条 TODO 是「有效待办」还是「可删的痕迹」；⑤ 知道新增 / 销项一条时改哪里；⑥ 知道本轮整改的**分批顺序**与每批的验收口径（§6）
 > **强制级别**：**参考**（本文件只是一张清单，不是硬约束） ｜ **不读的风险**：把「本实现与原版的差异线索」当垃圾注释删掉；或重复实现已经在某处 TODO 里记过的东西
 > **关联**：[项目规范.md](项目规范.md) · [参考存档/未使用代码与资源清单.md](参考存档/未使用代码与资源清单.md) · [../架构总览.md](../架构总览.md)（§12 技术债清单）
 
@@ -52,11 +52,12 @@
 > 档位 = 风险（**A** 会致数据/行为不一致 · **B** 违反硬约束或架构主线 · **C** 命名与表达 / 参考级）。
 > 编号：`U-` = 不统一 / 重复实现，`L-` = 逻辑不全 / 未接线，`O-` = 可优化（性能）。
 
-### 3.1 U 系列：不统一实现 / 重复实现（U-14 ~ U-32，现存 14 条；U-19 / U-21 / U-28 / U-29 / U-30 已销项）
+### 3.1 U 系列：不统一实现 / 重复实现（U-14 ~ U-34，现存 15 条；U-19 / U-21 / U-28 / U-29 / U-30 / U-33 已销项）
 
 > 来源：2026-10-11 第二轮全仓扫描（U-01 ~ U-13 已销项，去向见 §4）。
 > **U-31 来自 2026-10-13 亡语专项复核**（`character_base.gd` 的 `death_language()` 链 + 6 个重写点全量核对）。
 > **U-32 来自 2026-10-16 工程体检**（`Global.` 引用面实测，口径 = `src/**/*.gd` 文件数）。
+> **U-33 / U-34 来自 2026-10-16 伤害管线与防具专项复核**（同轮新增 L-16 ~ L-20 / O-04，见 §3.2 / §3.3）。
 
 | 编号 | 档 | 位置 / 范围 | 不统一的现象 | 处理建议 |
 | --- | --- | --- | --- | --- |
@@ -72,8 +73,9 @@
 | **U-25** | A | `src/ui/card/card_slot/card_slot_norm/card_slot_battle.gd:15-18,26` ↔ `src/levels/mode_minigame/minigame_03_slot_machine_ui.gd:56,77,203,219` | 老虎机关**两本阳光账**：卡槽 `sun_value`(:26) 与老虎机 UI `_sun_value`(:77) **同时订阅 `ADD_SUN_VALUE`**，收阳光两边各加一遍；花钱只扣 UI 那份（:219），卡槽那份不扣 | 老虎机直接读写 `CardSlotController` 的阳光，删掉本地 `_sun_value` |
 | **U-26** | C | `src/zombiquarium/zombiquarium_manager.gd:167-183`（`:209` 也是） | 同一个 getter 里两套阳光来源：`_card_slot_battle.sun_value`（挂主游戏）vs `_local_sun`（独立预览），花 / 赚各走一条 if 分支，口径会漂移 | 独立预览时也挂一份 wallet 适配器，删掉 `_local_sun` 分支 |
 | **U-27** | C | `src/items/drop_body/zombie_arm1_drop.gd` ↔ `src/items/drop_body/zombie_hand_drop.gd` | 两个文件**逐字相同**（`x_v = randf_range(-15, 15)` / `velocity = Vector2(x_v, 0)` / 同一行注释掉的 `#rotation_speed=randf_range(1.3,2.1)`），复制粘贴产物 | 合并成一个脚本，另一处改参数或改名引用。**2026-10-11 复核后判定「不做」**：两个脚本内容相同但挂在不同节点上（各自的贴图/动画在场景里），合并要改 8 个 `.tscn` 的 `ext_resource` **uid + path 成对替换**（`arm1` = `uid://cj4hccewpwgyv`、`hand` = `uid://33sxeu6n870x`），其中 `zombie_paper` / `zombie_ladder` / `zombie_football` / `zombie_digger` 4 个场景**同时引用了两个脚本**。改错 uid 就是僵尸场景**静默丢脚本**，收益（少 10 行重复）< 风险，留作参考 |
-| **U-31** | B | `character_base.gd:245-256`（亡语链）+ 6 个重写点：`plant_cherry_bomb.gd:7` / `plant_jalapeno.gd:7` / `plant_ice_shroom.gd:7` / `plant_doom_shroom.gd:12` / `plant_potato_mine.gd:40` / `zombie_bobsled.gd:64` | 「死亡时效果」散在 6 个角色子类里各写一份：5 个植物是**逐字相同**的 `bomb_component.judge_death_bomb()`，雪橇僵尸是散架放 4 个兵。基类 `death_language()` 是空钩子且**没有「已触发过」的记录** —— 幂等各靠各的（植物侧靠 `BombComponentBase.is_bomb`、僵王侧 `zb_base.gd:124` 靠 `is_death`）。效果逻辑没进组件，违反「角色 = base + 若干组件」的架构主线 | 让 `BombComponentBase` 自己订阅宿主死亡（`component_bomb_base.gd` 已有 `is_auto_bomb_in_death` 开关），子类只留「死了要不要补爆」的导出项；僵尸侧散架同样下沉成组件，或至少在基类补一个 `is_death_language_done` 幂等位 |
+
 | **U-32** | C | `src/**/*.gd`（**110 个文件**引用 `Global.`，2026-10-16 实测口径：`Get-ChildItem src -Recurse -Filter *.gd` 中内容命中 `\bGlobal\.` 的文件数） | `Global` 是**唯一**没有边界的单例：跨局持久状态（存档 / 用户 / 配置）与「这一局」的运行期对象（`game_para` / 各类 manager / registry）都从这里取。U-01 已把「当前这一局」的真相源迁到 `GameContext.curr_main_game`（473 处），但 `Global` 一侧**没有配套划边界** —— 于是同一个语义又有两条入口，且新代码默认还是写 `Global.` | 给 `Global` 定一条可判定的边界：**只放跨局持久状态 + 注册表引用**；凡「这一局」的对象一律从 `GameContext` 取。落地方式：① 先列出 `Global` 现有字段并逐个归类（持久 / 本局）；② 本局类字段标记 `@deprecated` 注释并给出 `GameContext` 对应写法；③ 新字段评审时按此判定。**不建议**一次性大改（473 处已有先例，得再开一轮） |
+| **U-34** | C | `src/core/damage/damage_info.gd` + `src/core/consts/const_damage.gd` + `components/hp_component/component_hp.gd:73` / `component_hp_zombie.gd:51` | 伤害语汇**表达口径不统一**（四条小债打包）：① `amount` 与 `EFFECT_DAMAGE` 是同一个 key ⇒ `has_effect(EFFECT_DAMAGE)` **恒真**，「包里有没有伤害」与「伤害值是多少」读起来是一回事；② `get_all_hp()` **两处都没写返回类型**，调用方被迫写 `var x: int =`；③ `final_amount` 在「防具吸收并入 ②」（2026-10-16）后语义变糊 —— 现在 = **打本体那部分**（被防具吃光时为 0），而 `DamageResult.hp_loss` 含防具，调试打印容易误读；④ 同一件「本层挨打了」有 `is_hit_this_time`（判定用）与 `is_armor_absorbed`（包内标记）**两处表达** | ② **本轮已修**（两处补 `-> int`）。① ③ ④ 属重构级、**留档不推荐动**：① 拆 key 要动全部发起方；③ 改语义要动 `DamageResult` 消费方；④ 两个标记服务对象不同（一个给 ③ 末端的信号补发判定、一个给 ③ 的放行判定），合并反而互相耦合 |
 
 
 > U-30 剩余部分（`zombie_boss/doctor/` 与 `zombie_boss/zb_doctor_objects/` 目录前缀不一致）判定**不动**：纯可读性收益、改动面是文件名与 100+ 处引用，与 U-11 的前缀缩写同一处理，留作参考。
@@ -83,22 +85,26 @@
 > 组件）时它返回 null，而原来的 `$"../X"` 在那个场景里是能取到的 —— 一旦踩中就是「这个角色不动了 / 不播动画了」的**静默 null**。
 > → 要做的话**必须开游戏实测**，别当成纯机械替换。
 
-### 3.2 L 系列：逻辑不全 / 未接线（L-01 ~ L-15，现存 8 条；L-01 / L-02 / L-03 / L-05 / L-06 / L-08 / L-11 已销项）
+### 3.2 L 系列：逻辑不全 / 未接线（L-01 ~ L-20，现存 11 条；L-01 / L-02 / L-03 / L-05 / L-06 / L-08 / L-11 / L-16 / L-17 已销项）
 
 > 与 U 系列的区别：**不是「两种写法」，而是「只有一半」** —— 订阅了没人发、开关恒假、接口是空 `pass`、常量表里写了代码里没有。
 >
 > **L-12 ~ L-15 来自 2026-10-13 亡语专项复核**：`is_can_death_language` 的全部写入点已全量核对，这 4 条是「亡语该关没关 / 该同步没同步」的口子。
+> **L-16 ~ L-20 来自 2026-10-16 伤害管线与防具专项复核**（同轮新增 U-33 / U-34 / O-04）。
 
 | 编号 | 档 | 位置 / 范围 | 现象 | 处理建议 |
 | --- | --- | --- | --- | --- |
 | **L-04** | B | `src/managers/zombie_manager/zm_hammer_zombie_manager.gd:109,116,121,125,127,195` | 锤僵尸出怪**全用全局随机**：`randi()%3+1` / `idle_tombstones.shuffle()` / `.pick_random()` / `randi_range()` / `randf_range()`；而同类 `zm_zombie_wave_manager.gd:201,204` 走 `src/core/game_rng.gd`。两端随机序列必然岔开 → 联机不可复现 | 统一改 `GameRng.randi_range / pick_random / shuffle` |
 | **L-07** | C | `attack_behavior_component/component_attack_bullet_base.gd:86-88`、`component_attack_bullet_split_pea.gd:12-15`、`bomb_component/component_bomb_base.gd:64-69`、`garden/component_garden.gd:132-136` + `component_garden_sprout.gd:7-10` | **空实现当接口**：两个 `set_cancel_attack()` 都是「注释掉两行 `animation_tree.set(...)` + `pass`」；`_start_bomb_fx()` / `_bomb_all_enemy()` 空实现；两个 garden 组件的 `update_growth_stage()` 在 `Sprout` 分支都是 `pass`（`component_garden.gd:135` 原本连 `Log.debug` 都被注释掉，2026-10-12 清理调试输出时把那行注释也删了） | 要么实现，要么删掉空钩子 —— 留着会让人以为「已经接完了」 |
-| **L-09** | C | `src/ui/main_game_ui/ui_level_progress_provider.gd:18,23` | `on_bind()` / `on_unbind()` 全仓**无任何子类 override**（`ui_level_progress_bar_controller.gd:36,43` 照常调用） | 补默认实现，或删掉这两个空钩子 |
-| **L-10** | C | `src/garden/plant_cell_garden.gd:98-100` | `GreenHouse` 分支是裸 `pass` | 补逻辑或改成 `_` 通配，别留空分支 |
-| **L-12** | A | `character_base.gd:294-296` `character_death_disappear()`（基类）、`zombie_base.gd:354` `character_death_not_disappear()`（海草） | 「直接死亡」路径**只有僵尸关了亡语**（`zombie_base.gd:358` 重写时置 `is_can_death_language = false`），**基类和海草那条都没关** → 所有走基类的植物「直接消失」都会跑亡语：`plant_cell.gd:876`（读档 `clear_data_plant_cell()`）、`beghouled_manager.gd:503,834`（消除 / 重排）、`hand_component_glove.gd:230`（手套兜底）。现在不出事只是因为樱桃 / 毁灭菇种下即自爆、土豆雷未出土时 `is_auto_bomb_in_death = false`（`plant_potato_mine.gd:47` 才置 true）—— **是靠时序兜着，不是靠开关兜着** | 把 `is_can_death_language = false` 提到基类 `character_death_disappear()`（僵尸子类 `:360` 那行随之可删）；`character_death_not_disappear()` 按语义单独决定关不关 |
-| **L-13** | A | `character_base.gd:251-256` ↔ `zombie_manager.gd:350-361` `_on_zombie_dead` ↔ `zombie_bobsled.gd:64-79` | 亡语排在 `signal_character_death.emit()` **之后**：僵尸死亡先让 `_on_zombie_dead` 扣 `curr_zombie_num`，若是最后一只就 push `BATTLE_FINISHED`；雪橇僵尸的亡语**这才** `call_deferred` 创建 4 个雪橇兵 —— **「本轮打完」的判定发生在补兵之前**，这 4 只可能落在已判定的战斗之外 | 二选一：确认补兵算本轮 → 把亡语挪到 `signal_character_death.emit()` 之前，或让 `_on_zombie_dead` 的计数挂起一帧；确认不算 → 在 `zombie_bobsled.death_language()` 处写清这是有意的，别让后人当成 bug 修 |
-| **L-14** | B | `zombie_base.gd:384-396` `be_bomb` / `:399-405` `be_chomper_eat` / `:411-414` `be_rake_attack` / `:417-423` `be_squash` | 「置 `is_can_death_language = false` → 同步打伤害 → `set_deferred(..., true)` 恢复」这套写法**依赖两件没写进代码的事**：① 伤害必须**同步**致死 —— 将来任一一处改成协程 / 异步致死，亡语就漏关；② `queue_free()` 之后仍对同一对象排 deferred 写属性，靠「MessageQueue flush 早于删除队列 flush」才不报错（引擎内部顺序，不在本仓库控制内） | 恢复改成显式判断 `if not is_death:`（不再 deferred）；或在四个入口的注释里写死「本函数必须同步致死」这条约束 |
+
+
+| **L-12** | A | `character_base.gd` 基类 `character_death_disappear()`（铺路 / 小推车兜底等「直接消失」路径）原本**没关亡语** → 走基类的植物「直接消失」会跑亡语；不出事纯靠时序兜着（樱桃/毁灭菇种下即自爆、土豆雷未出土 `is_auto_bomb_in_death=false`） | ✅ 2026-10-17 已在基类 `character_death_disappear()` 置 `is_can_death_language = false`（`character_base.gd:369`；僵尸自身版本本已含该开关、未动）；`character_death_not_disappear()`（海草路径）按语义保留可触发亡语。⚠️ **待开游戏实测**（读档清理 `plant_cell.gd:876` / 手套兜底 `hand_component_glove.gd:230` / 爆炸植物自爆亡语） |
+
+
 | **L-15** | B | `mods_builtin/netplay/`（全目录 0 命中 `death_language` / `is_can_death_language`） | 联机**完全没覆盖亡语**：`netplay_state_sync.gd:889` 用 `hp_loss_to_death(false)` 给客户端补死时，`is_can_death_language` 的状态无从同步。雪橇僵尸这种「死了还要生成单位」的亡语，两端可能对不上（客户端多放 / 少放 4 个雪橇兵） | 补死路径显式带一个「是否触发亡语」的标志，或让客户端补死一律走不触发亡语的分支（补兵改由主机快照下发） |
+| **L-18** | C | `components/hp_component/component_hp_zombie.gd` `_collect_armors()` ↔ `entities/character/zombie/zombie_base.gd` `add_armor()` | 防具表是**隐式收集**（`component_ready()` 一次 + `add_armor()` 补一次）。**官方入口已兜住**：`add_armor()` 挂完会自动 `collect_armors()`（`zombie_base.gd:283-287`）。剩余口子只有「绕过 `add_armor()`、运行期自己 `add_child(ArmorComponent)`」—— 这种层**不进 `armor_list`、静默不参与伤害结算** | 低危，**不做**。若要收紧：`HpComponentZombie` 接 `child_entered_tree` 自动重收（引入每次挂节点的开销，收益不匹配）。留档同时**更正登记口径** —— 不是「每次挂防具都要人记得补」，官方入口已经补了 |
+| **L-19** | C | `components/damage_modifier_component/component_damage_modifier.gd` ↔ `src/core/damage/damage_system.gd` `_run_modifiers()` | 修饰器链是**全局列表**（`_modifiers` 装全场所有角色的 `DamageModifierComponent`），每次伤害**全量遍历**、由各修饰器自己判 `info.target` 决定管不管 —— 缺「按目标过滤 / 索引」这一层；忘判 `target` 就会**误伤全场**。当前内置 **0 个**修饰器组件，所以既无性能问题也无实例 bug | 参考级，**不做**。要动的话按 `info.target` 在注册时分组建索引、由 `_run_modifiers()` 侧过滤；但「全局生效」本身可能是有意设计（如全局减速场），改前必须先确认语义 |
+| **L-20** | C | `mods_builtin/netplay/netplay_state_sync.gd:207-209` | 联机僵尸快照的防具阶段**只带挨打顺序的前两层**（原文「超出的层数不进快照」）—— 三层及以上的防具（模组可叠）在客户端**看不到破损阶段** | 需改快照协议（定长 → 变长数组），涉及两端版本兼容，**留档不做**。本体防具最多两层（一类 + 二类），只有模组叠三层才会撞上 |
 
 > **L-07 复核（2026-10-11，未改，登记时的描述需修正）**：这 5 处空实现**不都是死钩子** ——
 > `component_bomb_base._start_bomb_fx()` / `_bomb_all_enemy()` 被 4 个子类重写（norm / jalapeno / jackbox / ice），
@@ -108,7 +114,7 @@
 > 同文件 `:8-9` 用的就是 `OneShot` / `OneShot 2` 这两个参数名，取消注释大概率能用，但属**视觉行为变更**，要开游戏确认）
 > 与 garden 两组件的 `Sprout` 分支 `pass`。
 
-### 3.3 O 系列：可优化（性能，O-01 ~ O-03，现存 1 条；O-01 / O-03 已销项）
+### 3.3 O 系列：可优化（性能，O-01 ~ O-04，现存 1 条；O-01 / O-03 / O-04 已销项）
 
 | 编号 | 档 | 位置 / 范围 | 现象 | 处理建议 |
 | --- | --- | --- | --- | --- |
@@ -137,12 +143,13 @@
 > **与 H-01~H-09 的区别**：那 9 条是「仓库卫生」（脏文件 / 数字漂移 / CI 缺位）；这 6 条是**防线与流程强度**（能证明什么、改起来多贵）。
 >
 > **2026-10-16 当日销项 4 条**：H-10（玩法链路探针）/ H-12（assets 口径 + 检查器新增断言 + 断链）/ H-13（E-09 提交粒度）/ H-15（工作记录主题入口）已做，逐条处置见 §4。
-> 本节**只剩 2 条未完成**：H-11（CI 已写未在 runner 验证）/ H-14（接线检查器未写）。按 §5 约定，销项即从本表移走，不留已完成条目。
+> 本节**只剩 3 条未完成**：H-11（CI 已写未在 runner 验证）/ H-14（接线检查器未写）/ **H-17（资源根迁到 `pak/` 后顶层文档数字全线漂移，2026-10-16 伤害管线复核轮附带发现）**。按 §5 约定，销项即从本表移走，不留已完成条目。
 
 | 编号 | 档 | 文档怎么说 | 实测是多少 | 方向（含前置条件） |
 | --- | -- | --- | --- | --- |
 | **H-11** | B | 硬约束 §1-7 要求交付前跑门禁；`test/README.md` 说「只做本地钩子（更快、无需 runner）」 | `Test-Path .github` 原为 **False**（无云端 CI）；`git ls-files assets` = **5339**（素材在版本控制内）→ H-01 已更正「assets 不入库所以跑不了 CI」的旧结论，**云端 CI 技术上可行**，当前只是没做 | **已落地一半**（2026-10-16）：新增 `.github/workflows/ci.yml`（编译门禁 + 快子集探针 `probe_init,probe_gameplay_core`；引擎按 `GODOT_VERSION` 从官方 release 下载，找不到 exe 直接抛错而不是静默假绿）。**⚠️ 未完成**：该文件**尚未在 GitHub runner 上实跑过**（本地无法验证 runner 环境）。首推后按文件头「验证方法」三步确认（① 两个 step 全绿；② 故意改坏一个 `.gd` 必须让门禁变红；③ 与本地同 filter 的跑批结果一致），确认后再摘掉文件头警告 + 把本条销项。本地 `pre-push` 保留做快反馈 |
 | **H-14** | B | `架构总览.md` §14 列了「新增一个 X 要动哪几处」（植物 7 处 / 僵尸 5 处 / 关卡 4 处）；`levels/` 走 `LevelRegistry`（`src/levels/AGENTS.md`） | ① 选关页**仍是硬引用**：4 个选关页 ~105 条 `.tscn` 按钮引用，`LevelRegistry` 只做了「登记 + 名字校验」，未驱动生成（§12.3 第 9 项）；② `save_key` 覆盖不齐（U-22 重测：adventure 4/54、survival 0/15、minigame 20/25）；③ **漏登记的兜底只有评审** —— §14 是一张**人读的表**，没有任何检查器证明「新单位 7 处都登记了」 | **① 已完成（2026-10-16）**：`tools/check_content_wiring.ps1` 已写，遍历 `PlantIds.ALL` / `ZombieIds.ALL` 校验「注册表数值表有条目 + 场景 preload 文件存在」，缺一项即 exit 1（192 项校验 `result=PASS`）；**注入验证**：把 `plant_pea_shooter_single.tscn` 改名 → 报 `FAIL plant PEA_SHOOTER_SINGLE: scene missing`，改动已还原（`git status` 干净）。已知例外：植物 `WATER_BOWL`（运行期由模组注入的空槽位，故意不在数值表，脚本里显式放行）；僵尸 42 个 ALL id 全部在 `ZOMBIE_INFO` 中。⚠️ 原方向里的「**动画目录存在**」本次**未做** —— 动画目录命名与 id 非简单对应（`puff_shroom` → `plant_puff.tscn`），需先确认约定再补，避免写出假绿检查（H-09 教训）；② 选关页注册表化（视觉配置要靠开窗口比对，单开一轮，**未做**）；③ `save_key` 补齐归 U-22（**未做**） |
+
 
 
 ---
@@ -202,6 +209,71 @@
 
 > 待办（留待开游戏环境 / 后续轮次）：① L-12 的游戏实测回归；② H-16 暴露的 14 处违规逐条改走 `host_node_of()`（每条属行为变更，需开游戏）；③ §3.6 批次 4~6 的 A 档玩法债（L-13 / L-14 / U-31 亡语链、U-20 / U-22 存档键、U-14 落地、U-16 / U-17 / U-24 / U-25 重复实现、H-14②③）按原 §6 分批顺序推进；④ H-16 待违规清空后再传 `-Strict` 接入 `check_scripts.ps1` / pre-push。
 
+### 3.7 子弹子系统专项体检（2026-10-16 后续）
+
+> 来源：2026-10-16 一次针对**子弹实现**的定向评审 —— 按「继承链 / 初始化 / 命中判定 / 伤害路径 / 组件化 / 数据驱动」六个面通读，
+> 口径 = `src/entities/bullet/`（17 个 `.gd` + 24 个 `.tscn`）+ `bullet_registry.gd` / `bullet_camp_config.gd` /
+> `component_attack_bullet_base.gd` 交叉核对。与 §3.6 的区别：§3.6 是**整个项目**的优缺点结论，本节是**子弹这一个子系统**的债。
+> 与 §3.6 同样的登记纪律：**已登记过的条目不再重复开条**（`bullet_movement_track.gd:5` 拼宿主相对路径属 **U-14**；
+> 子弹对象池暂缓属 `架构总览.md` §12.3 第 16 项），只在 §6 批次 7 排顺序。
+>
+> **先说清哪些不是债**（避免后来者重复评估）：① **数据驱动程度低**（`data/` 下无子弹 `.tres`，配置全在 `.tscn` 的 `@export`）
+> 是**取舍不是缺陷** —— 改数值不用跳两层，代价是模组要改场景，已有 `set_runtime_bullet_stat()` 补口；
+> ② **子弹阵营对称设计**（`BulletCampConfig` 全 static + `apply_camp_collision()` 保留额外层）是**做得好的部分**，不动；
+> ③ **伤害汇入 `DamageSystem` 管线**（不自己扣血）也是做对的。
+>
+> **2026-10-16 当日已销项 3 条**（本节登记后立刻按批次 7 的顺序处理 —— 逐条处置见 §4）：U-38（溅射补 `source_node`）、
+> U-39（接线检查器覆盖子弹，含注入验证）、U-36（两处重复实现去重）；另 **L-22 的第 ① 条已修**（初始化顺序契约被消除）。
+> 按 §5 约定"销项即从原表移走"，**下表只剩 5 条**：U-35 / U-37 / U-40 / L-21 / L-22（仅剩 ②）。
+> 这 5 条的共同点是**都涉及行为变更**（结构改造 / 判定收口 / 语义确权），所以排在批次 7 尾部，**必须开游戏实测**。
+
+| 编号 | 档 | 位置 / 范围 | 现象 | 处理建议 |
+| --- | -- | --- | --- | --- |
+| **U-35** | B | `bullet_norm_base.gd:11-37`（状态字段 + `attack_once` / `_attack_enemy`）、`component/spatter_component.gd:1,19-50`、`component/movement/bullet_movement_base.gd:1-9` | 子弹的状态（`attack_value` / `speed` / `direction` / `lane` / `curr_attack_num` / `is_activate_lane` / `max_attack_num`）与伤害结算**都住在宿主** `Bullet000NormBase` 上；子弹自己的两个「组件」`SpatterComponent` / `BulletMovement*` 都是 `extends Node2D` 并**自写 `_ready()`**，不走 `ComponentNormBase`（无 `component_ready()` / 无启用框架），阵营靠手工 `_sync_owner_bullet_camp()` 同步；组件缺失时**运行期 `new()` 补挂**，默认掩码 `9` / `1` 硬编码在 `spatter_component.gd:48-49`，与场景配置形成**两份来源** | 子弹不是角色，硬约束 §1 未覆盖，**可不动**。若要向主线靠分两步：① 掩码默认值收进 `ConstDamage` 级常量（照 U-33 的做法，纯机械）；② 溅射 / 移动组件接入 `ComponentNormBase` —— **属行为变更**，须先开游戏确认「启用框架后场景连的信号回调是否仍在」（同 U-18 的结论） |
+| **U-37** | C | `bullet_norm_base.gd:143-164`、`bullet_linear_base.gd:38-48`、`bullet_track_base.gd:104-117`、`bullet_bowling.gd:76-103` | 「这一发能不能打它」的判定**分散在 4 处**：基类（阵营 → 可攻击状态 → 次数 → 行）、直线（先判 `Slope` 再 `super()`）、追踪（按 `target_enemy` 过滤 + 有限 / 无限穿透两分支）、保龄球（**整段重写** `_on_area_2d_attack_area_entered`，自己抄了一遍阵营 + `can_attack` + 行判定，还专门注释了「为何这里不能打 `Log.error`」） | 把「阵营 / 可攻击状态 / 次数 / 行」四连抽成基类 `can_hit_enemy(enemy) -> bool`，追踪与保龄球改成调用它 + 各自附加条件。**属重构**，需逐类型开游戏回归（豌豆 / 仙人掌 / 香蒲 / 保龄球 / 植物僵尸） |
+| **U-40** | B | `bullet_base.gd:16-20`（注释自陈）、8 个重写 `_ready()` 的子类（`bowling` / `cactus` / `cob_cannon` / `norm_base` / `parabola_base` / `pea_fire` / `track_base` / `winter_melon`）、`bullet_cob_cannon.gd:13-45` | ① 基类**没有** `_ready()`，8 个子类各写一份 ⇒「入树时要做什么」没有统一入口，`entity_id` 领号因此被迫挪到 `create_bullet()`（L-06 只修过注释，结构未动）；② 演出型子弹把整条时间线（含 3 次 `await`、30+ 行）塞进 `_ready()`，玩法流程与生命周期入口混在一起 | ① 给 `Bullet000Base` 补一个**空 `_ready()`** 作统一入口（子类重写时 `super()` 才有意义），领号不动；② 玉米炮时间线抽成 `play_cannon_animation()` 协程，`_ready()` 只调用它。**① 属结构变更**，须开游戏确认 8 个子类行为不变 |
+| **L-21** | A | `bullet_pea_snow.gd:11-14`、`bullet_winter_melon.gd:16-17`、`component/spatter_component_winter_melon.gd:7-9` | 同一个「冰冻减速」语义**三种写法**：寒冰豌豆**判了** `is_slow_immune`（举着「免疫减速」二类防具的僵尸不吃减速），冰瓜**直击**与冰瓜**溅射**都没判（直接 `be_ice_decelerate`）。三者中至少一处与设计意图不符 | **先确权原版语义**（冰瓜是否该被「免疫减速的防具」挡住），再决定把判定收进 `Character000Base.be_ice_decelerate()` 一处兜住，还是补到冰瓜两处。**必须开游戏实测**（挂二类防具的僵尸 × 冰瓜直击 / 溅射） |
+| **L-22** | B | `component_attack_bullet_base.gd:132-134`（`init_bullet` → `add_child` 顺序）、`attack_once` 覆写链（`pea_snow` / `melon` / `winter_melon` / `pea_fire` / `bowling_bomb` / `parabola` / `track` 共 7 处 `super()`） | 两条**无守卫的隐性契约**，① 已修、② 仍在：① ~~`init_bullet()` **必须早于入树**~~ —— **2026-10-16 已改为「谁用谁取」**（`Bullet000TrackBase._get_detect_component_global()` 懒取），两种顺序都能工作：**契约本身被消除**，而不是"加一道检测"；② `attack_once()` 是覆写链（7 处 `super()`），**漏调 / 顺序颠倒 = 静默少伤害或溅射重复结算**，与 L-17（`process_damage` 忘 `super()`）同类 —— **仍无任何守卫** | ② 的彻底防护依赖 **U-37**（把「阵营 / 可攻击状态 / 次数 / 行」判定与结算收口到基类唯一入口，子类绕不过去，而不是靠"记得调 `super()`"）；探针级验证（寒冰豌豆命中 ⇒ 掉血 + 减速；西瓜命中 ⇒ 溅射目标数）需要进关卡的探针基建（照 `probe_gameplay_core` 的模式另加一节），**单开一轮** |
+
+> **判定不做 / 留档的理由**：U-35（结构改造）、U-37（判定收口）、U-40②（时间线抽取）都属**重构级** ——
+> 收益是长期可维护性，风险是**行为变更**（子弹是每局最高频的实体），没有探针兜底前不建议动。
+> 它们各自的前置条件见 §6 批次 7：**先补防线（U-39）与契约守卫（L-22），再去重（U-36 / U-38），最后才谈结构**。
+
+### 3.8 攻击逻辑专项体检（2026-10-17）
+
+> 来源：2026-10-17 一次针对**整条攻击链**的定向评审 —— 按「索敌 → 触发 → 结算」三段通读，
+> 口径 = `DetectComponent` / `DetectTargetStrategy` + `AttackComponent*`（含子弹基类 / 发射组件 / 僵尸啃食）
+> + `DamageSystem` 三步管线与 `Character000Base` 具名受击入口。
+> 与 §3.7 的区别：§3.7 只看**子弹本身**；本节看**从索敌到掉血的整条链**（子弹只是其中一段）。
+> 登记纪律同 §3.6 / §3.7：**已登记过的一律不重复开条**，只在 §6 批次 8 排顺序 ——
+> 「组件拼宿主相对路径」属 **U-14 / U-15**（检查器 **H-16** 已暴露 14 处）；
+> 「子弹子类各写 `_ready()` + 领号被迫挪到创建口」属 **U-40**；
+> 「子弹内两处取植物重复」属 **U-36**（已销项，仅余「子弹 vs `DetectTargetStrategy` 两套顺序」，`detect_target_strategy.gd:11-13` 已注明刻意不合并）；
+> 「伤害模式固定数值分散在两处 `match`」属 **U-33**（数值已集中，合并 `match` 判定不做）；
+> 「`DAMAGE_APPLIED` 零订阅方仍付开销」属 **O-04**（已销项）；
+> 「亡语链」属 **L-12 ~ L-15 / U-31**。
+>
+> **先说清哪些不是债**（避免后来者重复评估）：① **唯一伤害入口** `DamageSystem.apply()` +
+> 效果包 / 便条模型（通用效果系统施加、特殊效果受击方翻译）是**做得好的部分**，不动；
+> ② `AttackComponentBase` 的**攻击资格多因素门控**（`E_IsAttackFactors`）与 `DetectTargetStrategy`（纯 static 选目标策略）
+> 也是对的；③ 两条发射触发路径（植物走动画轨道 / 植物僵尸走计时器）**已经由 `shoot_burst()` 收口**，不是债。
+>
+> **2026-10-17 当日已销项 1 条**：U-44（啃食魔法数，等价改写 —— 逐条处置见 §4）。
+> 按 §5「销项即从原表移走」，**下表只剩 3 条**：U-41 / U-43 / L-24。
+
+| 编号 | 档 | 位置 / 范围 | 现象 | 处理建议 |
+| --- | -- | --- | --- | --- |
+| **U-41** | C | `character_base.gd:387-427`（`be_attacked_bullet` / `be_attacked_hammer` / `be_zombie_eat`）、`zombie_base.gd`（`be_bomb` / `be_chomper_eat` / `be_rake_attack` / `be_squash`） | 「谁打了我」有 **7 个具名入口**，每个各手写一遍 `DamageInfo.create(...)` 与若干字段赋值；僵尸侧 `_apply_penetration_damage()` 只收口了**其中一部分**，另一半仍各自拼包 | 抽出「入口参数表 → 组装包」的一层（一个 `DamageInfo` 工厂 / 参数结构体），或把 cause+mode 的组合登记成表。**属重构**，需逐入口回归（子弹 / 锤子 / 啃食 / 爆炸 / 吞噬 / 碾压 / 钉耙） |
+
+| **U-43** | C | `bullet_norm_base.gd:150,163,177-179`、`component_detect.gd:310-313`、`bullet_camp_config.gd:64-66` | 僵王 `ZB000Base` 的**特判散落在通用层三处**：阵营侧当僵尸（camp_config）、子弹命中**豁免同行限制**（norm_base）、检测侧**不查同行**（detect）—— 同一个「僵王无行概念」的事实写了三遍 | 把「僵尸阵营 + 无行概念 + 受击窗口由状态机控」收敛成 `ZB000Base` 自己的查询口（如 `is_lane_exempt()` / 受击资格方法），通用层只调它、不再 `is ZB000Base`。**属结构改造**，需开游戏回归僵王关 |
+
+| **L-24** | C | `main_game_base.tscn` 的 `%DetectComponentGlobal`（`component_detect.gd:414-416` 注释自陈） | 全局检测组件**仍是植物视角**（只检测僵尸层），所以**僵尸方的追踪子弹索不到植物**；投手 / 直线类不受影响（目标来自发射方自己的 `DetectComponent`） | 真要做僵尸方追踪子弹，先补一个**僵尸视角**的全局检测组件。当前判定为「有需要再做」，**留档**避免后人当成已支持 |
+
+> **判定不做 / 留档的理由**：U-41 / U-43 都属**重构级** —— 收益是长期可维护性，
+> 风险是**行为变更**（这三处都是每局高频路径），没有探针兜底前不建议动；
+> U-44 已在登记当日做掉（零风险等价改写，见 §4）；L-23 是**已存在的行为不一致**，必须先确权语义再改；
+> L-24 是「半边支持」，按需再做。它们的前置条件与顺序见 §6 批次 8。
+
 ## 4. 已销项的历史 TODO（不要按旧文档去找）
 
 这几条曾被 [架构总览.md](../架构总览.md) §12 与 [参考存档/特殊关卡.md](参考存档/特殊关卡.md) 点名，当前代码里**已经没有 `TODO` 字样**（要么实现了，要么改写成了正式注释）：
@@ -255,6 +327,24 @@
 | **H-12** 文档事实漂移：assets 口径 + 断链 | `AGENTS.md` §1 与 `架构总览.md` §1 / §2 都写 assets「不入 git，需自备」；`level_data.gd:24` 与 U-22 指向**不存在**的 `tool_migrate_save_key.gd` | 已做（2026-10-16）：① 三处口径改为「**在版本控制内**」并带实测数（`git ls-files assets` = 5339）；② `tools/check_doc_facts.ps1` 新增 **E 组检查**（扫三份顶层文档的「不入 git」「自行准备」措辞 + 校验数字），检查数 19 → 23 且 `PASS`；③ **注入验证**：临时给 `README.md` 加一行「assets（不入 git）」→ 脚本报 `FAIL README.md still claims assets/ is not in git`（已还原，`result=PASS`）；④ `level_data.gd` 注释改指真实工具链（`tool_dump_save_keys` → `tool_write_save_keys` → `probe_save_key`）并写明写入工具当前仍面向**已不存在**的 `.tres`（该部分归 U-22 处理）。**踩坑**：`check_doc_facts.ps1` 是 ASCII-only 文件（PS 5.1 读无 BOM 脚本按 ANSI），新增检查里的中文**必须**写成 `\uXXXX` 转义 |
 | **H-13** 提交粒度粗、bisect 不可用 | 全库 33 条提交；H-02 一轮把 948 个文件压成 4 笔 | 已做（2026-10-16）：新增 [E-09 提交粒度：一个逻辑单元一笔](参考存档/规范细则存档.md#e-09-提交粒度一个逻辑单元一笔)（参考级），并在 `docs/项目规范.md` §2 目录补行。内容包括「一个逻辑单元一笔 / 先清残留再提交主体 / 跑批产物不入库 / 与 `pre-commit` 的 >30 文件提醒保持一致（只提醒不硬拦）」。**遗留**：历史 33 条提交**不重写**（重写公共历史的代价 > 收益） |
 | **H-15** 工作记录索引难查同类任务 | `docs/` 226 份 `.md`（其中工作记录 170+）vs `src/` 643 个 `.gd`；索引按日期线性排，同类任务散在各处 | 已做（2026-10-16）：`docs/工作记录/README.md` 新增 **§2.1「常用主题入口」** —— 9 个跨日期主题簇各给一条入口 + 「为什么是这几条」（id 去编号 / 工具模组 / 模组加载源与素材 / 联机 / 探针与验证 / 存档与进度 / 组件生命周期 bug / 资源改名 / 文档规范），并写明「写记录只写结论 / 最简路径 / 踩坑，过程流水不写」。物理文件与主表**不动**（历史记录是资产），主表仍按日期排） |
+| **U-33** 伤害模式的固定数值分散在两处 | `ArmorComponent.get_absorb_rule()` 与 `HpComponentZombie.get_body_damage()` 两处 `match`；保龄球 / 锤子固定值硬编码在两边 | 已做（2026-10-16）：① 六个固定值集中到 `ConstDamage.BOWLING_FRONT_ARMOR2` / `BOWLING_FRONT_ARMOR1` / `BOWLING_SIDE_ARMOR2` / `BOWLING_SIDE_ARMOR1` / `BOWLING_BODY` / `HAMMER_ARMOR1`（**逐值等价**，两处 `match` 只改成引用常量）；② `probe_armor_component` 新增 `_check_all_modes_do_damage()` —— 遍历**全部** `E_DamageMode` 打 400 点，断言「总血确实减少」+「`hp_loss` 与实测一致」，漏改任一处即变红（实跑新增 12 项断言全绿）。**未做**：合并两处 `match`（会引入 core → entities 反向依赖） |
+| **L-16** 取消整包时结果丢掉防具掉血 | 防具取消 → `DamageResult.canceled()` 不填血量快照 ⇒ 调用方看到的 `hp_loss = 0` | 已修（2026-10-16）：`DamageResult` 新增 `canceled_with_hp(reason, hp_before, hp_after)`；`DamageSystem.apply()` 新增 `_canceled_after_processing()`，把 **Armor / Target / Modifier / ZeroAmount / NoEffect 五处**取消分支统一改成回填血量快照（`NoTarget` / `NoHpComponent` 两处那时还没有血量可读，仍用 `canceled()`）。**探针新增 `_check_cancel_keeps_absorbed_hp()`**：外层普通防具 + 内层免疫爆炸防具，打 Bomb ⇒ `cancel_reason=Armor`、外层 100→70、`result.hp_loss == 30`，实跑全绿 |
+| **L-17** 「重写 `process_damage()` 必须 `super()`」没有机制保证 | 防具忘调 `super()` ⇒ 那层**永久不掉血且零报错** | 已做（2026-10-16）：`HpComponentZombie` 新增 `_verify_armor_absorbed()`，在 `process_damage_armors()` 每层调用后做 **debug 期自检**（`OS.is_debug_build()` 门槛）：本层活着 + `amount > 0` + 规则不是 `None`，却 `is_hit_this_time == false` ⇒ `Log.error` 点名宿主与防具。**只报不改**（自动补吸收会双重结算）。实跑两个探针均无该报错（探针内无假阳性）。**据实补正（2026-10-16）**：秒杀路径（`be_attack_to_death()` / `hp_loss_to_death()`，`is_instant_kill`）上该护栏会稳定误报，已加 `if info.is_instant_kill: return`（见 [2026-10-16_防具自检排除秒杀假阳性](工作记录/2026-10-16_防具自检排除秒杀假阳性.md)）。彻底解（模板方法）留待单开一轮 |
+| **O-04** 零订阅方仍付事件开销 | 每次伤害无条件 `push_event(DAMAGE_APPLIED)`（含 payload 签名校验 + `event_pushed` 广播），而该事件 **0 订阅方** | 已做（2026-10-16）：`DamageSystem.apply()` 广播前加 `EventBus.has_signal(DAMAGE_APPLIED)` 判断，零订阅方时直接跳过。**零语义变化**（原来也是「发下去没人接」，唯一差别是开 `enable_history` 时看不到这条 —— 已写进代码注释）。实跑 `probe_armor_component`（覆盖伤害链路）确认无回归 |
+
+| **U-38** | 溅射伤害不传 `source_node`（`spatter_component.gd` / `spatter_component_winter_melon.gd`） | 已做（2026-10-16）：两处 `attack_enemy()` 补传 `owner`（= 所属子弹）作伤害载体，与子弹本体 `_attack_zombie` / `_attack_plant` 一致。**零数值变化** —— 已全仓核实 `DamageInfo.source` 当前**无业务读取方**（另一处同名 `source` 在 `console_registry.gd`，无关）。回归：编译门禁 PASS + `probe_gameplay_core` `result=PASS` |
+| **U-39** | 子弹「id → 场景」的表手工同步，漏登记只在真的发射时才暴露 | 已做（2026-10-16）：`tools/check_content_wiring.ps1` 新增**子弹段** —— 遍历 `BulletIds.ALL` 校验 `BULLET_SCENE_PATHS` 有条目 + `res://` 场景文件存在，并**反向**校验「表里有、`ALL` 里没有」的孤儿（漏加 `ALL` 常量时 `get_bullet_scenes()` 照常能取，但自检 / 预热扫不到）。健康树 `result=PASS checks=230`（原 192 + 子弹 38 项）。**注入验证**：把表里 `BulletIds.STAR` 改成未定义的 `BulletIds.STARZZ` → 同时报 `FAIL bullet STAR: not registered in data table` 与 `FAIL bullet STARZZ: in BULLET_SCENE_PATHS but not in BulletIds.ALL`、`EXIT=1`，已还原（`git diff` 该文件为空）。**踩坑**：编辑脚本后**立刻**执行会读到尚未落盘的旧内容，表现为 `checks=0` 的假象（与 H-08「跑批前先杀残留进程」同类）；跑前 `Start-Sleep` 或先 `Get-FileHash` 对一次即可排除 |
+| **U-36** | `get_first_be_hit_plant_in_cell()` 两份逐行同构 + `z_index = lane * 50 + 45` 两处硬编码 | 已做（2026-10-16）：① 取法合并到 `Bullet000NormBase.get_plant_in_cell_by_order(plant, order)`，直线 / 抛物线各留一个 `const BE_HIT_PLANT_ORDER`（**顺序逐项保持原样**：直线 Shell→Norm→Down、抛物线 Norm→Shell→Down）；② 公式抽成 `Bullet000Base.z_index_of_lane(lane)`（static），`norm_base.init_bullet()` 与 `bowling.update_z_index_and_lane()` 改为引用。**等价改写**，验证：编译门禁 `real compile errors = 0` + `probe_gameplay_core`（豌豆掉血 270 → 250，`result=PASS`） |
+| **L-22 ①** | 「`init_bullet()` 必须早于入树」这条隐性契约（先 `add_child` 再 init 就静默索不到敌） | 已做（2026-10-16）：**没有**照 L-17 加"检测违反"的自检，而是**消除契约** —— `Bullet000TrackBase` 新增 `_get_detect_component_global()` 懒取（谁用谁取），`init_bullet()` 与 `_ready()` 都走它，两种顺序都能工作。零误报（自检方案会误伤"直接实例化子弹场景"的探针，如 `probe_bullet_camp`）。回归：编译门禁 PASS + `probe_bullet_camp`（17 项 OK）+ `probe_gameplay_core` PASS。**② 仍在表内**（`attack_once` 覆写链无守卫，彻底解依赖 U-37） |
+| **U-44** | 啃食结算的魔法数 `8`（`component_attack_zombie_norm.gd`，2026-10-17 攻击逻辑专项体检 / §3.8） | 已做（2026-10-17）：把 `wrapi(frame_counter + 1, 0, 8)` 与 `curr_attack_value_per_min * delta * 8` 两个裸 `8` 提成 `const EAT_SETTLE_FRAME_INTERVAL := 8`，并写清「每 N 帧把这 N 帧累积的伤害一次性结算、`wrapi` 周期与 `delta * N` 必须同源」。**等价改写**（数值与帧序不变）。验证：编译门禁 `real compile errors = 0`（scenarios 120 PASS） |
+| **H-17** | ✅ 已完成（2026-10-17）：顶层文档数字对账——`tools/check_doc_facts.ps1` 原 8 项 FAIL（assets 计数、AGENTS.md / 架构总览 docs .md、scenarios、§15 test .gd、§13 标题 / 工作记录、docs/README 参考存档）全部按 `git ls-files` 实测值重写；`AGENTS.md` §1 写清「资源根已迁至 `pak/`（5883），`assets/` 仅残留 201」，保留 `git ls-files assets` = 201 使脚本仍 PASS，未把迁移事实写丢 | 重跑脚本 `result=PASS`（checks=23 problems=0） |
+| **L-09** | ✅ 已完成（2026-10-17）：删除 `ui_level_progress_provider.gd` 无子类 override 的两个空钩子 `on_bind()` / `on_unbind()` 及 `ui_level_progress_bar_controller.gd` 两处调用；全仓搜索确认无第三方调用点 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS） |
+| **L-10** | ✅ 已完成（2026-10-17）：删除 `plant_cell_garden.gd` 禅境花园 `GreenHouse` 裸 `pass` 分支（温室本就无特殊花盆处理，删后等价；`match` 仍有 MushroomGraden / Aquarium 两分支处理水陆） | 编译门禁 `real compile errors = 0`（scenarios 120 PASS） |
+| **U-42** | ✅ 已完成（2026-10-17）：`component_detect.gd` 的 `judge_is_have_enemy` / `update_first_enemy` / `get_all_enemy_can_be_attacked` 三段同构遍历抽成公共迭代器 `_for_each_overlapping_area(cb)` + 三个具名回调（避开高频路径每帧分配 lambda），可攻击判定仍集中在 `_judge_enemy_is_can_be_attack`，语义不变 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS）+ `probe_gameplay_core` `[GAMEPLAY] result=PASS failed=0`（豌豆×普僵索敌→开火→掉血 270→250→死亡信号→尸体离场）+ `probe_bullet_camp` `[BULLETCAMP] result=PASS failed=0` |
+| **L-23** | ✅ 已完成（2026-10-17）：`character_base.gd` 的 `be_attacked_bullet()` 改成 `if result.is_applied: be_hit_light()` —— 被防具 / 修饰器 / 本体整包取消（`result.is_applied == false`）时不闪受击白光，表现落在「确实造成伤害」之后，符合 §5「表现放③末端」 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS）；⚠️ **行为变更**，需开游戏回归（举起防具的僵尸被豌豆打，确认白光消失符合预期） |
+| **L-13** | ✅ 已完成（2026-10-17）：`character_base.gd` `character_death()` 把 `death_language()` 挪到 `signal_character_death.emit()` **之前**；`zombie_manager.gd` `_on_zombie_dead()` 把 `BATTLE_FINISHED` 判定改 `call_deferred` 到帧末（新增 `_check_end_wave_finished`），让亡语 `call_deferred` 创建的衍生单位（雪橇补兵）先入列再判本轮清空 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS）+ `probe_gameplay_core` `[GAMEPLAY] result=PASS failed=0`（基础死亡链不回归）；⚠️ **时序变更**，需开游戏回归雪橇关，确认补兵被算入本轮战斗 |
+| **L-14** | ✅ 已完成（2026-10-17）：`zombie_base.gd` 四个必杀入口（`be_bomb` / `be_chomper_eat` / `be_rake_attack` / `be_squash`）的 `set_deferred("is_can_death_language", true)` 改为显式 `if not is_death: is_can_death_language = true`，消除「对已 `queue_free` 对象写属性」所依赖的「MessageQueue flush 早于删除队列」脆弱假设 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS）；⚠️ 需开游戏回归确认必杀类死亡（樱桃/毁灭菇/倭瓜/大嘴花）亡语表现正常 |
+| **U-31** | ✅ 已完成（2026-10-17）：爆炸植物的「死亡引爆」从 5 个子类各自的 `death_language()` 下沉到 `character_base.gd` 默认实现（按唯一名 `^"BombComponent"` 取组件并 `judge_death_bomb()`）；删除 `plant_cherry_bomb / jalapeno / ice_shroom / doom_shroom / potato_mine` 的重复重写，雪橇僵尸保留自己的散架逻辑。仍受 `is_can_death_language` 守卫（`judge_death_bomb` 自带 `is_auto_bomb_in_death` 检查，如土豆雷未出土不炸），行为等价 | 编译门禁 `real compile errors = 0`（scenarios 120 PASS）；⚠️ 需开游戏回归（种樱桃/毁灭菇/土豆雷出土自爆/寒冰菇）确认爆炸触发与 `signal_bomb_once` 下游（如毁灭菇 crater）仍正常 |
 
 > 教训：**TODO 销项后记得把指向它的文档也改掉**，否则后来的人会按旧索引去一条不存在的注释（文档同步现已放宽，见 [docs/README.md](./README.md) §6，仅硬约束与机制文档需优先同步）。
 
@@ -286,6 +376,9 @@
 | **3** | **A 档死亡 / 亡语链**（本轮唯一「靠时序侥幸」的一簇，四条互相咬合） | L-12 → L-13 → L-14 → U-31（顺序即依赖顺序） | L-12 是**开关位置**（把 `is_can_death_language = false` 提到基类），L-13 是**触发时机**（亡语排在 `signal_character_death.emit()` 之前还是之后），L-14 是**前提显式化**（「本函数必须同步致死」），U-31 才是**结构下沉**（散在 6 个子类 → 组件）。前三条各自都会改变行为，**必须逐条开游戏实测**（V-01 的例外写法：附人工验证方法） | 每条：编译门禁 + `probe_gameplay_core` + 至少一条相关探针（`probe_zomboss_layout` / 雪橇关）+ 人工回归（种樱桃 / 读档清理 / 手套兜底 / 雪橇僵尸补兵）逐项勾 |
 | **4** | **存档键与存档语义**（数据迁移，错一处就是玩家进度丢失） | U-22（`save_key` 补齐，**先修工具**）、U-20（两套推导收敛成 `make_save_key()` / `parse_save_key()`） | 必须先有「读权威值 → 写入 → 另一进程回读」的闭环（工具现在面向已不存在的 `.tres`，见 U-22），且 U-20 的收敛要在补齐**之后**做，否则两件事一起改时无法判断是哪边错位 | `tool_dump_save_keys` 权威值表 + `probe_save_key` 另一进进程回读一致；老存档（含 `LEGACY_INT_TO_ID` 那批）仍能读出来 |
 | **5** | **参考级 / 判定暂缓**（**不做也不打回**，列出来是为了「别当没看见」） | U-14（组件里拼 `$"../X"`：`host_node_of()` 全仓 0 使用，首次落地=行为变更）、U-16（速度同步 12+ 份并存）、U-25（老虎机两本阳光账）、U-32（`Global` 边界）、§12.3 第 9 项（选关页注册表化，需开窗口比对视觉配置）、§12.3 第 15 项（`plant_cell.gd` 不拆）、§12.3 第 16 项（子弹对象池暂缓） | 收益 / 风险比不划算或需单开一轮；**留档是为了下一个人不必重新评估一遍** | 只要求：动手前读本条与对应 U 条目的「判定不做」理由，不要按直觉反向改 |
+| **6** | **伤害管线与防具的记账 / 静默面**（2026-10-16 伤害与防具专项复核，**已全部完成**） | U-33（数值分散）、L-16（取消丢记账）、L-17（忘 `super()` 无守卫）、O-04（零订阅方付事件开销）；同轮登记但**判定不做**的：U-34（①③④ 重构级）、L-18 / L-19 / L-20 | 前三条都是「防具吸收并入 ② 加工阶段」（2026-10-16）带来的**记账与静默**问题 —— 不解决就会在下一次改动里以「伤害突然不生效」的形式爆出来，而不是报错。三条都不改玩法数值，可机械验证 | 编译门禁 + `probe_armor_component`（含新增的 `_check_all_modes_do_damage` / `_check_cancel_keeps_absorbed_hp`）+ `probe_more_armor_mod` 全 PASS；L-17 的自检还要**确认不误报**（实跑两个探针均无该报错） |
+| **7** | **子弹子系统：先锁契约与防线，再去重，最后才谈结构**（2026-10-16 子弹专项体检，见 §3.7） | U-38（补 `source_node`）→ U-39（接线检查器覆盖子弹）→ U-36（两处去重）→ L-22（两条隐性契约加守卫 / 探针）→ L-21（减速语义，先确权）→ U-37 / U-35 / U-40（重构级，最后） | **顺序本身是结论**：① U-38 / U-36 是**等价改写**（不动数值、不动时序），先用它们证明「改子弹不会崩」；② U-39 加的是**防线**（漏登记一条子弹即报红），防线就位后才敢动注册表；③ L-22 的两条契约属**静默失效**类（漏 `super()` / 初始化顺序错都不报错）—— 没有守卫与探针，U-37 的重构就没有安全网；④ L-21 是**已存在的行为不一致**，必须先确权原版语义再改；⑤ U-35 / U-37 / U-40 风险最大（子弹是每局最高频实体）、收益是长期可维护性，排最后 | 前四步：编译门禁 `real compile errors = 0` + `probe_gameplay_core` + `probe_bullet_camp` + `probe_armor_component` 全 PASS；U-39 额外要**注入一次错误看它 exit 1**。L-21 / U-37 / U-35 / U-40 涉及行为变更，**必须开游戏实测**（V-01 例外写法：附人工验证方法） |
+| **8** | **攻击逻辑：先等价改写与确权，再收索敌，最后才动角色/僵王**（2026-10-17 攻击逻辑专项体检，见 §3.8） | U-44（啃食魔法数，**已销项 / §4**）→ L-23（受击白光按结果，先确权）→ U-42（索敌三段合并）→ U-43（僵王特判收敛）→ U-41（受击入口统一）→ L-24（僵尸视角全局检测，按需） | **顺序本身是结论**：① U-44 是**零风险等价改写**（只提常量、不动数值与帧序），先拿它证明「改攻击链不崩」；② L-23 是**已存在的行为不一致**，必须先确权「被免疫时该不该闪」再改，否则只是把一种错换成另一种；③ U-42 是纯内部重构、有 `probe_gameplay_core` 的索敌链路兜底，风险中等；④ U-43 / U-41 风险最大（僵王与**全角色**受击入口，牵动每局高频路径），放最后且必须开游戏；⑤ L-24 是「半边支持、按需再做」，留档最末。**前置**：批次 7 的 U-37（子弹命中判定收口）与 U-41 / U-43 有交叠 —— 动 U-41 前先确认 U-37 是否已做，避免两轮改同一处判定 | U-44 / U-42：编译门禁 `real compile errors = 0` + `probe_gameplay_core` PASS（U-42 额外 `probe_bullet_camp`）；L-23 / U-43 / U-41 涉及行为变更，**必须开游戏实测**（V-01 例外写法：附人工验证方法）；L-24 只登记方向，不要求实现 |
 
 **收尾（每批都做）**：编译门禁（`real compile errors = 0`）→ `tools/check_doc_facts.ps1` → 按 [E-05](参考存档/规范细则存档.md#e-05-工作流程归档每次任务结束必做) **建议**在 `docs/工作记录/` 补一条记录（索引由 `tools/gen_worklog_index.ps1` 自动生成，无需补行）→ 本文件把已完成的条目移到 §4。
 
@@ -304,5 +397,8 @@
 | H-11 云端 CI | 🟡 **半完成**（留 §3.5） | `.github/workflows/ci.yml` 已写；**未在 runner 上验证**（本地无法验证），首推后按文件头三步确认 |
 | H-14 接线检查器 | ✅ **完成 ①**（②③ 未做，留 §3.5） | `tools/check_content_wiring.ps1` 已写；健康树 `result=PASS checks=192`；**注入验证**：改坏场景 preload → `FAIL plant PEA_SHOOTER_SINGLE: scene missing`，已还原（②③ 见 §3.5） |
 | U-22 存档键补齐 | ⬜ **未开始**（方向已更新） | 已实测：`src/levels/` 下 `.tres` = **0**，现役写入工具仍面向 `.tres` ⇒ **必须先修工具**；覆盖数已重测（adventure 4/54、survival 0/15、minigame 20/25） |
-| 批次 3（L-12 → L-13 → L-14 → U-31 死亡链） | ⬜ **未开始** | 依赖批次 2 的探针做回归；改的是角色 / 死亡管线，必须开游戏实测（V-01 例外写法） |
+| 批次 3（L-12 → L-13 → L-14 → U-31 死亡链） | 🟡 **代码已改完（2026-10-17），待开游戏实测** | L-12 基类 `character_death_disappear()` 置 `is_can_death_language=false`；L-13 亡语前移 + 战斗判定延迟到帧末；L-14 必杀入口用显式判断恢复亡语开关；U-31 爆炸逻辑下沉基类、删 5 植物重复。编译门禁 `real compile errors = 0` + `probe_gameplay_core` `result=PASS`；**⚠️ 均必开游戏实测**（雪橇补兵算本轮、必杀/爆炸亡语表现、土豆雷出土自爆、读档清理、手套兜底） |
+| 批次 6（伤害管线与防具：U-33 → L-16 → L-17 → O-04） | ✅ **完成**（销项见 §4） | ① 编译门禁 `real compile errors = 0`；② `probe_armor_component -Windowed -KillStale` → `[ARMOR] result=PASS failed=0`（新增护栏覆盖全部 6 种 `E_DamageMode` + 靠里取消的钱账）；③ `probe_more_armor_mod -Windowed -KillStale` → `[MORE_ARMOR] result=PASS failed=0`（模组重写 `absorb_damage()` 的路径未被自检误伤） |
+| 批次 7（子弹子系统：U-38 → U-39 → U-36 → L-22 → L-21 → U-37 / U-35 / U-40） | 🟡 **前 4 步已做，后 2 步未开始** | ① **U-38 / U-39 / U-36 已销项**（见 §4）：编译门禁 `real compile errors = 0`；`tools/check_content_wiring.ps1` `PASS checks=230`（**含注入验证**：改坏一条即两条 FAIL + `EXIT=1`，已还原）；`probe_gameplay_core` `[GAMEPLAY] result=PASS failed=0`（掉血 270 → 250）；`probe_bullet_camp` `[BULLETCAMP] result=PASS failed=0`（17 项）。② **L-22 第 ① 条已修**（`init_bullet` 早于入树的契约被消除，探针同上）。③ **未开始**：L-22②（`attack_once` 覆写链守卫，彻底解依赖 U-37）、L-21（冰瓜减速免疫语义，需先确权原版）、U-37 / U-35 / U-40（重构级）—— 四者都涉及行为变更，**必须开游戏实测**（V-01 例外写法） |
+| 批次 8（攻击逻辑：U-44 → L-23 → U-42 → U-43 → U-41 → L-24） | 🟡 **第 1、2、3 步已做**（U-44、L-23、U-42 已销项 / §4，其余未开始） | U-44 / U-42 / L-23：编译门禁 `real compile errors = 0`（scenarios 120 PASS）；U-42 + `probe_gameplay_core` / `probe_bullet_camp` 均 `result=PASS`（抽公共迭代器，语义不变）；L-23 是行为变更（被整包免疫取消时不闪白光，符合 §5 表现放③末端），**需开游戏回归**（举起防具僵尸被豌豆打）；U-43 / U-41 涉及重构，需开游戏实测 |
 
