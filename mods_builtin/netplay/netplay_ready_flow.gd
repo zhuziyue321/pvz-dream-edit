@@ -237,12 +237,13 @@ func _on_choose_card_start_requested() -> void:
 	_press_start()
 
 
-func _on_ready_state_changed(peer_id: int, ready: bool) -> void:
+## ⚠️ 参数一律叫 `is_ready` 而不是 `ready`：后者会遮蔽基类 `Node` 的 `ready` 信号。
+func _on_ready_state_changed(peer_id: int, is_ready: bool) -> void:
 	if _session == null or peer_id == _session.local_peer_id:
 		return
 	_refresh()
 	_maybe_retry_start()
-	_notify("玩家 %d %s" % [peer_id, "已准备" if ready else "取消了准备"])
+	_notify("玩家 %d %s" % [peer_id, "已准备" if is_ready else "取消了准备"])
 
 
 ## 照原版按钮那两步：保存本次选卡（"重选上次卡片"要用）+ 通知本体收工

@@ -15,10 +15,13 @@ extends HandComponentBase
 ## 原版没有这个玩法（原版手套是禅境花园工具），所以整条链路（本组件 + 卡槽按钮 + 真手套）
 ## 都在模组里；关掉模组 = 本组件根本不会被创建。
 ##
-## **冷却**（原版也没有，默认关）：搬完一株之后等几秒才能再搬，开关与时长在模组页面里设
-## （`GloveSettings.is_cooldown_enabled()` / `GloveSettings.get_cooldown_time()`，
-## 值落在**模组存档文件** `[glove]` 段，与模组开关同一份，见 `GloveMod` 的类注释）。
-## 冷却中手套拿不起来（点它只有一声"不行"），卡槽图标上盖一层遮罩随剩余时间往回收。
+## **冷却**（原版也没有，默认关）：搬完一株之后才能再用，两种口径二选一 ——
+## **按秒数**（`GloveSettings.get_cooldown_time()`，`_process` 自己倒数）或
+## **按波数**（`GloveSettings.get_cooldown_wave()`，连波次管理器的 `wave_started`，每开一波减 1）。
+## 开关 / 方式 / 时长 / 波数都在模组页面里设（`GloveSettings.is_cooldown_enabled()` /
+## `is_cooldown_by_wave()`，值落在**模组存档文件** `[glove]` 段，与模组开关同一份，
+## 见 `GloveMod` 的类注释）。
+## 冷却中手套拿不起来（点它只有一声"不行"），卡槽图标上盖一层遮罩随剩余时间 / 剩余波数往回收。
 
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录的文件一律 preload 成常量再引用，不能写 `var x: Xxx`
@@ -50,10 +53,18 @@ var carry_ori_z_index: int = 0
 ## 植物原点 → 图案中心的偏移，让搬运时图案中心对准鼠标
 var carry_offset: Vector2 = Vector2.ZERO
 
-## 冷却还剩几秒（`> 0` = 正在冷却，这段时间不能再拿手套）
+## 当前冷却是不是「按波数」那一档（true = 按波数，false = 按秒数）
+var cool_is_by_wave: bool = false
+## 按秒冷却还剩几秒（`> 0` = 正在冷却，这段时间不能再拿手套）
 var cool_remain: float = 0.0
-## 本次冷却的总时长（秒）：给卡槽遮罩算「还剩几分之几」用；0 = 没在冷却
+## 本次按秒冷却的总时长（秒）：给卡槽遮罩算「还剩几分之几」用；0 = 没在冷却
 var cool_total: float = 0.0
+## 按波冷却还剩几波（`> 0` = 正在冷却；每开一波减 1，减到 0 冷却好）
+var cool_wave_remain: int = 0
+## 本次按波冷却的总波数：给卡槽遮罩算「还剩几分之几」用
+var cool_wave_total: int = 0
+## 波数冷却要观察的波次管理器：连上它的 `wave_started`，每开一波扣 1
+var wave_manager: ZombieWaveManager
 
 
 ## 由 `GloveMod` 在把本组件加进场景树之前调用：模组自己建的节点没法用 `%同名` 取
@@ -69,6 +80,18 @@ func get_hand_component_type() -> E_HandComponentType:
 
 func _ready_component() -> void:
 	change_is_enabling(is_can_has_glove(), E_IsEnableFactor.HandItem)
+	_connect_wave_signal()
+
+
+## 连上波次管理器的「开了一波」信号（按波数冷却要用）
+## 关卡没有波次（`E_MonsterMode.Null` 之类）时 `wave_manager` 保持 null，波数冷却会自己让开
+func _connect_wave_signal() -> void:
+	if not is_instance_valid(main_game) or not is_instance_valid(main_game.zombie_manager):
+		return
+	wave_manager = main_game.zombie_manager.zombie_wave_manager
+	if not is_instance_valid(wave_manager) or wave_manager.wave_started.is_connected(_on_wave_started):
+		return
+	wave_manager.wave_started.connect(_on_wave_started)
 
 
 ## 本局是否可以持有手套：关卡允许操作草坪 + 全局解锁（商店里买下园艺手套之后才到手）
@@ -271,18 +294,24 @@ func _clear_glove_look() -> void:
 #region 冷却
 ## 当前是否正在冷却（这段时间手套拿不起来）
 func is_cooling() -> bool:
-	return cool_remain > 0.0
+	return cool_wave_remain > 0 or cool_remain > 0.0
 
 
 ## 冷却倒计时：用自己的 `_process`，**不是** `hand_process()`
 ## —— 后者只在「手套拿在手上」时才被 `HandManager` 调到（见 `HandManager._process`），
 ##    而冷却恰恰发生在**放下之后**、手上没东西的时候。
+## 按波数冷却时这里不倒数（等 `_on_wave_started` 来扣），只做「开关被关掉 / 关卡没有波次」的兜底收尾。
 func _process(delta: float) -> void:
-	if cool_remain <= 0.0:
+	if not is_cooling():
 		return
 	## 运行期把开关关掉了：立刻结束冷却，别让人干等一个已经不存在的限制
 	if not GloveSettings.is_cooldown_enabled():
 		_end_cooldown()
+		return
+	if cool_is_by_wave:
+		## 关卡没有波次可数：波数永远等不到，直接放行（否则玩家会被永久锁住）
+		if not is_instance_valid(wave_manager):
+			_end_cooldown()
 		return
 	cool_remain -= delta
 	if cool_remain > 0.0:
@@ -292,30 +321,63 @@ func _process(delta: float) -> void:
 
 
 ## 开始冷却：**搬完一株**才开始（拿起又放回 / 取消不算 —— 那一下没有真的改动布局）
+## 方式看设置：按秒数倒数（`cooldown_time`）或按波数扣（`cooldown_wave`，每开一波减 1）
 func _start_cooldown() -> void:
 	if not GloveSettings.is_cooldown_enabled():
+		return
+	if GloveSettings.is_cooldown_by_wave():
+		## 关卡没有波次管理器时别进冷却，否则玩家会被永久锁住（`_process` 里还有一层同样的兜底）
+		if not is_instance_valid(wave_manager):
+			return
+		var wave_num := GloveSettings.get_cooldown_wave()
+		if wave_num <= 0:
+			return
+		cool_is_by_wave = true
+		cool_wave_total = wave_num
+		cool_wave_remain = wave_num
+		_refresh_cool_ui()
 		return
 	var cool_time := GloveSettings.get_cooldown_time()
 	if cool_time <= 0.0:
 		return
+	cool_is_by_wave = false
 	cool_total = cool_time
 	cool_remain = cool_time
 	_refresh_cool_ui()
+
+
+## 新的一波开起来：按波数冷却的手套扣 1 波，扣到 0 就冷却好
+func _on_wave_started(_wave: int) -> void:
+	if not is_cooling() or not cool_is_by_wave:
+		return
+	if not GloveSettings.is_cooldown_enabled():
+		_end_cooldown()
+		return
+	cool_wave_remain -= 1
+	if cool_wave_remain > 0:
+		_refresh_cool_ui()
+		return
+	_end_cooldown()
 
 
 ## 结束冷却（正常走完 / 开关被关掉，都要把遮罩收掉）
 func _end_cooldown() -> void:
 	cool_remain = 0.0
 	cool_total = 0.0
+	cool_wave_remain = 0
+	cool_wave_total = 0
 	_refresh_cool_ui()
 
 
 ## 卡槽遮罩：按「还剩几分之几」盖住手套图标（0 = 没在冷却 → 收起遮罩）
+## 按波数时用「还剩几波 / 共几波」，逐波往下掉一档
 func _refresh_cool_ui() -> void:
 	if not is_instance_valid(ui_glove):
 		return
 	var cool_ratio := 0.0
-	if cool_total > 0.0 and cool_remain > 0.0:
+	if cool_is_by_wave and cool_wave_total > 0 and cool_wave_remain > 0:
+		cool_ratio = clampf(float(cool_wave_remain) / float(cool_wave_total), 0.0, 1.0)
+	elif cool_total > 0.0 and cool_remain > 0.0:
 		cool_ratio = clampf(cool_remain / cool_total, 0.0, 1.0)
 	ui_glove.refresh_glove_cool(cool_ratio)
 #endregion

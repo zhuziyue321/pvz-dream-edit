@@ -5,8 +5,9 @@ extends "ore_bucket_zombie_base.gd"
 ## 唯一特殊：头上那层防具挂的是模组自己的 `armor_diamond_bucket.gd`（不是基类防具），
 ## 它会累计挨打次数，满 20 次就发个 `sig_need_transform` 信号。
 ##
-## 收到信号的宿主**不在 `absorb_damage()` 里直接换** —— 此刻血量组件正遍历防具链，
-## 改遍历目标会跳过 / 重复。改用 `call_deferred()` 推到帧末再换：
+## 收到信号的宿主**不在 `absorb_damage()` 里直接换** —— 此刻伤害系统正在 ② 加工阶段
+## 遍历防具链（`process_damage_armors()`），改遍历目标会跳过 / 重复。
+## 改用 `call_deferred()` 推到帧末再换：
 ## ① 把整层旧防具摘掉、挂上下界合金桶那层（脚本换成 `armor_netherite_bucket.gd`）；
 ## ② 贴图换成下界合金的（头 / 吸走 / 掉地三张）；
 ## ③ 继承旧防具的 `max_hp / curr_hp`（**上限与当前血量都沿用**，血条与破损阶段连续）。
@@ -95,7 +96,7 @@ func _equip_diamond_armor() -> void:
 	_diamond_armor = armor
 
 
-## 钻石桶满 20 次：推到帧末再换（**不能同步换**：血量组件正遍历防具链）
+## 钻石桶满 20 次：推到帧末再换（**不能同步换**：伤害系统正遍历防具链）
 func _on_diamond_armor_need_transform() -> void:
 	_transform_to_netherite.call_deferred()
 

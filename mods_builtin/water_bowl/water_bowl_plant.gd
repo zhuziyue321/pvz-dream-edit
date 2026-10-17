@@ -73,9 +73,11 @@ func _on_up_plant_in(up_plant: Node) -> void:
 			_set_up_plant_shadow_visible.bind(up_plant, false), CONNECT_ONE_SHOT)
 
 
-## [param is_visible] false = 藏掉（在水盆里），true = 还原（离开水盆）
-func _set_up_plant_shadow_visible(node: Node, is_visible: bool) -> void:
+## [param shadow_visible] false = 藏掉（在水盆里），true = 还原（离开水盆）
+##
+## ⚠️ 参数不能叫 `is_visible`：本类是 `CanvasItem` 的后代，那会遮蔽基类的 `is_visible()`。
+func _set_up_plant_shadow_visible(node: Node, shadow_visible: bool) -> void:
 	var up_plant := node as Plant000Base
 	if up_plant == null or not is_instance_valid(up_plant.shadow):
 		return
-	up_plant.shadow.visible = is_visible
+	up_plant.shadow.visible = shadow_visible

@@ -1,5 +1,7 @@
 extends "../mod_base.gd"
-## 自制关卡模组：把 `user://custom_level` 下的玩家自制关卡脚本加载成可选关卡
+## 自制关卡模组：把玩家目录（`user://custom_level`）与**所有模组各自目录下的 `levels/`**
+##（随各模组加载根走，见 custom_choose_level.gd:get_mod_level_dirs()）里的自制关卡脚本
+## 加载成可选关卡
 ##
 ## 原版没有「玩家自制关卡」这个功能（原版只有内置的模式选关），所以整条链路都在模组里：
 ##   - 选关界面 `custom_choose_level.tscn`（扫描目录、动态建按钮、分页）
@@ -49,7 +51,11 @@ func get_mod_name() -> String:
 
 
 func get_mod_description() -> String:
-	return "读取 user://custom_level 下的玩家自制关卡脚本并加一个主菜单入口；原版没有自制关卡"
+	return "读取 user://custom_level 与所有模组目录下 levels/ 里的自制关卡脚本并加一个主菜单入口；原版没有自制关卡"
+
+
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_STRUCTURE]
 
 
 ## 模组页面右侧：关卡从哪读、读到了几个、装了它主菜单会多出什么
@@ -58,15 +64,25 @@ func create_detail_control() -> Control:
 	box.add_theme_constant_override("separation", 6)
 	## 目录约定写在选关界面上（`CustomChooseLevel.CUSTOM_LEVEL_DIR`），这里引用它，不抄第二份
 	box.add_child(ModBase.create_detail_label("关卡目录：" + CustomChooseLevel.get_base_path() + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR))
-	box.add_child(ModBase.create_detail_label("目录里现在有 %d 个条目（一个关卡包目录或一个关卡脚本算一个）" % _count_level_entries()))
+	## 所有模组的自带关卡目录：每个模组目录下的 levels/（不论该模组启用与否），同 id 玩家目录优先
+	box.add_child(ModBase.create_detail_label("模组关卡目录：各模组目录下的 %s/（当前约定 %d 个）" % [
+		CustomChooseLevel.MOD_LEVEL_DIR, CustomChooseLevel.get_mod_level_dirs().size()]))
+	box.add_child(ModBase.create_detail_label("两类目录里现在共有 %d 个条目（一个关卡包目录或一个关卡脚本算一个）" % _count_level_entries()))
 	box.add_child(ModBase.create_detail_label("启用了它，主菜单会多一个「自制关卡」入口；关掉这个模组，入口按钮与选关页一起消失"))
 	return box
 
 
-## 数一下目录里有多少个条目（只数不加载：加载关卡脚本是选关界面该干的事）
+## 数一下两类关卡目录里各有多少个条目（只数不加载：加载关卡脚本是选关界面该干的事）
 func _count_level_entries() -> int:
-	var root := CustomChooseLevel.get_base_path()
-	var dir := DirAccess.open(root + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR)
+	var count := _count_entries(CustomChooseLevel.get_base_path() + "/" + CustomChooseLevel.CUSTOM_LEVEL_DIR)
+	for dir in CustomChooseLevel.get_mod_level_dirs():
+		count += _count_entries(dir)
+	return count
+
+
+## 数一个目录下的顶层条目（关卡包目录 / 关卡脚本各算一个，不含点开头的隐藏文件）
+static func _count_entries(dir_path: String) -> int:
+	var dir := DirAccess.open(dir_path)
 	if dir == null:
 		return 0
 	var count := 0

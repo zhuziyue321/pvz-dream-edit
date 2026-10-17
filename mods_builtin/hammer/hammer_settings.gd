@@ -1,9 +1,9 @@
 extends RefCounted
-## 锤子模组的**共享设置**：解锁关卡 + 秒杀 / 伤害 / 范围 / 冷却的键名、默认值与静态读值口
+## 锤子模组的**共享设置**：解锁关卡 + 秒杀 / 伤害 / 范围 / 冷却（开关 / 方式 / 时长 / 波数）的键名、默认值与静态读值口
 ##
 ## ★ 为什么单独一个文件，而不是都放在 `hammer_mod.gd` 里：
 ##   `hammer_mod.gd` 要 `HandComponentHammerMod.new()`，而 `HandComponentHammerMod` 又要读
-##   `get_radius()` / `get_damage_value()` / `is_kill_mode()` / 冷却两件套 ——
+##   `get_radius()` / `get_damage_value()` / `is_kill_mode()` / 冷却四件套 ——
 ##   两边互相 `preload` 就是一个环（GDScript 循环 preload 直接报 Cyclic，编译不过）。
 ##   把「谁都要读、自己谁也不依赖」的这一块抽出来，环就断了（与 `glove_settings.gd` 同款处理）。
 ##
@@ -22,6 +22,8 @@ const SETTING_KEY_DAMAGE := "damage_value"
 const SETTING_KEY_RADIUS := "radius"
 const SETTING_KEY_COOLDOWN_ENABLED := "cooldown_enabled"
 const SETTING_KEY_COOLDOWN_TIME := "cooldown_time"
+const SETTING_KEY_COOLDOWN_BY_WAVE := "cooldown_by_wave"
+const SETTING_KEY_COOLDOWN_WAVE := "cooldown_wave"
 
 ## 伤害数值的可调范围与默认值
 const DAMAGE_VALUE_MIN := 100
@@ -38,9 +40,15 @@ const COOLDOWN_TIME_MIN := 0.5
 const COOLDOWN_TIME_MAX := 60.0
 const COOLDOWN_TIME_STEP := 0.5
 const COOLDOWN_TIME_DEFAULT := 5.0
-## 各开关的默认值：数值伤害（不秒杀）、无冷却 —— 与手套模组同口径
+## 冷却波数的可调范围与默认值（波）：每开一波扣 1，扣到 0 就冷却好
+const COOLDOWN_WAVE_MIN := 1
+const COOLDOWN_WAVE_MAX := 20
+const COOLDOWN_WAVE_STEP := 1
+const COOLDOWN_WAVE_DEFAULT := 2
+## 各开关的默认值：数值伤害（不秒杀）、无冷却、冷却按秒数 —— 与手套模组同口径
 const KILL_MODE_DEFAULT := false
 const COOLDOWN_ENABLED_DEFAULT := false
+const COOLDOWN_BY_WAVE_DEFAULT := false
 
 
 ## 通关进度是否已够拿到锤子（静态：解锁口径属于模组，本体不需要知道）
@@ -79,3 +87,17 @@ static func get_cooldown_time() -> float:
 	return clampf(float(ModManager.get_mod_value(
 			ModIds.HAMMER, SETTING_KEY_COOLDOWN_TIME, COOLDOWN_TIME_DEFAULT)),
 			COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX)
+
+
+## 冷却是否按**波数**算（模组页面里的开关）：开 = 用 `get_cooldown_wave()`（每开一波扣 1），
+## 关 = 用 `get_cooldown_time()`（按秒数倒数）
+static func is_cooldown_by_wave() -> bool:
+	return bool(ModManager.get_mod_value(
+			ModIds.HAMMER, SETTING_KEY_COOLDOWN_BY_WAVE, COOLDOWN_BY_WAVE_DEFAULT))
+
+
+## 冷却波数（波）：挥完一锤之后要等开过几波僵尸才能再挥（每开一波扣 1，扣到 0 冷却好）
+static func get_cooldown_wave() -> int:
+	return clampi(int(ModManager.get_mod_value(
+			ModIds.HAMMER, SETTING_KEY_COOLDOWN_WAVE, COOLDOWN_WAVE_DEFAULT)),
+			COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX)

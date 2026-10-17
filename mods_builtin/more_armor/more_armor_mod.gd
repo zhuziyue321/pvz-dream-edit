@@ -130,6 +130,10 @@ func on_level_para_ready(main_game: MainGameManager) -> void:
 		Log.info("更多的防具：本关出怪表已加入 %d 种矿石桶僵尸" % added_count)
 
 
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_UNIT]
+
+
 ## 模组页面右侧：三种矿石桶的血量 + 要不要进自然出怪
 func create_detail_control() -> Control:
 	var box := VBoxContainer.new()

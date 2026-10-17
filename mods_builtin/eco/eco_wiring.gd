@@ -1,7 +1,7 @@
 extends RefCounted
-## 模组「原版平衡」里**每局接线**的那几条（植物种下之后才有的组件）
+## 模组「生态版」里**每局接线**的那几条（植物种下之后才有的组件）
 ##
-## ★ 与 `balance_plant_patcher.gd` 的分工：那边改「数据层」（注册表 / 子弹，装一次全局生效），
+## ★ 与 `eco_plant_patcher.gd` 的分工：那边改「数据层」（注册表 / 子弹，装一次全局生效），
 ##   这边改「实例层」—— 爆炸伤害、连发数、检测区、吸铁组件、产光值都在植物实例上，
 ##   实例随关卡销毁，格子的光照等级也每局清零重算，所以每一局都要接一次。
 ##
@@ -12,7 +12,7 @@ extends RefCounted
 ## ⚠️ `user://` 下的脚本拿不到静态类型推断（`var x := 无类型的返回值` 会被判编译错误），
 ##   所有从数组 / `get_node_or_null()` 里取出来的东西**必须显式写类型**。
 
-const Settings := preload("balance_settings.gd")
+const Settings := preload("eco_settings.gd")
 
 ## 磁力菇场景：只用来**取一份吸铁组件的模板**（不进树，只 duplicate 它那一棵子树）
 const MAGNET_SHROOM_TSCN := "res://src/entities/character/plant/plant_magnet_shroom.tscn"
@@ -111,12 +111,9 @@ static func _apply_created_plants(manager: PlantCellManager) -> void:
 
 
 #region 各条调整
-## 寒冰菇：爆炸伤害（原版 20）
+## 寒冰菇：爆炸伤害（原版 20）—— 伤害由角色攻击力承载（`BombComponentIce` 读 `attack_value`）
 static func _apply_ice_shroom(plant: Plant000Base) -> void:
-	var bomb: BombComponentBase = plant.get_node_or_null(^"BombComponent") as BombComponentBase
-	if bomb == null:
-		return
-	bomb.bomb_value = Settings.ICE_SHROOM_DAMAGE
+	plant.attack_value = Settings.ICE_SHROOM_DAMAGE
 
 
 ## 机枪射手：一次攻击打出 6 颗

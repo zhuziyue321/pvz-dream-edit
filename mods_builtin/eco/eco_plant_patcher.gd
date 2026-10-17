@@ -1,16 +1,16 @@
 extends RefCounted
-## 模组「原版平衡」里**改注册表 / 改子弹**的那几条（一次改写，全局生效）
+## 模组「生态版」里**改注册表 / 改子弹**的那几条（一次改写，全局生效）
 ##
-## 与 `balance_wiring.gd` 的分工：
+## 与 `eco_wiring.gd` 的分工：
 ##   本文件管「数据层」—— 植物阳光（`CharacterRegistry` 的数值覆盖表）与
 ##   子弹属性（`BulletRegistry` 的覆盖表，造子弹时当场写），装一次就够；
-##   `balance_wiring.gd` 管「每局实例」—— 植物种下之后才有的组件（寒冰菇爆炸伤害、
+##   `eco_wiring.gd` 管「每局实例」—— 植物种下之后才有的组件（寒冰菇爆炸伤害、
 ##   机枪连发、卷心菜检测区、吸金磁的吸铁组件、向日葵按光照产光）。
 ##
 ## ★ 两条表都是本体的**通用覆盖口子**（本体不认识本模组，见它们的注释），
 ##   撤得掉：`restore()` 把覆盖清掉，数值回到原版。
 
-const Settings := preload("balance_settings.gd")
+const Settings := preload("eco_settings.gd")
 
 ## 阳光：走 `CharacterRegistry.set_runtime_plant_stat()`
 ## （`PlantInfoData.PLANT_INFO` 是 const 表，Godot 4.4 起常量字典**只读**，改不动）

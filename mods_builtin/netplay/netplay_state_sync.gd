@@ -879,8 +879,9 @@ func _align_bosses(mg: MainGameManager, snap: Dictionary) -> void:
 		var id := zb_id[i]
 		seen[id] = true
 		var target := Vector2(zb_x[i], zb_y[i])
-		## 写明类型：快照里存的是 String，缺省值是 StringName，不标的会被推断成 Variant
-		var boss_type: StringName = zb_type[i] if i < zb_type.size() else ZombieBossIds.NULL
+		## 写明类型：快照里存的是 String，缺省值是 StringName。两边都要显式收敛成 StringName ——
+		## 不标的会被推断成 Variant；只收敛一边则三元两个分支类型不互通（INCOMPATIBLE_TERNARY 告警）
+		var boss_type: StringName = StringName(zb_type[i]) if i < zb_type.size() else ZombieBossIds.NULL
 		if local.has(id):
 			var boss: ZB000Base = local[id]
 			if not is_instance_valid(boss):

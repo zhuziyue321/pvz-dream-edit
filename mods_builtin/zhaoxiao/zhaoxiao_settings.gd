@@ -42,6 +42,39 @@ const SMOKE_TIME := 30.0
 #endregion
 
 
+#region 摔倒（僵尸像被绊倒一样趴在地上，一会儿又站起来）
+## 摔倒后趴在地上多久（秒）—— 到点自己站起来继续走
+const FALL_TIME := 3.0
+## 倒下去 / 站起来那一下把身体转 90° 用的时长（秒）
+const FALL_TIPPING_TIME := 0.3
+## 倒下去之后身体往上抬多少（像素）：Body 是绕脚根转的，转平之后身体中线压到
+## 地面以下，抬这一下看着才是「趴在地上」而不是「一半埋进土里」
+## （目眯值：想趴得再平 / 再沉就改它；小僵尸按体型缩）
+const FALL_SINK_Y := 30.0
+## 趴姿的旋转角（弧度）：90° = 身体放平，头朝摔倒时的走路方向
+const FALL_LIE_ANGLE := PI / 2
+#endregion
+
+
+#region 路障僵尸变种（10 倍速、无视植物、走到第 4 列摔倒掉路障）
+## 速度倍数（相对普通僵尸的动画倍速）—— 与「闪电掉头僵尸」同一招
+const CONE_ZOMBIE_SPEED := 10.0
+## 从僵尸入场一侧（右侧）数第几列摔倒（口径同闪电掉头僵尸的掉头列；
+## 想改成「从房子一侧（左侧）数第 N 列」，把 `zhaoxiao_cone_zombie.gd` 里
+## `_compute_fall_x()` 的 `col_num - CONE_ZOMBIE_FALL_COLUMN_FROM_RIGHT`
+## 改成 `CONE_ZOMBIE_FALL_COLUMN_FROM_RIGHT - 1` 即可）
+const CONE_ZOMBIE_FALL_COLUMN_FROM_RIGHT := 4
+#endregion
+
+
+#region 掉在草坪上的路障（永久存在，绊倒后来的僵尸）
+## 后来走到路障上（与路障的 |x 差| ≤ 这个值）的僵尸会被绊倒
+const CONE_TRIP_RANGE := 26.0
+## 路障贴图相对地面的下沉（像素，负 = 往上抬）：让它看着是「掉在地上」而不是浮空
+const CONE_GROUND_OFFSET_Y := -10.0
+#endregion
+
+
 #region 转头（朝阳葵）
 ## 转一次头**花的时间**（秒）：按「从当前姿态到位」的固定时长插值，**所有朝阳葵都一样**。
 ## 不用角速度：角速度下要转的角度大的（离得远的）那株会转得更久，同一批花就不是一起转完的

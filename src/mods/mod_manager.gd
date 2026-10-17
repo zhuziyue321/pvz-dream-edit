@@ -36,6 +36,9 @@ class_name ModManagerClass
 ##      `data/mods/mod_config.tres`（`ModConfig`）退成**工程默认**：只有在这个用户的存档文件
 ##      还不存在时照它播种一份，之后一律以存档文件为准 —— 页面上开 / 关就真的持久化了。
 ##   3. **本体不 import 模组**：本体只调 `is_mod_enabled(ModIds.XXX)`
+##   4. **依赖跟着开关走**：模组在 `get_mod_dependencies()` 里声明依赖哪些模组，
+##      打开它时依赖一并被打开（递归 + 带环保护），启动 / 换用户时也补一遍；
+##      细则见 `get_mod_dependencies()` 与 [模组机制](../../docs/参考存档/模组机制.md) §2.3。
 ##
 ## ⚠️ 从 `user://mods/` 加载时，那些脚本**不是**工程脚本，有两条硬限制（Godot 4.6.2 实测）：
 ##   · 它们的 `class_name` **不会注册成全局类** —— 所以模组内部一律 `extends "相对路径.gd"`
@@ -73,9 +76,10 @@ const MOD_SCRIPT_PATHS: Dictionary = {
 	ModIds.MORE_ARMOR: "more_armor/more_armor_mod.gd",
 	ModIds.CUSTOM_LEVEL: "custom_level/custom_level_mod.gd",
 	ModIds.NETPLAY: "netplay/netplay_mod.gd",
-	ModIds.BALANCE: "balance/balance_mod.gd",
+	ModIds.ECO: "eco/eco_mod.gd",
 	ModIds.PVZ2: "pvz2/pvz2_mod.gd",
 	ModIds.ZHAOXIAO: "zhaoxiao/zhaoxiao_mod.gd",
+	ModIds.ARKNIGHTS: "arknights/arknights_mod.gd",
 }
 ## 模组基类（两个根下各有一份）：用它判断「入口脚本是不是真的继承了 ModBase」
 const MOD_BASE_REL_PATH := "mod_base.gd"
@@ -213,14 +217,46 @@ func _load_config() -> void:
 
 ## 创建全部模组实例，并给已启用的跑一次全局 install()
 func _install_enabled_mods() -> void:
+	## 先把实例建齐：依赖声明要读模组自己（`get_mod_dependencies()`），实例不齐读不到
 	for mod_id in MOD_SCRIPT_PATHS:
 		var mod = _create_mod(mod_id)
 		if mod == null:
 			continue
 		all_mods[mod_id] = mod
-		if not is_mod_enabled(mod_id):
+	## 实例齐了再补依赖：已启用模组缺的依赖一并打开（只改内存，帧末那次存档照此写）
+	_ensure_dependencies_enabled()
+	for mod_id in MOD_SCRIPT_PATHS:
+		var mod = all_mods.get(mod_id)
+		if mod == null or not is_mod_enabled(mod_id):
 			continue
 		_install(mod_id, mod)
+
+
+## 把**已启用模组**声明依赖的模组一并补开（递归，带环保护）
+##
+## 为什么启动时要补一遍：存档文件可能被手改过、或工程默认（`data/mods/mod_config.tres`）
+## 里开了 A 漏了 B —— 缺了依赖的模组是"开着却跑不起来"的状态，不如启动时补齐。
+## 只改内存不落盘：紧接着的存档写入会把补齐后的开关一起写掉（本来就是打开时才补的）。
+func _ensure_dependencies_enabled() -> void:
+	for mod_id in all_mods:
+		if is_mod_enabled(mod_id):
+			_enable_dependencies_first(mod_id, {})
+
+
+## 打开 `mod_id` 之前，先把它依赖的模组逐个打开（递归；`visited` 防环）
+## 已经开着的依赖不再递归 —— 它当初被打开时，它的依赖已经补过一遍了
+func _enable_dependencies_first(mod_id: StringName, visited: Dictionary) -> void:
+	if visited.has(mod_id):
+		Log.error("ModManager: 模组依赖成环，环上的开关不自动补开（环入口 [%s]）" % str(mod_id))
+		return
+	visited[mod_id] = true
+	for dep_id in get_mod_dependencies(mod_id):
+		if is_mod_enabled(dep_id):
+			continue
+		Log.info("ModManager: [%s] 依赖 [%s]，打开 [%s] 时把依赖一并打开" % [
+			str(mod_id), str(dep_id), str(mod_id)])
+		_enable_dependencies_first(dep_id, visited)
+		_apply_enabled_state(dep_id, true)
 
 
 ## 创建一个模组实例（实例化失败只记日志，不让游戏起不来）
@@ -270,6 +306,9 @@ func _extends_mod_base(mod) -> bool:
 func _install(mod_id: StringName, mod) -> void:
 	mod.install()
 	installed_mods[mod_id] = true
+	## 把本模组的伤害修饰器接进 DamageSystem 的修饰器链（mod_base.gd 提供；旧版没有则跳过）
+	if mod.has_method("_install_damage_modifiers"):
+		mod._install_damage_modifiers()
 	Log.info("ModManager: 已装载模组 [%s] %s" % [str(mod_id), mod.get_mod_name()])
 #endregion
 
@@ -378,6 +417,31 @@ func get_mod(mod_id: StringName):
 	return all_mods.get(mod_id)
 
 
+## 这个模组**声明依赖**哪些模组（入口脚本里重写 `ModBase.get_mod_dependencies()`）
+##
+## 只返回**登记在册**的 id：未登记的（写歪了 / 模组删了）与自己依赖自己，
+## 各打一行 error 后剔除（去重、保模组声明的顺序）—— 界面与补开逻辑都只认这里的结果。
+## 旧版入口脚本（`user://mods/` 下没跟着升级的那份）没有这个方法 = 空数组，
+## 所以调用方一律 `has_method()` 防御式转调，别直接 `mod.get_mod_dependencies()`。
+func get_mod_dependencies(mod_id: StringName) -> Array[StringName]:
+	var mod = get_mod(mod_id)
+	if mod == null or not mod.has_method("get_mod_dependencies"):
+		return []
+	var out: Array[StringName] = []
+	for dep in mod.get_mod_dependencies():
+		var dep_id := StringName(dep)
+		if dep_id == mod_id:
+			Log.error("ModManager: 模组 [%s] 声明依赖自己，已忽略" % str(mod_id))
+			continue
+		if not MOD_SCRIPT_PATHS.has(dep_id):
+			Log.error("ModManager: 模组 [%s] 依赖了未登记的模组 [%s]，已忽略" % [
+				str(mod_id), str(dep_id)])
+			continue
+		if not out.has(dep_id):
+			out.append(dep_id)
+	return out
+
+
 ## 这个模组**当前实际**从哪个根加载（`MODS_ROOT` / `BUILTIN_MODS_DIR`）
 ## 模组里要拼自己的资源路径（场景 / 脚本 / 图片）就用这个 —— 别去抄根目录常量：
 ## 根是启动期定的，写死成 `user://mods` 会在「这份跑的是内置源」时指到空目录
@@ -396,7 +460,7 @@ func get_mod_root(mod_id: StringName) -> String:
 ##   · 拿不到且文件在时，退回 `Image.load_from_file()` + `ImageTexture`（`user://` 那份）。
 ## 结果按「模组 + 相对路径」缓存，同一个素材读多次只解码一次。
 ##
-## 模组素材请走这个口子（别再 `preload("res://assets/...")` 塞进本体 —— 那样模组不自包含、
+## 模组素材请走这个口子（别再 `preload("res://assets_custom/...")` 塞进本体 —— 那样模组不自包含、
 ## 导出后 `user://` 那份也读不到）；模组入口（`ModBase` 子类）可直接用 `load_asset()` 转调这里。
 func load_mod_asset(mod_id: StringName, rel_path: String) -> Resource:
 	var key := "%s/%s" % [str(mod_id), rel_path]
@@ -452,11 +516,16 @@ func set_mod_value(mod_id: StringName, key: String, value: Variant) -> void:
 
 
 ## 改一个模组的开关：**存档文件里也跟着改**（下次启动照旧），模组页面上那个按钮走的就是这里
-##   开 = 立即补一次全局 install()；关 = 下一局主游戏不再安装它（并当场 uninstall()）
+##   开 = 先把它**声明依赖**的模组一并打开（递归，见 `_enable_dependencies_first()`），
+##        再立即补一次全局 install()；关 = 下一局主游戏不再安装它（并当场 uninstall()）
+##   ⚠️ 只补开、不连锁关：关掉一个被依赖的模组不会连带关掉依赖者（那是玩家自己的选择，
+##      他会在模组页面详情末尾的依赖列表里看到哪个依赖"未启用"）。
 func set_mod_enabled(mod_id: StringName, value: bool) -> void:
 	if not MOD_SCRIPT_PATHS.has(mod_id):
 		Log.error("ModManager: 未登记的模组 id %s" % str(mod_id))
 		return
+	if value:
+		_enable_dependencies_first(mod_id, {})
 	_apply_enabled_state(mod_id, value)
 	_schedule_save()
 
@@ -474,6 +543,9 @@ func _apply_enabled_state(mod_id: StringName, value: bool) -> void:
 	if installed_mods.get(mod_id, false):
 		mod.uninstall()
 		installed_mods[mod_id] = false
+		## 摘掉本模组注册进 DamageSystem 的伤害修饰器（旧版 mod_base 没有则跳过）
+		if mod.has_method("_uninstall_damage_modifiers"):
+			mod._uninstall_damage_modifiers()
 
 
 ## 换用户：模组开关与设置跟着换成新用户那一份（存档文件在用户目录下，一人一份）
@@ -482,6 +554,8 @@ func _apply_enabled_state(mod_id: StringName, value: bool) -> void:
 func reload_for_current_user() -> void:
 	_load_config()
 	_load_save()
+	## 新用户那份存档也可能漏开依赖（手改过 / 工程默认漏登记）：补开后再按新开关补装 / 卸载
+	_ensure_dependencies_enabled()
 	for mod_id in all_mods:
 		_apply_enabled_state(mod_id, is_mod_enabled(mod_id))
 

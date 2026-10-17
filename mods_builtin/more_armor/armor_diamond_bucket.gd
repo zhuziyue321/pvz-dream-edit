@@ -5,7 +5,8 @@ extends ArmorComponent
 ## 里改；钻石桶的特殊点在「累计挨打次数」上 —— 这个数跟结算无关，所以另存一个计数、
 ## 满 `TRANSFORM_HIT_COUNT` 次就发个 `sig_need_transform` 信号给宿主。
 ## 宿主在**结算结束之后**（`call_deferred`）把整层防具换成下界合金桶那层、贴图也换、
-## hp 接着用 —— 不能在 `absorb_damage()` 里直接换：血量组件此刻正遍历防具链。
+## hp 接着用 —— 不能在 `absorb_damage()` 里直接换：此刻伤害系统正在 ② 加工阶段
+## 遍历防具链（`HpComponentZombie.process_damage_armors()`）。
 ##
 ## ★ 计数只算「打到活着的本层防具的命中」：
 ##   · 桶已经破的命中不计（没东西可继承）；

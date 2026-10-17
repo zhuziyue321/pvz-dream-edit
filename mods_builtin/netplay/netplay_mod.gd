@@ -275,6 +275,10 @@ func _build_panel_entries() -> Array[ConsoleEntry]:
 	]
 
 
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_STRUCTURE]
+
+
 ## 模组页面右侧：**整个联机面板**（这一份条目如今只在这里出现）
 ##
 ## 没启用时只给一句话 —— 会话都还没建起来，那几个按钮按下去也没地方可去
@@ -439,9 +443,9 @@ func _on_leave_room_button_pressed() -> void:
 	else:
 		_note("已退出房间")
 	_session.close()
-	## 还站在关卡里就退回进关时那个模式的选关页（房主与客户端都退，见「同进同出」）
+	## 还站在关卡里就退回进关时那个模式该回的场景（房主与客户端都退，见「同进同出」）
 	if GameContext.curr_main_game != null:
-		_exit_level_to_choose_page()
+		_exit_level_to_mode_scene()
 
 
 ## 快照频率滑条的读值：持久化里存过哪份就用哪份（关掉游戏再开还在）
@@ -640,14 +644,14 @@ func _on_main_game_exited() -> void:
 	_session.declare_level_left()
 
 
-## 客户端收到「房主退了」：退回**进关时那个模式的选关页**（房主多半也是回到那里）
+## 客户端收到「房主退了」：退回**进关时那个模式该回的场景**（房主多半也是回到那里）
 func _on_level_leave_requested() -> void:
 	if _session != null and _session.is_host():
 		return
 	if GameContext.curr_main_game == null:
 		return
 	_note("房主退出关卡，跟着返回选关页")
-	_exit_level_to_choose_page()
+	_exit_level_to_mode_scene()
 
 
 ## 房主把**房间**关了（不只是退关）：客户端还站在关卡里的话也退回去
@@ -658,11 +662,12 @@ func _on_room_closed() -> void:
 	if GameContext.curr_main_game == null:
 		return
 	_note("房间已关闭，返回选关页")
-	_exit_level_to_choose_page()
+	_exit_level_to_mode_scene()
 
 
-## 退出关卡 ⇒ 退回**进关时那个模式的选关页**（`_last_level_key` 是进关时记下的那份）
-func _exit_level_to_choose_page() -> void:
+## 退出关卡 ⇒ 退回**进关时那个模式该回的场景**（`_last_level_key` 是进关时记下的那份）
+## （选关页；冒险模式没有选关页 ⇒ 主菜单，见 `choose_level_scene_of_mode()`）
+func _exit_level_to_mode_scene() -> void:
 	var mode := _remembered_mode()
 	var scene_path := choose_level_scene_of_mode(mode)
 	if scene_path.is_empty():
@@ -687,19 +692,23 @@ func _remembered_mode() -> int:
 
 
 ## 这一局的 mode 值**就是**它所属选关页的场景 id（`ResourceLevelData.game_mode` 存的是
-## `MainSceneRegistry.MainScenes.ChooseLevel*`），所以退回那页不需要额外维护一张对照表
+## `MainSceneRegistry.MainScenes.ChooseLevel*`），所以退回那页不需要额外维护一张对照表；
+## **认不出选关页的一律回主菜单**。
+##
+## 什么时候会认不出：冒险模式**没有选关界面**（本体按进度只能打下一关，那个槽位故意没登记场景，
+## 见 MainSceneRegistry）、以及自制关卡模组没装 —— 这两种情况把玩家送回主菜单，
+## 总比把他扣在关卡里强（留在原地 = 只能强退进程）。
+## `mode <= 0` 是「进关那一刻的记录与 `Global.game_para` 都没了」，那时才真的返回空。
 static func choose_level_scene_of_mode(mode: int) -> String:
 	if mode <= 0:
 		return ""
 	## `MainScenesMap` 是 `@export` 的（`:=` 推断不出类型，必须显式写 Dictionary）
 	var map: Dictionary = Global.main_scene_registry.MainScenesMap
-	if not map.has(mode):
-		return ""
-	var path := str(map[mode])
-	## 保险：只认选关页（免得某个关卡的 mode 被写成别的场景，一退就直接飞去主菜单之外的地方）
-	if not path.contains("choose_level"):
-		return ""
-	return path
+	var path := str(map.get(mode, ""))
+	## 保险：只认选关页（免得某个关卡的 mode 被写成别的场景，一退就直接飞去选关页之外的地方）
+	if path.contains("choose_level"):
+		return path
+	return Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.StartMenu)
 #endregion
 
 

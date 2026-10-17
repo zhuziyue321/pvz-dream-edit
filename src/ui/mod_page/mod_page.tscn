@@ -5,7 +5,6 @@
 [ext_resource type="Texture2D" path="res://pak/images/Challenge_Background.jpg" id="3_bg"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButton.png" id="4_close"]
 [ext_resource type="Texture2D" path="res://pak/images/Almanac_CloseButtonHighlight.png" id="5_closehi"]
-[ext_resource type="BitMap" uid="uid://bc7yq02xscrlr" path="res://assets/image/ui/ui_level/Almanac_CloseButton_Mask.png" id="6_mask"]
 
 [node name="ModPage" type="CanvasLayer"]
 layer = 128
@@ -36,13 +35,27 @@ text = "模组"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="FilterBox" type="HBoxContainer" parent="OptionBG"]
+layout_mode = 1
+anchors_preset = 12
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -56.0
+offset_right = -500.0
+offset_bottom = -16.0
+grow_vertical = 0
+theme_override_constants/separation = 8
+
 [node name="ListScroll" type="ScrollContainer" parent="OptionBG"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 40.0
-offset_top = 96.0
+offset_top = 140.0
 offset_right = -500.0
 offset_bottom = -70.0
 grow_horizontal = 2
@@ -58,7 +71,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 320.0
-offset_top = 96.0
+offset_top = 140.0
 offset_right = -40.0
 offset_bottom = -70.0
 grow_horizontal = 2
@@ -87,7 +100,6 @@ texture_normal = ExtResource("4_close")
 texture_pressed = ExtResource("5_closehi")
 texture_hover = ExtResource("5_closehi")
 texture_focused = ExtResource("5_closehi")
-texture_click_mask = ExtResource("6_mask")
 
 [node name="Label" type="Label" parent="OptionBG/TextureButton"]
 layout_mode = 0

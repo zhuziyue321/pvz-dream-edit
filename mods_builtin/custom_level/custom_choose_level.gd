@@ -10,6 +10,8 @@ const CHOOSE_LEVEL_BUTTON_CUSTOMIZE = preload("choose_level_button_customize.tsc
 ##
 ## 实际落点（Windows）：`C:/Users/<用户名>/AppData/Roaming/Godot/app_userdata/PVZ-Dream-Edit/custom_level`
 ## —— 编辑器里跑与导出后跑是**同一个**目录，玩家往这里丢关卡文件即可。
+## 模组自带的关卡放**每个模组自己目录下的 `levels/`**（见 MOD_LEVEL_DIR / get_mod_level_dirs()），
+## 所有目录一起扫，同 id 时玩家目录优先（见 scan_custom_levels）。
 ##
 ## 目录里两种摆法都认（**关卡一律是 `.gd` 关卡脚本**，见 LevelScriptBase）：
 ##   1）关卡包（推荐）：`custom_level/<关卡名>/` —— 一个子目录 = 一个关卡，目录名就是关卡 id。
@@ -19,6 +21,15 @@ const CHOOSE_LEVEL_BUTTON_CUSTOMIZE = preload("choose_level_button_customize.tsc
 ##      「是不是关卡」只认继承链（LevelScriptBase / ResourceLevelData），
 ##      认不出来的 `.gd` 与所有 `.tres` 都只当依赖，不会在选关列表里冒出假关卡。
 const CUSTOM_LEVEL_DIR := "custom_level"
+
+## 模组自带关卡的目录名：**每个模组**都可以在自己目录下放一个 `levels/` 放关卡
+##（摆法与玩家目录完全一样：关卡包优先、散装 `.gd` 亦可，关卡 id 同样是目录名 / 文件名 basename）。
+##
+## 扫描时由本选关界面把**所有模组**的这个目录一起扫掉（见 get_mod_level_dirs()）——
+## 目录随各模组的加载根走（`user://mods/<id>/levels` 优先、`res://mods_builtin/<id>/levels` 兜底），
+## 玩家把整个模组目录拷到 `user://mods/` 时自带关卡跟着走（自包含，同 模组机制.md §2.2 素材口径）。
+## 自制关卡模组（custom_level）自己的关卡也放这里。**同 id 时玩家目录优先**（见 scan_custom_levels）。
+const MOD_LEVEL_DIR := "levels"
 
 ## 关卡脚本后缀（关卡只有这一种形态：一个 .gd = 属性 + 流程）
 const SCRIPT_EXT := ["gd"]
@@ -69,14 +80,84 @@ static func get_base_path() -> String:
 	return ProjectSettings.globalize_path("user://").trim_suffix("/")
 
 
-## [folder_path] 相对基路径的自制关卡目录
-## 返回 [[关卡实例, 关卡id], ...]，顺序 = 先散装文件、后关卡包（均按名字排序）
+## 某个模组的自带关卡目录（`<模组目录>/levels/`）：`user://mods/` 优先、内置源兜底，
+## 根目录取 `ModManager.get_mod_root()`，不在这里抄第二份 —— 抄成 `user://mods` 的话，
+## 这份跑的是内置源时就会指到一个空目录（两个源不互相复制，见 模组机制.md §二；
+## 与 `custom_level_mod.gd:_choose_level_scene_path()` 同款口径）。
+static func get_mod_level_dir(mod_id: StringName) -> String:
+	var rel_dir := String(ModManager.MOD_SCRIPT_PATHS[mod_id]).get_base_dir()
+	return ModManager.get_mod_root(mod_id).path_join(rel_dir).path_join(MOD_LEVEL_DIR)
+
+
+## 所有模组的自带关卡目录（`<模组目录>/levels/`），按模组 id 排序保证顺序确定
+##
+## 「所有模组」= `ModManager` 登记表（`MOD_SCRIPT_PATHS`）里的全部模组 —— **不论启用与否**
+## （目录里放了关卡就该被识别；选关界面本身只有 custom_level 模组启用时才进得来），
+## 外加 `user://mods/` 下**未登记**的模组目录兜底（玩家自己放的模组也认）。
+## 目录不存在无所谓，扫的时候自然跳过（大多数模组没有 levels/ 目录）。
+static func get_mod_level_dirs() -> Array[String]:
+	var dirs: Array[String] = []
+	var seen: Dictionary = {}
+	var ids: Array = ModManager.MOD_SCRIPT_PATHS.keys()
+	ids.sort()
+	for mod_id in ids:
+		var dir := get_mod_level_dir(mod_id)
+		if not seen.has(dir):
+			seen[dir] = true
+			dirs.append(dir)
+	## 兜底：`user://mods/` 下未登记的模组（没有入口脚本，ModManager 不管它们）
+	var user_root := DirAccess.open(ModManager.MODS_ROOT)
+	if user_root == null:
+		return dirs
+	user_root.list_dir_begin()
+	var entry_name := user_root.get_next()
+	while entry_name != "":
+		if not entry_name.begins_with(".") and user_root.current_is_dir():
+			var dir := ModManager.MODS_ROOT.path_join(entry_name).path_join(MOD_LEVEL_DIR)
+			if not seen.has(dir):
+				seen[dir] = true
+				dirs.append(dir)
+		entry_name = user_root.get_next()
+	user_root.list_dir_end()
+	return dirs
+
+
+## [folder_path] 相对基路径（user://）的玩家自制关卡目录
+## 返回 [[关卡实例, 关卡id], ...]
+##
+## 扫**两类目录**：玩家目录（本参数）+ 所有模组的自带关卡目录（get_mod_level_dirs()）。
+## **同 id 时玩家目录优先**，模组目录之间先到先得（按模组 id 排序，顺序确定）——
+## 玩家拷过去改过的那份盖住模组自带那份（与「两个加载源玩家优先」同口径）。
+## 列表顺序 = 先玩家目录、后各模组目录，每类内部顺序 = 先散装文件、后关卡包（均按名字排序）。
 func scan_custom_levels(folder_path: String = CUSTOM_LEVEL_DIR) -> Array:
-	var root = get_base_path() + "/" + folder_path
+	var levels: Array = []
+	var index_by_id: Dictionary = {}
+	## 玩家目录：第一次进来时还没有就建一个，玩家才知道该往哪放关卡
+	for one in _scan_root(get_base_path() + "/" + folder_path, true):
+		_add_level(levels, index_by_id, one)
+	for dir in get_mod_level_dirs():
+		for one in _scan_root(dir):
+			_add_level(levels, index_by_id, one)
+	return levels
+
+
+## 合并一个扫描结果进列表：同 id **先出现的赢**（调用顺序即优先级）
+static func _add_level(levels: Array, index_by_id: Dictionary, one: Array) -> void:
+	var level_id := str(one[1])
+	if index_by_id.has(level_id):
+		return
+	index_by_id[level_id] = levels.size()
+	levels.append(one)
+
+
+## 扫**一个**关卡目录：返回 [[关卡实例, 关卡id], ...]，顺序 = 先散装文件、后关卡包（均按名字排序）
+## [auto_create] 目录不存在时是否顺手建一个（只对玩家目录开：让玩家知道该往哪放关卡；
+## 模组自带目录没有就是没有，不建）
+func _scan_root(root: String, auto_create := false) -> Array:
 	var dir = DirAccess.open(root)
 	if dir == null:
 		## 玩家第一次进来时目录还不存在：建一个，他才知道该往哪放关卡
-		if DirAccess.make_dir_recursive_absolute(root) == OK:
+		if auto_create and DirAccess.make_dir_recursive_absolute(root) == OK:
 			dir = DirAccess.open(root)
 	if dir == null:
 		return []

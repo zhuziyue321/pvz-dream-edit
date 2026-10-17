@@ -1,5 +1,5 @@
 extends RefCounted
-## 手套模组的**共享设置**：解锁口径 + 冷却（开关 / 时长）的键名、默认值与三个静态读值口
+## 手套模组的**共享设置**：解锁口径 + 冷却（开关 / 方式 / 时长 / 波数）的键名、默认值与静态读值口
 ##
 ## ★ 为什么单独一个文件，而不是都放在 `glove_mod.gd` 里：
 ##   `glove_mod.gd` 要 `HandComponentGlove.new()`，而 `HandComponentGlove` 又要读
@@ -24,13 +24,22 @@ const GLOVE_GARDEN_TOOL: GardenManager.E_GardenTool = GardenManager.E_GardenTool
 ## 冷却设置在**模组存档文件**里的键名（`[glove]` 段；与开关同一份文件，不用改 `ConfigService`）
 const SETTING_KEY_COOLDOWN_ENABLED := "cooldown_enabled"
 const SETTING_KEY_COOLDOWN_TIME := "cooldown_time"
+const SETTING_KEY_COOLDOWN_BY_WAVE := "cooldown_by_wave"
+const SETTING_KEY_COOLDOWN_WAVE := "cooldown_wave"
 ## 冷却时长的可调范围与默认值（秒）
 const COOLDOWN_TIME_MIN := 0.5
 const COOLDOWN_TIME_MAX := 60.0
 const COOLDOWN_TIME_STEP := 0.5
 const COOLDOWN_TIME_DEFAULT := 5.0
+## 冷却波数的可调范围与默认值（波）：每开一波扣 1，扣到 0 就冷却好
+const COOLDOWN_WAVE_MIN := 1
+const COOLDOWN_WAVE_MAX := 20
+const COOLDOWN_WAVE_STEP := 1
+const COOLDOWN_WAVE_DEFAULT := 2
 ## 冷却开关的默认值：**关** —— 原版没有这个玩法，旧行为就是"搬完一株接着搬"
 const COOLDOWN_ENABLED_DEFAULT := false
+## 冷却方式的默认值：**按秒数** —— 按波数是新加的一种口径，默认沿用原来的秒数
+const COOLDOWN_BY_WAVE_DEFAULT := false
 
 
 ## 玩家是否已在商店买下园艺手套 —— 买了 = 关卡内手套也到手（两者同一时刻获取）
@@ -54,3 +63,17 @@ static func get_cooldown_time() -> float:
 	return clampf(float(ModManager.get_mod_value(
 			ModIds.GLOVE, SETTING_KEY_COOLDOWN_TIME, COOLDOWN_TIME_DEFAULT)),
 			COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX)
+
+
+## 冷却是否按**波数**算（模组页面里的开关）：开 = 用 `get_cooldown_wave()`（每开一波扣 1），
+## 关 = 用 `get_cooldown_time()`（按秒数倒数）
+static func is_cooldown_by_wave() -> bool:
+	return bool(ModManager.get_mod_value(
+			ModIds.GLOVE, SETTING_KEY_COOLDOWN_BY_WAVE, COOLDOWN_BY_WAVE_DEFAULT))
+
+
+## 冷却波数（波）：搬完一株之后要等开过几波僵尸才能再用手套（每开一波扣 1，扣到 0 冷却好）
+static func get_cooldown_wave() -> int:
+	return clampi(int(ModManager.get_mod_value(
+			ModIds.GLOVE, SETTING_KEY_COOLDOWN_WAVE, COOLDOWN_WAVE_DEFAULT)),
+			COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX)

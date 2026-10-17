@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+; 潜伏芹菜（PVZ2 的 Celery Stalker）动画 —— PVZ2 的 PAM 离线烘焙产物
+;
+; 数据：celerystalker.pam.bin（`tools/bake_pam_bin.py` 烘出来的，573 帧 / 17 段状态）
+; 贴图：celerystalker_atlas.png（1024×1024 图集，所有部件都从这张上切）
+; 播放：pam/pam_animator.gd —— 一个 Node2D 直接画四边形，没有 Sprite2D 节点、没有 AnimationPlayer
+;
+; 装扮已关掉：PVZ2 把服饰和本体塞在同一个时间轴里（海盗帽 + 蓝外套那一套），
+; `hidden_parts` 里的 6 个名字就是它，本作不需要（菜问那株也是这么处理的）。
+;
+; 要当成植物用的话，还需要：在 `Body` 下挂本场景、按本体的植物尺寸调 `scale` / `position`，
+; 再把 `AnimComponent` 换成空实现（照 `plant_bonkchoy.tscn` 的做法）。
+
+[ext_resource type="Script" path="res://mods_builtin/pvz2/pam/pam_animator.gd" id="1_pam"]
+
+[node name="CeleryStalkerAnim" type="Node2D"]
+script = ExtResource("1_pam")
+binary_path = "res://mods_builtin/pvz2/celerystalker/celerystalker.pam.bin"
+hidden_parts = Array[String](["custom_02", "custom_01", "_custom_left", "custom_02_02", "custom_01_01", "_custom_right"])
+oneshot_states = Array[String](["attack", "attack_end", "attack_special", "down", "up", "plantfood_on", "plantfood_off"])

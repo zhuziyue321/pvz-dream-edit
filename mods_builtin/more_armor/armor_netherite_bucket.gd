@@ -2,7 +2,8 @@ extends ArmorComponent
 ## 「更多的防具」模组：下界合金桶那一层防具 —— **50% 减伤**
 ##
 ## ★ 为什么减伤长在防具上：与铜桶的「只放大防具」同源 —— 伤害沿防具链走
-## （`HpComponentZombie.hp_loss()`），本体拿到的永远是「防具没吃掉的那部分」；
+## （`DamageSystem` 在 ② 加工阶段逐层调 `ArmorComponent.process_damage()`），
+## 本体拿到的永远是「防具没吃掉的那部分」；
 ## 减伤也只能在防具自己吃的那一步（`ArmorComponent.absorb_damage()`）实现，
 ## 也就是防具组件的地盘（[防具](../../../../docs/参考存档/防具.md) §4）。
 ##

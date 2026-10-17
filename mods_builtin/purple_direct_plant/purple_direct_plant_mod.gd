@@ -108,6 +108,10 @@ func _create_condition(origin: ResourcePlantCondition) -> ResourcePlantCondition
 #endregion
 
 
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.OVERRIDE_RULE]
+
+
 #region 模组页面
 func create_detail_control() -> Control:
 	var box := VBoxContainer.new()

@@ -16,11 +16,12 @@ extends "../mod_base.gd"
 ##   1. **解锁**：与商店里的**园艺手套**同一时刻拿到 —— 商店买下园艺手套（$1000，需先通关 5-5
 ##      解锁禅境花园才上架）的那一刻，关卡内手套同时到手。
 ##      旧口径是"通关冒险 4-5（序号 35）后戴夫赠送"，现已改掉；本体不再有"手套解锁"这个概念。
-##   2. **冷却设置**（有没有冷却 / 冷却几秒）：原版没有手套，也就没有冷却 —— 默认关。
+##   2. **冷却设置**（有没有冷却 / 按秒数还是按波数 / 几秒 / 几波）：原版没有手套，也就没有冷却 —— 默认关。
 ##      值落在**模组存档文件**里本模组那一段（`user://<用户名>/mod_config.ini` 的 `[glove]`，
-##      键名见下面两个 `SETTING_KEY_*`，读写走 `ModManager.get/set_mod_value()`），
+##      键名见下面几个 `SETTING_KEY_*`，读写走 `ModManager.get/set_mod_value()`），
 ##      入口在模组页面（主菜单 → 选项 → 控制台 →「模组」→ 手套），读值口是 `is_cooldown_enabled()`
-##      与 `get_cooldown_time()`（静态，给每局的 `HandComponentGlove` 用）。
+##      / `is_cooldown_by_wave()` / `get_cooldown_time()` / `get_cooldown_wave()`
+##      （静态，给每局的 `HandComponentGlove` 用）。
 ##
 ## 注：旧口径下 4-6 开场有一段"戴夫送手套"的赠礼对话（台词在
 ## `data/dave/dialog/adventure_04_06_glove.tres`，手上举的手套是 `src/dave/hand_item/hand_glove.tscn`）。
@@ -54,13 +55,21 @@ const GLOVE_GARDEN_TOOL := GloveSettings.GLOVE_GARDEN_TOOL
 ## 冷却设置在**模组存档文件**里的键名（`[glove]` 段；与开关同一份文件，不用改 `ConfigService`）
 const SETTING_KEY_COOLDOWN_ENABLED := GloveSettings.SETTING_KEY_COOLDOWN_ENABLED
 const SETTING_KEY_COOLDOWN_TIME := GloveSettings.SETTING_KEY_COOLDOWN_TIME
+const SETTING_KEY_COOLDOWN_BY_WAVE := GloveSettings.SETTING_KEY_COOLDOWN_BY_WAVE
+const SETTING_KEY_COOLDOWN_WAVE := GloveSettings.SETTING_KEY_COOLDOWN_WAVE
 ## 冷却时长的可调范围与默认值（秒）
 const COOLDOWN_TIME_MIN := GloveSettings.COOLDOWN_TIME_MIN
 const COOLDOWN_TIME_MAX := GloveSettings.COOLDOWN_TIME_MAX
 const COOLDOWN_TIME_STEP := GloveSettings.COOLDOWN_TIME_STEP
 const COOLDOWN_TIME_DEFAULT := GloveSettings.COOLDOWN_TIME_DEFAULT
-## 冷却开关的默认值：**关** —— 原版没有这个玩法，旧行为就是"搬完一株接着搬"
+## 冷却波数的可调范围与默认值（波）
+const COOLDOWN_WAVE_MIN := GloveSettings.COOLDOWN_WAVE_MIN
+const COOLDOWN_WAVE_MAX := GloveSettings.COOLDOWN_WAVE_MAX
+const COOLDOWN_WAVE_STEP := GloveSettings.COOLDOWN_WAVE_STEP
+const COOLDOWN_WAVE_DEFAULT := GloveSettings.COOLDOWN_WAVE_DEFAULT
+## 冷却开关 / 冷却方式的默认值：**无冷却**、**按秒数** —— 原版没有这个玩法，旧行为就是"搬完一株接着搬"
 const COOLDOWN_ENABLED_DEFAULT := GloveSettings.COOLDOWN_ENABLED_DEFAULT
+const COOLDOWN_BY_WAVE_DEFAULT := GloveSettings.COOLDOWN_BY_WAVE_DEFAULT
 ## 模组页面里这一组条目的分组名（只出现在模组页面，不进控制台）
 const PANEL_CATEGORY := "手套"
 
@@ -81,6 +90,16 @@ static func get_cooldown_time() -> float:
 	return GloveSettings.get_cooldown_time()
 
 
+## 冷却是否按**波数**算：开 = 用 `get_cooldown_wave()`，关 = 用 `get_cooldown_time()`
+static func is_cooldown_by_wave() -> bool:
+	return GloveSettings.is_cooldown_by_wave()
+
+
+## 冷却波数（波）：搬完一株之后要等开过几波僵尸才能再用手套
+static func get_cooldown_wave() -> int:
+	return GloveSettings.get_cooldown_wave()
+
+
 func get_mod_id() -> StringName:
 	return ModIds.GLOVE
 
@@ -95,6 +114,10 @@ func get_mod_description() -> String:
 
 ## 模组页面右侧：解锁进度 + 怎么用 + 冷却设置
 ## （这三件事都属于模组自己，本体不知道"手套解锁"「手套冷却」这回事）
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_TOOL]
+
+
 func create_detail_control() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
@@ -105,7 +128,7 @@ func create_detail_control() -> Control:
 	box.add_child(ModBase.create_detail_label(
 		"用法：卡槽里点手套（或按 G）→ 点要搬的植物 → 点目标格子；植物实例与状态原样保留，不铲除也不重种"))
 
-	## 冷却两件套照 `ConsoleEntry` 的写法造（与联机面板同一套渲染器，不新做界面）
+	## 冷却四件套照 `ConsoleEntry` 的写法造（与联机面板同一套渲染器，不新做界面）
 	var builder := ConsoleEntryControl.new()
 	for item in _build_panel_entries():
 		var entry := item as ConsoleEntry
@@ -114,14 +137,14 @@ func create_detail_control() -> Control:
 		var control := builder.create_control(entry)
 		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		box.add_child(control)
-	## 开关一动，下面那条滑条的「可用 / 置灰」要跟着变：挂刷新回调让页面替我们刷一遍
+	## 开关一动，下面几条滑条 / 开关的「可用 / 置灰」要跟着变：挂刷新回调让页面替我们刷一遍
 	box.set_meta(ModBase.DETAIL_REFRESH_META, func() -> void:
 		builder.refresh()
 	)
 	return box
 
 
-## 冷却那两行条目（**只喂给模组页面**，不往控制台登记 —— 见 [控制台](../../docs/参考存档/控制台.md) §3.2）
+## 冷却那几行条目（**只喂给模组页面**，不往控制台登记 —— 见 [控制台](../../docs/参考存档/控制台.md) §3.2）
 func _build_panel_entries() -> Array[ConsoleEntry]:
 	return [
 		ConsoleEntry.create_toggle(&"glove_cooldown_enabled", "搬完之后有冷却")
@@ -131,9 +154,21 @@ func _build_panel_entries() -> Array[ConsoleEntry]:
 		ConsoleEntry.create_slider(&"glove_cooldown_time", "冷却时长（秒）",
 				COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX, COOLDOWN_TIME_STEP)
 			.set_category(PANEL_CATEGORY)
-			.set_tooltip("搬完一株之后要等多少秒（上面那个开关关掉时这一条置灰，不起作用）")
+			.set_tooltip("搬完一株之后要等多少秒（上面那个开关关掉、或按波数冷却打开时，这一条置灰）")
 			.bind(_get_cooldown_time, _set_cooldown_time)
+			.set_enabled_getter(func() -> bool: return is_cooldown_enabled() and not is_cooldown_by_wave()),
+		ConsoleEntry.create_toggle(&"glove_cooldown_by_wave", "冷却按波数计算")
+			.set_category(PANEL_CATEGORY)
+			.set_tooltip("开 = 冷却用下面的「冷却波数」算（每开一波减 1）；关 = 用上面的「冷却时长（秒）」")
+			.bind(_get_cooldown_by_wave, _set_cooldown_by_wave)
 			.set_enabled_getter(func() -> bool: return is_cooldown_enabled()),
+		ConsoleEntry.create_slider(&"glove_cooldown_wave", "冷却波数（波）",
+				COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX, COOLDOWN_WAVE_STEP)
+			.set_category(PANEL_CATEGORY)
+			.set_tooltip("搬完一株之后要等开过几波僵尸（每开一波减 1，减到 0 就能再用）")
+			.bind(_get_cooldown_wave, _set_cooldown_wave)
+			.set_enabled_getter(
+				func() -> bool: return is_cooldown_enabled() and is_cooldown_by_wave()),
 	]
 
 
@@ -155,6 +190,26 @@ func _get_cooldown_time() -> Variant:
 func _set_cooldown_time(value: Variant) -> void:
 	ModManager.set_mod_value(ModIds.GLOVE, SETTING_KEY_COOLDOWN_TIME,
 			clampf(float(value), COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX))
+
+
+func _get_cooldown_by_wave() -> Variant:
+	return is_cooldown_by_wave()
+
+
+## 改冷却方式：落到模组存档文件之后发一次刷新 —— 两条滑条的置灰状态要跟着这一下换过来
+func _set_cooldown_by_wave(value: Variant) -> void:
+	ModManager.set_mod_value(ModIds.GLOVE, SETTING_KEY_COOLDOWN_BY_WAVE, bool(value))
+	if Global != null and Global.console_registry != null:
+		Global.console_registry.request_refresh()
+
+
+func _get_cooldown_wave() -> Variant:
+	return get_cooldown_wave()
+
+
+func _set_cooldown_wave(value: Variant) -> void:
+	ModManager.set_mod_value(ModIds.GLOVE, SETTING_KEY_COOLDOWN_WAVE,
+			clampi(int(value), COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX))
 
 
 ## 当前存档有没有买园艺手套（买了 = 关卡内手套已到手；没买 = 去商店买）

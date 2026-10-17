@@ -67,6 +67,10 @@ func get_mod_description() -> String:
 	return "新增战斗植物「水盆」：摆在陆地上、只接水生植物（海蘑菇 / 缠绕海草）的盆，其余与花盆完全相同"
 
 
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_UNIT]
+
+
 ## 模组页面右侧：它做了什么
 func create_detail_control() -> Control:
 	var box := VBoxContainer.new()
@@ -90,6 +94,9 @@ func create_detail_control() -> Control:
 func install() -> void:
 	if not _kit.install(_build_recipe()):
 		return
+	## 注册 / 解锁都只是「这株植物存在」，还要登记进「可选植物列表」才进选卡界面
+	## （见 AllCards.add_selectable_plant）—— 水盆是要给玩家挑的，所以补这一行
+	_kit.make_selectable()
 	_open_water_plants_to_bowl()
 	_register_almanac_entry()
 

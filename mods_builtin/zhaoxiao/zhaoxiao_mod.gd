@@ -47,9 +47,28 @@ const Settings := preload("zhaoxiao_settings.gd")
 const SunflowerWatcher := preload("zhaoxiao_sunflower.gd")
 const PeashooterWatcher := preload("zhaoxiao_peashooter.gd")
 const CherryWatcher := preload("zhaoxiao_cherry.gd")
+## 闪电掉头僵尸（普通僵尸变种）：本体复用普通僵尸场景，脚本只改行为
+const FastZombieScript := preload("zhaoxiao_lightning_zombie.gd")
+const FastZombieBaseScene := preload("res://src/entities/character/zombie/zombie_norm.tscn")
+const FAST_ZOMBIE_NAME := &"闪电掉头僵尸"
+const FAST_ZOMBIE_POWER := 2
+const FAST_ZOMBIE_WEIGHT := 600
+const FAST_ZOMBIE_SUN_COST := 50
+## 路障僵尸变种：本体复用路障僵尸场景（头上有路障防具 + 掉落物子树整套现成），脚本只改行为
+const ConeZombieScript := preload("zhaoxiao_cone_zombie.gd")
+const ConeZombieBaseScene := preload("res://src/entities/character/zombie/zombie_cone.tscn")
+const CONE_ZOMBIE_NAME := &"绊倒路障僵尸"
+const CONE_ZOMBIE_POWER := 2
+const CONE_ZOMBIE_WEIGHT := 600
+const CONE_ZOMBIE_SUN_COST := 150
 
 ## 改过名的植物：图鉴 `Plant` 段的**键** → 原来的名字（关掉模组时按它还原）
 var _original_names := {}
+
+## 闪电掉头僵尸：热注册拿到的类型号（关掉模组时按它注销）
+var _fast_zombie_type: StringName = ZombieIds.NULL
+## 路障僵尸变种：热注册拿到的类型号（关掉模组时按它注销）
+var _cone_zombie_type: StringName = ZombieIds.NULL
 
 
 func get_mod_id() -> StringName:
@@ -63,7 +82,14 @@ func get_mod_name() -> String:
 func get_mod_description() -> String:
 	return "向日葵改叫「朝阳葵」（产阳光时全体转头看它、它自己流汗）；豌豆射手改叫「傻豆射手」" \
 		+ "（打出去的是不伤害人的傻豆，攒满怒气就把整株憋红、散射一堆普通豌豆）；" \
-		+ "樱桃炸弹改叫「烟熏樱桃」（不炸掉血，改成给范围内的僵尸上 30 秒烟熏）"
+		+ "樱桃炸弹改叫「烟熏樱桃」（不炸掉血，改成给范围内的僵尸上 30 秒烟熏）；" \
+		+ "新增「闪电掉头僵尸」（普通僵尸变种：速度 10 倍、无视植物、走到从右侧数第 4 列自己掉头跑掉）" \
+		+ "与「绊倒路障僵尸」（路障僵尸变种：速度 10 倍、无视植物、走到从右侧数第 4 列像被绊倒一样趴地上，" \
+		+ "头上的路障掉在草坪上永久留着，后来的僵尸走到它身上也会被绊倒）"
+
+
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.OVERRIDE_RULE]
 
 
 ## 模组页面右侧：它改了什么、口径是什么
@@ -111,6 +137,21 @@ func create_detail_control() -> Control:
 		"只在战斗里发生：禅境花园 / 图鉴里的植物不参与（本模组只在主游戏里挂观察者）"))
 	box.add_child(ModBase.create_detail_label(
 		"关掉本模组：名字还回去，下一局不再挂任何节点，回到原版"))
+	box.add_child(ModBase.create_detail_label(
+		"【新增僵尸：闪电掉头僵尸】普通僵尸的变种：速度是普通僵尸的 10 倍、无视植物（走到植物面前直接穿过去、不啃）、" \
+		+ "从僵尸入场一侧（右侧）数第 4 列就自己掉头往回跑，跑出草坪即消失（关掉本模组这只僵尸也不再生）"))
+	box.add_child(ModBase.create_detail_label(
+		"【新增僵尸：绊倒路障僵尸】戴路障的普通僵尸变种：速度是普通僵尸的 10 倍、无视植物（同上），" \
+		+ "从僵尸入场一侧（右侧）数第 4 列像被绊倒一样**趴在地上**（%.1f 秒后自己站起来继续走），" \
+			% Settings.FALL_TIME \
+		+ "头上的路障掉在摔倒点、**永久留在草坪上**（本体那些掉落物弹一下是会淡出的，这根不会）"))
+	box.add_child(ModBase.create_detail_label(
+		"后来走到路障上的僵尸（本行的，魅惑的也算）都会被**绊倒**：趴地上 %.1f 秒、起来继续走；" \
+			% Settings.FALL_TIME \
+		+ "每只僵尸只被同一根路障绊一次（掉下它的那只自己也不算「后来的」）"))
+	box.add_child(ModBase.create_detail_label(
+		"摔倒的僵尸照样能被植物打（受击框没动）—— 只是走不动、腿还在原地倒腾；" \
+		+ "如果它在摔着的时候被打死，身体会立刻转回来再播死亡动画"))
 	return box
 
 
@@ -119,10 +160,31 @@ func install() -> void:
 	_rename_plant(Settings.ALMANAC_KEY, Settings.PLANT_NAME_NEW)
 	_rename_plant(Settings.PEASHOOTER_ALMANAC_KEY, Settings.PEASHOOTER_NAME_NEW)
 	_rename_plant(Settings.CHERRY_ALMANAC_KEY, Settings.CHERRY_NAME_NEW)
+	_register_fast_zombie()
+	_register_cone_zombie()
 
 
 func uninstall() -> void:
 	_restore_names()
+	_unregister_fast_zombie()
+	_unregister_cone_zombie()
+
+
+## 每局：把两只变种僵尸加进本关的自然出怪表（改关卡数据只能在这里，见 `ModBase.on_level_para_ready`）
+func on_level_para_ready(main_game: MainGameManager) -> void:
+	if main_game == null or main_game.game_para == null:
+		return
+	_append_to_refresh_types(main_game, _fast_zombie_type, "闪电掉头僵尸")
+	_append_to_refresh_types(main_game, _cone_zombie_type, "绊倒路障僵尸")
+
+
+## 把某只热注册僵尸追加进本关出怪表（已经有了就不动）
+func _append_to_refresh_types(main_game: MainGameManager, zombie_type: StringName, who: String) -> void:
+	if zombie_type == ZombieIds.NULL:
+		return
+	if not main_game.game_para.zombie_refresh_types.has(zombie_type):
+		main_game.game_para.zombie_refresh_types.append(zombie_type)
+		Log.info("招笑版模组：本关出怪表已加入%s" % who)
 
 
 ## 每局装一次：给场上已种着的两种植物补挂观察者，并接上「以后再种」那条信号
@@ -166,6 +228,68 @@ func _restore_names() -> void:
 		if not entry.is_empty():
 			entry["名字"] = _original_names[almanac_key]
 	_original_names.clear()
+
+
+## 热注册闪电掉头僵尸：本体复用普通僵尸，脚本换成本模组的那只
+func _register_fast_zombie() -> void:
+	if Global == null or Global.character_registry == null:
+		Log.error("招笑版模组：注册表不可用，闪电掉头僵尸没注册上")
+		return
+	var recipe := ZombieRuntimeRecipe.new()
+	recipe.base_scene = FastZombieBaseScene
+	recipe.zombie_script = FastZombieScript
+	recipe.zombie_name = FAST_ZOMBIE_NAME
+	## 与普通僵尸一致：水陆两栖都能出
+	recipe.row_type = CharacterRegistry.ZombieRowType.Both
+	recipe.spawn_power = FAST_ZOMBIE_POWER
+	recipe.spawn_weight = FAST_ZOMBIE_WEIGHT
+	recipe.sun_cost = FAST_ZOMBIE_SUN_COST
+	if not Global.character_registry.register_runtime_zombie(recipe):
+		Log.error("招笑版模组：热注册闪电掉头僵尸失败")
+		return
+	_fast_zombie_type = recipe.zombie_type
+	Log.info("招笑版模组：闪电掉头僵尸已注册，类型号 %s" % str(_fast_zombie_type))
+
+
+## 注销闪电掉头僵尸（关掉模组时调用；下一局不再出场）
+func _unregister_fast_zombie() -> void:
+	if _fast_zombie_type != ZombieIds.NULL and Global != null and Global.character_registry != null:
+		Global.character_registry.unregister_runtime_zombie(_fast_zombie_type)
+	_fast_zombie_type = ZombieIds.NULL
+
+
+## 热注册路障僵尸变种：本体复用路障僵尸场景（路障防具 + 破损外观 + 掉落物子树现成），
+## 脚本换成本模组的那只（10 倍速 / 无视植物 / 第 4 列摔倒掉路障）
+func _register_cone_zombie() -> void:
+	if Global == null or Global.character_registry == null:
+		Log.error("招笑版模组：注册表不可用，绊倒路障僵尸没注册上")
+		return
+	var recipe := ZombieRuntimeRecipe.new()
+	recipe.base_scene = ConeZombieBaseScene
+	recipe.zombie_script = ConeZombieScript
+	recipe.zombie_name = CONE_ZOMBIE_NAME
+	## 与普通僵尸一致：水陆两栖都能出
+	recipe.row_type = CharacterRegistry.ZombieRowType.Both
+	recipe.spawn_power = CONE_ZOMBIE_POWER
+	recipe.spawn_weight = CONE_ZOMBIE_WEIGHT
+	recipe.sun_cost = CONE_ZOMBIE_SUN_COST
+	if not Global.character_registry.register_runtime_zombie(recipe):
+		Log.error("招笑版模组：热注册绊倒路障僵尸失败")
+		return
+	_cone_zombie_type = recipe.zombie_type
+	Log.info("招笑版模组：绊倒路障僵尸已注册，类型号 %s" % str(_cone_zombie_type))
+
+
+## 注销路障僵尸变种（关掉模组时调用；下一局不再出场）
+func _unregister_cone_zombie() -> void:
+	if _cone_zombie_type != ZombieIds.NULL and Global != null and Global.character_registry != null:
+		Global.character_registry.unregister_runtime_zombie(_cone_zombie_type)
+	_cone_zombie_type = ZombieIds.NULL
+
+
+## 绊倒路障僵尸的类型号（没注册上 / 模组关着时是 `ZombieIds.NULL`；探针按它造一只出来）
+func get_cone_zombie_type() -> StringName:
+	return _cone_zombie_type
 
 
 ## 图鉴 `Plant` 段里某个植物那一条（一个**引用**：就地在上面写字段，等于改掉读数据源）

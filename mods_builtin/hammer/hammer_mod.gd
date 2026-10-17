@@ -28,6 +28,8 @@ extends "../mod_base.gd"
 ##   · `radius`            范围半径（像素）
 ##   · `cooldown_enabled`  挥完之后有没有冷却
 ##   · `cooldown_time`     冷却时长（秒）
+##   · `cooldown_by_wave`  冷却是否按波数算（否则按秒数）
+##   · `cooldown_wave`     冷却波数（每开一波减 1，减到 0 冷却好）
 
 ## 卡槽锤子按钮插在哪：以铲子槽为锚点（UIShovel 是本体场景的唯一名节点），
 ## 手套占 70~140，锤子接着排 140~210
@@ -61,6 +63,8 @@ const SETTING_KEY_DAMAGE := HammerSettings.SETTING_KEY_DAMAGE
 const SETTING_KEY_RADIUS := HammerSettings.SETTING_KEY_RADIUS
 const SETTING_KEY_COOLDOWN_ENABLED := HammerSettings.SETTING_KEY_COOLDOWN_ENABLED
 const SETTING_KEY_COOLDOWN_TIME := HammerSettings.SETTING_KEY_COOLDOWN_TIME
+const SETTING_KEY_COOLDOWN_BY_WAVE := HammerSettings.SETTING_KEY_COOLDOWN_BY_WAVE
+const SETTING_KEY_COOLDOWN_WAVE := HammerSettings.SETTING_KEY_COOLDOWN_WAVE
 
 ## 伤害数值的可调范围与默认值
 const DAMAGE_VALUE_MIN := HammerSettings.DAMAGE_VALUE_MIN
@@ -77,9 +81,15 @@ const COOLDOWN_TIME_MIN := HammerSettings.COOLDOWN_TIME_MIN
 const COOLDOWN_TIME_MAX := HammerSettings.COOLDOWN_TIME_MAX
 const COOLDOWN_TIME_STEP := HammerSettings.COOLDOWN_TIME_STEP
 const COOLDOWN_TIME_DEFAULT := HammerSettings.COOLDOWN_TIME_DEFAULT
-## 各开关的默认值：数值伤害（不秒杀）、无冷却 —— 与手套模组同口径
+## 冷却波数的可调范围与默认值（波）
+const COOLDOWN_WAVE_MIN := HammerSettings.COOLDOWN_WAVE_MIN
+const COOLDOWN_WAVE_MAX := HammerSettings.COOLDOWN_WAVE_MAX
+const COOLDOWN_WAVE_STEP := HammerSettings.COOLDOWN_WAVE_STEP
+const COOLDOWN_WAVE_DEFAULT := HammerSettings.COOLDOWN_WAVE_DEFAULT
+## 各开关的默认值：数值伤害（不秒杀）、无冷却、冷却按秒数 —— 与手套模组同口径
 const KILL_MODE_DEFAULT := HammerSettings.KILL_MODE_DEFAULT
 const COOLDOWN_ENABLED_DEFAULT := HammerSettings.COOLDOWN_ENABLED_DEFAULT
+const COOLDOWN_BY_WAVE_DEFAULT := HammerSettings.COOLDOWN_BY_WAVE_DEFAULT
 ## 模组页面里这一组条目的分组名（只出现在模组页面，不进控制台）
 const PANEL_CATEGORY := "锤子"
 
@@ -114,6 +124,16 @@ static func get_cooldown_time() -> float:
 	return HammerSettings.get_cooldown_time()
 
 
+## 冷却是否按**波数**算：开 = 用 `get_cooldown_wave()`，关 = 用 `get_cooldown_time()`
+static func is_cooldown_by_wave() -> bool:
+	return HammerSettings.is_cooldown_by_wave()
+
+
+## 冷却波数（波）：挥完一锤之后要等开过几波僵尸才能再挥
+static func get_cooldown_wave() -> int:
+	return HammerSettings.get_cooldown_wave()
+
+
 func get_mod_id() -> StringName:
 	return ModIds.HAMMER
 
@@ -126,8 +146,12 @@ func get_mod_description() -> String:
 	return "点一下草坪，对小范围内的僵尸造成伤害（伤害数值可调，也可一键秒杀；原版没有）"
 
 
-## 模组页面右侧：怎么用 + 五个设置
+## 模组页面右侧：怎么用 + 七个设置
 ## （设置属于模组自己，本体不知道「锤子伤害」「锤子冷却」这回事）
+func get_mod_categories() -> Array[StringName]:
+	return [ModCategory.ADD_TOOL]
+
+
 func create_detail_control() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
@@ -137,7 +161,7 @@ func create_detail_control() -> Control:
 	box.add_child(ModBase.create_detail_label(
 		"用法：卡槽里点锤子（或按 H）→ 点草坪任意位置 → 挥一锤，范围内（按僵尸受击框）的僵尸一起挨打；右键或点空白收回"))
 
-	## 设置五件套照 `ConsoleEntry` 的写法造（与手套 / 联机面板同一套渲染器，不新做界面）
+	## 设置七件套照 `ConsoleEntry` 的写法造（与手套 / 联机面板同一套渲染器，不新做界面）
 	var builder := ConsoleEntryControl.new()
 	for item in _build_panel_entries():
 		var entry := item as ConsoleEntry
@@ -146,7 +170,7 @@ func create_detail_control() -> Control:
 		var control := builder.create_control(entry)
 		control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		box.add_child(control)
-	## 开关一动，下面几条滑条的「可用 / 置灰」要跟着变：挂刷新回调让页面替我们刷一遍
+	## 开关一动，下面几条滑条 / 开关的「可用 / 置灰」要跟着变：挂刷新回调让页面替我们刷一遍
 	box.set_meta(ModBase.DETAIL_REFRESH_META, func() -> void:
 		builder.refresh()
 	)
@@ -178,9 +202,21 @@ func _build_panel_entries() -> Array[ConsoleEntry]:
 		ConsoleEntry.create_slider(&"hammer_cooldown_time", "冷却时长（秒）",
 				COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX, COOLDOWN_TIME_STEP)
 			.set_category(PANEL_CATEGORY)
-			.set_tooltip("挥完一锤之后要等多少秒（上面那个开关关掉时这一条置灰，不起作用）")
+			.set_tooltip("挥完一锤之后要等多少秒（上面那个开关关掉、或按波数冷却打开时，这一条置灰）")
 			.bind(_get_cooldown_time, _set_cooldown_time)
+			.set_enabled_getter(func() -> bool: return is_cooldown_enabled() and not is_cooldown_by_wave()),
+		ConsoleEntry.create_toggle(&"hammer_cooldown_by_wave", "冷却按波数计算")
+			.set_category(PANEL_CATEGORY)
+			.set_tooltip("开 = 冷却用下面的「冷却波数」算（每开一波减 1）；关 = 用上面的「冷却时长（秒）」")
+			.bind(_get_cooldown_by_wave, _set_cooldown_by_wave)
 			.set_enabled_getter(func() -> bool: return is_cooldown_enabled()),
+		ConsoleEntry.create_slider(&"hammer_cooldown_wave", "冷却波数（波）",
+				COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX, COOLDOWN_WAVE_STEP)
+			.set_category(PANEL_CATEGORY)
+			.set_tooltip("挥完一锤之后要等开过几波僵尸（每开一波减 1，减到 0 就能再挥）")
+			.bind(_get_cooldown_wave, _set_cooldown_wave)
+			.set_enabled_getter(
+				func() -> bool: return is_cooldown_enabled() and is_cooldown_by_wave()),
 	]
 
 
@@ -231,6 +267,26 @@ func _get_cooldown_time() -> Variant:
 func _set_cooldown_time(value: Variant) -> void:
 	ModManager.set_mod_value(ModIds.HAMMER, SETTING_KEY_COOLDOWN_TIME,
 			clampf(float(value), COOLDOWN_TIME_MIN, COOLDOWN_TIME_MAX))
+
+
+func _get_cooldown_by_wave() -> Variant:
+	return is_cooldown_by_wave()
+
+
+## 改冷却方式：落到模组存档文件之后发一次刷新 —— 两条滑条的置灰状态要跟着这一下换过来
+func _set_cooldown_by_wave(value: Variant) -> void:
+	ModManager.set_mod_value(ModIds.HAMMER, SETTING_KEY_COOLDOWN_BY_WAVE, bool(value))
+	if Global != null and Global.console_registry != null:
+		Global.console_registry.request_refresh()
+
+
+func _get_cooldown_wave() -> Variant:
+	return get_cooldown_wave()
+
+
+func _set_cooldown_wave(value: Variant) -> void:
+	ModManager.set_mod_value(ModIds.HAMMER, SETTING_KEY_COOLDOWN_WAVE,
+			clampi(int(value), COOLDOWN_WAVE_MIN, COOLDOWN_WAVE_MAX))
 
 
 ## 当前存档打到哪了、够不够解锁

@@ -393,11 +393,12 @@ func _apply_level_left(peer_id: int) -> void:
 	_emit_log("玩家 %d 已退出这一关（不再等他准备）" % peer_id)
 
 
-func _apply_ready(peer_id: int, ready: bool) -> void:
-	if bool(ready_peers.get(peer_id, false)) == ready:
+## ⚠️ 参数一律叫 `is_ready` 而不是 `ready`：后者会遮蔽基类 `Node` 的 `ready` 信号。
+func _apply_ready(peer_id: int, is_ready: bool) -> void:
+	if bool(ready_peers.get(peer_id, false)) == is_ready:
 		return
-	ready_peers[peer_id] = ready
-	ready_state_changed.emit(peer_id, ready)
+	ready_peers[peer_id] = is_ready
+	ready_state_changed.emit(peer_id, is_ready)
 
 
 ## 屋里除了自己以外的 peer id（一个人都没有就是空表）
