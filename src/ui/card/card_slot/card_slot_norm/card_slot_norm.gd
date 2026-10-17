@@ -45,17 +45,26 @@ func _on_re_card_button_pressed() -> void:
 		match curr_card_type:
 			ResourceCardReference.CardType.Plant:
 				var plant_type: StringName = card_type_data.get("content_id", PlantIds.NULL)
-				if not AllCards.plant_card_ids.has(plant_type):
+				## 这一株现在还有没有卡位：模仿者按设计没有（见 AllCards.imitater_card）；
+				## 没登记进「可选植物列表」的追加类植物也没有（见 AllCards.add_selectable_plant）——
+				## 条目可能是模组还开着 / 调试模式还开着的时候存下来的，点之前先判一次容器。
+				var plant_card_id: int = AllCards.plant_card_ids.get(plant_type, -1)
+				var plant_containers: Dictionary[int, CardCandidateContainer] = {}
+				if is_imitater_data:
+					plant_containers = card_slot_candidate.all_card_candidate_containers_plant_imitater
+				else:
+					plant_containers = card_slot_candidate.all_card_candidate_containers_plant
+				if not plant_containers.has(plant_card_id):
 					continue
-				var plant_card_id:int = AllCards.plant_card_ids[plant_type]
+				var plant_container: CardCandidateContainer = plant_containers[plant_card_id]
 				## 如果是模仿者
 				if is_imitater_data:
 					## 未选择模仿者时
 					if not card_slot_candidate.card_imitater.is_be_choosed_imitater:
-						card_slot_candidate.all_card_candidate_containers_plant_imitater[plant_card_id].card._on_button_pressed()
+						plant_container.card._on_button_pressed()
 				else:
-					if not card_slot_candidate.all_card_candidate_containers_plant[plant_card_id].card.is_choosed_pre_card:
-						card_slot_candidate.all_card_candidate_containers_plant[plant_card_id].card._on_button_pressed()
+					if not plant_container.card.is_choosed_pre_card:
+						plant_container.card._on_button_pressed()
 			ResourceCardReference.CardType.Zombie, ResourceCardReference.CardType.ZombieBoss:
 				## 僵王卡与普通僵尸卡只差「content_id 查哪张 id 表」，查出来的 card_id 同属一个空间，
 				## 后面按同一份待选容器点即可（僵王不再有自己的候选页）
@@ -261,6 +270,11 @@ func pre_choosed_card(card: Card, target_parent: CanvasItem) -> void:
 ### 预选卡隐藏对应待选卡槽的卡片(僵尸)
 #func disappear_card_slot_candidate_zombie(zombie_type):
 	#card_slot_candidate.all_card_candidate_containers_zombie[AllCards.zombie_card_ids[zombie_type]].card.visible = false
+
+## 关卡销毁前把待选卡容器整批还回池：下一关直接复用，不再重新 duplicate / 实例化
+## （池在 autoload 上，跨关卡存活；见 `docs/参考存档/卡片与选卡流程.md`）
+func _exit_tree() -> void:
+	SceneRegistry.recall_candidate_containers()
 
 ## 移动卡槽（出现或隐藏）
 func move_card_slot_candidate(is_appeal:bool):

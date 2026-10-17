@@ -8,6 +8,11 @@ var card:Card
 ## 禁选的卡在待选区整张不出现，玩家自然也选不进卡槽
 var is_banned := false
 
+## 源卡的费用 / 冷却：容器会被池跨关卡复用，而卡进过出战卡槽后这两项可能被改过
+## （紫卡按场上数量加价 / 测试关把冷却改成 0），还池时要按这里记录的原始值恢复
+var source_sun_cost := 0
+var source_cool_time := 0.0
+
 
 ## 设置本卡是否被本关禁选
 func set_banned(is_ban: bool) -> void:
@@ -26,5 +31,7 @@ func _ready() -> void:
 ## 添加到场景树之前初始化备选卡片
 func init_card_in_seed_chooser(curr_card:Card):
 	self.card = curr_card
+	source_sun_cost = curr_card.sun_cost
+	source_cool_time = curr_card.cool_time
 	add_child(curr_card)
 	curr_card.card_candidate_container = self

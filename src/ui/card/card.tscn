@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://cpv8ixg877ej5" path="res://src/ui/card/card_base.tscn" id="1_dnear"]
 [ext_resource type="Script" uid="uid://bucd2k4pt4m5r" path="res://src/ui/card/card.gd" id="2_xdnjt"]
-[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets/fonts/SIMSUN.TTC" id="3_dnear"]
+[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets_custom/fonts/SIMSUN.TTC" id="3_dnear"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ltj6w"]
 
