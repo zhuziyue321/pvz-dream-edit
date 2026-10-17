@@ -18,6 +18,7 @@ class_name PlantRuntimeKit
 ##
 ## func install() -> void:
 ## 	_kit.install(_build_recipe())
+## 	_kit.make_selectable()   ## 还想让玩家在选卡界面里挑到它，就补这一行
 ##
 ## func uninstall() -> void:
 ## 	_kit.uninstall()
@@ -40,6 +41,9 @@ var _card: Card = null
 ## 装一株植物：登记 → 插卡 → 解锁
 ## [param new_recipe] 配方；`plant_type` 留空时由注册表自动分配 id，装完从 `recipe.plant_type` 读回来
 ## [return] 登记失败（配方不合法 / id 撞了内置植物）返回 false，其它一步都没做
+##
+## ⚠️ 装完这株植物**还没有进选卡界面** —— 想在待选区挑到它，装完之后再写一行
+## `make_selectable()`（注册 / 解锁都不等于可选，理由见那个函数）。
 func install(new_recipe: PlantRuntimeRecipe) -> bool:
 	if new_recipe == null:
 		Log.error("运行期植物：配方是空的，不装")
@@ -53,16 +57,33 @@ func install(new_recipe: PlantRuntimeRecipe) -> bool:
 	return true
 
 
-## 卸一株植物：摘卡 → 清注册表 → 撤解锁（顺序不能换，理由见 `_remove_card()`）
+## 卸一株植物：摘卡 → 退出可选列表 → 清注册表 → 撤解锁
+## （摘卡必须排在清注册表之前，理由见 `_remove_card()`；退出可选列表与摘卡谁先谁后都行）
 func uninstall() -> void:
 	if recipe == null:
 		return
 	var plant_type := recipe.plant_type
 	_remove_card()
+	AllCards.remove_selectable_plant(plant_type)
 	Global.character_registry.clear_runtime_plant(plant_type)
 	Global.global_game_state.lock_plant(plant_type)
 	Log.info("运行期植物：已卸 %s（id %s）" % [recipe.get_display_name(), plant_type])
 	recipe = null
+
+
+## 把这株植物登记进「可选植物列表」（= 它进选卡界面，见 `AllCards.add_selectable_plant`）
+##
+## ★ 注册 / 解锁都**不等于**可选：`install()` 做到的是「这株植物存在 + 有卡 + 已解锁」，
+##   要不要让玩家在待选区里挑到它由模组自己说 —— 装完之后再写这一行就有了。
+##   为什么要有这道门禁：模组注册的植物未必都想上选卡界面（只给关卡脚本 / 传送带发货的也有），
+##   以前「注册了」就等于「可选」，两者分不开。
+##   卸载时 Kit 会把它从列表里摘掉（见 `uninstall()`），模组不必自己撤。
+##
+## [return] 本次是否真的登记了（没装 / 已经在列表里返回 false）
+func make_selectable() -> bool:
+	if recipe == null:
+		return false
+	return AllCards.add_selectable_plant(recipe.plant_type)
 
 
 ## 解锁这株植物；每局开局补一次（读档会按存档重建 `curr_plant`，只装一次的话一读档就没了）
@@ -122,13 +143,23 @@ func _build_card_face() -> void:
 
 
 ## 取帧失败时借用另一张植物卡的卡面形象（配方里 `card_face_fallback_plant`）
+##
+## ★ 借的是源卡 `CharacterStatic` **下面的那株植物**，不是 `CharacterStatic` 本身：
+##   `CharacterStatic` 是卡内的挂点（card.tscn 里 `position = (24, 30)`），本函数的结果却要挂到
+##   **新卡自己的** `CharacterStatic` 之下 —— 把带挂点的节点原样搬过去，两份挂点叠在一起，
+##   卡面（含待选区种子包 / 出战卡槽 / 手持虚影）就整块往右下歪：明日方舟精英化的
+##   种子包贴图偏移就是这么来的。只搬植物那一枝，结构就与手摆原版卡完全一致
+##   （`CharacterStatic → PlantXXX → Body`），其它按 `get_child(0).scale = Vector2.ONE`
+##   还原实际大小的地方（手持 / 整列虚影）也才认得出「第 0 个孩子就是植物」。
 func _borrow_card_face() -> Node2D:
 	if recipe.card_face_fallback_plant == PlantIds.NULL:
 		return null
 	var owner_card: Card = AllCards.all_plant_card_prefabs.get(recipe.card_face_fallback_plant, null)
 	if owner_card == null or not is_instance_valid(owner_card.character_static):
 		return null
-	return owner_card.character_static.duplicate()
+	if owner_card.character_static.get_child_count() == 0:
+		return null
+	return owner_card.character_static.get_child(0).duplicate() as Node2D
 
 
 ## 摘卡并重排编号（**必须在清注册表之前**：重排时要按类型查冷却与阳光）

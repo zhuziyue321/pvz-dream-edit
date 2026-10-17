@@ -34,5 +34,5 @@ func be_blow_away():
 
 
 ## 被冰冻控制（气球僵尸不吃冰冻伤害，只转减速；第三个参数是寒冰菇的伤害，这里忽略）
-func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, _damage:int = 20):
+func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, _damage:int = 0):
 	be_ice_decelerate(time + new_time_ice_end_decelerate)

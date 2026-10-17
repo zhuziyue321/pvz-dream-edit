@@ -181,8 +181,8 @@ func be_ice_decelerate(time: float) -> void:
 ## 父类先结算伤害再附加冰冻效果；致死时在父类返回后补做清理，避免死后残留冰块。
 ## [param time] 本次完全冰冻持续时间，单位为秒。
 ## [param new_time_ice_end_decelerate] 冰冻解除后继续减速的时长，单位为秒。
-## [param damage] 本次伤害（寒冰菇的 `bomb_value`）；窗口没开时伤害与冰冻一起被挡掉。
-func be_ice_freeze(time: float, new_time_ice_end_decelerate: float, damage: int = 20) -> void:
+## [param damage] 本次伤害（寒冰菇自己的角色攻击力 `attack_value`）；窗口没开时伤害与冰冻一起被挡掉。
+func be_ice_freeze(time: float, new_time_ice_end_decelerate: float, damage: int = 0) -> void:
 	if not _can_receive_damage():
 		return
 	super.be_ice_freeze(time, new_time_ice_end_decelerate, damage)

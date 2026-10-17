@@ -459,17 +459,22 @@ func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 		if is_cherry_bomb and not (is_swimming or curr_be_attack_status == E_BeAttackStatusZombie.IsDownGround):
 			charred_component.play_charred_anim()
 		queue_free()
-	#await get_tree().process_frame
-	set_deferred("is_can_death_language", true)
+		# L-14：必杀类伤害后恢复「可触发亡语」开关。用显式判断替代 set_deferred——
+		# 原写法依赖"MessageQueue flush 早于删除队列"才不对已 queue_free 的对象写属性，属脆弱依赖。
+		# 若本次已致死（is_death）僵尸将删除、无需恢复；否则恢复以便后续正常死亡触发亡语。
+		if not is_death:
+			is_can_death_language = true
 
 ## 被大嘴花吃
-func be_chomper_eat(attack_value:int):
+## [param attack_value] 本次伤害（吞噬传 0：秒杀不看伤害值）
+## [param is_instant_kill] 是否秒杀（大嘴花吞下小体型僵尸：防具与本体一起清空，免疫仍可拦）
+func be_chomper_eat(attack_value:int, is_instant_kill:bool = false):
 	is_can_death_language = false
-	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Eat, false)
+	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Eat, false, is_instant_kill)
 	if is_death:
 		queue_free()
-	#await get_tree().process_frame
-	set_deferred("is_can_death_language", true)
+	if not is_death:
+		is_can_death_language = true
 
 ## 被钉耙击中
 ## 与 be_squash 的区别:钉耙是"把手翘起来砸一下",砸完僵尸走正常的死亡表现(掉头 + 倒下),
@@ -478,26 +483,30 @@ func be_chomper_eat(attack_value:int):
 func be_rake_attack(attack_value:int=ConstShop.RAKE_ATTACK_VALUE):
 	is_can_death_language = false
 	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
-	set_deferred("is_can_death_language", true)
+	if not is_death:
+		is_can_death_language = true
 
 ## 被倭瓜压
-func be_squash(attack_value:int=1800):
+## [param attack_value] 伤害值，由倭瓜给出（它自己的角色攻击力 `attack_value`）
+func be_squash(attack_value:int):
 	is_can_death_language = false
 	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
 	if is_death:
 		queue_free()
-	#await get_tree().process_frame
-	set_deferred("is_can_death_language", true)
+	if not is_death:
+		is_can_death_language = true
 
 ## 【伤害系统】穿透伤害的便捷入口：僵尸这边的"必杀类"伤害（爆炸 / 吞噬 / 碾压）都是同一套参数，
 ## 差别只在语义标记 `cause`，收成一个私有函数免得每个入口各抄一遍 DamageInfo 组装。
 ## [param attack_value] 伤害值
 ## [param cause] 伤害来源语义（见 `ConstDamage.E_DamageCause`）
 ## [param is_drop_on_death] 死亡时是否掉落
-func _apply_penetration_damage(attack_value:int, cause:ConstDamage.E_DamageCause, is_drop_on_death:bool) -> DamageResult:
+## [param is_instant_kill] 是否秒杀（不看伤害值，防具与本体一起清空）
+func _apply_penetration_damage(attack_value:int, cause:ConstDamage.E_DamageCause, is_drop_on_death:bool, is_instant_kill:bool = false) -> DamageResult:
 	var info := DamageInfo.create(self, attack_value, ConstDamage.E_DamageMode.Penetration, cause)
 	info.is_drop_on_death = is_drop_on_death
 	info.trigger_sfx = false
+	info.is_instant_kill = is_instant_kill
 	return apply_damage(info)
 
 #endregion
@@ -607,5 +616,25 @@ func update_mini_zombie():
 	hp_component.update_mini_zombie_hp()
 	hp_stage_change_component.update_mini_zombie_hp_stage_change()
 	hurt_box_component.scale *= 2
+
+
+## 僵尸体型：吞噬类玩法（大嘴花）按它判定能吞到哪一档
+enum E_BodySize {
+	Small,	## 小体型：迷你规则的小僵尸（冒险 3-5 / 小游戏 10）与天生的小鬼僵尸
+	Medium,	## 中体型：绝大多数僵尸
+	Large,	## 大体型：巨人僵尸（吞不下）
+}
+
+## 当前体型。⚠️ 新增大体型 / 小体型僵尸改这一处，别在业务代码里再抄一份类型判断
+func get_body_size() -> E_BodySize:
+	if is_mini_zombie or zombie_type == ZombieIds.IMP:
+		return E_BodySize.Small
+	if zombie_type == ZombieIds.GARGANTUAR:
+		return E_BodySize.Large
+	return E_BodySize.Medium
+
+## 是否小 / 中体型（大嘴花整只吞得下的范围）：只有大体型吞不下
+func is_small_or_medium_body() -> bool:
+	return get_body_size() != E_BodySize.Large
 
 #endregion

@@ -66,7 +66,8 @@ func squash_all_area_zombie():
 		## 如果为同一行僵尸
 		if zombie.lane == row_col.x:
 			if can_attack_status_component.can_attack(zombie):
-				zombie.be_squash()
+				## 伤害取角色攻击力（`plant_squash.tscn` 配 1800）
+				zombie.be_squash(attack_value)
 
 ## 跳入水中判断
 func judge_jump_pool():

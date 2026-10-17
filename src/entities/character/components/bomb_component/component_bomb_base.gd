@@ -8,6 +8,8 @@ class_name BombComponentBase
 ## 爆炸的行范围，-1 表示所有行，0表示当前行，1表示包含上下一行
 @export var bomb_lane:int=-1
 ## 爆炸伤害
+## ⚠️ 只给「范围爆炸」类用（樱桃 / 土豆雷 / 毁灭菇）；火爆辣椒 / 寒冰菇的伤害
+## 由各自植物的角色攻击力 `Character000Base.attack_value` 承载，不读这个字段。
 @export var bomb_value:int = 1800
 ## 是否为灰烬炸弹（非土豆雷）
 @export var is_cherry_bomb:= true

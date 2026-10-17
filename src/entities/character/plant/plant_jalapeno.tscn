@@ -63,6 +63,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant021Jalapeno" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_14btg")]
 script = ExtResource("2_citj3")
+attack_value = 1800
 plant_type = &"jalapeno"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 

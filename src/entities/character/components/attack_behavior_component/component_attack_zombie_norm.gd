@@ -15,6 +15,11 @@ enum E_AttackValueFactor{
 }
 
 var attack_value_factor:Dictionary[E_AttackValueFactor, float] = {}
+
+## 啃食结算的帧间隔：不是每帧都走伤害管线，而是每 N 帧把这 N 帧累积的伤害一次性结算。
+## `wrapi` 的周期与别处的 `delta * N` 必须同源，否则实际 DPS 会偏 —— 见 docs/TODO清单.md U-44。
+const EAT_SETTLE_FRAME_INTERVAL := 8
+
 ## 间隔帧数
 var frame_counter := 0
 
@@ -35,11 +40,11 @@ func update_attack_value(value:float, influence_factor:E_AttackValueFactor):
 
 func _physics_process(delta: float) -> void:
 	if is_enabling and is_attack_res:
-		frame_counter = wrapi(frame_counter + 1, 0, 8)
+		frame_counter = wrapi(frame_counter + 1, 0, EAT_SETTLE_FRAME_INTERVAL)
 		if not is_instance_valid(detect_component.enemy_can_be_attacked):
 			return
 		if frame_counter==0 and is_instance_valid(detect_component.enemy_can_be_attacked):
-			detect_component.enemy_can_be_attacked.be_zombie_eat(int(curr_attack_value_per_min * delta * 8), owner)
+			detect_component.enemy_can_be_attacked.be_zombie_eat(int(curr_attack_value_per_min * delta * EAT_SETTLE_FRAME_INTERVAL), owner)
 
 
 ## 攻击一次发亮，动画调用
@@ -49,7 +54,7 @@ func attack_once():
 		SoundManager.play_character_SFX("Chomp")
 	elif is_instance_valid(detect_component.brain):
 		#detect_component = detect_component as DetectComponentZombie
-		detect_component.brain.be_attack_once(25)
+		detect_component.brain.be_attack_once()
 		SoundManager.play_character_SFX("Chomp")
 
 

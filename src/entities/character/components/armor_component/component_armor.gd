@@ -11,8 +11,9 @@ class_name ArmorComponent
 ## 改成组件之后：
 ##   · 想戴几层就挂几个节点，**同类可以叠加**（`absorb_priority` 决定同类中谁先挨打）；
 ##   · 血量、破损外观、掉落、受击音效全在本组件里，宿主不复制一份（K-01）；
-##   · **防具存在时的特殊效果由防具组件自己定义** —— 重写 `on_armor_equip()` / `on_armor_break()`
-##     与 `is_immune_slow()` 这一类查询钩子即可，本体与僵尸子类都不需要认识它。
+##   · **防具存在时的特殊效果由防具组件自己定义** —— 重写 `process_damage()`（② 加工阶段：
+##     既**吸收本层的伤害**，也决定这张包要不要继续往下走）、`on_armor_equip()` /
+##     `on_armor_break()` 与 `is_immune_slow()` 这一类查询钩子即可，本体与僵尸子类都不需要认识它。
 ##
 ## **给一个角色加防具（两步，不需要改任何管理器）**
 ##   1. 角色根节点下加一个 Node2D，挂本脚本（需要特殊效果就挂本脚本的子类，
@@ -21,10 +22,12 @@ class_name ArmorComponent
 ## `HpComponentZombie.component_ready()` 会**自动收集角色根目录下的所有本类节点**并排序，
 ## 不需要注册表、不需要宿主登记；把节点删掉角色照常运行，只是少一层防具。
 ##
-## 伤害怎么流过防具：见 `HpComponentZombie.hp_loss()` —— 它按
-## 「二类 → 一类 → 本体」（同类按 `absorb_priority` 从大到小）遍历，每层吃多少、
-## 往下传多少由 `get_absorb_rule()` 决定。六种 `ConstDamage.E_DamageMode` 的行为
-## 与重写前**逐条一致**（新增模式记得同步这里与 `HpComponentZombie.get_body_damage()`）。
+## 伤害怎么流过防具：一次伤害在 **② 加工阶段**沿 `armor_list`（二类 → 一类，
+## 同类按 `absorb_priority` 从大到小）逐层调用本组件的 `process_damage()` —— 每层**就地**
+## 扣掉自己该吃的血、并把 `info.amount` 改写成"走完本层还剩多少"交给下一层
+## （见 `HpComponentZombie.process_damage_armors()`），所以一次遍历就把整条防具链结算完。
+## 六种 `ConstDamage.E_DamageMode` 的行为与重写前**逐条一致**
+## （新增模式记得同步这里与 `HpComponentZombie.get_body_damage()`）。
 
 
 #region 场景配置
@@ -110,7 +113,8 @@ func is_alive() -> bool:
 	return max_hp > 0 and curr_hp > 0
 
 
-## 开始一次伤害结算：清掉上一次的"挨打"标记（由血量组件在遍历防具前调用）
+## 开始一次伤害结算：清掉上一次的"挨打"标记
+## （由血量组件在 ② 加工阶段遍历防具链**之前**调用，见 `process_damage_armors()`）
 func begin_damage_settlement() -> void:
 	is_hit_this_time = false
 
@@ -162,6 +166,9 @@ func update_mini_zombie_hp() -> void:
 ##   BowlingFront 二类 400、一类 800，都不往下传
 ##   BowlingSide  二类 1800 并继续传 1800；一类 800，不往下传
 ##   Hammer       无视二类；一类 900，不往下传
+##
+## ⚠️ 那几个固定数值统一在 `ConstDamage.BOWLING_*` / `HAMMER_ARMOR1`（本体侧同源，
+## 见 `HpComponentZombie.get_body_damage()`）—— 改数值请改常量，别在这里写裸数。
 func get_absorb_rule(mode: ConstDamage.E_DamageMode) -> AbsorbRule:
 	var is_armor2 := armor_class == ConstArmor.E_ArmorClass.Armor2
 	match mode:
@@ -177,20 +184,21 @@ func get_absorb_rule(mode: ConstDamage.E_DamageMode) -> AbsorbRule:
 			return _rule_remain_overflow()
 		ConstDamage.E_DamageMode.BowlingFront:
 			if is_armor2:
-				return _rule_fixed(400, 0)
-			return _rule_fixed(800, 0)
+				return _rule_fixed(ConstDamage.BOWLING_FRONT_ARMOR2, 0)
+			return _rule_fixed(ConstDamage.BOWLING_FRONT_ARMOR1, 0)
 		ConstDamage.E_DamageMode.BowlingSide:
 			if is_armor2:
-				return _rule_fixed(1800, 1800)
-			return _rule_fixed(800, 0)
+				return _rule_fixed(ConstDamage.BOWLING_SIDE_ARMOR2, ConstDamage.BOWLING_SIDE_ARMOR2)
+			return _rule_fixed(ConstDamage.BOWLING_SIDE_ARMOR1, 0)
 		ConstDamage.E_DamageMode.Hammer:
 			if is_armor2:
 				return _rule_ignore()
-			return _rule_fixed(900, 0)
+			return _rule_fixed(ConstDamage.HAMMER_ARMOR1, 0)
 	return _rule_remain_overflow()
 
 
-## 让本层防具吸收一次伤害（由 `HpComponentZombie.hp_loss()` 按挨打顺序逐个调用）
+## 让本层防具吸收一次伤害（由本组件的 `process_damage()` 在 ② 加工阶段调用，
+## **不再**由血量组件在结算层调用 —— 吸收已经并入防具自己的加工环节）
 ## [param mode] 本次伤害的结算模式
 ## [param remain] 传到本层的剩余伤害
 ## [return] 交给下一层（更内层防具 / 本体）的伤害
@@ -254,6 +262,50 @@ static func _rule_fixed(absorb_value: int, pass_value: int) -> AbsorbRule:
 
 
 #region 特殊效果钩子（★「防具存在时的效果」写在这里，由防具组件自己定义）
+## 【伤害系统 ② 加工包】**防具先于本体**拿到这次伤害的包：**既吸收本层伤害，也可以改它 / 整个取消**。
+##
+## 什么时候被调：`DamageSystem.apply()` 在调 `Character000Base.process_damage()` **之前**，
+## 按 `HpComponentZombie.armor_list` 的顺序（二类 → 一类，同类按 `absorb_priority`）逐层调一遍
+## —— **谁在外面谁先说话**。顺序由管线保证，不需要角色子类记得先调 `super()`。
+##
+## 本函数一次做两件事（都在防具自己的地盘上）：
+##   1. **吸收**：按 `get_absorb_rule(info.mode)` 扣掉本层该吃的血（走 `absorb_damage()`），
+##      并把 `info.amount` 改写成"走完本层还剩多少"交给下一层 —— 所以一次遍历就把整条防具链
+##      结算完；③ 结算层只拿剩下的 `info.amount` 打本体（见 `HpComponentZombie.hp_loss()`）。
+##   2. **加工包**：子类可以改这次伤害的 `amount` / `mode` / `effects`；`return false` 则
+##      **取消整包**（回 `E_CancelReason.Armor`，本体与更内层不再挨打）。
+##
+## 重写时想同时保留吸收：改成 `info.amount = ...; return super(info)`（见探针
+## `test/scenarios/probe_armor_component.gd` 的示例）。
+##
+## ⚠️ 顺序提醒：本函数排在**本体 `process_damage()` 与修饰器链之前**。所以「本层已经扣掉的血」
+## 不会因为内层取消 / 修饰器回退而退还 —— 要"整包取消连防具也不掉血"，请让**最外层**的防具
+## `return false`（"谁在外面谁先说话"）。
+##
+## ⚠️ 秒杀（`info.is_instant_kill`）**不看伤害值**，吸收规则一律绕过：防具与本体由 ③ 的
+## `HpComponentZombie.clear_all_hp()` 一起清空（必然致死）。
+##
+## 两条纪律（与 `Character000Base.process_damage()` 同一套）：
+##   · **不要在这里触发新的伤害**（嵌套 `apply()`）；
+##   · 表现（音效 / 动画 / 掉落）放 ③ 末端，别放这里 —— 更内层还可能取消整包，
+##     动画已经切了却没最终掉血会留下视觉 bug。本层掉血信号由 `notify_hp_loss()` 统一补发。
+##
+## [param info] 效果包，可直接改 `amount` / `mode` / `effects`
+## [return] true = 继续往下走；false = **取消整包**（本体与更内层不再挨打，回 `E_CancelReason.Armor`）
+func process_damage(info: DamageInfo) -> bool:
+	## 秒杀不看伤害值：吸收一律绕过（防具与本体在 ③ 由 clear_all_hp() 一起清空）
+	if info.is_instant_kill:
+		return true
+	## 吸收本层：扣自己的血，并把"剩下的"写回包里交给下一层 / 本体
+	var hp_before := curr_hp
+	info.amount = absorb_damage(info.mode, info.amount)
+	## 记下"这次伤害确实落在防具上了"：③ 靠它把「被防具吃光」与「压根没伤害」分开
+	## （见 `DamageInfo.is_armor_absorbed`）——否则防具的掉血信号 / 音效 / 血条刷新都会漏
+	if curr_hp < hp_before:
+		info.is_armor_absorbed = true
+	return true
+
+
 ## 防具**生效**时调用一次（角色 ready 之后、所有组件都已就绪，见 `Zombie000Base.ready_norm()`）
 ## 防具存在期间持续有效的东西（浮空、免疫…）在这里打开，对应的撤销写 `on_armor_break()`
 func on_armor_equip() -> void:

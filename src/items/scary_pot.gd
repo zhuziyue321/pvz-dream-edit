@@ -1,7 +1,7 @@
 extends MainGameItemBase
 class_name ScaryPot
 
-const SCARY_POT_WATER = preload("res://assets/image/main_game_item/Scary_Pot_water.png")
+const SCARY_POT_WATER = preload("res://pak/images/Scary_Pot.png")
 ## 罐子类型（**单个罐子级**：这一个罐子里装的是植物还是僵尸）
 ## ⚠️ 名字和 `ConstLevelData.E_PotMode` 撞车，但**两者不是一回事**（U-11）：
 ## 本枚举是说「罐子里装的是什么」，`E_PotMode` 是说「这一关的罐子怎么生成」。

@@ -2,10 +2,10 @@
 
 [ext_resource type="PackedScene" uid="uid://bkx25sp71flk5" path="res://src/entities/character/character_base.tscn" id="1_e772o"]
 [ext_resource type="Script" uid="uid://bawv4f7mswb7k" path="res://src/entities/character/plant/plant_base.gd" id="2_4jr4d"]
-[ext_resource type="FontFile" uid="uid://cchqc1dtcle23" path="res://assets/fonts/Bake_Soda.otf" id="2_bie68"]
+[ext_resource type="FontFile" uid="uid://cchqc1dtcle23" path="res://assets_custom/fonts/Bake_Soda.otf" id="2_bie68"]
 [ext_resource type="Script" uid="uid://c3nylhst3lmnp" path="res://src/entities/character/components/component_sleep.gd" id="5_813jy"]
 [ext_resource type="Script" uid="uid://c2r327riinrkk" path="res://src/entities/character/components/component_blink.gd" id="6_813jy"]
-[ext_resource type="Texture2D" uid="uid://ewujfngualde" path="res://assets/image/plant/zzz.png" id="6_at3ho"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Z.png" id="6_at3ho"]
 [ext_resource type="Script" uid="uid://bv8m5ldv6i00l" path="res://src/entities/character/components/garden/component_garden.gd" id="7_at3ho"]
 [ext_resource type="Script" uid="uid://mmmnpkdybsem" path="res://src/entities/character/components/be_attack_status_component/component_be_attack_status_plant.gd" id="8_bas01"]
 [ext_resource type="Script" uid="uid://ls5w2oio8nqs" path="res://src/entities/character/components/imitater_material_component/component_imitater_material.gd" id="9_mit01"]

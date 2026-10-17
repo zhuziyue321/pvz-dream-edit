@@ -15,7 +15,9 @@ var is_lane:=true
 @export var attack_para:StringName= &"parameters/OneShot/request"
 ## 子弹伤害覆盖值：> 0 时用它给生成的子弹赋值，覆盖子弹场景自身的 attack_value；
 ## 默认 -1（不覆盖，用子弹自己的伤害）。用于「同一张攻击组件发射不同伤害的子弹」，
-## 例如寒冰射手与豌豆射手共用攻击组件但伤害不同、或僵尸方子弹伤害由关卡倍率决定
+## 例如寒冰射手与豌豆射手共用攻击组件但伤害不同、或僵尸方子弹伤害由关卡倍率决定。
+## 优先级：本字段 > 宿主角色的 `attack_value` > 子弹场景自己的 `attack_value`
+## （见下面 `get_shoot_attack_value()`）
 @export var attack_value_bullet:int = -1
 @export var attack_cd:float = 1.5
 ## 一次攻击**连发几颗**（默认 1 = 一颗，原版植物的口径）
@@ -142,6 +144,18 @@ func get_can_attack_status_component() -> CanAttackStatusComponent:
 	return detect_component.can_attack_status_component
 
 
+## 本次发射写进子弹的伤害值（`E_InitParasAttr.AttackValue` 的值），三级优先：
+##   1. 攻击组件的 `attack_value_bullet` > 0 —— 组件级覆盖，最具体；
+##   2. 宿主角色的 `attack_value` > 0 —— 角色自己的攻击力（植物 / 僵尸通用）；
+##   3. 都不设 —— 返回 -1，子弹沿用自己场景里的 `attack_value`。
+func get_shoot_attack_value() -> int:
+	if attack_value_bullet > 0:
+		return attack_value_bullet
+	if owner_character != null and owner_character.attack_value > 0:
+		return owner_character.attack_value
+	return -1
+
+
 func get_bullet_paras(marker_2d_bullet_glo_pos:Vector2, ray_direction:Vector2) -> Dictionary[Bullet000NormBase.E_InitParasAttr,Variant]:
 	return {
 		Bullet000NormBase.E_InitParasAttr.IsActivateLane : is_lane,
@@ -151,7 +165,7 @@ func get_bullet_paras(marker_2d_bullet_glo_pos:Vector2, ray_direction:Vector2) -
 		Bullet000NormBase.E_InitParasAttr.CanAttackPlantState : get_can_attack_status_component().can_attack_plant_status,
 		Bullet000NormBase.E_InitParasAttr.CanAttackZombieState : get_can_attack_status_component().can_attack_zombie_status,
 		Bullet000NormBase.E_InitParasAttr.BulletCamp : get_bullet_camp(),
-		Bullet000NormBase.E_InitParasAttr.AttackValue : attack_value_bullet,
+		Bullet000NormBase.E_InitParasAttr.AttackValue : get_shoot_attack_value(),
 	}
 
 ## 发射方的阵营：僵尸持有本组件时（投石车僵尸、植物僵尸）子弹归僵尸方，打玩家的植物

@@ -21,8 +21,10 @@ const HEAD_PATH_CANDIDATE: Array[NodePath] = [
 	"Body/BodyCorrect/Zombie_head",
 	"Body/BodyCorrect/Head/Anim_head1",
 	"Body/BodyCorrect/Zombie_catapult_driver_head",
-	## 僵王博士：头挂在 ZombieBoss 实例里（黄油对 Zombot 无效，但初始化时会找一次头节点）
-	"Body/BodyCorrect/ZombieBoss/Boss_head",
+	## 僵王博士：头在 Head 分组下叫 Boss_head。
+	## 旧路径是 ZombieBoss/Boss_head，子树改名后没人同步 ⇒ 每次出场都白打一句
+	## 「没有获取头节点」（黄油对 Zombot 无效，但僵尸初始化时一定会找一次头节点）。
+	"Body/BodyCorrect/Head/Boss_head",
 ]
 
 ## 找头节点，找不到返回 null（沿用原行为：只打日志，不阻断流程）

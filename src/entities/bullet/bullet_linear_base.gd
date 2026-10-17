@@ -47,17 +47,15 @@ func _on_area_2d_attack_area_entered(area: Area2D) -> void:
 	elif area.owner is Character000Base:
 		super(area)
 
-## 直线子弹先对壳类进行攻击
+## 直线子弹先对壳类进行攻击：取植物的优先级（壳类 → 本体 → 花盆/睡莲）
+##
+## 与抛物线版**只差顺序**，取法共用 `Bullet000NormBase.get_plant_in_cell_by_order()`
+## （2026-10-16 合并，见 docs/TODO清单.md U-36）。
+const BE_HIT_PLANT_ORDER: Array[CharacterRegistry.PlacePlantInCell] = [
+	CharacterRegistry.PlacePlantInCell.Shell,
+	CharacterRegistry.PlacePlantInCell.Norm,
+	CharacterRegistry.PlacePlantInCell.Down,
+]
+
 func get_first_be_hit_plant_in_cell(plant:Plant000Base)->Plant000Base:
-	## shell
-	var shell_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Shell)
-	if is_instance_valid(shell_plant):
-		return shell_plant
-	var norm_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
-	if is_instance_valid(norm_plant):
-		return norm_plant
-	var down_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Down)
-	if is_instance_valid(down_plant):
-		return down_plant
-	Log.error("当前植物格子没有检测到可以攻击的植物")
-	return null
+	return get_plant_in_cell_by_order(plant, BE_HIT_PLANT_ORDER)

@@ -16,8 +16,10 @@ class_name ConstDamage
 
 ## 伤害模式：决定一次伤害在「二类防具 / 一类防具 / 本体」三层血之间怎么分配。
 ##
-## 分配规则的实现集中在 `HpComponentZombie.hp_loss()`（植物只有本体血，见 `HpComponent`）。
-## **加一种模式必须同步改那里的 match**，否则新模式会静默按「不处理」走掉
+## 分配规则的实现分两处：**防具**吃多少 / 往下传多少在 `ArmorComponent.get_absorb_rule()`
+## （防具在自己的 `process_damage()` 里随手扣血，见 ② 加工阶段），**本体**吃多少在
+## `HpComponentZombie.get_body_damage()`。
+## **加一种模式必须同步改这两处的 match**，否则新模式会静默按「不处理」走掉
 ## （不掉血、不发信号，症状是「这个技能打人没伤害」且没有任何报错）。
 ##
 ## 「秒杀」**不是**一种模式 —— 它压根不看伤害值，是 `DamageInfo.is_instant_kill` 字段。
@@ -29,6 +31,23 @@ enum E_DamageMode {
 	BowlingSide,	## 保龄球侧面：固定伤害（二类 1800，溢出 1800 继续打本体）
 	Hammer,			## 锤子：无视二类防具，一类防具 900，本体直接清空
 }
+
+## ── 上面的「固定伤害」模式用到的数值（保龄球 / 锤子）─────────────────────────
+##
+## **为什么集中在这里**：这套数值被**两处**消费 —— 防具吃多少 / 往下传多少在
+## `ArmorComponent.get_absorb_rule()`，本体吃多少在 `HpComponentZombie.get_body_damage()`。
+## 分散硬编码在两处时改一个数很容易只改一边（症状是「某些僵尸吃保龄球掉的量不对」）。
+const BOWLING_FRONT_ARMOR2 := 400		## 保龄球正面：二类防具固定吃 400
+const BOWLING_FRONT_ARMOR1 := 800		## 保龄球正面：一类防具固定吃 800
+const BOWLING_SIDE_ARMOR2 := 1800		## 保龄球侧面：二类防具吃 1800，并把同样多的伤害继续往下传
+const BOWLING_SIDE_ARMOR1 := 800		## 保龄球侧面：一类防具固定吃 800
+const BOWLING_BODY := 1800				## 保龄球打本体：固定 1800（与传进来的剩余伤害无关）
+const HAMMER_ARMOR1 := 900				## 锤子：一类防具固定吃 900（本体清空，见 `get_body_damage()`）
+
+## ⚠️ **植物自己的伤害数值不放这里**：火爆辣椒 / 倭瓜 / 寒冰菇 / 地刺 / 钢地刺 / 忧郁菇…
+## 一律配在各自场景的**角色攻击力** `Character000Base.attack_value` 上，由发起方写包时
+## 读自己的 `attack_value`（与「攻击力怎么流到子弹」同一口径）。
+## 本表只留上面 BOWLING_* / HAMMER_* 这类**不属于某个角色**的固定值。
 
 
 ## 伤害来源：只做**语义标记**，不参与任何结算分支。
@@ -64,6 +83,7 @@ enum E_CancelReason {
 	Modifier,		## 被修饰器显式取消（免疫 / 无敌一类）
 	Target,			## 被**受击方**在加工阶段显式取消（见 `Character000Base.process_damage()`）
 	NoEffect,		## 包里没有任何系统认得的效果（key 拼错、或全是留给受击方的特殊效果）
+	Armor,			## 被**受击方身上的一层防具**在加工阶段显式取消（见 `ArmorComponent.process_damage()`）
 }
 
 
@@ -145,6 +165,12 @@ const KEY_DROP_ON_DEATH := &"meta_drop_on_death"
 const KEY_DROP_2 := &"meta_drop_2"
 ## 是否播放受击音效
 const KEY_SFX := &"meta_sfx"
+## 本次伤害有没有被防具吸收掉血（②-a 由防具置位，见 `ArmorComponent.process_damage()`）
+##
+## 为什么需要它：吸收在 ②-a 就地扣血，会把 `info.amount` 削成"走完防具剩下的"。
+## 削到 0 时 ③ 光看 `amount` 分不清「压根没伤害」还是「全被防具吃了」——
+## 后者仍然算打到了（防具的掉血信号 / 音效 / 血条刷新都在 `hp_loss()` 末端），不能按未生效放过。
+const KEY_ARMOR_ABSORBED := &"meta_armor_absorbed"
 ## 结算后的实际伤害值（由 `DamageSystem` 回填）
 const KEY_FINAL_AMOUNT := &"meta_final_amount"
 
@@ -159,6 +185,7 @@ const META_KEYS: Array[StringName] = [
 	KEY_DROP_ON_DEATH,
 	KEY_DROP_2,
 	KEY_SFX,
+	KEY_ARMOR_ABSORBED,
 	KEY_FINAL_AMOUNT,
 ]
 #endregion

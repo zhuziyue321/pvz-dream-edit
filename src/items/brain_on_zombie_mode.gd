@@ -10,6 +10,9 @@ class_name BrainOnZombieMode
 @export var max_hp:= 100
 var curr_hp :int = 100
 
+## 被啃一口掉的血（我是僵尸模式下僵尸啃脑子的单口伤害，场景可配）
+@export var attack_value: int = 25
+
 ## 第一格的植物格子，屋顶时移动y
 var first_plant_cell:PlantCell
 ## 是否已经死亡
@@ -34,8 +37,8 @@ func init_brain(curr_first_plant_cell:PlantCell):
 	lane = first_plant_cell.row_col.x
 
 ## 被攻击一次掉血
-func be_attack_once(attack_value:int=25):
-	_hp_loss(attack_value)
+func be_attack_once():
+	_hp_loss()
 
 ## 被压扁
 func be_flattened():
@@ -48,8 +51,10 @@ func hp_loss_to_death():
 	_hp_loss(curr_hp)
 
 ## 掉血
-func _hp_loss(attack_value:int=25):
-	curr_hp -= attack_value
+func _hp_loss(value:int = -1):
+	if value < 0:
+		value = attack_value
+	curr_hp -= value
 	if curr_hp <= 0:
 		_brain_death()
 

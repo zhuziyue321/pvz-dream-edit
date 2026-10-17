@@ -108,6 +108,7 @@ scale_max = 3.0
 
 [node name="Plant015IceShroom" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_n3wco")]
 script = ExtResource("2_xarg1")
+attack_value = 20
 plant_type = &"ice_shroom"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
@@ -164,7 +165,6 @@ parameters/TimeScale/scale = 1.0
 
 [node name="BombComponent" type="Node2D" parent="." index="10"]
 script = ExtResource("8_37t62")
-bomb_value = 20
 is_cherry_bomb = false
 bomb_sfx = &"Frozen"
 metadata/_custom_type_script = "uid://houapt72isd2"

@@ -3,7 +3,7 @@ class_name ConstArmor
 ## 防具的公共枚举：防具类别（一 / 二类）、防具类型标识、伤害吸收规则。
 ##
 ## 为什么单独一张表：防具本体是 `ArmorComponent`（一个角色可以挂多个、同类可叠加），
-## 而这些枚举被**结算方**（`HpComponentZombie`）、**查找方**（`get_armor_by_type()`）与
+## 而这些枚举被**收集方**（`HpComponentZombie`）、**查找方**（`get_armor_by_type()`）与
 ## **防具自己**（`get_absorb_rule()`）三方共用，放在任何一个组件里都会造成
 ## core → entities 的反向依赖。
 ##
@@ -56,6 +56,6 @@ enum E_ArmorAbsorb{
 enum E_ArmorPass{
 	Overflow,	## 没吸收完的那部分（`Remain` 吸收时用）
 	Unchanged,	## 原样传：本层照扣，但伤害不减少（穿透的二类防具）
-	Zero,		## 不往下传（固定伤害打在防具上就到此为止）
+		Zero,		## 不往下传（固定伤害打在防具上就到此为止）
 	Fixed,		## 传固定值（保龄球侧面的二类防具：扣 1800、继续传 1800）
 }

@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://cktksmdbn2nmn" path="res://src/entities/character/zombie/zombie_base.tscn" id="1_bu51k"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/zb_base.gd" id="2_gwo2k"]
+[ext_resource type="Script" uid="uid://cqjynadpvsk20" path="res://src/entities/character/components/charred_component/component_charred.gd" id="3_charred"]
 
 ; 僵王是正式僵尸：这里实例 Zombie000Base 的底座场景，一次性继承
 ; Move / Attack / Charred / Swim / DropItem / CriticalValue 等组件。
@@ -25,3 +26,12 @@ collision_layer = 4
 
 [node name="HurtBoxReal" parent="HurtBoxComponent"]
 collision_layer = 512
+
+; 覆写灰烬组件的脚本：底座链 zombie_boss_base -> zombie_base 上挂的是普通僵尸专用的
+; CharredComponentZombieNorm，它在 @onready 里硬取 ZombieCharred/CharredCorrect/AnimLib，
+; 而僵王场景没有这套灰烬贴图节点 ⇒ 每次出场都报 "Node not found"。
+; 僵王本身不播普通僵尸的灰烬动画（zb_base.ready_norm 永久禁用该组件），
+; 这里换成不依赖贴图节点的通用灰烬组件，把这次必然失败的取节点去掉。
+; 不能写 type=，否则会被判成重名新节点而被自动改名。
+[node name="CharredComponent" parent="."]
+script = ExtResource("3_charred")

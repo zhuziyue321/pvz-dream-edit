@@ -29,4 +29,5 @@ func attack_once():
 
 	var all_enemy:Array[Character000Base] = attack_component.detect_component.get_all_enemy_can_be_attacked()
 	for enemy in all_enemy:
-		enemy.be_attacked_bullet(20,ConstDamage.E_DamageMode.Penetration)
+		## 伤害取角色基类的 `attack_value`（本场景 .tscn 里配 20），与子弹类攻击同一口径
+		enemy.be_attacked_bullet(attack_value,ConstDamage.E_DamageMode.Penetration)

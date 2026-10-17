@@ -70,8 +70,20 @@ func change_display_HP_label(value:bool):
 func set_death_hp(new_death_hp:int):
 	self.death_hp = new_death_hp
 
-func get_all_hp():
+func get_all_hp() -> int:
 	return curr_hp
+
+
+## 【伤害系统 ② 加工包】把包交给**本角色身上所有防具**先过一遍（防具先于本体表态）。
+##
+## 基类**没有防具这个概念**，直接放行；僵尸子类 `HpComponentZombie` 重写成"逐层问 `armor_list`"，
+## 防具的**吸收**也在那一步一次做完（防具自己扣血、并把 `info.amount` 改成剩余）。
+##
+## 由 `DamageSystem.apply()` 在**调 `Character000Base.process_damage()` 之前**调用，
+## 所以防具永远排在角色自己的规则前面 —— 顺序由管线保证，不靠子类记得先调 `super()`。
+## [return] false = 某一层防具取消了整包（见 `ConstDamage.E_CancelReason.Armor`）
+func process_damage_armors(_info: DamageInfo) -> bool:
+	return true
 
 
 ## **秒杀**：直接把血清空（**不看伤害值、不走任何吸收 / 减伤规则，必然致死**）。
@@ -86,7 +98,8 @@ func clear_all_hp() -> int:
 	return curr_hp
 
 
-## **结算层**：把一次伤害真正扣到血量上（植物只有本体血，僵尸子类重写成三层分配）。
+## **结算层**：把一次伤害真正扣到血量上（植物只有本体血；僵尸子类里防具已在 ② 吸收完，
+## 这里只把剩下的 `info.amount` 打本体）。
 ##
 ## ⚠️ 这是**管线的末端**，不是给业务代码直接调的入口 ——
 ## 直接调它会绕过 `DamageSystem` 的修饰器与伤害事件（将来加护盾 / 联机会各漏一处，且不报错）。

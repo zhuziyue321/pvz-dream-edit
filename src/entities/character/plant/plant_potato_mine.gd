@@ -36,9 +36,7 @@ func ready_norm_signal_connect():
 	## 角色速度改变
 	signal_update_speed.connect(update_prepare_speed)
 
-## 亡语
-func death_language():
-	bomb_component.judge_death_bomb()
+
 
 ## 土豆类出土动画结束调用
 func _rise_end():

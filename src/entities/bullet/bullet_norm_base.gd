@@ -110,7 +110,8 @@ func init_bullet(bullet_paras:Dictionary):
 	## 子弹行
 	self.is_activate_lane = bullet_paras.get(E_InitParasAttr.IsActivateLane, default_is_activate_lane)
 	self.lane = bullet_paras.get(E_InitParasAttr.BulletLane, -1)
-	z_index = self.lane * 50 + 45
+	## 行 → z_index 的公式与保龄球换行共用（见 Bullet000Base.z_index_of_lane）
+	z_index = Bullet000Base.z_index_of_lane(self.lane)
 
 	self.start_pos = bullet_paras.get(E_InitParasAttr.Position, Vector2.ZERO)
 	position = self.start_pos
@@ -197,6 +198,22 @@ func _attack_plant(plant:Plant000Base):
 ## 抛物线子弹先对Norm进行攻击
 func get_first_be_hit_plant_in_cell(plant:Plant000Base)->Plant000Base:
 	return plant
+
+
+## 按给定优先级从格子里取第一个存在的植物
+##
+## 给「直线先打壳类 / 抛物线先打本体」这类差异共用 —— 两边原本各写一份**逐行同构**的取法，
+## 只有顺序不同（2026-10-16 合并，见 docs/TODO清单.md U-36）。
+## [param plant] 子弹碰撞到的植物（用来定位它所在的格子）
+## [param order] `CharacterRegistry.PlacePlantInCell` 的优先级序列，取第一个有效的
+## [return] 取到的植物；一个都没取到时记 Log.error 并返回 null（与合并前两处行为一致）
+func get_plant_in_cell_by_order(plant:Plant000Base, order:Array[CharacterRegistry.PlacePlantInCell]) -> Plant000Base:
+	for place:CharacterRegistry.PlacePlantInCell in order:
+		var target:Plant000Base = plant.plant_cell.get_plant(place)
+		if is_instance_valid(target):
+			return target
+	Log.error("当前植物格子没有检测到可以攻击的植物")
+	return null
 
 ## 攻击一次
 func attack_once(enemy:Character000Base):

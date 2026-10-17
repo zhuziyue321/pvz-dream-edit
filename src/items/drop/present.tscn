@@ -4,7 +4,6 @@
 [ext_resource type="Script" uid="uid://c25vj64dvn2le" path="res://src/items/present.gd" id="1_ypulj"]
 [ext_resource type="Texture2D" path="res://pak/images/PresentOpen.png" id="2_7tqpd"]
 [ext_resource type="Texture2D" path="res://pak/particles/AwardPickupGlow.png" id="2_vd236"]
-[ext_resource type="BitMap" uid="uid://dlhqwmsa4r4wx" path="res://assets/image/garden/Present_mask.png" id="5_vd236"]
 [ext_resource type="Texture2D" path="res://pak/images/plantshadow.png" id="6_nse33"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Pot_bottom.png" id="7_26keg"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Pot_stem.png" id="8_nm0cw"]
@@ -120,7 +119,6 @@ offset_right = 41.0
 offset_bottom = 40.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("1_l75ig")
-texture_click_mask = ExtResource("5_vd236")
 
 [node name="PresentOpen" type="Sprite2D" parent="."]
 visible = false

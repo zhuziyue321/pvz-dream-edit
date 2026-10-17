@@ -9,6 +9,9 @@ class_name Zombie038MagnetShroom
 @export var magnet_cd: float = 15.0
 ## 被吸走的植物类型（原版：磁力菇）
 @export var magnet_plant_type: StringName = PlantIds.MAGNET_SHROOM
+## 吸走造成的伤害：原版口径是「直接吸没」，9999 远大于任何植物血量，
+## 配小数也能达成同样效果（走 `is_instant_kill` 那条另说，这里保持伤害值语义）
+@export var magnet_attack_value: int = 9999
 
 var magnet_timer: Timer
 
@@ -46,7 +49,7 @@ func _on_magnet_timer_timeout() -> void:
 	if not is_instance_valid(target):
 		return
 	SoundManager.play_character_SFX(&"magnetshroom")
-	target.be_attacked_bullet(9999, ConstDamage.E_DamageMode.Penetration, false, false)
+	target.be_attacked_bullet(magnet_attack_value, ConstDamage.E_DamageMode.Penetration, false, false)
 
 
 ## 找到本行玩家的磁力菇（没有返回 null）

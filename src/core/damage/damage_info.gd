@@ -21,7 +21,7 @@ class_name DamageInfo
 ## ── 具名字段 = 代理访问器 ──────────────────────────────────────────────
 ##
 ## `amount` / `mode` / `cause` / `target` / `attacker` / `source` / `is_instant_kill`
-## / `is_drop_on_death` / `is_drop_2` / `trigger_sfx` / `final_amount`
+## / `is_drop_on_death` / `is_drop_2` / `trigger_sfx` / `is_armor_absorbed` / `final_amount`
 ## **全是 `effects` 的代理** —— 读写的其实是 `effects[ConstDamage.KEY_*]`
 ## （伤害值特殊一点，走 `EFFECT_DAMAGE`，见下面 `amount` 的注释）。
 ##
@@ -173,6 +173,17 @@ var final_amount: int:
 		return effects.get(ConstDamage.KEY_FINAL_AMOUNT, 0)
 	set(final_amount_value):
 		effects[ConstDamage.KEY_FINAL_AMOUNT] = final_amount_value
+
+## 本次伤害有没有被防具吸收掉血（**②-a 由 `ArmorComponent.process_damage()` 置位**）。
+##
+## 吸收在 ②-a 就地扣血并把 `info.amount` 削成"走完防具剩下的"；削到 0 时 ③ 光看 `amount`
+## 分不清「压根没伤害」还是「全被防具吃了」—— 后者仍要当作"打到了"走完 ③ 末端
+## （防具的掉血信号 / 音效 / 血条刷新都在 `hp_loss()` 里）。
+var is_armor_absorbed: bool:
+	get:
+		return effects.get(ConstDamage.KEY_ARMOR_ABSORBED, false)
+	set(is_armor_absorbed_value):
+		effects[ConstDamage.KEY_ARMOR_ABSORBED] = is_armor_absorbed_value
 #endregion
 
 

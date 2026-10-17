@@ -3,7 +3,7 @@ class_name Plant022Caltrop
 
 @onready var detect_component: DetectComponent = $DetectComponent
 
-@export var attack_value:=20
+## 攻击力沿用角色基类 `Character000Base.attack_value`（本场景 .tscn 里配 20）
 @export_group("动画状态")
 @export var is_attack:=false
 var is_flattened := false

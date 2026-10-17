@@ -101,8 +101,6 @@ func _add_new_plant(curr_plant_cell_data:Dictionary={}):
 		flower_pot = SceneRegistry.GARDEN_FLOWER_POT.instantiate()
 		plant_container_node[CharacterRegistry.PlacePlantInCell.Down].add_child(flower_pot)
 		match curr_garden_bg_type:
-			GardenManager.E_GardenBgType.GreenHouse:
-				pass
 			GardenManager.E_GardenBgType.MushroomGraden:
 				## 如果植物种是陆地植物
 				if curr_plant_condition & 2:

@@ -14,7 +14,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerarm_hand.png" id="7_leylu"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_RVwheel.png" id="8_53h3c"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerleg_upper.png" id="8_l6fqx"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_upperbody.png" id="9_opvbh"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_upperbody.png" id="9_opvbh"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_rv.png" id="9_y0aev"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerarm_thumb2.png" id="10_kx48i"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerarm_thumb1.png" id="11_4atkk"]
@@ -24,11 +24,11 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_upperarm.png" id="20_gk12t"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_lowerarm2.png" id="21_fhfo7"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_innerhand.png" id="22_54imc"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/Zombie_boss_iceball_particles_flip_h.png" id="22_t0xjl"]
+[ext_resource type="Texture2D" path="res://pak/particles/Zombie_boss_iceball_particles.png" id="22_t0xjl"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_lowerarm.png" id="23_qiqfr"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow_red.png" id="23_r75td"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_body.png" id="24_gghaj"]
-[ext_resource type="Texture2D" path="res://assets/reanim/Zombie_boss_neck.png" id="25_5wk18"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_neck.png" id="25_5wk18"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_brain.png" id="25_78cek"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerjaw.png" id="26_0nsdh"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_jaw.png" id="26_gueo1"]
@@ -72,7 +72,6 @@
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/Zombie_boss_spawn_2.tres" id="53_gghaj"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_antenna.png" id="53_tdmkw"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/Zombie_boss_spawn_3.tres" id="54_78cek"]
-[ext_resource type="FontFile" path="res://assets/fonts/Bake_Soda.otf" id="55_kx48i"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/Zombie_boss_spawn_4.tres" id="55_ucy2x"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/Zombie_boss_spawn_5.tres" id="56_0ipp6"]
 [ext_resource type="Animation" path="res://animation/character/zombie_boss/doctor/Zombie_boss_stomp_1.tres" id="57_cv78e"]
@@ -122,7 +121,7 @@
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/skills/zb_doctor_skill_stomp.gd" id="effect_stomp"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/skills/zb_doctor_skill_throw_rv.gd" id="effect_throw_rv"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_eyeglow_blue.png" id="eye_glow_blue"]
-[ext_resource type="Texture2D" path="res://assets/image/particles/Zombie_boss_fireball_particles_flip_h.png" id="fire_spit_flip_h"]
+[ext_resource type="Texture2D" path="res://pak/particles/Zombie_boss_fireball_particles.png" id="fire_spit_flip_h"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/state_machine/states/zb_doctor_state_head_idle.gd" id="head_idle"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/doctor/state_machine/states/zb_doctor_state_head_skill.gd" id="head_skill"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow_blue.png" id="mouth_glow_blue"]
@@ -184,28 +183,6 @@ script = ExtResource("doctor_body_change")
 sprite_change = Array[NodePath]([NodePath("../Body/BodyCorrect/InnerLeg/Boss_innerleg_foot"), NodePath("../Body/BodyCorrect/OuterLeg/Boss_outerleg_foot"), NodePath("../Body/BodyCorrect/Head/Boss_head"), NodePath("../Body/BodyCorrect/Head/Boss_jaw"), NodePath("../Body/BodyCorrect/OuterArm/Boss_outerarm_hand")])
 sprite_change_texture = Array[Texture2D]([ExtResource("damage2_foot"), ExtResource("damage2_foot"), ExtResource("damage2_head"), ExtResource("damage2_jaw"), ExtResource("damage2_outerarm_hand")])
 metadata/_custom_type_script = "uid://jl0nl4a234bc"
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4atkk"]
-bg_color = Color(0.137255, 0.0196078, 0.027451, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exmbk"]
-bg_color = Color(1, 0.290196, 0.454902, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.137255, 0.0196078, 0.027451, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="LabelSettings" id="LabelSettings_l4cxf"]
-font = ExtResource("55_kx48i")
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_kx48i"]
 custom_solver_bias = 0.544
@@ -1549,61 +1526,12 @@ script = ExtResource("58_vtygo")
 boundary_value_hp = Array[int]([20000, 10000, 0])
 body_change = Array[ExtResource("doctor_body_change")]([SubResource("DoctorDamageStage1"), SubResource("DoctorDamageStage2"), null])
 
+; 只覆写血量上限。**不要再往 HpComponent 下加 HpControl / ProgressBarHp / LabelHp**：
+; 底座 zombie_base.tscn 在 HpComponent/VBoxContainer 下已有这三个唯一名节点，唯一名先到先得，
+; 后加的那一套既拿不到名字（刷 "already claimed" 告警），又会留一根永远不更新的假血条。
+; 僵王的血量由关卡进度条显示（ZombossProgressProvider），zb_base.ready_norm 也会把血量组件整体隐藏。
 [node name="HpComponent" parent="." index="5" unique_id=2107863698]
 max_hp = 40000
-
-[node name="HpControl" type="Control" parent="HpComponent" index="0" unique_id=827349636]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 0
-offset_left = 889.0
-offset_top = 374.0
-offset_right = 889.0
-offset_bottom = 374.0
-mouse_filter = 2
-
-[node name="ProgressBarHp" type="ProgressBar" parent="HpComponent/HpControl" index="0" unique_id=395424267]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.192157)
-custom_minimum_size = Vector2(66, 20)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -33.0
-offset_top = -10.0
-offset_right = 33.0
-offset_bottom = 10.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_4atkk")
-theme_override_styles/fill = SubResource("StyleBoxFlat_exmbk")
-max_value = 1.0
-value = 0.5
-show_percentage = false
-
-[node name="LabelHp" type="Label" parent="HpComponent/HpControl" index="1" unique_id=1425929016]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -36.0
-offset_top = -11.5
-offset_right = 36.0
-offset_bottom = 11.5
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(1, 0, 0, 1)
-text = "300"
-label_settings = SubResource("LabelSettings_l4cxf")
-horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="HurtBoxComponent" parent="." index="6" unique_id=35856933]
 position = Vector2(908, 339)

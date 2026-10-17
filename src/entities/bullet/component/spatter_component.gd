@@ -84,4 +84,7 @@ func spatter_all_area_zombie(direct_hit_enemy:Character000Base, lane:int=-1):
 
 
 func attack_enemy(enemy:Character000Base, damage_per_enemy:int):
-	enemy.be_attacked_bullet(damage_per_enemy,ConstDamage.E_DamageMode.Penetration, true, false)
+	## 末尾传 owner（= 所属子弹）作伤害载体，与子弹本体的 _attack_zombie / _attack_plant 一致：
+	## 溅射同样是「哪颗子弹打的」，理应进 DamageInfo.source（目前无读取方，
+	## 为反伤 / 命中统计 / 联机对账预留；不传则这段链路是断的）
+	enemy.be_attacked_bullet(damage_per_enemy,ConstDamage.E_DamageMode.Penetration, true, false, owner)

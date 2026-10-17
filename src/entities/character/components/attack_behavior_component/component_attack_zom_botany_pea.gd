@@ -117,8 +117,18 @@ func _shoot_bullet() -> void:
 	SoundManager.play_character_SFX(attack_sfx)
 
 
+## 写进子弹的伤害值：宿主角色的 `attack_value` > 0 时覆盖子弹场景自身的值，否则 -1
+##（沿用子弹自己的伤害）。与 `AttackComponentBulletBase.get_shoot_attack_value()` 同语义，
+## 但本组件继承自啃咬组件、没有组件级 `attack_value_bullet`，只有角色这一级
+func _get_shoot_attack_value() -> int:
+	if owner_character != null and owner_character.attack_value > 0:
+		return owner_character.attack_value
+	return -1
+
+
 ## 子弹初始化参数：与 AttackComponentBulletBase.get_bullet_paras() 一致，
-## 只有 Direction 固定朝左（见 C_BULLET_DIRECTION），投手那两个键直线子弹不读
+## 只有 Direction 固定朝左（见 C_BULLET_DIRECTION），投手那两个键直线子弹不读。
+## AttackValue 同样走「宿主角色 attack_value > 子弹场景值」的优先
 func _get_bullet_paras(marker_glo_pos: Vector2) -> Dictionary:
 	var can_attack_status := detect_component.can_attack_status_component
 	var zombie := owner as Zombie000Base
@@ -130,6 +140,7 @@ func _get_bullet_paras(marker_glo_pos: Vector2) -> Dictionary:
 		Bullet000NormBase.E_InitParasAttr.CanAttackPlantState: can_attack_status.can_attack_plant_status,
 		Bullet000NormBase.E_InitParasAttr.CanAttackZombieState: can_attack_status.can_attack_zombie_status,
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: BulletCampConfig.get_owner_camp(owner),
+		Bullet000NormBase.E_InitParasAttr.AttackValue: _get_shoot_attack_value(),
 	}
 
 

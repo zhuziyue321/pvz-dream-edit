@@ -79,11 +79,13 @@ func init_garden_component(garden_date_init:Dictionary):
 	var garden_plant_data = garden_date_init["curr_garden_plant_data"]
 	direction_x = garden_plant_data.get("direction_x",  direction_x)
 	## JSON 里没有整数:枚举 / 计数读回来是 float,直接赋给 int 变量会报类型错,这里一律 int()
+	## 两个枚举属性还得再用 `as` 转一次:int 直接赋给枚举变量会触发
+	## INT_AS_ENUM_WITHOUT_CAST 告警(与 up_growth_stage 里的写法一致)
 	## (正常读档已经由 GlobalGardenState.normalize_garden_plant_cell_data() 转干净了,
 	##  这里是给没走那道口的调用兜底 —— 例如直接拿别的植物的数据重建)
 	curr_plant_type = PlantIds.from_legacy(garden_plant_data.get("curr_plant_type", curr_plant_type))
-	curr_growth_stage = int(garden_plant_data.get("curr_growth_stage", curr_growth_stage))
-	curr_need_item = int(garden_plant_data.get("curr_need_item", curr_need_item))
+	curr_growth_stage = int(garden_plant_data.get("curr_growth_stage", curr_growth_stage)) as GardenManager.E_GrowthStage
+	curr_need_item = int(garden_plant_data.get("curr_need_item", curr_need_item)) as GardenManager.E_NeedItem
 	curr_water_time = int(garden_plant_data.get("curr_water_time", curr_water_time))
 	max_water_time = int(garden_plant_data.get("max_water_time", max_water_time))
 	next_update_time = garden_plant_data.get("next_update_time", next_update_time)

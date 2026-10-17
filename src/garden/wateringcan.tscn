@@ -1,7 +1,7 @@
 [gd_scene load_steps=9 format=3 uid="uid://cuken451e2wr7"]
 
 [ext_resource type="Script" uid="uid://dowo1q457bpbx" path="res://src/garden/item/garden_item_01_wateringcan.gd" id="1_pt7wm"]
-[ext_resource type="Texture2D" uid="uid://bggarg6vs83i0" path="res://assets/image/garden/Zen_GoldToolReticle_Result.png" id="2_a14cy"]
+[ext_resource type="Texture2D" path="res://pak/images/Zen_GoldToolReticle.png" id="2_a14cy"]
 [ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_wateringcan_water8.png" id="2_fxdlo"]
 [ext_resource type="Texture2D" path="res://pak/reanim/ZenGarden_wateringcan1.png" id="3_a14cy"]
 [ext_resource type="Animation" uid="uid://bfesdjwj1q4qc" path="res://animation/garden/wateringcan/zen_garden_wateringcan_water.tres" id="17_620k8"]

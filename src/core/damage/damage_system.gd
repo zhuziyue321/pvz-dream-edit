@@ -11,8 +11,9 @@ extends Node
 ## ── 三段式：一次伤害 = 一个「效果包」走完三段 ──────────────────────────────
 ##
 ##   ① 伤害方写包        ② 受击方加工包           ③ 系统应用包
-##   ├ 子弹 / 炸弹 / 僵尸 ──> 目标.process_damage() ──> 本类按 effects 逐项施加
-##   └ DamageInfo.effects   （特殊效果在这里翻译）    （通用效果在这里生效）
+##   ├ 子弹 / 炸弹 / 僵尸 ──> ②-a 防具链（外层先说话，就地吸收本层伤害） ──> 本类按 effects 逐项施加
+##   └ DamageInfo.effects     ②-b 目标.process_damage()   （通用效果在这里生效）
+##                            ②-c 修饰器链
 ##
 ## **包的本体是一张字典**（`DamageInfo.effects`，key 见 `ConstDamage.EFFECT_*`）：
 ##
@@ -22,6 +23,12 @@ extends Node
 ##   · **特殊效果**（如 `EFFECT_CALTROP`）本类**不认也不碰** —— 那是发起方写给
 ##     受击方看的便条，由受击方在 ② 自己消费、自己翻译成后果
 ##     （洗冰车 / 投石车翻译成"秒杀"、巨人翻译成"无视"、其余不认识就当没看见）。
+##     ② 里翻译便条的有**两方**，按"谁在外面谁先说话"的顺序：
+##     **先**受击方身上的每一层防具（`ArmorComponent.process_damage()`，外层 → 内层），
+##     **再**受击方本体（`Character000Base.process_damage()`）。两层都能改包或整包取消。
+##
+##     ⚠️ 防具链那一步**顺手把防具自己的血扣了**（吸收不再单独放在 ③）：每层把
+##     `info.amount` 改写成"走完本层还剩多少"，所以到 ③ 时 `info.amount` 已经是"剩下的"。
 ##
 ## 为什么特殊效果不让系统认：一旦系统要处理"地刺扎"，它就得认识"洗冰车",
 ## 硬约束 §1-8 明令禁止本体认识具体玩法。**谁的规则谁自己翻译**，系统只管通用那部分。
@@ -30,7 +37,7 @@ extends Node
 ##   · 不判敌我 —— 那是 `BulletCampConfig.is_enemy()` 与 `CanAttackStatusComponent` 的活，
 ##     发生在"决定打不打得到"的阶段，进了管线就说明**已经决定要打了**；
 ##   · 不算伤害数值 —— 数值由发起方给（子弹的 `attack_value`、炸弹的 `bomb_value`…），
-##     管线只负责在结算前给受击方与修饰器各一次改写机会；
+##     管线只负责在结算前给**防具链、受击方与修饰器**各一次改写机会；
 ##   · 不处理死亡表现 —— 死亡由血量组件的 `signal_hp_component_death` 驱动，管线只回一个
 ##     `DamageResult` 告诉发起方"这次打死了没有"。
 ##
@@ -71,16 +78,23 @@ func apply(info: DamageInfo) -> DamageResult:
 
 	var hp_component := character.hp_component
 	var was_death := hp_component.is_death
-	## 显式写 int：`get_all_hp()` 没标返回类型，用 `:=` 推断不出来
 	var hp_before: int = hp_component.get_all_hp()
 
-	## ② 受击方加工包：特殊效果在这里被翻译成具体后果
-	if not character.process_damage(info):
-		return DamageResult.canceled(ConstDamage.E_CancelReason.Target)
+	## ②-a 防具链加工包：先问身上每一层防具（二类 → 一类 → 更内层）。
+	## 防具是"挨打最外层"，所以它比本体先拿到包；顺序由这里保证，不靠角色子类自觉。
+	## **吸收也在这一步完成**：每层扣自己的血并把 `info.amount` 改成"剩下的"，③ 只打本体。
+	##
+	## ⚠️ 取消要带上血量快照：更外层的防具可能**已经扣了血**，按"没生效"返回会把掉血丢掉。
+	if not character.process_damage_armors(info):
+		return _canceled_after_processing(ConstDamage.E_CancelReason.Armor, hp_component, hp_before)
 
-	## ② 修饰器链加工：挂组件就能改伤害 / 免疫，不用动任何角色脚本
+	## ②-b 受击方加工包：特殊效果在这里被翻译成具体后果
+	if not character.process_damage(info):
+		return _canceled_after_processing(ConstDamage.E_CancelReason.Target, hp_component, hp_before)
+
+	## ②-c 修饰器链加工：挂组件就能改伤害 / 免疫，不用动任何角色脚本
 	if not _run_modifiers(info):
-		return DamageResult.canceled(ConstDamage.E_CancelReason.Modifier)
+		return _canceled_after_processing(ConstDamage.E_CancelReason.Modifier, hp_component, hp_before)
 
 	## ③ 系统应用包：只处理自己认得的通用效果
 	var applied_effects := _apply_effects(info, character)
@@ -88,17 +102,32 @@ func apply(info: DamageInfo) -> DamageResult:
 		## 包里一个通用效果都没有 —— 要么 key 拼错（静默失效最难查），
 		## 要么是个纯控制包但受击方已经死了 / 伤害被加工成 0。
 		if info.has_effect(ConstDamage.EFFECT_DAMAGE) and info.amount <= 0:
-			return DamageResult.canceled(ConstDamage.E_CancelReason.ZeroAmount)
-		return DamageResult.canceled(ConstDamage.E_CancelReason.NoEffect)
+			return _canceled_after_processing(ConstDamage.E_CancelReason.ZeroAmount, hp_component, hp_before)
+		return _canceled_after_processing(ConstDamage.E_CancelReason.NoEffect, hp_component, hp_before)
 
 	var hp_after: int = hp_component.get_all_hp()
 	var result := DamageResult.applied(hp_before, hp_after, hp_component.is_death and not was_death)
 	result.applied_effects = applied_effects
 
-	if is_broadcast_event:
+	## 先判有没有订阅方：`push_event()` 每次都要查签名表逐项校验 payload、还要广播
+	## `event_pushed`，然后才发现没人听；而伤害是高频事件（每发子弹 / 每次啃食都走一次）。
+	## `DAMAGE_APPLIED` 当前 0 个订阅方 —— 跳过它等价于原来"发下去但没人接"，
+	## 唯一差别是开 `enable_history` 时看不到这条（调试时才需要，可临时订一下事件）。
+	if is_broadcast_event and EventBus.has_signal(ConstEventName.DAMAGE_APPLIED):
 		EventBus.push_event(ConstEventName.DAMAGE_APPLIED, [info, result])
 
 	return result
+
+
+## 加工 / 结算阶段的取消
+##
+## 与 `DamageResult.canceled()` 的差别：这里**带上血量快照**。防具的吸收与取消都发生在 ②-a
+## （见 `ArmorComponent.process_damage()`），更外层的防具可能已经扣了血 —— 只报"没生效"
+## 会让调用方看到的 `hp_loss` 变成 0，与真实掉血不符（见 `DamageResult.canceled_with_hp()`）。
+func _canceled_after_processing(
+	reason: ConstDamage.E_CancelReason, hp_component: HpComponent, hp_before: int
+) -> DamageResult:
+	return DamageResult.canceled_with_hp(reason, hp_before, hp_component.get_all_hp())
 
 
 #region 修饰器注册
@@ -177,10 +206,12 @@ func _apply_effects(info: DamageInfo, target: Character000Base) -> Array[StringN
 ## 【通用效果】伤害：交给血量组件做三层血分配。
 ## 负数一律按 0 处理：伤害值算错（溢出 / 配置填负）时不该倒扣血。
 ##
-## 秒杀（`info.is_instant_kill`）时伤害值不参与"该扣多少"这件事，所以 `amount` 为 0 也放行 ——
-## 放行之后血量组件走的是"直接清空"那条路，不是"扣 0 点"。
+## `amount` 为 0 仍要放行的情况有两种，别把它们当成"没生效"：
+##   · **秒杀**（`info.is_instant_kill`）—— 伤害值不参与"该扣多少"，血量组件走"直接清空"那条路；
+##   · **被防具吃光**（`info.is_armor_absorbed`）—— 吸收已在 ②-a 就地扣了防具的血，
+##     这一趟 ③ 是为了把防具的掉血信号 / 受击音效 / 血条刷新（都在 `hp_loss()` 末端）走完。
 func _apply_effect_damage(info: DamageInfo, target: Character000Base) -> bool:
-	if info.amount <= 0 and not info.is_instant_kill:
+	if info.amount <= 0 and not info.is_instant_kill and not info.is_armor_absorbed:
 		return false
 	info.final_amount = info.amount
 	## 真正的结算在角色侧：子类想改结算行为就重写 `take_damage()`
@@ -199,8 +230,8 @@ func _apply_effect_freeze(info: DamageInfo, target: Character000Base) -> bool:
 	var after_slow: float = param.get("after_slow", 0.0)
 	if freeze_time <= 0.0:
 		return false
-	## 第三个参数 damage 显式传 0：`be_ice_freeze()` 的默认 20 是给"寒冰菇直接调它"那条老路用的，
-	## 本系统里伤害是包里独立的 `EFFECT_DAMAGE`，再让它顺手打 20 点就成了双重结算。
+	## 第三个参数 damage 显式传 0（只冻不打）：本系统里伤害是包里独立的 `EFFECT_DAMAGE`，
+	## 再让它顺手打一次就成了双重结算。
 	target.be_ice_freeze(freeze_time, after_slow, 0)
 	return true
 

@@ -77,3 +77,13 @@ static func host_node_of(bullet_owner: Node, bullet_path: NodePath) -> Node:
 	if host == null:
 		return null
 	return host.get_node_or_null(bullet_path)
+
+
+## 某一行的子弹 z_index（行号越大越靠前）
+##
+## 抽成本方法是因为它有**两个使用点**：子弹初始化（`Bullet000NormBase.init_bullet`）与
+## 保龄球换行（`Bullet1001Bowling.update_z_index_and_lane`）—— 原本两处各写了一遍
+## `lane * 50 + 45` 同一公式（2026-10-16 合并，见 docs/TODO清单.md U-36）。
+## 以后要调公式只改这里一处。
+static func z_index_of_lane(lane: int) -> int:
+	return lane * 50 + 45

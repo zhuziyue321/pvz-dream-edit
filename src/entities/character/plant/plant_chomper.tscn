@@ -112,7 +112,7 @@ size = Vector2(110, 5)
 
 [node name="Plant007Chomper" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_lv0cd")]
 script = ExtResource("2_kp108")
-eat_attack = 1800
+attack_value = 20
 eat_CD = 40.0
 is_bite = false
 is_chewing = false

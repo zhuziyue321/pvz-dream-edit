@@ -446,6 +446,7 @@ size = Vector2(80, 5)
 
 [node name="Plant018Squash" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_2veis")]
 script = ExtResource("2_rin1p")
+attack_value = 1800
 is_attack = false
 is_right = true
 plant_type = &"squash"

@@ -91,6 +91,7 @@ var need_judge := false
 
 ## 检测区域列表
 var all_ray_area:Array[Area2D]
+var _tmp_enemy_list: Array[Character000Base]
 ## 检测区域的方向,部分植物发射子弹使用
 var ray_area_direction:Array[Vector2]
 ## 可以攻击的敌人状态掩码组件（未在场景中配置时按检测组件默认值创建）
@@ -235,26 +236,35 @@ func _on_enemy_zombie_lane_update(zombie:Zombie000Base):
 #endregion
 
 #region 检测是否有敌人\道具
-## 如果检测到可以被攻击的敌人\道具，发射信号,保存当前敌人，return,若到最后没有检测到敌人，发射信号，重置当前敌人，return
-func judge_is_have_enemy():
-	## 僵王是正式角色，与普通僵尸走同一条判定链（跨行由检测框几何决定）
+## 遍历所有检测框内、与检测框重叠的区域，对每个区域调用 cb；
+## cb 返回 true 时立即中止遍历（用于「找到即停」场景）。
+## 统一了 judge_is_have_enemy / update_first_enemy / get_all_enemy_can_be_attacked
+## 三处原本各自内联的「for ray_area → get_overlapping_areas()」样板（TODO 清单 U-42）。
+func _for_each_overlapping_area(cb: Callable) -> bool:
 	for ray_area in all_ray_area:
-		var all_enemy_area = ray_area.get_overlapping_areas()
-		for enemy_area in all_enemy_area:
-			## 先检测角色
-			if enemy_area.owner is Character000Base:
-				if _on_detect_character(enemy_area.owner):
-					signal_can_attack.emit()
-					return true
-			## 检测到道具
-			elif enemy_area.owner is MainGameItemBase:
-				if _on_detect_main_game_item(enemy_area.owner):
-					signal_can_attack.emit()
-					return true
+		var areas := ray_area.get_overlapping_areas()
+		for area in areas:
+			if cb.call(area):
+				return true
+	return false
 
+## 如果检测到可以被攻击的敌人\道具，发射信号,保存当前敌人，return,若到最后没有检测到敌人，发射信号，重置当前敌人，return
+func judge_is_have_enemy() -> bool:
+	## 僵王是正式角色，与普通僵尸走同一条判定链（跨行由检测框几何决定）
+	if _for_each_overlapping_area(Callable(self, "_judge_area_can_attack")):
+		signal_can_attack.emit()
+		return true
 	## 如果循环结束还未return,未找到敌人
 	enemy_can_be_attacked = null
 	signal_not_can_attack.emit()
+	return false
+
+## judge_is_have_enemy 对每个重叠区域的派发：先角色后道具（等价于原内联分支，U-42）
+func _judge_area_can_attack(area: Area2D) -> bool:
+	if area.owner is Character000Base:
+		return _on_detect_character(area.owner)
+	elif area.owner is MainGameItemBase:
+		return _on_detect_main_game_item(area.owner)
 	return false
 
 ## 当检测到道具
@@ -350,36 +360,38 @@ func _judge_enemy_is_can_be_attack(enemy:Character000Base)->bool:
 #region 检测组件提供的通用方法
 ## 更新可攻击敌人为第一个敌人(最前面的敌人),投手类使用
 ## 僵王是正式角色，与普通僵尸一起参与「最靠前」比较，不再单独兜底
-func update_first_enemy()->Character000Base:
+func update_first_enemy() -> Character000Base:
 	enemy_can_be_attacked = null
-	for ray_area in all_ray_area:
-		var all_enemy_area = ray_area.get_overlapping_areas()
-		for enemy_area in all_enemy_area:
-			var enemy = enemy_area.owner
-			if not enemy is Character000Base:
-				continue
-			## 如果敌人可以被攻击
-			if _judge_enemy_is_can_be_attack(enemy):
-				if is_instance_valid(enemy_can_be_attacked):
-					if enemy_can_be_attacked.global_position.x > enemy.global_position.x:
-						enemy_can_be_attacked = enemy
-				else:
-					enemy_can_be_attacked = enemy
+	_for_each_overlapping_area(Callable(self, "_collect_first_enemy"))
 	return enemy_can_be_attacked
+
+## update_first_enemy 的候选收集：保留推进方向最靠前的那个（U-42 重构，原 for 循环等价）
+func _collect_first_enemy(area: Area2D) -> bool:
+	var enemy = area.owner
+	if not enemy is Character000Base:
+		return false
+	if _judge_enemy_is_can_be_attack(enemy):
+		if is_instance_valid(enemy_can_be_attacked):
+			if enemy_can_be_attacked.global_position.x > enemy.global_position.x:
+				enemy_can_be_attacked = enemy
+		else:
+			enemy_can_be_attacked = enemy
+	return false
 
 
 ## 获取所有可以被攻击的敌人
-func get_all_enemy_can_be_attacked()->Array[Character000Base]:
-	var all_enemy_can_be_attacked:Array[Character000Base]
-	for ray_area in all_ray_area:
-		var all_enemy_area = ray_area.get_overlapping_areas()
-		for enemy_area in all_enemy_area:
-			if enemy_area.owner is Character000Base:
-				var enemy:Character000Base = enemy_area.owner
-				## 如果敌人可以被攻击
-				if _judge_enemy_is_can_be_attack(enemy) and not all_enemy_can_be_attacked.has(enemy):
-					all_enemy_can_be_attacked.append(enemy)
-	return all_enemy_can_be_attacked
+func get_all_enemy_can_be_attacked() -> Array[Character000Base]:
+	_tmp_enemy_list = []
+	_for_each_overlapping_area(Callable(self, "_collect_all_enemy"))
+	return _tmp_enemy_list
+
+## get_all_enemy_can_be_attacked 的候选收集：去重后追加（U-42 重构，原 for 循环等价）
+func _collect_all_enemy(area: Area2D) -> bool:
+	if area.owner is Character000Base:
+		var enemy: Character000Base = area.owner
+		if _judge_enemy_is_can_be_attack(enemy) and not _tmp_enemy_list.has(enemy):
+			_tmp_enemy_list.append(enemy)
+	return false
 
 #endregion
 

@@ -29,5 +29,5 @@ func _unsubscribe_counter_events() -> void:
 ## [param _time_ice] 为事件携带的冰冻秒数；火球消除不使用此参数。[br]
 ## [param _time_decelerate] 为事件携带的减速秒数；保留参数以匹配现有事件签名。[br]
 ## [param _damage] 为事件携带的伤害；火球被消除时不需要结算伤害。
-func _on_ice_all_zombie(_time_ice: float, _time_decelerate: float, _damage: int = 20) -> void:
+func _on_ice_all_zombie(_time_ice: float, _time_decelerate: float, _damage: int = 0) -> void:
 	dispel()

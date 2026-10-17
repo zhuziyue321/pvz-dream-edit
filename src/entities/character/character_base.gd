@@ -42,6 +42,19 @@ var all_timer:Dictionary[E_TimerType, Timer] = {
 ## 是否为我是僵尸模式
 var is_zombie_mode:=false
 
+@export_group("角色攻击力")
+## 角色攻击力：发射子弹时由攻击组件写进子弹，覆盖子弹场景自身的 attack_value
+##（见 `AttackComponentBulletBase.get_shoot_attack_value()`）。
+##
+## 优先级（从高到低）：
+##   1. 攻击组件的 `attack_value_bullet`（> 0 时，组件级覆盖，配在攻击组件上）；
+##   2. 本字段（> 0 时，角色自己的攻击力）；
+##   3. 都不设（-1）→ 子弹沿用自己场景里的 `attack_value`，与没有本字段时行为一致。
+##
+## 植物与僵尸共用（植物僵尸 / 投石车僵尸发射的子弹同样读它）；
+## 啃食类持续伤害不走这里（那是 `AttackComponentZombieNorm.init_attack_value_per_min`）。
+@export var attack_value: int = -1
+
 @export_group("角色速度")
 ## 角色速度随机范围
 @export var random_speed_range :Vector2 = Vector2(0.9, 1.1)
@@ -83,6 +96,16 @@ var is_hypno:bool = false
 ## 它自己的归属阵营、朝向、表现、死亡计数一律不动。
 ## 谁置位谁负责还原（模组在效果结束时置回 false）。
 var is_enemy_to_all_camps := false
+## 模组自定义效果容器：模组可以把任意"原版没有"的持续 / 一次性效果挂到这个角色上，
+## 键名由模组自行约定（建议用 `mod_id` + 效果名的枚举 / StringName，避免不同模组互相覆盖）。
+##
+## 角色只负责**持有**这个字典，不消费其中的内容；具体效果「是什么、怎么解析、何时生效」
+## 由模组或对应的效果系统决定（例如读取后改写 `influence_speed_factors`、挂组件、改外观等）。
+## 放在基类是为了让植物（`Plant000Base`）与僵尸（`Zombie000Base`）都能无差别地承载模组效果，
+## 模组不必去改角色自身的字段，避免污染基类、破坏数据驱动 + 组件化架构（硬约束 1-1/1-2）。
+##
+## 约定：值一般放 `Dictionary`（可带 `time` / `value` / `source` 等子字段），方便统一续期 / 清除。
+var mod_custom_effects: Dictionary = {}
 ## 该角色是否被设定为隐形（通用外观项，由僵尸初始化参数 E_ZInitAttr.IsInvisible 下发）
 ## 只表示「设定」：当前是否真的隐形看 BodyCharacter.is_invisible
 var is_invisible := false
@@ -255,16 +278,27 @@ func update_speed_factor(value: float, influent_speed_factor:E_Influence_Speed_F
 
 #region 死亡、受击相关
 ## 亡语
+## U-31：爆炸植物的「死亡引爆」统一下沉到这里——若宿主挂了 `BombComponent`（唯一名 `BombComponent`）
+## 且 `is_auto_bomb_in_death`，则自动 `judge_death_bomb()`，无需每个植物子类重写。
+## `judge_death_bomb()` 自身已检查 `is_auto_bomb_in_death`（如土豆雷未出土时为 false 不炸），
+## 且本函数只在 `is_can_death_language` 为真时才会被 `character_death()` 调用，
+## 因此必杀类伤害（已置 `is_can_death_language = false`，见 L-12/L-14）不会触发亡语，语义一致。
+## 没有 `BombComponent` 的角色（僵尸等）走到这里自然跳过；需要特殊亡语的角色（如雪橇僵尸散架）自行重写。
 func death_language():
-	pass
+	var bomb := get_node_or_null(^"BombComponent") as BombComponentBase
+	if bomb != null:
+		bomb.judge_death_bomb()
 
 ## 角色死亡,子类继承重写
 func character_death():
 	is_death = true
-	signal_character_death.emit()
-	#call_deferred("emit_signal", "signal_character_death")
+	## L-13：亡语触发时机改到死亡信号之前——否则「最后一只僵尸死亡」的战斗判定
+	## 会发生在亡语（如雪橇僵尸补 4 兵）之前，补兵可能落在已判定的战斗之外。
+	## ⚠️ 需开游戏实测：雪橇僵尸补兵是否被正确算入本轮。
 	if is_can_death_language:
 		death_language()
+	signal_character_death.emit()
+	#call_deferred("emit_signal", "signal_character_death")
 
 ## 【伤害系统】**统一的伤害入口**：本角色要对谁造成伤害，一律走这里。
 ##
@@ -278,6 +312,24 @@ func character_death():
 ## [return] 结算结果（见 `DamageResult`）
 func apply_damage(info: DamageInfo) -> DamageResult:
 	return DamageSystem.apply(info)
+
+
+## 【伤害系统】**②-a 防具加工包**：先让身上每一层防具过一遍这个包，再交给角色自己
+## （`process_damage()`）—— **谁在外面谁先说话**。
+##
+## 顺序由管线保证（`DamageSystem.apply()` 先调本函数、再调 `process_damage()`），
+## 不依赖子类记得先调 `super()`。
+##
+## **防具的伤害吸收也在这里完成**：每层防具的 `process_damage()` 会就地扣自己的血、
+## 并把 `info.amount` 改成"走完这层还剩多少"，所以 ③ 结算层只拿剩下的打本体。
+##
+## 本函数只做转发：植物没有防具，走基类 `HpComponent` 的实现直接放行；
+## 僵尸由 `HpComponentZombie` 逐层问 `armor_list`。子类一般**不需要**重写。
+##
+## [param info] 效果包（各层防具可以改它、也可以整包取消，见 `ArmorComponent.process_damage()`）
+## [return] true = 继续结算；false = 某一层防具取消了整包（回 `E_CancelReason.Armor`）
+func process_damage_armors(info: DamageInfo) -> bool:
+	return hp_component.process_damage_armors(info)
 
 
 ## 【伤害系统】**② 受击方加工包**：系统应用之前，给目标一次**改写这个包**的机会。
@@ -373,7 +425,11 @@ func be_attacked_bullet(attack_value:int, bullet_mode:ConstDamage.E_DamageMode=C
 	info.source = source_node
 	info.attacker = attacker_node
 	var result := apply_damage(info)
-	be_hit_light()
+	## L-23 修复：本次伤害被防具 / 修饰器 / 本体整包取消（result.is_applied == false）时不闪白光，
+	## 表现（受击白光）应落在「确实造成伤害」之后，符合 docs/项目规范.md §5「表现放③末端」纪律。
+	## ⚠️ 行为变更：原版无条件闪白光；举起防具的僵尸被豌豆打时白光是否应消失，需开游戏回归确认。
+	if result.is_applied:
+		be_hit_light()
 	return result
 
 
@@ -482,8 +538,8 @@ func _on_ice_decelerate_timer_timeout() -> void:
 	body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color(1, 1, 1))
 
 ## 被冰冻控制：先结算本次伤害，冰冻只是附加在伤害上的控制效果（寒冰菇 = 伤害 + 冰冻）。[br]
-## [param damage] 本次伤害，由发动方给出（寒冰菇炸弹组件的 `bomb_value`）；<=0 表示只冻不打。
-func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, damage:int = 20):
+## [param damage] 本次伤害，由发动方给出（寒冰菇自己的角色攻击力 `attack_value`）；<=0 表示只冻不打。
+func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, damage:int = 0):
 	if damage > 0:
 		var info := DamageInfo.create(self, damage,
 			ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Freeze)

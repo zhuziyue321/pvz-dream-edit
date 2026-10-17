@@ -98,20 +98,18 @@ func update_global_pos_y_shadow_on_have_slope():
 	global_pos_y_shadow = get_main_game().get_row_base_global_y(lane) + slope_y
 
 
-## 抛物线子弹先对Norm进行攻击
+## 抛物线子弹先对Norm进行攻击：取植物的优先级（本体 → 壳类 → 花盆/睡莲）
+##
+## 与直线版**只差顺序**，取法共用 `Bullet000NormBase.get_plant_in_cell_by_order()`
+## （2026-10-16 合并，见 docs/TODO清单.md U-36）。
+const BE_HIT_PLANT_ORDER: Array[CharacterRegistry.PlacePlantInCell] = [
+	CharacterRegistry.PlacePlantInCell.Norm,
+	CharacterRegistry.PlacePlantInCell.Shell,
+	CharacterRegistry.PlacePlantInCell.Down,
+]
+
 func get_first_be_hit_plant_in_cell(plant:Plant000Base)->Plant000Base:
-	## shell
-	var norm_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
-	if is_instance_valid(norm_plant):
-		return norm_plant
-	var shell_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Shell)
-	if is_instance_valid(shell_plant):
-		return shell_plant
-	var down_plant := plant.plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Down)
-	if is_instance_valid(down_plant):
-		return down_plant
-	Log.error("当前植物格子没有检测到可以攻击的植物")
-	return null
+	return get_plant_in_cell_by_order(plant, BE_HIT_PLANT_ORDER)
 
 ## 被保护伞弹开,更新移动贝塞尔曲线
 func be_umbrella_bounce():

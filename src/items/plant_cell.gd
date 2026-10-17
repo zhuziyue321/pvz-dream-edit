@@ -41,7 +41,7 @@ var slope_step_y: float = 0.0
 #region 格子的附加属性（原版没有，留给模组）
 ## 当前格子的**光照等级**（原版没有这个属性，恒为 0）
 ##
-## ★ 这是留给模组的口子（"原版平衡"里的「火炬树桩 / 路灯花照明 → 向日葵按光照多产阳光」）：
+## ★ 这是留给模组的口子（"生态版"里的「火炬树桩 / 路灯花照明 → 向日葵按光照多产阳光」）：
 ##   本体**不认识**光照这件事，谁加谁减由调用方决定，本体只提供「存一个数 + 增减」的能力。
 ##   格子随场景一起销毁，所以不用清 —— 新的一局全是 0。
 var light_level: int = 0
@@ -442,6 +442,9 @@ func move_get_carry_plant() -> Plant000Base:
 ## 手套：查找植物在本格子中占的槽位；不在本格子返回 -1
 ## （PlacePlantInCell 没有「空」成员，只能用 -1 表示没找到）
 func move_get_plant_place(plant: Plant000Base) -> int:
+	## 空引用不属于本格子：不挡的话空槽位（也是 null）会被判成「找到了」
+	if not is_instance_valid(plant):
+		return -1
 	for place in plant_in_cell:
 		if get_plant(place) == plant:
 			return int(place)
@@ -450,6 +453,9 @@ func move_get_plant_place(plant: Plant000Base) -> int:
 
 ## 手套：把植物从本格子取出（不杀死植物，只断开本格子的关联）
 func move_take_plant(plant: Plant000Base) -> bool:
+	## 调用方可能拿到已经死掉的引用（如旋转方块的中途有植物被啃掉）
+	if not is_instance_valid(plant):
+		return false
 	var place_int := move_get_plant_place(plant)
 	if place_int == -1:
 		return false

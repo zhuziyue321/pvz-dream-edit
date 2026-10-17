@@ -5,8 +5,10 @@ class_name AttackComponentZombieGargantuar
 攻击造成伤害时,判断攻击对象是否死亡,若死亡,则攻击空气
 若没死亡:
 	攻击植物时,该植物格子所有植物被压扁
-	攻击僵尸时,该僵尸受穿透伤害1800
+	攻击僵尸时,该僵尸受穿透伤害(见 attack_value)
 """
+## 砸僵尸的穿透伤害（原版 1800，与倭瓜同级）；场景可配
+@export var attack_value: int = 1800
 ## 攻击动画开始时检测敌人
 var enemy:Character000Base
 ## 攻击罐子
@@ -37,7 +39,7 @@ func attack_once():
 		if enemy is Plant000Base:
 			enemy.plant_cell.be_gargantuar_attack(owner)
 		elif enemy is Zombie000Base:
-			enemy.be_attacked_bullet(1800,ConstDamage.E_DamageMode.Penetration, true, true)
+			enemy.be_attacked_bullet(attack_value,ConstDamage.E_DamageMode.Penetration, true, true)
 
 		SoundManager.play_character_SFX("gargantuar_thump")
 

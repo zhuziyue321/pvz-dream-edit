@@ -1,6 +1,9 @@
 extends Zombie000Base
 class_name Zombie014Bobsled
 
+## 不在冰道上时每次检测掉的血（真实伤害，见 `judge_is_in_ice_road()`）
+@export var off_ice_road_damage: int = 100
+
 @onready var zombie_bobsled_1: Sprite2D = $ZombieBobsled1
 @onready var judge_is_in_ice_road_timer: Timer = $JudgeIsInIceRoadTimer
 
@@ -45,7 +48,7 @@ func judge_is_in_ice_road():
 			break
 	if not is_in_road:
 		## 离开冰道持续掉血：真实伤害（无视二类防具），不播受击音效（不是"被打"）
-		var info := DamageInfo.create(self, 100, ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Script)
+		var info := DamageInfo.create(self, off_ice_road_damage, ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Script)
 		info.trigger_sfx = false
 		apply_damage(info)
 

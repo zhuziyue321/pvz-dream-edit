@@ -3,7 +3,7 @@ class_name Plant047SpikeRock
 
 @onready var detect_component: DetectComponent = $DetectComponent
 
-@export var attack_value:=20
+## 攻击力沿用角色基类 `Character000Base.attack_value`（本场景 .tscn 里配 20）
 @export_group("动画状态")
 @export var is_attack:=false
 
@@ -12,6 +12,8 @@ class_name Plant047SpikeRock
 ## 载具反伤（扎爆一辆车）时自己掉的血：原版口径 —— 钢地刺扛得住，不像地刺那样直接报废。
 ## 走 `@export` 而不是脚本常量：数值归场景配，与 `attack_value` 同一层
 @export var vehicle_backlash_damage: int = 50
+## 被碾压时自己掉的血占血量上限的比例（原版 1/9）：`off_ice_road` 一类的持续 / 比例掉血同理归场景配
+@export var flatten_self_damage_ratio: float = 1.0 / 9.0
 
 
 ## 初始化正常出战角色信号连接
@@ -69,7 +71,7 @@ func be_flattened_from_enemy(character:Character000Base):
 	info.trigger_sfx = false
 	info.is_drop_on_death = false
 	character.apply_damage(info)
-	## 被碾压掉 1/9 上限血：走伤害管线（碾压语义），别直接调血量组件的结算函数
-	var self_info := DamageInfo.create(self, int(hp_component.max_hp / 9.0),
+	## 被碾压按比例掉上限血：走伤害管线（碾压语义），别直接调血量组件的结算函数
+	var self_info := DamageInfo.create(self, int(hp_component.max_hp * flatten_self_damage_ratio),
 		ConstDamage.E_DamageMode.Norm, ConstDamage.E_DamageCause.Crush)
 	apply_damage(self_info)

@@ -56,7 +56,8 @@ func _physics_process(delta: float) -> void:
 @warning_ignore("unused_parameter")
 func update_z_index_and_lane(curr_lane:int, target_lane:int):
 	lane = target_lane
-	z_index = 50 * lane + 45
+	## 与子弹初始化共用同一公式（见 Bullet000Base.z_index_of_lane）
+	z_index = Bullet000Base.z_index_of_lane(lane)
 
 ## 更新保龄球移动方向
 func _update_direction():

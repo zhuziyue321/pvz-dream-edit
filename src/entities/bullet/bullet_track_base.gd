@@ -21,35 +21,48 @@ var detect_component_global:DetectComponent
 ## 距离下次允许全量索敌还剩多少秒
 var _retarget_timer := 0.0
 
-func _ready() -> void:
-	super()
-	if not is_instance_valid(target_enemy):
-		target_enemy = detect_component_global.update_enemy_track_bullet(bullet_camp)
-
-## 追踪子弹初始化子弹属性
-## [Enemy: Character000Base]: 敌人
-func init_bullet(bullet_paras:Dictionary[E_InitParasAttr,Variant]):
-	super(bullet_paras)
-	z_index = 4000
-	detect_component_global = get_main_game().detect_component_global
-
-	target_enemy = bullet_paras.get(E_InitParasAttr.Enemy, null)
-
-
-func _physics_process(_delta: float) -> void:
-	## 如果敌人存在并且没有死亡
-	if is_instance_valid(target_enemy) and not target_enemy.is_death:
-		movement_component.reset_track_movement(true, false, target_enemy.hurt_box_component.global_position)
-		## 计时器清零：目标死掉的下一帧立刻重新索敌，换目标不引入额外延迟
-		_retarget_timer = 0.0
-	## 无限穿透（max_attack_num == -1）时已经结算过的敌人
+## 无限穿透（max_attack_num == -1）时已经结算过的敌人
 ##
 ## 为什么需要：无限穿透的子弹不会被消耗，而追踪子弹会一直贴着目标飞，
 ## 一旦目标在受击盒边缘反复进出就会不停触发 area_entered，对同一个敌人连续造成伤害。
 ## 这里按「同一个敌人只结算一次」去重，语义上也正是「穿透」——穿过谁就打谁一次。
 var _attacked_enemies_on_infinite: Array[Character000Base] = []
 
-## 敌人不存在 全局寻找敌人
+func _ready() -> void:
+	super()
+	if not is_instance_valid(target_enemy):
+		target_enemy = _get_detect_component_global().update_enemy_track_bullet(bullet_camp)
+
+
+## 全局检测组件（**懒取**）
+##
+## ⚠️ 这里曾经依赖一条**隐性契约**：「`init_bullet()` 必须早于入树」—— 因为该组件是在
+## `init_bullet()` 里赋值的，而 `_ready()` 里就要用。调用方若先 `add_child()` 再
+## `init_bullet()`，它就一直保持 null，表现为**静默索不到敌**（不报错、也不崩）。
+## 改成「谁用谁取」之后两种顺序都能工作（见 docs/TODO清单.md L-22）。
+func _get_detect_component_global() -> DetectComponent:
+	if not is_instance_valid(detect_component_global):
+		detect_component_global = get_main_game().detect_component_global
+	return detect_component_global
+
+
+## 追踪子弹初始化子弹属性
+## [Enemy: Character000Base]: 敌人
+func init_bullet(bullet_paras:Dictionary[E_InitParasAttr,Variant]):
+	super(bullet_paras)
+	z_index = 4000
+	detect_component_global = _get_detect_component_global()
+
+	target_enemy = bullet_paras.get(E_InitParasAttr.Enemy, null)
+
+
+func _physics_process(delta: float) -> void:
+	## 如果敌人存在并且没有死亡
+	if is_instance_valid(target_enemy) and not target_enemy.is_death:
+		movement_component.reset_track_movement(true, false, target_enemy.hurt_box_component.global_position)
+		## 计时器清零：目标死掉的下一帧立刻重新索敌，换目标不引入额外延迟
+		_retarget_timer = 0.0
+	## 敌人不存在 全局寻找敌人
 	else:
 		## 全量索敌按时间节流（见 RETARGET_INTERVAL），没到点就沿用上一帧的结果
 		_retarget_timer -= delta

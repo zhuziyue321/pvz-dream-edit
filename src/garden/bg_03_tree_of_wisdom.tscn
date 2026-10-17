@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://src/garden/bg_03_tree_of_wisdom.gd" id="1_tree"]
 [ext_resource type="Texture2D" path="res://pak/reanim/tree_bg.jpg" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/reanim/tree_grass.png" id="3_grass"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/tree_grass.png" id="3_grass"]
 [ext_resource type="PackedScene" path="res://src/garden/tree_of_wisdom_clouds.tscn" id="4_clouds"]
 [ext_resource type="Texture2D" path="res://pak/reanim/tree01.png" id="5_sprout"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="6_theme"]
