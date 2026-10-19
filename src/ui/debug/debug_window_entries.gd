@@ -55,6 +55,11 @@ static func _register_common_entries(builder: ConsoleEntryControl, parent: Contr
 		.set_category(CATEGORY_COMMON)
 		.set_order(10))
 
+	_add(builder, parent, ConsoleEntry.create_button(&"debug_blood_moon", "触发血月", _blood_moon)
+		.set_tooltip("立刻开始一次血月（全场僵尸 ×2、画面变红 15 秒）。只在开了血月的关卡（月夜屋顶）里生效")
+		.set_category(CATEGORY_COMMON)
+		.set_order(25))
+
 	_add(builder, parent, ConsoleEntry.create_button(&"debug_kill_all_zombie", "清场（杀死所有僵尸）", _kill_all_zombie)
 		.set_tooltip("与 Ctrl+K 同一入口：僵尸走正常死亡流程，最后一波清完同样会触发结算")
 		.set_category(CATEGORY_COMMON)
@@ -138,6 +143,22 @@ static func _register_state_entries(builder: ConsoleEntryControl, parent: Contro
 #region 动作
 static func _win_level() -> void:
 	Global.debug_win_main_game()
+
+
+static func _blood_moon() -> void:
+	if not GameContext.is_in_main_game():
+		Log.warn("调试窗口：不在关卡里，「触发血月」没生效")
+		return
+	var manager := GameContext.curr_main_game.blood_moon_manager
+	if manager == null:
+		return
+	if manager.game_para == null or not manager.game_para.is_blood_moon:
+		Log.warn("调试窗口：本关没开血月（要月夜屋顶场景），「触发血月」没生效")
+		return
+	if manager.is_active:
+		manager.end_blood_moon()
+	else:
+		manager.start_blood_moon()
 
 
 static func _kill_all_zombie() -> void:

@@ -386,6 +386,11 @@ const SFXOtherMap := {
 	&"finalwave":preload("res://pak/sounds/finalwave.ogg"),
 	## 大波僵尸
 	&"hugewave":preload("res://pak/sounds/hugewave.ogg"),
+	## 血月（DLC 版月夜屋顶章事件）：升起 / 生效一瞬 / 落下，以及血月期间的环境音
+	&"bloodmoon_rise": preload("res://pak/sounds/bloodmoon_rise.ogg"),
+	&"bloodmoon_tension": preload("res://pak/sounds/bloodmoon_tension.ogg"),
+	&"bloodmoon_fall": preload("res://pak/sounds/bloodmoon_fall.ogg"),
+	&"bloodmoon": preload("res://pak/sounds/bloodmoon.ogg"),
 	## 失败
 	&"losemusic":preload("res://pak/sounds/losemusic.ogg"),
 	## 准备安放植物

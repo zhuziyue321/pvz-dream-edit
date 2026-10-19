@@ -129,6 +129,9 @@ var is_ice:bool
 var ice_timer:Timer
 
 signal signal_curr_zombie_num_change(num:int)
+## 又生成了一只出战僵尸（create_norm_zombie 的统一出口）
+## 订阅方：血月等「全场加速」玩法要给血月期间才进场的僵尸补上加速
+signal zombie_created(zombie: Zombie000Base)
 
 func _ready():
 	boss_registry = ZmBossRegistry.new(self)
@@ -322,6 +325,10 @@ func create_norm_zombie(
 	all_zombies_1d.append(zombie)
 
 	curr_zombie_num += 1
+
+	## 「又生成了一只僵尸」的通用观测口：血月这类「全场加速」玩法要给**血月期间才进场**
+	## 的僵尸补上加速（本体不认识任何具体玩法，见 §1-8）
+	zombie_created.emit(zombie)
 
 	return zombie
 
@@ -643,6 +650,20 @@ func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int):
 			zombie.be_ice_freeze(time_ice, time_decelerate, damage)
 	## 僵王已并入 all_zombies_2d，上面的全场遍历已经覆盖它，不需要再单独遍历登记集合
 	## （否则每只僵王会收到两次冻结通知）。窗口检查仍在 ZB000Base.be_ice_freeze 内。
+
+## 缩小全场僵尸（缩小紫罗兰）：对 `all_zombies_2d` 里所有僵尸结算一次缩小控制。[br]
+## [param duration] 缩小持续时长（单位为游戏秒）[br]
+## [param scale_factor] 缩小比例（<1）[br]
+## [param damage_factor] 啃咬伤害倍率（<1）[br]
+## 与 `ice_all_zombie()` 同口径：僵王已并入 all_zombies_2d，全场遍历一并覆盖它。
+func shrink_all_zombie(duration: float, scale_factor: float, damage_factor: float) -> void:
+	for zombie_row: Array in all_zombies_2d:
+		if zombie_row.is_empty():
+			continue
+		for zombie: Zombie000Base in zombie_row:
+			if not is_instance_valid(zombie):
+				continue
+			zombie.be_shrink(duration, scale_factor, damage_factor)
 
 func start_ice_timer(wait_time:float):
 	if not is_instance_valid(ice_timer):

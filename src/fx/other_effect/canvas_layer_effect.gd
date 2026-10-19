@@ -6,11 +6,13 @@ class_name CanvasLayerEffect
 enum E_CanvasLayerEffectType{
 	Ice,	## 冰冻
 	Doom,	## 毁灭菇
+	BloodMoon,	## 血月（DLC 版月夜屋顶章事件）：持续型红屏，由血月管理器渐变进出
 }
 
 @onready var all_panel_effect: Dictionary[E_CanvasLayerEffectType, Panel] = {
 	E_CanvasLayerEffectType.Ice: $Panel_Ice,
-	E_CanvasLayerEffectType.Doom: $Panel_Doom
+	E_CanvasLayerEffectType.Doom: $Panel_Doom,
+	E_CanvasLayerEffectType.BloodMoon: $Panel_BloodMoon,
 }
 
 var all_tween:Dictionary[E_CanvasLayerEffectType,Tween]
@@ -21,6 +23,7 @@ func _ready() -> void:
 		all_ori_color[i] = all_panel_effect[i].modulate
 	## 注册事件总线
 	EventBus.subscribe(ConstEventName.CANVAS_LAYER_EFFECT_ONCE, canvas_layer_effect_once)
+	EventBus.subscribe(ConstEventName.CANVAS_LAYER_EFFECT_FADE, canvas_layer_effect_fade)
 
 ## 发生一次全屏光效
 func canvas_layer_effect_once(canvas_layer_effect_type:E_CanvasLayerEffectType, duration: float = 0.3):
@@ -35,3 +38,25 @@ func canvas_layer_effect_once(canvas_layer_effect_type:E_CanvasLayerEffectType, 
 	## 不要 await finished：Tween.kill() 不会发射 finished，
 	## 上一次的协程会永久挂起；改成把"关掉光效"挂到 Tween 自己的回调上
 	all_tween[canvas_layer_effect_type].tween_callback(func() -> void: visible = false)
+
+
+## 持续型全屏染色（血月）：把某一层染到指定 alpha 并**保持在那里**，
+## alpha 传 0 就是淡出（淡完自动隐藏本层）。
+##
+## 与 canvas_layer_effect_once 的区别：那个是「闪一下就回原样」的一次性效果，
+## 这个是「染上去了就不自己回来」，进出都由调用方（血月管理器）决定。
+## 只 tween alpha —— 颜色本身留给场景里那张 Panel 的 modulate（血月是红的）。
+func canvas_layer_effect_fade(
+	canvas_layer_effect_type: E_CanvasLayerEffectType,
+	target_alpha: float,
+	duration: float = 1.0,
+) -> void:
+	if all_tween.get(canvas_layer_effect_type):
+		all_tween[canvas_layer_effect_type].kill()
+
+	visible = true
+	all_tween[canvas_layer_effect_type] = create_tween()
+	all_tween[canvas_layer_effect_type].tween_property(
+		all_panel_effect[canvas_layer_effect_type], "modulate:a", target_alpha, duration)
+	if target_alpha <= 0.0:
+		all_tween[canvas_layer_effect_type].tween_callback(func() -> void: visible = false)
