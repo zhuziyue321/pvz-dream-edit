@@ -13,6 +13,8 @@ const SCENE_POOL := &"pool"
 const SCENE_FOG := &"fog"
 const SCENE_ROOF := &"roof"
 const SCENE_BOSS := &"boss"
+const SCENE_MOON_ROOF := &"moon_roof"
+const SCENE_WOODS := &"woods"
 
 ## 场景名 → 场景脚本路径
 ## 用路径 + 延迟 load：场景脚本引用了本类的常量，直接 preload 会构成循环依赖
@@ -23,6 +25,8 @@ const SCENE_SCRIPT_PATHS: Dictionary = {
 	SCENE_FOG: "res://src/world/scene/scene_fog.gd",
 	SCENE_ROOF: "res://src/world/scene/scene_roof.gd",
 	SCENE_BOSS: "res://src/world/scene/scene_boss.gd",
+	SCENE_MOON_ROOF: "res://src/world/scene/scene_moon_roof.gd",
+	SCENE_WOODS: "res://src/world/scene/scene_woods.gd",
 }
 
 ## 场景名 → 场景设置实例（一份场景数据全关共用，只读取不改）

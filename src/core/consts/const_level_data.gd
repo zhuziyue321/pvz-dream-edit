@@ -11,6 +11,8 @@ enum GameBg {
 	Fog,
 	Roof,
 	Boss, ## 夜屋顶(僵王关 5-10：屋顶几何 + 夜色底图,原版第 6 个场景 Night Roof)
+	MoonRoof, ## 月夜屋顶(DLC 版第 6 章 Moon：屋顶几何 + 月夜底图,见 docs/参考存档/地图实现.md §2.3.3)
+	Woods, ## 郊外营地(DLC 版第 7 章 Woods：前院几何 + 森林营地底图,见 docs/参考存档/地图实现.md §2.3.3)
 }
 
 ## 背景图
@@ -23,6 +25,8 @@ const GameBgTextureMap: Dictionary = {
 	GameBg.Fog: preload("res://pak/images/background4.jpg"),
 	GameBg.Roof: preload("res://pak/images/background5.jpg"),
 	GameBg.Boss: preload("res://pak/images/background6boss.jpg"),
+	GameBg.MoonRoof: preload("res://pak/images/background6moon.png"),
+	GameBg.Woods: preload("res://pak/images/background7woods.png"),
 }
 #endregion
 
@@ -40,6 +44,8 @@ enum GameBGM {
 	Puzzle,		## Cerebrawl(解谜,以及冒险 4-5)
 	UltimateBattle,	## Ultimate Battle(冒险 1-10 / 2-10 / 3-10 传送带关)
 	NoBGM,			## 无背景音乐(冒险 4-10 不播 BGM,见 docs/参考存档/特殊关卡.md「特殊关音乐」)
+	Moon,			## Harvest Moon(DLC 版月夜屋顶章曲,作者 MisterKaze;见 docs/参考存档/地图实现.md §2.3.3)
+	Woods,			## Woody Tombstones(DLC 版郊外营地章曲,作者 Tamir Monteagudo & Andreko;见 docs/参考存档/地图实现.md §2.3.3)
 }
 
 ## BGM 资源路径
@@ -54,6 +60,8 @@ const GameBGMMap: Dictionary[GameBGM, String] = {
 	GameBGM.Puzzle: "res://assets_custom/audio/BGM/cerebrawl.mp3",
 	GameBGM.UltimateBattle: "res://assets_custom/audio/BGM/ultimate_battle.mp3",
 	GameBGM.NoBGM: "",
+	GameBGM.Moon: "res://assets_custom/audio/BGM/harvest_moon.ogg",
+	GameBGM.Woods: "res://assets_custom/audio/BGM/woody_tombstones.ogg",
 }
 #endregion
 

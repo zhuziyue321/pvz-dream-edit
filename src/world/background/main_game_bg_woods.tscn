@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/world/background/main_game_home.gd" id="1_home"]
+[ext_resource type="Texture2D" path="res://pak/images/background7woods.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://pak/images/background7woods_gameover_mask.png" id="7_m7"]
+
+[sub_resource type="RectangleShape2D" id="12_rect"]
+size = Vector2(150, 600)
+
+[node name="Background" type="Sprite2D"]
+process_mode = 3
+position = Vector2(-210, 0)
+texture = ExtResource("2_bg")
+centered = false
+
+[node name="Home" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("1_home")
+
+[node name="Area2DHome" type="Area2D" parent="Home"]
+process_mode = 3
+position = Vector2(132.306, 8)
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Home/Area2DHome"]
+position = Vector2(-28.93, 290.79)
+shape = SubResource("12_rect")
+
+[node name="Door" type="Node2D" parent="Home"]
+
+[node name="DoorDown" type="Node2D" parent="Home/Door"]
+
+[node name="PanelZombieGoHome" type="Panel" parent="Home/Door/DoorDown"]
+unique_name_in_owner = true
+clip_children = 1
+offset_left = 92.0
+offset_top = 0.0
+offset_right = 292.0
+offset_bottom = 600.0
+mouse_filter = 2
+
+[node name="Marker2DZombieGoHome" type="Marker2D" parent="Home/Door/DoorDown/PanelZombieGoHome"]
+unique_name_in_owner = true
+position = Vector2(72, 424)
+
+[node name="DoorMask" type="Node2D" parent="Home/Door"]
+
+[node name="Background7WoodsGameoverMask" type="Sprite2D" parent="Home/Door/DoorMask"]
+visible = false
+position = Vector2(108, 139)
+texture = ExtResource("7_m7")
+
+[connection signal="area_entered" from="Home/Area2DHome" to="Home" method="_on_area_2d_home_area_entered"]
