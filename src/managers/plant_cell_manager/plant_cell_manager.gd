@@ -3,6 +3,7 @@ class_name PlantCellManager
 
 @onready var plant_cells_root: Node2D = %PlantCellsRoot
 @onready var tomb_stone_manager: TombStoneManager = $TombStoneManager
+@onready var bush_manager: BushManager = $BushManager
 
 ## 格子场景，按地图数据实例化
 const PLANT_CELL_SCENE = preload("res://src/ui/plant_cell.tscn")
@@ -15,6 +16,8 @@ var row_col:Vector2i = Vector2i.ZERO
 ## TombStoneManager(PlantCellManager子节点)初始化
 ## 生成的墓碑列表(一维)
 var tombstone_list :Array[TombStone] = []
+## 生成的灌木丛列表(一维)（DLC 版第 7 章 Woods）
+var bush_list :Array[Bush] = []
 ## 当前植物种植的信息[植物种类:植物数量]
 var curr_plant_num:Dictionary[StringName, int]
 ## 当前罐子数量
@@ -170,6 +173,7 @@ func get_plant_cell_surrounding(plant_cell:PlantCell) -> Array[PlantCell]:
 func init_manager() -> void:
 	signal_connect_plant_cell_with_hand_manager(main_game.hand_manager)
 	tomb_stone_manager.init_tomb_stone_manager(game_para)
+	bush_manager.init_bush_manager(game_para)
 	## 没有存档直接创建植物和创建罐子
 	if not GameContext.curr_main_game.is_save_game_data_on_init:
 		init_pot()
@@ -216,8 +220,8 @@ func system_plant_one(plant_data: SystemPlantResource) -> void:
 	## 某一列
 	elif plant_data.plant_cell_pos.x == 0 and plant_data.plant_cell_pos.y != 0:
 		for plant_cell_row in all_plant_cells:
-			var plant_cell:PlantCell = plant_cell_row[plant_data.plant_cell_pos.y-1]
-			plant_cell.create_plant(plant_data.plant_type, false, false, plant_data.is_imitater_plant, game_para.is_zombie_mode)
+			var col_plant_cell:PlantCell = plant_cell_row[plant_data.plant_cell_pos.y-1]
+			col_plant_cell.create_plant(plant_data.plant_type, false, false, plant_data.is_imitater_plant, game_para.is_zombie_mode)
 	## 某一行
 	elif plant_data.plant_cell_pos.x != 0 and plant_data.plant_cell_pos.y == 0:
 		var plant_cell_row = all_plant_cells[plant_data.plant_cell_pos.x-1]
@@ -301,6 +305,10 @@ func pot_open_update(is_zombie:bool, glo_pos:Vector2):
 func create_tombstone(new_num:int):
 	tomb_stone_manager.create_tombstone(new_num)
 
+## 生成灌木丛（DLC 版第 7 章 Woods）
+func create_bush(new_num:int):
+	bush_manager.create_bush(new_num)
+
 ## 火爆辣椒爆炸特效
 ## [lane:int]:行
 func jalapeno_bomb_effect(lane:int):
@@ -319,6 +327,10 @@ func jalapeno_bomb_item_lane(lane:int):
 	for p_c :PlantCell in all_plant_cells[lane]:
 		if is_instance_valid(p_c.ladder):
 			p_c.ladder.queue_free()
+	## 灌木丛（DLC：爆杀类克制灌木，火爆辣椒顺手把这一行的灌木烧掉）
+	for p_c2 :PlantCell in all_plant_cells[lane]:
+		if is_instance_valid(p_c2.bush):
+			p_c2.bush.bush_death()
 
 
 ## 获取有植物的植物格子 (蹦极)

@@ -36,6 +36,11 @@ func _bomb_all_enemy():
 		if area_owner is Ladder:
 			if bomb_lane == -1 or (owner.lane + bomb_lane >= area_owner.lane and owner.lane - bomb_lane <= area_owner.lane ):
 				area_owner.ladder_death()
+		## 如果是灌木丛（DLC 版第 7 章 Woods：爆杀类能把灌木连带炸掉）
+		if area_owner is Bush:
+			if bomb_lane == -1 or (owner.lane + bomb_lane >= area_owner.row_col.x
+					and owner.lane - bomb_lane <= area_owner.row_col.x):
+				area_owner.bush_death()
 	for c:Character000Base in character_be_bomb:
 		if c is Zombie000Base:
 			c.be_bomb(bomb_value, is_cherry_bomb)

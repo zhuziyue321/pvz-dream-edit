@@ -140,10 +140,12 @@ libraries = {
 &"": SubResource("AnimationLibrary_wxdc1")
 }
 
+; 2561 = 512（僵尸受击框 L10）+ 2048（道具层 L12，灌木丛与梯子同层）+ 1（World L1）
+; 加 2048 是为了撞上灌木丛时自爆（DLC 版第 7 章 Woods）
 [node name="Area2D" type="Area2D" parent="."]
 position = Vector2(0, -17)
 collision_layer = 0
-collision_mask = 513
+collision_mask = 2561
 monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]

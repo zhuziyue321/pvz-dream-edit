@@ -100,6 +100,9 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 @export var is_day: bool = true
 ## 是否天降阳光,传送带没有
 @export var is_day_sun: bool = true
+## 是否有血月事件（DLC 版月夜屋顶章）：旗帜波触发血月，期间全场僵尸大幅加速 + 画面变红。
+## 由场景开关带出来（scene_moon_roof.gd 给 true），关卡也能自己覆盖
+@export var is_blood_moon: bool = false
 ## 是否有小推车
 @export var is_lawn_mover: bool = true
 ## 是否僵尸能进房
@@ -137,6 +140,7 @@ func apply_scene_setting() -> void:
 	is_fog = setting.is_fog
 	is_day = setting.is_day
 	is_day_sun = setting.is_day_sun
+	is_blood_moon = setting.is_blood_moon
 
 #endregion
 
@@ -251,6 +255,14 @@ func apply_scene_setting() -> void:
 ## 开启后:每个大波(生存模式一轮的最终波)前先补 1~3 个墓碑,再由全部墓碑各放一只伏击僵尸
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Grave_(PvZ) "Survival: Night Levels")
 @export var is_tombstone_respawn := false
+
+@export_subgroup("灌木丛参数（DLC 版第 7 章 Woods）")
+## 是否有灌木丛：灌木是长在草坪上的场景障碍物（占一格、不能种植物、藏僵尸），
+## 开启后最终波每丛灌木会各放出一只伏击僵尸
+## 数据来源: pvz-dlc-edition.fandom.com/wiki/Woods
+@export var is_have_bush := false
+## 开局生成的灌木数量（DLC 未公布各关数值，按关卡自配；与墓碑同款只长草坪右侧三分之二）
+@export var init_bush_num := 0
 
 #endregion
 
@@ -484,6 +496,8 @@ func _resolve_adventure_locked_cards() -> void:
 ##   1. 不置 is_locked_card_slot —— 置了 is_no_choose_permission() 就返回 true，整个选卡界面不出现；
 ##   2. 至少给玩家留 1 个槽（N 夹到 卡槽数 - 1），否则卡槽被预选卡填满，同样退化成跳过选卡；
 ##   3. 随机池要剔掉本关禁选的植物（禁选是在卡位生成之后才生效，预选这条路绕不过它）。
+## 另外随机池**只取原版绿卡**：紫卡 / 模仿者（商店购买）与调试专属 / 模组新增植物一律不锁 ——
+## 紫卡要场上先有前置植物、模仿者要先挑目标卡，被锁在不可编辑的前几槽里等于废卡。
 func _resolve_locked_random_cards() -> void:
 	if locked_random_card_num <= 0:
 		return
@@ -492,9 +506,24 @@ func _resolve_locked_random_cards() -> void:
 		return
 	if not can_choosed_card or not has_norm_card_slot():
 		return
-	var owned_cards: Array[StringName] = Global.global_game_state.curr_plant.duplicate()
-	for banned_plant_type: StringName in banned_plant_types_in_choose_card:
-		owned_cards.erase(banned_plant_type)
+	var owned_cards: Array[StringName] = []
+	for plant_type: StringName in Global.global_game_state.curr_plant:
+		## 紫卡 + 模仿者：见 ConstPlantUnlock.PURPLE_CARD_PRICE
+		if ConstPlantUnlock.is_shop_plant(plant_type):
+			continue
+		## 调试模式专属 / 模组新增：见 AllCards.is_appended_plant()
+		if AllCards.is_appended_plant(plant_type):
+			continue
+		if banned_plant_types_in_choose_card.has(plant_type):
+			continue
+		## 已禁用模组残留在 curr_plant 里的孤儿植物：既不在内置表 PlantIds.ALL、
+		## 也没注册卡模板（is_appended_plant 只认「当前运行期注册」的，关掉就不认了），
+		## 这种 id 漏过上面三条过滤混进随机池，会让 init_pre_choosed_card() 报
+		## 「跳过未注册或不可出战的引用」并白占一个锁槽。是否真能出战以 AllCards 为准。
+		if not AllCards.is_battle_card(ResourceCardReference.create(
+				ResourceCardReference.CardType.Plant, plant_type)):
+			continue
+		owned_cards.append(plant_type)
 	if owned_cards.is_empty():
 		return
 	## 随机走 GameRng：联机 / 回归要能靠同一颗种子复现（见 game_rng.gd 的说明）

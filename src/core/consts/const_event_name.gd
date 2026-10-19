@@ -77,6 +77,8 @@ const CREATE_CHOCOLATE := "create_chocolate"
 const CREATE_GARDEN_PLANT := "create_garden_plant"
 ## 生成墓碑。payload: [数量]
 const CREATE_TOMBSTONE := "create_tombstone"
+## 生成灌木丛（DLC 版第 7 章 Woods）。payload: [数量]
+const CREATE_BUSH := "create_bush"
 ## 生成解锁道具掉落（冒险模式掉铲子 / 图鉴等）。payload: [全局坐标]
 const CREATE_UNLOCK_DROP := "create_unlock_drop"
 ## 通关掉落物开始被拾取（收尾演出）。payload: 见 CanvasLayerWhiteScreen
@@ -98,6 +100,9 @@ const JALAPENO_BOMB_LANE_ZOMBIE := "jalapeno_bomb_lane_zombie"
 const BLOVER_BLOW_AWAY_IN_SKY_ZOMBIE := "blover_blow_away_in_sky_zombie"
 ## 播一次全屏特效（冰 / 毁灭菇等）。payload: [E_CanvasLayerEffectType]
 const CANVAS_LAYER_EFFECT_ONCE := "canvas_layer_effect_once"
+## 全屏染色渐变到指定浓度并保持（血月）：淡入用它、淡出把 alpha 传 0 即可。
+## payload: [E_CanvasLayerEffectType, 目标 alpha, 渐变秒数]
+const CANVAS_LAYER_EFFECT_FADE := "canvas_layer_effect_fade"
 ## 磁力菇吸一次铁器。payload: 见 MagnetComponent
 const GOLD_MAGNET_ATTRACT_ONCE := "gold_magnet_attract_once"
 ## 有角色被魅惑，全场重判敌我。payload: 见 DetectComponent
@@ -185,6 +190,7 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	CREATE_CHOCOLATE: [Variant.Type.TYPE_VECTOR2],
 	CREATE_GARDEN_PLANT: [Variant.Type.TYPE_VECTOR2],
 	CREATE_TOMBSTONE: [Variant.Type.TYPE_INT],
+	CREATE_BUSH: [Variant.Type.TYPE_INT],
 	CREATE_UNLOCK_DROP: [Variant.Type.TYPE_VECTOR2],
 	## 通关掉落物本体（seed_packet.gd / present.gd 推的都是 self）
 	LEVEL_COMPLETE_PICKUP: [Variant.Type.TYPE_OBJECT],
@@ -204,6 +210,9 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	## 第一个位置是 E_CanvasLayerEffectType 枚举（int）；第二个位置是时长，
 	## 订阅方 canvas_layer_effect_once 的 duration 带默认值 0.3，所以可选
 	CANVAS_LAYER_EFFECT_ONCE: [Variant.Type.TYPE_INT, Variant.Type.TYPE_NIL],
+	CANVAS_LAYER_EFFECT_FADE: [
+		Variant.Type.TYPE_INT, Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT,
+	],
 	GOLD_MAGNET_ATTRACT_ONCE: [Variant.Type.TYPE_VECTOR2],
 	CHARACTER_BE_HYPNO: [Variant.Type.TYPE_OBJECT],
 	## 两个位置都是对象（DamageInfo / DamageResult），具体类型由订阅方负责

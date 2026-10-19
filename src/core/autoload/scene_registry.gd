@@ -46,6 +46,9 @@ const DOOM_SHROOM_CRATER = preload("res://src/fx/doom_shroom_crater.tscn")
 ## 墓碑
 var TOMBSTONE = load("res://src/items/tombstone.tscn")
 
+## 灌木丛（DLC 版第 7 章 Woods）
+var BUSH = load("res://src/items/bush.tscn")
+
 
 ## 僵王博士不在本注册表里：僵王是正式角色，走 CharacterRegistry.ZombieBossType 查场景
 ## （见 Global.character_registry.get_zombie_boss_info(..., BossScenes)），血条由 LevelInfo 统一管理。
@@ -124,18 +127,18 @@ func acquire_candidate_container(source_card: Card, imitater: bool) -> CardCandi
 		var cached: Variant = free_list.pop_back()
 		if not is_instance_valid(cached):
 			continue
-		var container := cached as CardCandidateContainer
-		if container == null or container.card == null or not is_instance_valid(container.card):
+		var pooled := cached as CardCandidateContainer
+		if pooled == null or pooled.card == null or not is_instance_valid(pooled.card):
 			## 卡已随旧场景销毁（漏归还的兜底）：容器本身也丢掉，不留在池里占位
-			if container != null:
-				container.queue_free()
+			if pooled != null:
+				pooled.queue_free()
 			continue
-		_sync_candidate_source(container, source_card)
-		if not _reset_candidate_container(container):
-			container.queue_free()
+		_sync_candidate_source(pooled, source_card)
+		if not _reset_candidate_container(pooled):
+			pooled.queue_free()
 			continue
-		_candidate_pool_borrowed[container] = true
-		return container
+		_candidate_pool_borrowed[pooled] = true
+		return pooled
 	var container := _create_candidate_container(source_card, imitater)
 	_candidate_pool_borrowed[container] = true
 	return container
@@ -154,7 +157,10 @@ func release_candidate_container(container: CardCandidateContainer) -> void:
 		if container.get_parent() == null:
 			storage.add_child(container)
 		else:
-			container.reparent(storage)
+			## 必须传 false：池只负责存节点，不该保留关卡界面里的布局。
+			## 传 true 时 Godot 会为了「保持全局变换」把本地 position 改写成上一局的
+			## 屏幕绝对坐标，下一关取件用 false 挂进占位格时不会纠正，整片种子包就整体偏移。
+			container.reparent(storage, false)
 	var key := _candidate_pool_key(container.card, container.card.is_imitater)
 	var free_list: Array = _candidate_pool_free.get(key, [])
 	free_list.append(container)
@@ -221,6 +227,12 @@ func _reset_candidate_container(container: CardCandidateContainer) -> bool:
 	card.set_shortcut_disappear()
 	card.mouse_filter_start()
 	card.card_ready()
+	## 容器自己也要归位：它的坐标是相对占位格的本地坐标，正常恒为 (0,0)。
+	## 上一局若被改写过（历史 bug：还池时保持全局变换）或卡片被拖去动画层又搬回，
+	## 不清零就会带着脏坐标进下一关，表现为选卡界面种子包整体偏移。
+	container.position = Vector2.ZERO
+	container.scale = Vector2.ONE
+	container.rotation = 0.0
 	container.is_banned = false
 	container.visible = false
 	return true

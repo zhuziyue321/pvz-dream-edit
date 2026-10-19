@@ -39,6 +39,8 @@ var reward_manager: MgmRewardManager
 var save_manager: MgmSaveManager
 ## 僵尸进家的失败流程子管理器（见 mgm_lose_manager.gd）
 var lose_manager: MgmLoseManager
+## 血月事件子管理器（见 blood_moon_manager.gd）：只有开了 is_blood_moon 的关卡（月夜屋顶）才动
+var blood_moon_manager: BloodMoonManager
 ## **关卡脚本自己注册的初始化回调**（通用口子，本体不认识任何具体玩法名）
 ## 注册时机：`LevelScriptBase.init_level_items()`（由 GIM_Other 调用，见 gim_other.gd：
 ##   格子已建好、玩家还动手不了）—— 一关专属玩法要接进主游戏就在这里注册一条
@@ -67,6 +69,9 @@ func init_main_game_sub_managers() -> void:
 	lose_manager = MgmLoseManager.new()
 	lose_manager.name = "LoseManager"
 	manager.add_child(lose_manager)
+	blood_moon_manager = BloodMoonManager.new()
+	blood_moon_manager.name = "BloodMoonManager"
+	manager.add_child(blood_moon_manager)
 
 #endregion
 
@@ -402,6 +407,7 @@ func init_manager():
 	reward_manager.init_manager()
 	save_manager.init_manager()
 	lose_manager.init_manager()
+	blood_moon_manager.init_manager()
 	## 关卡脚本自己注册的初始化回调（一关专属玩法在这里接入，本体不认识任何玩法名）
 	_run_level_init_callbacks()
 	validate_map_consistency()
@@ -665,6 +671,9 @@ func main_game_start():
 	## 生成墓碑
 	if game_para.init_tombstone_num > 0:
 		plant_cell_manager.create_tombstone(game_para.init_tombstone_num)
+	## 生成灌木丛（DLC 版第 7 章 Woods）
+	if game_para.init_bush_num > 0:
+		plant_cell_manager.create_bush(game_para.init_bush_num)
 
 	## 主游戏进程阶段
 	main_game_progress = E_MainGameProgress.MAIN_GAME

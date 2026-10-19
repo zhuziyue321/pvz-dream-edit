@@ -1,4 +1,4 @@
-[gd_scene load_steps=89 format=3 uid="uid://b2soejmoqi7wd"]
+[gd_scene load_steps=90 format=3 uid="uid://b2soejmoqi7wd"]
 
 [ext_resource type="Script" uid="uid://c7dr2016dfdoo" path="res://src/managers/main_game_manager.gd" id="1_7dde3"]
 [ext_resource type="Script" uid="uid://b2rst408m72au" path="res://src/managers/hand_manager/hand_manager.gd" id="3_acpf0"]
@@ -14,6 +14,7 @@
 [ext_resource type="Script" uid="uid://cruc1xp1mskml" path="res://src/managers/game_item_manager/game_item_manager.gd" id="11_f06xn"]
 [ext_resource type="Script" uid="uid://cr3h2c27i2jrx" path="res://src/managers/plant_cell_manager/plant_cell_manager.gd" id="12_hgtxc"]
 [ext_resource type="Script" uid="uid://g4mhhnrtydhd" path="res://src/managers/plant_cell_manager/tomb_stone_manager.gd" id="13_3d12c"]
+[ext_resource type="Script" path="res://src/managers/plant_cell_manager/bush_manager.gd" id="61_bushm"]
 [ext_resource type="Script" uid="uid://hilbqsnly8n4" path="res://src/managers/game_item_manager/gim_brain.gd" id="14_b05fi"]
 [ext_resource type="Script" uid="uid://dn38qck086sil" path="res://src/managers/game_item_manager/gim_lawn_mover.gd" id="15_qfhda"]
 [ext_resource type="Script" uid="uid://7rl0u85kxat1" path="res://src/world/background/main_game_home.gd" id="15_tsrbg"]
@@ -180,6 +181,9 @@ script = ExtResource("12_hgtxc")
 
 [node name="TombStoneManager" type="Node" parent="Manager/PlantCellManager"]
 script = ExtResource("13_3d12c")
+
+[node name="BushManager" type="Node" parent="Manager/PlantCellManager"]
+script = ExtResource("61_bushm")
 
 [node name="CardManager" type="Node" parent="Manager"]
 unique_name_in_owner = true
@@ -435,6 +439,16 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_ybhi1")
 
 [node name="Panel_Doom" type="Panel" parent="CanvasLayerEffect"]
 modulate = Color(0.619608, 0, 0.623529, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ybhi1")
+
+[node name="Panel_BloodMoon" type="Panel" parent="CanvasLayerEffect"]
+modulate = Color(1, 0.25, 0.15, 0)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

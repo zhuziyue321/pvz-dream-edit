@@ -24,12 +24,18 @@ func _process(delta: float) -> void:
 			queue_free()
 
 
+## 撞上灌木丛后推车自爆的伤害（灰烬级，与炸弹组件同一口径）
+const MOWER_BOMB_VALUE := 1800
+
 func _on_area_entered(area: Area2D) -> void:
 	var area_owner = area.owner
 	if area_owner is Zombie000Base:
 		var zombie :Zombie000Base = area_owner
 		if lane == zombie.lane:
 			_on_lane_zombie_enter(zombie)
+	elif area_owner is Bush:
+		if lane == area_owner.row_col.x:
+			_on_lane_bush_enter(area_owner)
 
 ## 当同行僵尸进入
 func _on_lane_zombie_enter(zombie :Zombie000Base):
@@ -84,3 +90,25 @@ func _mower_run_all_zombie_on_start():
 ## 小推车碾压一个僵尸
 func _mower_run_one_zombie(zombie :Zombie000Base):
 	zombie.be_mowered_run(self)
+
+## 当同行灌木丛进入
+## 灌木本身**不触发**推车启动（与墓碑同款：只有僵尸才能把它推出去），
+## 但推车一旦已经在跑，撞上灌木就会自爆
+func _on_lane_bush_enter(bush :Bush):
+	if is_moving:
+		## DLC 版第 7 章 Woods：小推车撞到灌木会爆炸，只炸掉那丛灌木前面的僵尸
+		## 数据来源: pvz-dlc-edition.fandom.com/wiki/Woods
+		var bush_x := bush.global_position.x
+		SoundManager.play_other_SFX("lawnmower")
+		for zombie: Zombie000Base in GameContext.curr_main_game.zombie_manager.all_zombies_2d[lane]:
+			if not is_instance_valid(zombie):
+				continue
+			## 只炸灌木前方（僵尸来的那一侧 = x 更大的一侧）的僵尸
+			if zombie.global_position.x <= bush_x:
+				continue
+			## 己方（魅惑）僵尸不该被玩家的推车炸掉
+			if not BulletCampConfig.is_enemy(CharacterRegistry.CharacterType.Plant, zombie):
+				continue
+			zombie.be_bomb(MOWER_BOMB_VALUE, true)
+		bush.bush_death()
+		queue_free()

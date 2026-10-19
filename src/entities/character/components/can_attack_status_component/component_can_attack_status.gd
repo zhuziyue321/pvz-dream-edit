@@ -9,7 +9,9 @@ class_name CanAttackStatusComponent
 @export_flags("1 正常", "2 悬浮", "4 地刺", "8 低矮") var can_attack_plant_status:int = 1
 ## 可以攻击的僵尸状态掩码
 ## 注意：僵王的免疫位（64）刻意不在任何角色的默认值里，谁都不勾就永远打不到抬头的僵王。
-@export_flags("1 正常", "2 跳跃", "4 水下", "8 空中", "16 地下", "32 跳入泳池", "64 僵王抬头") var can_attack_zombie_status:int = 1
+## 128 灌木：DLC 版第 7 章 Woods 里藏在灌木丛中的僵尸。默认掩码 1 不含它 ⇒ 普通攻击天然打不到；
+## 爆杀类（樱桃 / 毁灭菇 / 小丑盒 / 柠檬榴弹）与蜂射手显式勾上 128 才能打到灌木里的僵尸
+@export_flags("1 正常", "2 跳跃", "4 水下", "8 空中", "16 地下", "32 跳入泳池", "64 僵王抬头", "128 灌木") var can_attack_zombie_status:int = 1
 
 ## 敌人受击状态是否在掩码内（可被攻击）
 func can_attack(enemy:Character000Base) -> bool:

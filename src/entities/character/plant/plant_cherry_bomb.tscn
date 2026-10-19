@@ -412,7 +412,9 @@ bomb_lane = 1
 [node name="CanAttackStatusComponent" type="Node2D" parent="BombComponent"]
 script = ExtResource("90_canas01")
 can_attack_plant_status = 7
-can_attack_zombie_status = 63
+## 191 = 1 正常 + 2 跳跃 + 4 水下 + 8 空中 + 16 地下 + 32 跳入泳池 + 128 灌木：
+## 爆杀类要能打到灌木丛里的僵尸（DLC 版第 7 章 Woods 口径）
+can_attack_zombie_status = 191
 
 [node name="Area2DBomb" type="Area2D" parent="BombComponent" index="0"]
 collision_layer = 0

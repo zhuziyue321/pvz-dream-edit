@@ -7,6 +7,8 @@ class_name ZombieWaveManager
 var is_have_tombston := false
 ## 墓碑是否会在大波前继续生长(生存夜晚 / 锤僵尸类关卡为 true,普通冒险夜晚关卡为 false)
 var is_tombstone_respawn := false
+## 是否有灌木丛(DLC 版第 7 章 Woods：有大波时僵尸会从灌木里冒出来)
+var is_have_bush := false
 ## 一轮游戏最大波次
 var max_wave_one_round :int
 ## 本关携带解锁道具的波次,-1 表示本关不掉(见 ResourceLevelData.drop_unlock_wave)
@@ -26,6 +28,8 @@ var drop_unlock_wave :int = -1
 
 ## 大波僵尸时墓碑生产的僵尸类型
 @export var zombie_type_candidate_tombstone :Array[StringName] = [ZombieIds.NORM]
+## 大波僵尸时灌木丛生产的僵尸类型（DLC 版第 7 章 Woods）
+@export var zombie_type_candidate_bush :Array[StringName] = [ZombieIds.NORM]
 
 ## 当前波次类型
 enum E_WaveType{
@@ -77,6 +81,7 @@ func _ready() -> void:
 func init_zombie_wave_manager(game_para:ResourceLevelData):
 	is_have_tombston = game_para.is_have_tombston
 	is_tombstone_respawn = game_para.is_tombstone_respawn
+	is_have_bush = game_para.is_have_bush
 	max_wave_one_round = game_para.max_wave
 	## 关卡结束时才掉的解锁道具(原版冒险 3-4 的车钥匙)不由僵尸携带,波次路径整关关闭
 	drop_unlock_wave = -1 if game_para.drop_unlock_on_level_complete else game_para.drop_unlock_wave
@@ -148,6 +153,9 @@ func start_next_wave() -> void:
 			## 最终波:全部墓碑各放一只伏击僵尸(原版:墓碑只在最后一大波冒僵尸,普通大波不冒)
 			if is_have_tombston:
 				call_tombstone_create_zombie()
+			## 灌木丛伏击(DLC Woods):最终波每丛灌木各冒一只
+			if is_have_bush:
+				call_bush_create_zombie()
 
 		else:
 			curr_wave_type = E_WaveType.Flag
@@ -203,6 +211,15 @@ func call_tombstone_create_zombie():
 	for i in range(GameContext.curr_main_game.plant_cell_manager.tombstone_list.size()):
 		var new_zombie_type = GameRng.pick_random(zombie_type_candidate_tombstone)
 		GameContext.curr_main_game.plant_cell_manager.tombstone_list[i].create_new_zombie(new_zombie_type)
+
+## 灌木丛伏击(DLC 版第 7 章 Woods):最终波场上每丛灌木各放一只僵尸
+## 与墓碑同款:走 GameRng 保证两端一致,种类由 zombie_type_candidate_bush 配置
+## 数据来源: pvz-dlc-edition.fandom.com/wiki/Woods
+## "Zombies can also spawn from the bushes during ambushes, particularly during the final wave."
+func call_bush_create_zombie():
+	for i in range(GameContext.curr_main_game.plant_cell_manager.bush_list.size()):
+		var new_zombie_type = GameRng.pick_random(zombie_type_candidate_bush)
+		GameContext.curr_main_game.plant_cell_manager.bush_list[i].create_new_zombie(new_zombie_type)
 
 ## 更新每秒旗帜进度(僵尸波次更新管理器信号触发)
 func update_progress_bar_segment_mini_every_sec(time:float):

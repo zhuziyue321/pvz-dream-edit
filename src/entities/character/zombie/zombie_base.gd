@@ -106,6 +106,10 @@ enum E_BeAttackStatusZombie{
 	## 任何不显式勾选它的攻击掩码都按位与之相交为 0，天然打不到。
 	## 低头 / 抬头由 ZB000Base.set_hurt_window() 统一切换，详情见 docs/参考存档/特殊关卡.md
 	IsBossInvulnerable = 64,
+	## 灌木隐藏（DLC 版第 7 章 Woods）：僵尸走进灌木时，大多数植物打不到它。
+	## 高于所有 @export_flags 已登记的组合位，默认掩码 1 的攻击来源天然落空；
+	## 想打到灌木里的僵尸（蜂射手 / 爆杀类）就把 128 显式勾进掩码
+	IsInBush = 128,
 }
 
 #endregion
@@ -448,9 +452,9 @@ func be_grap_in_pool():
 ## 被炸弹炸
 ## 灰烬动画从角色本体摘出来,本体节点free,灰烬动画播放玩后删除
 ## is_cherry_bomb:bool = false ：是否灰烬炸弹(非土豆雷)
-func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
+func be_bomb(damage:int, is_cherry_bomb:bool = false):
 	is_can_death_language = false
-	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Bomb, false)
+	_apply_penetration_damage(damage, ConstDamage.E_DamageCause.Bomb, false)
 	## 如果角色死亡
 	if is_death:
 		## 在在灰烬动画条件下
@@ -466,11 +470,11 @@ func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 			is_can_death_language = true
 
 ## 被大嘴花吃
-## [param attack_value] 本次伤害（吞噬传 0：秒杀不看伤害值）
+## [param damage] 本次伤害（吞噬传 0：秒杀不看伤害值）
 ## [param is_instant_kill] 是否秒杀（大嘴花吞下小体型僵尸：防具与本体一起清空，免疫仍可拦）
-func be_chomper_eat(attack_value:int, is_instant_kill:bool = false):
+func be_chomper_eat(damage:int, is_instant_kill:bool = false):
 	is_can_death_language = false
-	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Eat, false, is_instant_kill)
+	_apply_penetration_damage(damage, ConstDamage.E_DamageCause.Eat, false, is_instant_kill)
 	if is_death:
 		queue_free()
 	if not is_death:
@@ -480,17 +484,17 @@ func be_chomper_eat(attack_value:int, is_instant_kill:bool = false):
 ## 与 be_squash 的区别:钉耙是"把手翘起来砸一下",砸完僵尸走正常的死亡表现(掉头 + 倒下),
 ## 不像倭瓜那样直接 queue_free,所以这里不删节点,留给 hp_component 的死亡流程处理
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Garden_Rake) —— 原版 1800 伤害
-func be_rake_attack(attack_value:int=ConstShop.RAKE_ATTACK_VALUE):
+func be_rake_attack(damage:int=ConstShop.RAKE_ATTACK_VALUE):
 	is_can_death_language = false
-	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
+	_apply_penetration_damage(damage, ConstDamage.E_DamageCause.Crush, false)
 	if not is_death:
 		is_can_death_language = true
 
 ## 被倭瓜压
-## [param attack_value] 伤害值，由倭瓜给出（它自己的角色攻击力 `attack_value`）
-func be_squash(attack_value:int):
+## [param damage] 伤害值，由倭瓜给出（它自己的角色攻击力 `attack_value`）
+func be_squash(damage:int):
 	is_can_death_language = false
-	_apply_penetration_damage(attack_value, ConstDamage.E_DamageCause.Crush, false)
+	_apply_penetration_damage(damage, ConstDamage.E_DamageCause.Crush, false)
 	if is_death:
 		queue_free()
 	if not is_death:
@@ -498,12 +502,12 @@ func be_squash(attack_value:int):
 
 ## 【伤害系统】穿透伤害的便捷入口：僵尸这边的"必杀类"伤害（爆炸 / 吞噬 / 碾压）都是同一套参数，
 ## 差别只在语义标记 `cause`，收成一个私有函数免得每个入口各抄一遍 DamageInfo 组装。
-## [param attack_value] 伤害值
+## [param damage] 伤害值
 ## [param cause] 伤害来源语义（见 `ConstDamage.E_DamageCause`）
 ## [param is_drop_on_death] 死亡时是否掉落
 ## [param is_instant_kill] 是否秒杀（不看伤害值，防具与本体一起清空）
-func _apply_penetration_damage(attack_value:int, cause:ConstDamage.E_DamageCause, is_drop_on_death:bool, is_instant_kill:bool = false) -> DamageResult:
-	var info := DamageInfo.create(self, attack_value, ConstDamage.E_DamageMode.Penetration, cause)
+func _apply_penetration_damage(damage:int, cause:ConstDamage.E_DamageCause, is_drop_on_death:bool, is_instant_kill:bool = false) -> DamageResult:
+	var info := DamageInfo.create(self, damage, ConstDamage.E_DamageMode.Penetration, cause)
 	info.is_drop_on_death = is_drop_on_death
 	info.trigger_sfx = false
 	info.is_instant_kill = is_instant_kill

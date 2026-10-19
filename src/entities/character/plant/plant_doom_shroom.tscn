@@ -1639,7 +1639,8 @@ bomb_sfx = &"DoomShroom"
 [node name="CanAttackStatusComponent" type="Node2D" parent="BombComponent"]
 script = ExtResource("90_canas01")
 can_attack_plant_status = 7
-can_attack_zombie_status = 63
+## 191 = 1 + 2 + 4 + 8 + 16 + 32 + 128（灌木）：爆杀类要能打到灌木丛里的僵尸
+can_attack_zombie_status = 191
 
 [node name="Area2DBomb" type="Area2D" parent="BombComponent" index="0"]
 collision_layer = 0

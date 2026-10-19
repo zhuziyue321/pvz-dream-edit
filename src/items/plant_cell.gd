@@ -14,6 +14,8 @@ signal cell_mouse_enter
 signal cell_mouse_exit
 ## 删除墓碑信号
 signal signal_cell_delete_tombstone(plant_cell:PlantCell, tombstone:TombStone)
+## 删除灌木信号（DLC 版第 7 章 Woods：灌木被爆杀 / 被小推车撞上时）
+signal signal_cell_delete_bush(plant_cell:PlantCell, bush:Bush)
 
 @onready var button: Button = $Button
 ## 植物碰撞器位置节点
@@ -118,6 +120,7 @@ enum E_SpecialStatePlant {
 	IsIceRoad,		# 冰道
 	IsPot,			# 罐子
 	IsNoPlantBowling,		# 不能种植（保龄球红线模式不能种植）
+	IsBush,					# 灌木丛（DLC 版第 7 章 Woods 的场景障碍物）
 }
 
 ## 当前特殊状态
@@ -127,6 +130,8 @@ enum E_SpecialStatePlant {
 var curr_ice_roads:Array[IceRoad] = []
 ## 当前cell的墓碑
 var tombstone:TombStone
+## 当前cell的灌木丛
+var bush:Bush
 ## 当前cell的坑洞
 var crater:DoomShroomCrater
 
@@ -243,6 +248,11 @@ func create_plant(plant_type: StringName, is_imitater:=false, is_plant_start_eff
 			## 非紫卡 如果该位置已经存在植物,返回
 			var exist_plant := get_plant(plant_condition.place_plant_in_cell)
 			if is_instance_valid(exist_plant):
+				## 同种叠层植物（豌豆荚这类）：不是新种一株，而是给已有那株叠一层
+				## （判定入口在 `ResourcePlantCondition.judge_is_can_plant()`，两处同一条口径）
+				if exist_plant.plant_type == plant_type and exist_plant.try_stack_up():
+					signal_plant_create.emit(self, plant_type)
+					return exist_plant
 				return
 
 		plant = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantScenes).instantiate()
@@ -631,6 +641,40 @@ func tombstone_death_update_plant_cell_data():
 	## 等到墓碑被删除后，下一帧更新（如果鼠标拿着新植物在当前格子中，可以更新）
 	await get_tree().process_frame
 	update_special_state_plant(false, E_SpecialStatePlant.IsTombstone)
+
+#endregion
+
+#region 灌木丛相关
+## 创建灌木丛（DLC 版第 7 章 Woods）
+## 与墓碑同款：先顶掉格内的植物，再实例化
+func create_bush():
+	if is_instance_valid(bush):
+		return
+	var all_place_plant_in_cell_be_bush = [
+		CharacterRegistry.PlacePlantInCell.Norm,
+		CharacterRegistry.PlacePlantInCell.Down,
+		CharacterRegistry.PlacePlantInCell.Shell
+	]
+	for place_plant_in_cell in all_place_plant_in_cell_be_bush:
+		var curr_plant := get_plant(place_plant_in_cell)
+		if is_instance_valid(curr_plant):
+			curr_plant.character_death()
+
+	bush = SceneRegistry.BUSH.instantiate()
+	bush.init_bush(self)
+	add_child(bush)
+	bush.position = Vector2(size.x / 2, size.y)
+	update_special_state_plant(true, E_SpecialStatePlant.IsBush)
+
+	GameContext.curr_main_game.plant_cell_manager.bush_list.append(bush)
+
+
+## 删除灌木丛，灌木死亡时调用该函数
+func bush_death_update_plant_cell_data():
+	signal_cell_delete_bush.emit(self, bush)
+	GameContext.curr_main_game.plant_cell_manager.bush_list.erase(bush)
+	await get_tree().process_frame
+	update_special_state_plant(false, E_SpecialStatePlant.IsBush)
 
 #endregion
 

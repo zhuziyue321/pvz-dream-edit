@@ -7,22 +7,30 @@ class_name MainGameHome
 ## 新增背景（GameBg 加成员）必须同步扩这两个数组，否则 init_home 取越界。
 ## 屋顶 / 夜屋顶进门就是室内，没有内景叠加图，记 null；遮罩每份背景子场景只带自己那张，
 ## 所以非本背景的下标用 get_node_or_null 取，取到 null 时 init_home 会跳过。
+## ⚠️ 前四项也必须走 get_node_or_null：每份背景子场景只挂**自己会被用到**的那几张图，
+## 用 `$` 硬路径时，挂在别的背景场景下（比如郊外营地只带自己的露营车遮罩）会刷
+## "Node not found: Door/DoorDown/Background1GameoverInteriorOverlay"。
+## 取不到就当 null，init_home 会跳过。
 @onready var door_downs: Array[Sprite2D] = [
-	$Door/DoorDown/Background1GameoverInteriorOverlay,
-	$Door/DoorDown/Background2GameoverInteriorOverlay,
-	$Door/DoorDown/Background3GameoverInteriorOverlay,
-	$Door/DoorDown/Background4GameoverInteriorOverlay,
+	get_node_or_null("Door/DoorDown/Background1GameoverInteriorOverlay") as Sprite2D,
+	get_node_or_null("Door/DoorDown/Background2GameoverInteriorOverlay") as Sprite2D,
+	get_node_or_null("Door/DoorDown/Background3GameoverInteriorOverlay") as Sprite2D,
+	get_node_or_null("Door/DoorDown/Background4GameoverInteriorOverlay") as Sprite2D,
 	null, ## Roof：没有内景叠加图
 	null, ## Boss（夜屋顶）：没有内景叠加图
+	null, ## MoonRoof（月夜屋顶）：没有内景叠加图
+	null, ## Woods（郊外营地）：营地里没有房门，没有内景叠加图
 ]
 
 @onready var door_masks: Array[Sprite2D] = [
-	$Door/DoorMask/Background1GameoverMask,
-	$Door/DoorMask/Background2GameoverMask,
-	$Door/DoorMask/Background3GameoverMask,
-	$Door/DoorMask/Background4GameoverMask,
-	$Door/DoorMask/Background5GameoverMask,
+	get_node_or_null("Door/DoorMask/Background1GameoverMask") as Sprite2D,
+	get_node_or_null("Door/DoorMask/Background2GameoverMask") as Sprite2D,
+	get_node_or_null("Door/DoorMask/Background3GameoverMask") as Sprite2D,
+	get_node_or_null("Door/DoorMask/Background4GameoverMask") as Sprite2D,
+	get_node_or_null("Door/DoorMask/Background5GameoverMask") as Sprite2D,
 	get_node_or_null("Door/DoorMask/Background6GameoverMask") as Sprite2D, ## 只有夜屋顶背景带它
+	get_node_or_null("Door/DoorMask/Background6MoonGameoverMask") as Sprite2D, ## 只有月夜屋顶背景带它
+	get_node_or_null("Door/DoorMask/Background7WoodsGameoverMask") as Sprite2D, ## 只有郊外营地背景带它
 ]
 
 ## 根据当前背景初始化房门

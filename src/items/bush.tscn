@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/items/bush.gd" id="1_bush"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hide"]
+size = Vector2(80, 96)
+
+; 灌木要盖住从它里面穿过的僵尸：植物格行 z = row*50+10，僵尸行 z = row*50+30，
+; 这里的 25 让灌木落到 row*50+35，比同行僵尸高一点点
+[node name="Bush" type="Node2D"]
+z_index = 25
+script = ExtResource("1_bush")
+
+; 灌木本体（贴图等 PopStudio 反编译，见 docs/参考存档/灌木丛.md §5）
+[node name="Body" type="Sprite2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(0, -40)
+
+; 藏僵尸：靠僵尸的受击框（L10 = 512）进出判定
+; 被炸弹 / 小推车感知：与梯子同一层 L12（ItemDetect = 2048）——
+; 炸弹的 Area2DBomb 掩码是 2052（= 2048 + 4），与梯子共层就不需要改任何炸弹场景
+[node name="Area2DHide" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 2048
+collision_mask = 512
+input_pickable = false
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2DHide"]
+position = Vector2(0, -48)
+shape = SubResource("RectangleShape2D_hide")
