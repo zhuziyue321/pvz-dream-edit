@@ -289,6 +289,7 @@ markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 
 [node name="DetectComponent" type="Node2D" parent="AttackComponent" index="1"]
 script = ExtResource("21_d8wji")
+allow_target_through_portal = true
 
 [node name="CanAttackStatusComponent" type="Node2D" parent="AttackComponent/DetectComponent"]
 script = ExtResource("90_canas01")

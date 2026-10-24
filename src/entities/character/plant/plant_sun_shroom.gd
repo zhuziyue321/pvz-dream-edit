@@ -50,15 +50,16 @@ func update_grow_speed(speed_factor:float):
 			grow_timer.start(grow_timer.time_left / speed_factor)
 
 
-## 被僵尸啃食一次特殊效果,魅惑\大蒜\我是僵尸生产阳光
-func _be_zombie_eat_once_special(_attack_zombie:Zombie000Base):
+## 被僵尸啃食（连续掉血结算前按原版口径检查要不要掉阳光）
+func be_zombie_eat(damage: int, attack_zombie: Zombie000Base) -> void:
 	if is_zombie_mode:
-		create_sun_component._on_be_eat_once()
+		create_sun_component.drop_sun_on_zombie_mode_hp_loss(hp_component_plant.curr_hp, damage)
+	super(damage, attack_zombie)
 
 ## 植物死亡
 func character_death():
 	if is_zombie_mode:
-		create_sun_component._on_character_death()
+		create_sun_component.drop_sun_on_zombie_mode_death(hp_component_plant.curr_hp)
 	super()
 
 ## 获取植物存档数据

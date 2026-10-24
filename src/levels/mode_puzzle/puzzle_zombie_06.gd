@@ -1,8 +1,12 @@
 extends LevelScriptBase
-## puzzle_zombie_06 —— 由同目录的 puzzle_zombie_06.tres 迁移而来
+## puzzle_zombie_06 —— 解谜模式「僵尸公敌」第 6 关（原版 Me Smash!）
+##
+## 纸板植物布局、红线列数、起始阳光、僵尸卡阵容逐项取自原版 C++：
+##   `../PvZ-Portable-main/src/Lawn/Challenge.cpp` → `Challenge::IZombieInitLevel`（I_ZOMBIE_6 分支）
+##   `../PvZ-Portable-main/src/Lawn/Board.cpp` → `Board::InitLevel`（起始阳光 / 僵尸卡 / 红线限制）
+## 对照表见 docs/参考存档/我是僵尸原版对照.md。
 ##
 ## 关卡 = 属性（_init 里赋值）+ 流程（run_flow 一段顺序程序），不再有 .tres。
-## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
 
 
 func _init() -> void:
@@ -16,33 +20,41 @@ func _init() -> void:
 	look_show_zombie = false
 	can_choosed_card = false
 	monster_mode = ConstLevelData.E_MonsterMode.Null
-	start_sun = 50
+	is_shovel = false
+	## 起始阳光 150（原版 `Board::InitLevel`：我是僵尸关一律 150）
+	start_sun = 150
+	## 僵尸卡槽数 = 本关僵尸卡数（原版每关 3~9 张）
 	max_choosed_card_num = 4
+	## 本关僵尸卡：普僵 / 撑杆 / 铁桶 / 巨人（原版 `Board::InitLevel` 的 I_ZOMBIE_6 分支）
 	prechosen_cards = ResourceCardReference.create_zombie_list([1, 4, 5, 24])
 	is_zombie_mode = true
-	## 原版本关的纸板植物: 豌豆射手(1) / 向日葵(2) / 寒冰射手(6) / 窝瓜(18) / 地刺(22)
-	##                    火炬树桩(23) / 玉米投手(35) / 大蒜(37)
-	plant_col_on_zombie_mode = 4
-	all_plants_weight_on_zombie_mode.assign({
-	&"pea_shooter_single": 2,
-	&"sun_flower": 6,
-	&"snow_pea": 2,
-	&"squash": 2,
-	&"caltrop": 2,
-	&"torch_wood": 1,
-	&"corn_pult": 2,
-	&"garlic": 1
-	})
-	all_must_plants_on_zombie_mode.assign({
-	&"sun_flower": 5
-	})
+	## 红线左侧 5 列（原版 aLimit = 5）：纸板植物只能占这 5 列，僵尸只能放在第 5 列起
+	plant_col_on_zombie_mode = 5
+	## 原版纸板植物布局：
+	##   固定格位 —— 大蒜(第 4 列第 2 行) / 大蒜(第 4 列第 4 行)
+	##   随机落位 —— 向日葵 ×3(第 2 行) / 向日葵 ×3(第 4 行) / 火炬树桩 ×2 / 向日葵 ×2 /
+	##               地刺 ×3 / 寒冰射手 ×1 / 豌豆射手 ×5 / 窝瓜 ×2 / 玉米投手 ×2
+	zombie_mode_plant_layout = [
+		{"plant": PlantIds.GARLIC, "row": 1, "col": 4},
+		{"plant": PlantIds.GARLIC, "row": 3, "col": 4},
+		{"plant": PlantIds.SUN_FLOWER, "row": 1, "col": -1, "count": 3},
+		{"plant": PlantIds.SUN_FLOWER, "row": 3, "col": -1, "count": 3},
+		{"plant": PlantIds.TORCH_WOOD, "row": -1, "col": -1, "count": 2},
+		{"plant": PlantIds.SUN_FLOWER, "row": -1, "col": -1, "count": 2},
+		{"plant": PlantIds.CALTROP, "row": -1, "col": -1, "count": 3},
+		{"plant": PlantIds.SNOW_PEA, "row": -1, "col": -1, "count": 1},
+		{"plant": PlantIds.PEA_SHOOTER_SINGLE, "row": -1, "col": -1, "count": 5},
+		{"plant": PlantIds.SQUASH, "row": -1, "col": -1, "count": 2},
+		{"plant": PlantIds.CORN_PULT, "row": -1, "col": -1, "count": 2},
+	]
 	is_bowling_stripe = true
+	## 红线贴在第 4 列右边缘（左区 = 第 0~4 列，正好是原版那 5 列纸板植物区）
 	plant_cell_col_j = 4
 	plant_cell_can_use.assign({
-	"left_can_plant": false,
-	"left_can_zombie": false,
-	"right_can_plant": false,
-	"right_can_zombie": true
+		"left_can_plant": false,
+		"left_can_zombie": false,
+		"right_can_plant": false,
+		"right_can_zombie": true
 	})
 
 
@@ -50,14 +62,16 @@ func run_flow(mg: MainGameManager) -> void:
 	if mg.curr_game_round == 1:
 		## 保龄球红线（仅第 1 轮）
 		await bowling_stripe()
-	## 准备安放植物
-	## 初始化小推车
-	await init_lawn_mover()
-	await ready_set_plant()
-	## 开战
+	## 开战（原版「我是僵尸」**没有**「准备…安放…植物」阶段：
+	## 僵尸卡进关就发在手牌上，玩家直接点卡放僵尸；也没有小推车）
 	await start_battle(-1, [
 		ZombieIds.NORM,
 		ZombieIds.POLE_VAULTER,
 		ZombieIds.BUCKET,
 		ZombieIds.GARGANTUAR,
 	])
+
+
+## 进度条口径：**已吃脑子数 / 5**（原版 `I_ZOMBIE_WINNING_SCORE` = 5，原版就在进度条位置显示这个计数）
+func create_progress_provider() -> LevelProgressProvider:
+	return PuzzleZombieProgressProvider.new()

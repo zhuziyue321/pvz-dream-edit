@@ -86,7 +86,7 @@ func _check_mini_body_and_hp(a, title: String, zombie: Zombie000Base) -> void:
 		is_equal_approx(absf(zombie.scale.x), 0.5) and is_equal_approx(absf(zombie.scale.y), 0.5),
 		"scale=" + str(zombie.scale))
 	_check(a, title + ": 随机速度范围保持翻倍",
-		zombie.random_speed_range.is_equal_approx(Vector2(1.8, 2.2)),
+		zombie.random_speed_range.is_equal_approx(Vector2(1.54, 2.46)),
 		"random_speed_range=" + str(zombie.random_speed_range))
 	var hp := zombie.hp_component as HpComponentZombie
 	_check(a, title + ": 普僵血量 270 → 135",

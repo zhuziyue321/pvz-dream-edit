@@ -48,6 +48,13 @@ var _shrink_origin_scale := Vector2.ONE
 @export var node_follow_body_direction:Array[Node2D]
 ## 是否为我是僵尸模式
 var is_zombie_mode:=false
+## 动画是否被**冻结**（时间缩放锁 0，不许被速度倍率拉回来）
+##
+## 用途：「我是僵尸」模式的纸板植物 —— 原版 `Challenge::IZombieSetupPlant` 把 reanim 的
+## animRate 置 0（纸板不会动），而仓库的速度倍率系统会按关卡倍率改动画缩放，
+## 直接设一次 0 会被下一次 `owner_update_speed()` 覆盖掉，所以要上锁。
+## 死亡时解锁（见 Plant000Base.character_death）—— 不然死亡动画也会卡住。
+var is_anim_frozen:=false
 
 @export_group("角色攻击力")
 ## 角色攻击力：发射子弹时由攻击组件写进子弹，覆盖子弹场景自身的 attack_value
@@ -65,11 +72,11 @@ var is_zombie_mode:=false
 @export_group("角色速度")
 ## 角色速度随机范围（乘在 `ori_speed` / 动画轨道速度上的倍率，`init_random_speed()` 里取一次）
 ##
-## 默认 ±10%：**植物**用这个默认值就够了（原版植物的攻速 / 产阳光是定值，这里的随机只是让
-## 同屏多株不同步，视觉上等价）。**僵尸**在原版是 ±23% 的个体差异
+## 默认 (1, 1)：**原版植物没有速度随机**（攻速 / 产阳光是定值），植物不再做个体差异。
+## **僵尸**在原版是 ±23% 的个体差异
 ## （`PickRandomSpeed()` 的 `RandRangeFloat(0.23, 0.37)`，均值 0.3 → 0.77~1.23 的相对量），
 ## 所以 `zombie_base.tscn` 把本字段覆盖成 `(0.77, 1.23)` —— 改僵尸速度手感改那一处。
-@export var random_speed_range :Vector2 = Vector2(0.9, 1.1)
+@export var random_speed_range :Vector2 = Vector2(1,1)
 ## 角色所在行
 var lane:int = -1
 ## 速度改变量
@@ -557,7 +564,7 @@ func update_invisible_show(is_invisible_show: bool) -> void:
 #region 速度修改相关
 ## 【通用效果】被减速：伤害系统 `EFFECT_SLOW` 的落点（`DamageSystem._apply_effect_slow()` 调它）。
 ##
-## 与 `be_ice_decelerate()` 的区别：那是**冰冻减速**（固定 0.5 系数 + 冰蓝色，带寒冰语义），
+## 与 `be_ice_decelerate()` 的区别：那是**冰冻减速**（固定 0.4 系数 + 冰蓝色，带寒冰语义），
 ## 本方法是**通用减速**（系数由发起方给，不染色），给寒冰豌豆以外的减速来源用。
 ## 两者各用一个速度因子槽、各用一个计时器，互不覆盖。
 ## [param time] 持续秒数；已经在减速中时取「更长的那个」（与冰冻减速一致）

@@ -12,6 +12,8 @@ var BRAIN_ON_ZOMBIE_MODE = AssetRegistry.get_scene("res://src/items/brain_on_zom
 var curr_brain:Array[BrainOnZombieMode] = []
 ## 当前脑子数量
 var curr_brain_num:= 0
+## 已被吃掉的脑子数（进度条口径「已吃脑子数 / 5」的分子，原版 `I_ZOMBIE_WINNING_SCORE` = 5）
+var eaten_brain_num := 0
 
 
 ## 我是僵尸模式创建所有的脑子
@@ -27,6 +29,7 @@ func create_all_brain_on_zombie_mode():
 		brain.queue_free()
 	curr_brain.clear()
 	curr_brain_num = 0
+	eaten_brain_num = 0
 	for i in range(GameContext.curr_main_game.zombie_manager.all_zombie_rows.size()):
 		_create_one_brain(i)
 
@@ -51,5 +54,6 @@ func _create_one_brain(lane:int):
 func _on_brain_death(brain:BrainOnZombieMode):
 	curr_brain.erase(brain)
 	curr_brain_num -= 1
+	eaten_brain_num += 1
 	if curr_brain_num == 0:
 		EventBus.push_event(ConstEventName.CREATE_TROPHY, brain.global_position)

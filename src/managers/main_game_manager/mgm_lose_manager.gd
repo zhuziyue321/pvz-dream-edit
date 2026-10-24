@@ -92,9 +92,33 @@ func _on_zombie_mode_lose_check_timeout() -> void:
 		return
 	if main_game.zombie_manager.curr_zombie_num != 0:
 		return
+	## 原版 `Challenge::IZombieUpdate` 的 anActive：窝瓜正在砸 / 大嘴花正在咬时，
+	## 僵尸马上就要没（或者马上就有结果），这一刻判负会冤枉玩家 —— 原版会等
+	if _has_active_plant_action():
+		return
 	if get_can_use_sun_on_zombie_mode() >= get_min_zombie_sun_cost():
 		return
 	on_zombie_mode_lose()
+
+
+## 场上有没有正在执行动作的纸板植物
+##
+## 原版口径见 `Challenge::IZombieUpdate`：窝瓜下落 / 大嘴花啃咬 / 土豆雷爆炸粒子
+## 三种都算「还有动静」，判负要等它们过去。
+## 仓库只判前两种：土豆雷的爆炸特效不到 1 秒就消失，而本检查每 1 秒跑一次，
+## 正好撞上的概率极低（这条差异记在 docs/参考存档/我是僵尸原版对照.md §已知差异）。
+func _has_active_plant_action() -> bool:
+	for plant_cell in main_game.plant_cell_manager.get_cell_have_plant():
+		var plant := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
+		if plant == null:
+			continue
+		if plant is Plant018Squash and (plant as Plant018Squash).is_attack:
+			return true
+		if plant is Plant007Chomper:
+			var chomper := plant as Plant007Chomper
+			if chomper.is_bite or chomper.is_chewing:
+				return true
+	return false
 
 
 ## 当前还能用的阳光：已收集的 + 草坪上还没捡的（没捡的也算，捡起来就能用）

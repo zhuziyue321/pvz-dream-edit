@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://c5cke4cm02um7"]
+[gd_scene load_steps=18 format=3 uid="uid://c5cke4cm02um7"]
 
 [ext_resource type="PackedScene" uid="uid://bkx25sp71flk5" path="res://src/entities/character/character_base.tscn" id="1_e772o"]
 [ext_resource type="Script" uid="uid://bawv4f7mswb7k" path="res://src/entities/character/plant/plant_base.gd" id="2_4jr4d"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://mmmnpkdybsem" path="res://src/entities/character/components/be_attack_status_component/component_be_attack_status_plant.gd" id="8_bas01"]
 [ext_resource type="Script" uid="uid://ls5w2oio8nqs" path="res://src/entities/character/components/imitater_material_component/component_imitater_material.gd" id="9_mit01"]
 [ext_resource type="Script" uid="uid://c1re3b6mn4bos" path="res://src/entities/character/components/hp_component/component_hp_plant.gd" id="10_hpp01"]
+[ext_resource type="Texture2D" path="res://pak/images/plantshadow2.png" id="11_shadow2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x2lon"]
 bg_color = Color(0.137255, 0.0196078, 0.027451, 1)
@@ -159,6 +160,9 @@ size = Vector2(40, 80)
 script = ExtResource("2_4jr4d")
 plant_type = &""
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), NodePath("GardenComponent")]
+
+[node name="Shadow" parent="." index="0"]
+texture = ExtResource("11_shadow2")
 
 [node name="HpComponent" parent="." index="3"]
 script = ExtResource("10_hpp01")

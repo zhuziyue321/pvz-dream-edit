@@ -165,12 +165,34 @@ func _state_machine_root() -> AnimationNodeStateMachine:
 
 
 ## 本地驱动 · 显式播一次（OneShot）—— 攻击组件、磁力菇这类一次性动作走这里
+##
+## ⚠️ **冻结中也要播**：「我是僵尸」的纸板植物 idle 被 `is_anim_frozen` 锁死
+## （`TIMESCALE_PARAM = 0`），但原版**只有 idle 冻结**——开火时
+## `Plant::Fire()` → `PlayBodyReanim("anim_shooting", ..., 35.0f)` 会把 animRate
+## 设回攻击速率，攻击动画照常播（见 PvZ-Portable-main/src/Lawn/Plant.cpp:787）。
+## 所以这里在 OneShot 播放期间临时把倍率抬回 1，播完再冻回 0
+## （对应 `IZombieSetupPlant` 的 `mAnimRate = 0` 只管 idle）。
 func request_one_shot(param: StringName = &"parameters/OneShot/request") -> void:
 	if driver == E_Driver.REMOTE:
 		return
 	if not is_instance_valid(animation_tree):
 		return
 	animation_tree.set(param, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	if is_anim_frozen():
+		_unfreeze_for_one_shot(param)
+
+
+## 冻结中的一次性动画放行：播放期间每帧把倍率写回 1
+## （防止 `owner_update_speed` 的冻结锁在这期间把它写回 0），播完冻回
+func _unfreeze_for_one_shot(param: StringName) -> void:
+	## `.../OneShot/request` 的激活状态在 `.../OneShot/active`（参数名两种变体都以 `/request` 结尾）
+	var active_param := String(param).trim_suffix("/request") + "/active"
+	var tree := animation_tree
+	while is_instance_valid(tree) and tree.active and tree.get(active_param):
+		tree.set(TIMESCALE_PARAM, 1.0)
+		await tree.get_tree().process_frame
+	if is_instance_valid(tree):
+		tree.set(TIMESCALE_PARAM, 0.0)
 
 
 ## 本地驱动 · 撤掉正在播的一次性动画（淡出）
@@ -199,6 +221,10 @@ func _on_release() -> void:
 	if not is_instance_valid(animation_tree):
 		return
 	animation_tree.active = _tree_active_before_take_over
+	## ★ 冻结中的宿主仍要保持静止：交还驱动时不能把缩放还原成原始速度
+	if is_anim_frozen():
+		animation_tree.set(TIMESCALE_PARAM, 0.0)
+		return
 	animation_tree.set(TIMESCALE_PARAM, animation_origin_speed)
 #endregion
 
@@ -237,10 +263,16 @@ func _warn_missing_playback() -> void:
 ##
 ## ⚠️ 远端驱动下不改树的缩放：树已经停了，写它等于什么都没做；
 ##    客户端的速度差由 `apply_anim_phase()` 的硬拉抹平（见基类）。
+## ★ **冻结优先**：宿主把动画锁死（`Character000Base.is_anim_frozen`）时，
+##   这里**无视倍率**一律写 0 —— 「我是僵尸」模式的纸板植物原版 animRate = 0，
+##   不能被关卡倍率 / 随机速度 / 冰冻减速拉回来看得见的速度。
 func owner_update_speed(speed_factor_product:float):
 	if driver == E_Driver.REMOTE:
 		return
 	if not is_instance_valid(animation_tree):
+		return
+	if is_anim_frozen():
+		animation_tree.set(TIMESCALE_PARAM, 0.0)
 		return
 	animation_tree.set(TIMESCALE_PARAM, animation_origin_speed * speed_factor_product)
 
@@ -251,7 +283,18 @@ func update_anim_speed_scale(speed_scale:float):
 		return
 	if not is_instance_valid(animation_tree):
 		return
+	if is_anim_frozen():
+		animation_tree.set(TIMESCALE_PARAM, 0.0)
+		return
 	animation_tree.set(TIMESCALE_PARAM, speed_scale)
+
+
+## 宿主是否把动画**冻结**了（纸板植物：原版 reanim animRate = 0）
+##
+## 走 `owner_character` 访问器（U-06）：组件只通过 owner 拿宿主，不认具体角色类型。
+func is_anim_frozen() -> bool:
+	var character := owner_character
+	return character != null and is_instance_valid(character) and character.is_anim_frozen
 
 
 ## 停止动画

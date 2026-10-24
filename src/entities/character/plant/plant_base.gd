@@ -248,6 +248,46 @@ func ready_norm():
 	GlobalUtils.update_plant_cell_slope_y_array(plant_cell, node2d_detect_in_slope)
 	## ★ 初始动画状态（`Start → *` 边已改成手动 travel）
 	_apply_initial_anim_state()
+	## 我是僵尸模式：这株植物是「纸板植物」（原版 `Challenge::IZombieSetupPlant` / `IZombieDrawPlant`）
+	if is_zombie_mode:
+		_setup_paper_plant()
+
+
+## 把自己变成「纸板植物」
+##
+## 原版 `Challenge::IZombieSetupPlant`（`../PvZ-Portable-main/src/Lawn/Challenge.cpp:4087`）：
+##   · reanim 的 animRate 置 0 —— **只有 idle 冻结**；开火时 `Plant::Fire()` 的
+##     `PlayBodyReanim("anim_shooting", ..., 35.0f)` 会把速率设回去，攻击动画照播
+##     （放行通道见 `ComponentAnimNorm.request_one_shot`）；
+##   · 土豆雷改播 "anim_armed"、状态直接置 ARMED（仓库见 plant_potato_mine.gd）；
+##   · `mBlinkCountdown = 0` —— 不眨眼。
+## 原版 `Challenge::IZombieDrawPlant`（同文件 `:4505`）：白剪影 + 三层错位描边 + 淡色本体，
+## 在 `Plant::Draw` 里**每帧**执行（`Plant.cpp:4028`）—— 描边跟着当前姿势（含攻击动画）。
+func _setup_paper_plant() -> void:
+	## ★ 先上锁再设速度：动画冻结锁（`is_anim_frozen`）会让动画组件**无视倍率**写 0，
+	##   否则关卡倍率 / 随机速度 / 冰冻减速下一次 `owner_update_speed()` 就把动画拉回来看得见的速度。
+	##   冻结锁只管 idle；一次性动画（攻击）由动画组件的 one-shot 放行通道临时抬回 1。
+	is_anim_frozen = true
+	## idle 冻结（停在初始动画的第 0 帧，与原版 animRate = 0 一致）
+	anim_component.update_anim_speed_scale(0.0)
+	## 不眨眼（原版 mBlinkCountdown = 0）
+	blink_component.disable_component(ComponentNormBase.E_IsEnableFactor.Character)
+	## 纸板外观：淡色本体 + 三层错位的纯色剪影描边（原版四遍绘制，见 PaperPlantLook）
+	##
+	## ⚠️ **等两个 process 帧再复制**：描边层是「复制本体视觉」来的。动画树 travel 之后
+	## **不是立刻**把初始姿势摆上 —— 要再过 1~2 个 process 帧才真正求值出第 0 帧的样子；
+	## `call_deferred` 只保证「本帧晚些时候」，复制到的仍是摆好之前的旧姿势
+	## （2026-10-24 实测：向日葵花瓣差出 4~8px，画面上描边顶/右缘粗到 8~10px）。
+	_apply_paper_plant_look_deferred()
+
+
+## 套上纸板外观（由 _setup_paper_plant 调用，等两帧后执行）
+func _apply_paper_plant_look_deferred() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if self == null or not is_instance_valid(self) or not is_inside_tree():
+		return
+	PaperPlantLook.apply(self)
 
 ## 初始化展示角色
 func ready_show():
@@ -303,6 +343,12 @@ func _be_zombie_eat_once_special(_attack_zombie:Zombie000Base):
 func character_death():
 	## 发射死亡信号
 	super()
+	## 我是僵尸模式：纸板植物平时是静止的（animRate = 0），
+	## 死亡时要把动画放回去 —— 不然会卡在死亡动画的第 0 帧不动
+	if is_zombie_mode:
+		## ★ 先解锁再还原速度：解锁前动画组件会无视倍率一律写 0
+		is_anim_frozen = false
+		anim_component.owner_update_speed(1.0)
 	if is_instance_valid(hurt_box_component):
 		## 要先删除碰撞器，否则僵尸攻击检测组件有问题
 		hurt_box_component.disable_component(ComponentNormBase.E_IsEnableFactor.Death)

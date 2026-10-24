@@ -284,6 +284,7 @@ unique_name_in_owner = true
 
 [node name="DetectComponent" type="Node2D" parent="AttackComponent" index="1"]
 script = ExtResource("2_p0ksa")
+allow_target_through_portal = true
 
 [node name="Area2D" type="Area2D" parent="AttackComponent/DetectComponent" index="0"]
 position = Vector2(0, -25)
