@@ -9,7 +9,8 @@ const HandComponentGlove := preload("res://mods_builtin/glove/hand_component_glo
 ##   2. 反复点同一张卡不会在 TemporaryCharacter 下堆积节点（手持虚影泄漏回归）
 ##   3. 种植成功会放下手持物并扣阳光；点到不能种的格子会继续手持（不再丢卡）
 ##   4. 铲子：拿到手上时卡槽只留背景（不再出现两把铲子）、铲完自动放回、右键取消
-##   5. 手套：搬运植物（不铲除不重种，实例与状态保持）、拿起中 top_level、右键取消放回原位
+##   5. 手套：**两次点击**才搬走（第一次点植物 = 选中，植物留在原地 + 虚影跟着手套；
+##      第二次点目标格子 = 真的搬过去），同一个实例、状态不中断；右键取消 = 植物留在原格子
 ## 机器可读汇总：最后一行 [HAND] result=PASS|FAIL failed=<n>
 
 const CARD_LIST := "/root/MainGame/CanvasLayerCardSlot/CardSlotRoot/CardSlotContainer/CardSlotBattle/CardUiList"
@@ -30,11 +31,21 @@ const REPEAT_TIMES := 6
 
 var _failed := 0
 var _card_path := ""
+## 手套模组本来的开关状态（探针要自己开它，收尾时按原样还原）
+var _glove_was_enabled := false
 
 
 func run(a) -> void:
 	a.log("")
 	a.log("========== PROBE4 手持物组件 ==========")
+	## ★ 手套是模组，默认关着 → 探针自己打开它再跑（第 7 节才跑得到）。
+	##   必须**赶在进关之前**开：模组是在主游戏 `init_manager()` 里装载的，
+	##   进去之后再开开关，这一局里根本没有手套节点（见 ModManager.install_mods_to_main_game）。
+	_glove_was_enabled = ModManager.is_mod_enabled(ModIds.GLOVE)
+	if not _glove_was_enabled:
+		ModManager.set_mod_enabled(ModIds.GLOVE, true)
+		ModManager.save_mods()
+		a.log("  已启用手套模组（ModIds.GLOVE）：本探针跑在模组开启状态下")
 	if not await _goto_level(a):
 		a.log("!! 进不了关卡")
 		_finish(a)
@@ -65,7 +76,8 @@ func run(a) -> void:
 	await _check_plant(a)
 	await _check_invalid_cell_keeps_hand(a)
 	await _check_right_click_cancel(a)
-	## 手套是模组：没启用时主游戏里根本没有手套节点，整节跳过（见 ModManager）
+	## 手套是模组：探针开头已经自己打开了它（跑之前务必开着，见 run()），
+	## 万一没装上（模组装载失败）就整节跳过，别让后面的检查连环崩
 	if ModManager.is_mod_enabled(ModIds.GLOVE):
 		await _check_glove(a)
 	else:
@@ -85,6 +97,11 @@ func _check(a, label: String, ok: bool, detail: String = "") -> void:
 
 
 func _finish(a) -> void:
+	## ★ 还原模组开关：它是**持久化**的（写进 user://<用户名>/mod_config.ini），
+	##   不关回去会污染同一份存档目录下的其它探针（probe_glove_unlock / probe_mod_page）
+	if not _glove_was_enabled and ModManager.is_mod_enabled(ModIds.GLOVE):
+		ModManager.set_mod_enabled(ModIds.GLOVE, false)
+		ModManager.save_mods()
 	a.log("")
 	a.log("[HAND] result=%s failed=%d" % ["PASS" if _failed == 0 else "FAIL", _failed])
 	a.quit_game()
@@ -317,10 +334,11 @@ func _check_right_click_cancel(a) -> void:
 	_check(a, "右键后手持美术已释放", _hand_node_count() == 0, "count=%d" % _hand_node_count())
 
 
-## 手套：拿起 → 搬进另一个格子（同一个实例、状态不中断）→ 右键取消放回原位
+## 手套：**第一次点击 = 选中**（植物留在原地，只出一份虚影跟着手套），
+## **第二次点击 = 真的搬过去**；右键取消 = 植物留在原格子（没被摘走过，不用放回）
 func _check_glove(a) -> void:
 	a.log("")
-	a.log("--- 7. 手套组件（搬运植物）---")
+	a.log("--- 7. 手套组件（两次点击搬运植物）---")
 	var glove_comp = _hm().get_hand_component(HandComponentBase.E_HandComponentType.Glove)
 	if glove_comp == null:
 		_check(a, "（前置）手套组件存在", false)
@@ -343,7 +361,7 @@ func _check_glove(a) -> void:
 	_check(a, "手持类型=手套", _hand_type() == HandComponentBase.E_HandComponentType.Glove, "type=%d" % _hand_type())
 	_check(a, "卡槽手套图标已隐藏", not icon.visible)
 
-	## 拿起：来源格子的植物，搬到同一行的另一个可种格子
+	## 第一次点击：选中植物（它留在原格子里，屏幕上只多一份跟着手套的虚影）
 	var src := _cell
 	var dst := _cell_dst
 	var src_cell = GameContext.curr_main_game.plant_cell_manager.all_plant_cells[src.x][src.y]
@@ -355,38 +373,39 @@ func _check_glove(a) -> void:
 	var plant_id: int = plant_before.get_instance_id()
 	await a.click_plant_cell(src.x, src.y)
 	await a.wait(0.4)
-	var carry = glove_comp.curr_carry_plant
-	_check(a, "已从格子拿起植物", is_instance_valid(carry) and carry.get_instance_id() == plant_id)
-	_check(a, "拿起后仍留在场景树内（top_level 位移，不是摘出树）",
-		is_instance_valid(carry) and carry.is_inside_tree() and carry.top_level)
-	_check(a, "拿走后来源格子已空", src_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm) == null)
-	_check(a, "拿起后手套仍在手上", _holding() and _hand_type() == HandComponentBase.E_HandComponentType.Glove)
-	if not is_instance_valid(carry):
-		return
+	var selected = glove_comp.selected_plant
+	_check(a, "第一次点击已选中植物", is_instance_valid(selected) and selected.get_instance_id() == plant_id)
+	var still_there = src_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
+	_check(a, "选中的植物仍留在来源格子里（没被摘走）",
+		is_instance_valid(still_there) and still_there.get_instance_id() == plant_id)
+	_check(a, "选中的植物没有 top_level 位移", is_instance_valid(selected) and not selected.top_level)
+	_check(a, "有一份半透明虚影跟着手套", is_instance_valid(glove_comp.carry_ghost))
+	_check(a, "选中后手套仍在手上", _holding() and _hand_type() == HandComponentBase.E_HandComponentType.Glove)
 
-	## 放下：搬进 (1,2)
+	## 第二次点击：真的搬进 (dst)
 	await a.click_plant_cell(dst.x, dst.y)
 	await a.wait(0.4)
 	var moved = dst_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
 	_check(a, "植物已搬进目标格子", is_instance_valid(moved) and moved.get_instance_id() == plant_id)
 	_check(a, "搬运后是同一个实例（没有重新种植）", is_instance_valid(moved) and moved.get_instance_id() == plant_id)
-	_check(a, "放下后 top_level 已复位", is_instance_valid(moved) and not moved.top_level)
 	_check(a, "放下后植物仍在场景树内", is_instance_valid(moved) and moved.is_inside_tree())
+	_check(a, "搬完后虚影已释放", not is_instance_valid(glove_comp.carry_ghost))
 	_check(a, "放下后回到空手", _hand_type() == HandComponentBase.E_HandComponentType.Null)
 	_check(a, "空手后卡槽手套图标恢复", icon.visible)
 
-	## 取消：再拿起一次后右键，植物必须回到来源格子
+	## 取消：再选中一次后右键，植物必须留在原地（它从头到尾没被摘走）
 	await a.click_node(GLOVE + "/Button")
 	await a.wait(0.3)
 	await a.click_plant_cell(dst.x, dst.y)
 	await a.wait(0.4)
-	if not is_instance_valid(glove_comp.curr_carry_plant):
-		_check(a, "（前置）再次拿起成功", false)
+	if not is_instance_valid(glove_comp.selected_plant):
+		_check(a, "（前置）再次选中成功", false)
 		return
 	await _right_click(a, Vector2(300, 30))
 	await a.wait(0.4)
-	var back = dst_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
-	_check(a, "取消搬运后植物回到来源格子", is_instance_valid(back) and back.get_instance_id() == plant_id)
+	var stay = dst_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
+	_check(a, "取消后植物仍留在原格子", is_instance_valid(stay) and stay.get_instance_id() == plant_id)
+	_check(a, "取消后虚影已释放", not is_instance_valid(glove_comp.carry_ghost))
 	_check(a, "取消后回到空手", _hand_type() == HandComponentBase.E_HandComponentType.Null)
 
 	## 把植物搬回原来的格子：后面的铲子检查还在老格子上铲它

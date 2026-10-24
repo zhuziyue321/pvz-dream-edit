@@ -126,7 +126,9 @@ func create_detail_control() -> Control:
 		% ConstShop.GARDENING_GLOVE_PRICE))
 	box.add_child(ModBase.create_detail_label("进度：" + _progress_text()))
 	box.add_child(ModBase.create_detail_label(
-		"用法：卡槽里点手套（或按 G）→ 点要搬的植物 → 点目标格子；植物实例与状态原样保留，不铲除也不重种"))
+		"用法：卡槽里点手套（或按 G）→ 点要搬的植物（= 选中，植物留在原格子里，"
+		+ "只有一份半透明虚影跟着手套走）→ 再点一次目标格子才真的搬过去；"
+		+ "植物实例与状态原样保留，不铲除也不重种"))
 
 	## 冷却四件套照 `ConsoleEntry` 的写法造（与联机面板同一套渲染器，不新做界面）
 	var builder := ConsoleEntryControl.new()
