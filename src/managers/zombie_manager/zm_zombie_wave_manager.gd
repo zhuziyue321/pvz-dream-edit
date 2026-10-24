@@ -135,6 +135,14 @@ func start_next_wave() -> void:
 	## 闸门：被占住时（联机客户端等主机下发）这一次直接不开
 	if start_next_wave_gate.is_valid() and not bool(start_next_wave_gate.call()):
 		return
+	## 已经开到最后一波就不再开新波：波数不是 10 的整倍数时（如 1-1 只有 4 波），
+	## 最后一波是普通波，僵尸死光会照常触发残半 / 全死亡刷新 —— 不挡的话会再刷出
+	## 界外的一波：进度条按「波次号 % 每轮波数」回到 0，关卡也判不到打完。
+	## 多轮关切轮时 max_wave 先加上去（见 start_next_game_zombie_wave_mananger_update），
+	## 下一轮的第一波不会被这里挡住
+	if curr_wave >= 0 and curr_wave >= max_wave - 1:
+		zombie_wave_refresh_manager.stop_refresh()
+		return
 	curr_wave += 1
 	var curr_wave_all_zombies:Array[Zombie000Base]
 	## 旗前波

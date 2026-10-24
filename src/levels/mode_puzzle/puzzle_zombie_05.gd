@@ -56,9 +56,18 @@ func _init() -> void:
 
 
 func run_flow(mg: MainGameManager) -> void:
+	## 进关即可放僵尸：主动把阶段推到 MAIN_GAME 放出卡槽
+	## （原版「我是僵尸」没有选卡 / 准备阶段，卡槽一进场就可见、玩家立刻能点卡放僵尸；
+	##  原先要等「开战」事件才放卡槽，差 1~2 秒）
+	await allow_operation()
 	if mg.curr_game_round == 1:
 		## 保龄球红线（仅第 1 轮）
 		await bowling_stripe()
+		## 开场提示 = 原版 IZombieStart 的 ADVICE_I_ZOMBIE_EAT_ALL_BRAINS：
+		## 原版一直挂着到玩家放下第一只僵尸（Challenge.cpp 放置成功时 ClearAdvice）
+		await hint("获得全部大脑，通过这一关卡！")
+		await wait_zombie_appear()
+		await hint("")
 	## 开战（原版「我是僵尸」**没有**「准备…安放…植物」阶段：
 	## 僵尸卡进关就发在手牌上，玩家直接点卡放僵尸；也没有小推车）
 	await start_battle(-1, [

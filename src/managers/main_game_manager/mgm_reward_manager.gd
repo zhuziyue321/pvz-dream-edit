@@ -523,10 +523,13 @@ const STORE_INTRO_3100 := "嘿，我的邻居！我有一些新东西出售啦�
 func _prepare_store_intro() -> void:
 	var curr_level := get_curr_adventure_level()
 	StoreManager.pending_intro_lines = []
+	StoreManager.pending_intro_open_hatch = false
 	if curr_level == ConstUnlockLevel.SHOP_UNLOCK_ADVENTURE_LEVEL:
 		StoreManager.pending_intro_lines = [STORE_INTRO_301, STORE_INTRO_302]
 	elif curr_level == ConstUnlockLevel.SHOP_EXPAND_SECOND_ADVENTURE_LEVEL:
 		StoreManager.pending_intro_lines = [STORE_INTRO_3100]
+		## 原版：念到 3100 时才打开后备箱（StoreScreen.cpp AdvanceCrazyDaveDialog）
+		StoreManager.pending_intro_open_hatch = true
 
 
 ## 通关后是否需要直接打开图鉴（原版：2-4 掉落大图鉴后才开放图鉴）
