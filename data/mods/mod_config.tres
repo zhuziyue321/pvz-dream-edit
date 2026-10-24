@@ -4,4 +4,4 @@
 
 [resource]
 script = ExtResource("1_modcfg")
-enabled_mods = [&"netplay"]
+enabled_mods = [&"netplay", &"pvp"]

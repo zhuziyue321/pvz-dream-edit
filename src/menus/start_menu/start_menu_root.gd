@@ -274,6 +274,20 @@ func _on_button_4_pressed() -> void:
 	Global.game_para = null
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelSurvival))
 
+## 主菜单左下木牌上的「MULTIPLAYER」牌: 进多人游戏(PVP)选关界面
+##
+## 那一页由 pvp 模组提供: 本体只留了一个枚举槽位(MainScenes.ChooseLevelPvp),
+## 场景路径由模组在 install() 时注入注册表(本体不许出现模组里的路径, 见 ModBase 边界规则)。
+## 模组没装 / 没开时这里只给一句提示, 不切场景(槽位没登记 → get_scene_path 会打一行 error,
+## 所以先自己判一次有没有登记)
+func _on_multiplayer_pressed() -> void:
+	var slot := MainSceneRegistry.MainScenes.ChooseLevelPvp
+	if not Global.main_scene_registry.MainScenesMap.has(slot):
+		show_lock_tip("「多人游戏」要在模组页面里打开（选项 → 控制台 → 模组）")
+		return
+	Global.game_para = null
+	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(slot))
+
 #region 选项
 func _on_option_button_1_pressed() -> void:
 	$StartMenuOptionDialog.appear_menu()

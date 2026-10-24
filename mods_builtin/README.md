@@ -70,6 +70,7 @@
 | `hammer/` | 锤子模组：点一下草坪，对小范围内的僵尸造成伤害（数值可调，也可秒杀；含 `hammer_settings.gd`） |
 | `more_armor/` | 更多的防具模组：铜桶 / 钻石桶 / 下界合金桶，各配一只戴桶的僵尸（热注册，编号 9001 起） |
 | `custom_level/` | 自制关卡模组：加载 `user://custom_level` 下的玩家自制关卡**与所有模组各自目录下的 `levels/`**（不论该模组启用与否，同 id 时玩家目录优先），并在主菜单加入口 |
+| `pvp/` | 多人游戏(PVP)模组：**只有界面，没有任何对局**（对战逻辑还没做）—— 主菜单木牌上的「MULTIPLAYER」牌按下即进 `pvp_choose_level.tscn`（页内零关卡）；本体只留枚举槽位 `MainScenes.ChooseLevelPvp`，场景路径由本模组注入 —— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.11 |
 | `netplay/` | 联机模组：ENet 连线 + 命令同步，主菜单加入口 |
 | `purple_direct_plant/` | 紫卡直接种植模组：紫卡不必先种基座植物，代价是「基座植物的阳光 + 惩罚阳光」（含 `purple_direct_plant_rule.gd`） |
 | `dlc/` | DLC 植物模组：收纳一份 DLC 的植物动画，**并带两张 DLC 新地图的演示关**（`levels/moon_roof_demo` 月夜屋顶 / `levels/woods_demo` 郊外营地，见 [dlc/README.md](dlc/README.md) §8）（`reanim/` → `animation/`），并把其中 **16 株接成能种的植物**（环轨仙人掌 / 投掷蘑菇 / 拳击白菜 / 闪电芦苇 / 臼炮蘑菇 / 血橙 / 电击蘑菇 / 橡木弓箭手 / 蜜蜂射手 / 飓衣甘蓝 / 甜菜守卫 / 柠檬榴弹 / 芦荟 / 光照蘑菇 / 缩小紫罗兰 / 增幅鹅河菊）；**原「水盆」模组已并入**（`waterbowl/`：花盆的水生形态，摆在陆地上、**上面只接水生植物**，且**上层植物的影子藏掉**）—— 见 [dlc/README.md](dlc/README.md) 与 [../docs/参考存档/运行期植物.md](../docs/参考存档/运行期植物.md) |

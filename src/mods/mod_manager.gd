@@ -77,6 +77,7 @@ const MOD_SCRIPT_PATHS: Dictionary = {
 	ModIds.PURPLE_DIRECT_PLANT: "purple_direct_plant/purple_direct_plant_mod.gd",
 	ModIds.MORE_ARMOR: "more_armor/more_armor_mod.gd",
 	ModIds.CUSTOM_LEVEL: "custom_level/custom_level_mod.gd",
+	ModIds.PVP: "pvp/pvp_mod.gd",
 	ModIds.NETPLAY: "netplay/netplay_mod.gd",
 	ModIds.ECO: "eco/eco_mod.gd",
 	ModIds.PVZ2: "pvz2/pvz2_mod.gd",
