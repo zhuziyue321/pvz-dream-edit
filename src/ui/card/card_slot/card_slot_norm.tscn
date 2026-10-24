@@ -10,7 +10,7 @@
 [ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button2.png" id="7_6x7kl"]
 [ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button2_Glow.png" id="8_w4c6e"]
 [ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="10_heup1"]
-[ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button_Glow.png" id="11_l50va"]
+[ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button.png" id="11_l50va"]
 [ext_resource type="Texture2D" path="res://pak/images/SeedChooser_Button_Glow.png" id="12_1n7fa"]
 [ext_resource type="Texture2D" path="res://pak/images/SeedChooser_ImitaterAddOn.png" id="13_1iavu"]
 [ext_resource type="PackedScene" uid="uid://cjuiaaq33o5aa" path="res://src/ui/card/card.tscn" id="14_8evrr"]
@@ -638,6 +638,21 @@ texture_normal = ExtResource("11_l50va")
 texture_pressed = ExtResource("12_1n7fa")
 texture_hover = ExtResource("12_1n7fa")
 script = ExtResource("10_heup1")
+
+[node name="Label" type="Label" parent="CardSlotCandidate/TextureButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.4, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 22
+text = "开始战斗！"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ReCardButton" type="TextureButton" parent="CardSlotCandidate"]
 layout_mode = 0
