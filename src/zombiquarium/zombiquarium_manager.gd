@@ -12,9 +12,11 @@ class_name ZombiquariumManager
 ## 由关卡脚本用通用口子 `create_custom_seed_packet()` 放上去（见 minigame_08_zombie_aquarium）；
 ## 本节点自己只提供买东西的方法（`try_buy_pet()` / `try_buy_trophy()`），不认识「卡片」。
 ##
-## 落位说明：本节点挂在主游戏场景（MainGameManager）下、覆盖整屏（z_index 4000，压住草坪但压不住
-## 产出阳光的 Suns 层 4002），位置对齐相机左上角（camera_2d.position 就是可见区左上角的世界坐标，
-## 见 main_game_camera.gd 的口径）。**本节点的局部坐标 = 原版的棋盘坐标**（800x600），
+## 落位说明：本节点挂在**水族馆那一层画布**上（层号 -2，见
+## `minigame_08_zombie_aquarium.AQUARIUM_CANVAS_LAYER`）—— 夹在泳池底图（-1 之前的 -10）与
+## 出战卡槽（MAIN_GAME 阶段是 -1）之间：比底图高（进关第一帧就是鱼缸），比卡槽低
+## （阳光计数与两张种子包压在鱼缸上面）。产出阳光的 Suns 层（z_index 4002）在默认画布上，
+## 照旧压在鱼缸之上。**本节点的局部坐标 = 原版的棋盘坐标**（800x600），
 ## 所以原版那些绝对坐标（点击范围 80~720 / 90~430、游动范围 0~680 / 100~400…）可以原样用。
 ## 文案这一类 UI 挂在本节点下的 CanvasLayer 里，走屏幕坐标。
 ##
@@ -81,9 +83,9 @@ func init_zombiquarium(main_game: MainGameManager) -> void:
 		_card_slot_battle = _mg.card_manager.card_slot_battle
 		if _card_slot_battle == null:
 			Log.error("僵尸水族馆：取不到出战卡槽，阳光经济不可用")
-		## 对齐相机左上角：camera_2d.position 就是可见区左上角的世界坐标
+	## 对齐相机左上角：camera_2d.position 就是可见区左上角的世界坐标
 		position = _mg.camera_2d.position
-		_hide_lawn_ui()
+		hide_lawn_ui()
 	is_running = true
 	_setup_ui()
 	## 原版 Challenge.cpp:311-312：开局送两只潜水僵尸
@@ -96,7 +98,11 @@ func init_zombiquarium(main_game: MainGameManager) -> void:
 ## 藏掉草坪那一套 UI：本关没有选卡、没有铲子、没有待选区，出战卡槽上只留下两样东西
 ## —— 阳光计数（本关的阳光就走主游戏那一份）和它的两个卡位
 ## （那两个卡位放着「买潜水僵尸 / 买奖杯」两张自定义种子包，是本关唯一的操作入口，不能藏）
-func _hide_lawn_ui() -> void:
+##
+## **可以重复调**：主游戏切到 MAIN_GAME 阶段时手持管理器会按新阶段把铲子那套 UI 再刷一遍
+## （见 HandManager 的阶段刷新），所以关卡流程在开战之后会再调一次（见
+## `minigame_08_zombie_aquarium.run_flow`）。
+func hide_lawn_ui() -> void:
 	## 卡槽容器里，除了出战卡槽（阳光条 + 两张种子包）之外全是铲子 / 手套，逐个藏掉
 	for child in _mg.card_manager.card_slot_container.get_children():
 		if child != _card_slot_battle:
@@ -105,9 +111,17 @@ func _hide_lawn_ui() -> void:
 	if card_slot_norm != null:
 		card_slot_norm.card_slot_candidate.visible = false
 	## 前景层（草坪前景装饰）在 CanvasLayer 上，会盖在水族馆之上，一并藏掉
-	var frontground := _mg.get_node_or_null("%Frontground")
+	## ⚠️ 这里用**相对主游戏根节点的路径**而不是 %Frontground：
+	## 唯一名（%xxx）要靠 owner 查，根节点自己没有 owner，从根上按唯一名找会返回 null。
+	var frontground := _mg.get_node_or_null("CanvasLayerFG/Frontground")
 	if frontground != null:
 		frontground.visible = false
+	## 草坪的「当前僵尸数量」计数：养在缸里的宠物僵尸不算草坪僵尸，
+	## 这一行在本关只会一直显示 0（阶段切到 MAIN_GAME 时它会被重新点亮，
+	## 所以要等开战之后再藏一次 —— 见 hide_lawn_ui 的说明）
+	var zombie_sum := _mg.get_node_or_null("CanvasLayerUI/LabelZombieSum")
+	if zombie_sum != null:
+		zombie_sum.visible = false
 
 
 func _setup_ui() -> void:

@@ -48,7 +48,7 @@ func _run_win(a, title: String) -> void:
 	_check(a, title + ": 已进入主游戏", mg != null, "GameContext.curr_main_game 为空")
 	if mg == null:
 		return
-	var scene: ZombiquariumScene = mg.get_node_or_null("ZombiquariumScene")
+	var scene: ZombiquariumScene = _find_aquarium(mg)
 	_check(a, title + ": 水族馆入口场景已挂上", scene != null, "主游戏下没有 ZombiquariumScene")
 	if scene == null:
 		return
@@ -164,6 +164,19 @@ func _run_win(a, title: String) -> void:
 
 
 #region 工具
+## 水族馆入口场景：挂在**水族馆那一层画布**下面（见
+## `minigame_08_zombie_aquarium.AQUARIUM_LAYER_NAME`），这里按类递归找，不写死路径 ——
+## 层号 / 层级以后再调，探针不用跟着改
+func _find_aquarium(root: Node) -> ZombiquariumScene:
+	if root is ZombiquariumScene:
+		return root as ZombiquariumScene
+	for child in root.get_children():
+		var found := _find_aquarium(child)
+		if found != null:
+			return found
+	return null
+
+
 ## 出战卡槽里那张价格正好等于 [param sun_cost] 的自定义种子包（见
 ## `minigame_08_zombie_aquarium._create_seed_packets`：100 买僵尸、1000 买奖杯）
 func _find_packet(sun_cost: int) -> Card:
@@ -187,7 +200,7 @@ func _run_lose(a, title: String) -> void:
 	await a.wait(4.0)
 
 	var mg := GameContext.curr_main_game
-	var scene: ZombiquariumScene = mg.get_node_or_null("ZombiquariumScene")
+	var scene: ZombiquariumScene = _find_aquarium(mg)
 	if scene == null:
 		_check(a, title + ": 水族馆已挂上", false, "主游戏下没有 ZombiquariumScene")
 		return

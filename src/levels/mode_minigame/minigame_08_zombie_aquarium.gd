@@ -29,6 +29,17 @@ var progress_provider := ZombiquariumProgressProvider.new()
 ## 出战卡槽里的两张自定义种子包：买潜水僵尸 / 买奖杯
 var custom_seed_packets: Array[Card] = []
 
+## 水族馆所在的画布层：**必须夹在泳池底图(-10)与出战卡槽(-1)之间**
+##
+## 出战卡槽那一层在 MAIN_GAME 阶段会被压到 layer = -1（见 canvas_layer_card_slot.gd），
+## 泳池底图那一层是 -10（见 main_game_base.tscn 的 CanvasLayerBG）。
+## 鱼缸画在 -2：
+##   · 比底图高 → 进关第一帧就是鱼缸，不会先露出泳池；
+##   · 比卡槽低 → 阳光计数与两张种子包压在鱼缸上面，看得见也点得到。
+const AQUARIUM_CANVAS_LAYER := -2
+## 画布层的节点名（探针 / 调试通道按名字找得到）
+const AQUARIUM_LAYER_NAME := "CanvasLayerZombiquarium"
+
 
 func _init() -> void:
 	## 存档键写死（V2）：选关按钮顺序调整后存档键不变，玩家的老通关记录不会错位
@@ -63,23 +74,46 @@ func create_progress_provider() -> LevelProgressProvider:
 
 
 func run_flow(mg: MainGameManager) -> void:
-	## 推进到 MAIN_GAME 阶段：本关不出怪（monster_mode = Null），波次管理器不会刷僵尸，
+	## ① 水族馆**先建、先画**：进关第一帧就得是鱼缸
+	##    （推进到 MAIN_GAME 那段里有卡槽进场动画 + 开战 1 秒定时器，
+	##    水族馆要是等它跑完再建，中间这一两秒画面就是泳池底图）
+	var aquarium: ZombiquariumScene = _create_aquarium(mg)
+
+	## ② 推进到 MAIN_GAME 阶段：本关不出怪（monster_mode = Null），波次管理器不会刷僵尸，
 	## 这一步只是把阶段切过去、相机归位、BGM 起来、出战卡槽进场（卡槽位这时候才建好）
 	await mg.main_game_start()
 
-	## 挂上水族馆：实例化的是入口场景（壳），它内部就是玩法本体 ZombiquariumManager
-	## （见 src/zombiquarium/zombiquarium.gd）—— 阳光仍走出战卡槽、胜负仍回本关流程
-	var aquarium: ZombiquariumScene = SceneRegistry.ZOMBIQUARIUM_SCENE.instantiate()
-	mg.add_child(aquarium)
-	aquarium.init_zombiquarium(mg)
+	## ③ 开战那一步会按新阶段把铲子 / 手套那套 UI 再刷一遍（见 HandManager 的阶段刷新），
+	## 本关没有草坪，铲子不该出现 —— 再藏一次
+	aquarium.get_manager().hide_lawn_ui()
 
-	## 进度条这时才拿得到水族馆：之后每帧向它问一次阳光，算出「阳光 / 1000」
+	## ④ 进度条这时才拿得到水族馆：之后每帧向它问一次阳光，算出「阳光 / 1000」
 	progress_provider.bind_manager(aquarium.get_manager())
-	## 卡槽里的两张自定义种子包：玩家的买东西入口全在这两张卡上
+	## ⑤ 卡槽里的两张自定义种子包：玩家的买东西入口全在这两张卡上
 	_create_seed_packets(aquarium.get_manager())
 
 	var is_win: bool = await aquarium.signal_finished
 	Log.info("僵尸水族馆：关卡流程结束，is_win = %s" % str(is_win))
+
+
+## 建水族馆：先建画布层，再把入口场景挂进去，最后初始化
+##
+## 画布层是**单独一层**（AQUARIUM_CANVAS_LAYER），不是挂在主游戏根节点上：
+## 出战卡槽那一层在 MAIN_GAME 阶段是 -1，鱼缸要是还在默认画布（layer 0），
+## 就会把卡槽整块盖住（阳光计数与两张种子包全看不见）。
+## `follow_viewport_enabled` 与底图那一层一致：层内坐标 = 世界坐标，
+## 所以本体那套「按相机左上角对齐」（见 ZombiquariumManager.init_zombiquarium）不用改。
+func _create_aquarium(mg: MainGameManager) -> ZombiquariumScene:
+	var layer := CanvasLayer.new()
+	layer.name = AQUARIUM_LAYER_NAME
+	layer.layer = AQUARIUM_CANVAS_LAYER
+	layer.follow_viewport_enabled = true
+	mg.add_child(layer)
+	var aquarium: ZombiquariumScene = SceneRegistry.ZOMBIQUARIUM_SCENE.instantiate()
+	layer.add_child(aquarium)
+	## 初始化（关卡模式）：本体这时就按相机左上角对齐，并造出开局的 2 只潜水僵尸
+	aquarium.init_zombiquarium(mg)
+	return aquarium
 
 
 #region 出战卡槽里的自定义种子包（本关专属）
