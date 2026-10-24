@@ -18,6 +18,8 @@ var chase_value: float = 0.
 @onready var mini_zombie: TextureRect = $MiniZombie
 ## 旗帜
 @onready var flag: FlagProgressBarFlag = $Flag
+## 进度条上的文字（原版在进度条正中画「分数/总数 名目」，见 Board::DrawProgressMeter）
+@onready var progress_text: Label = $ProgressText
 
 ## 小僵尸的起始位置
 var start_minizombie :float = 142
@@ -73,6 +75,15 @@ func create_flag(flag_num:int):
 func down_all_flags():
 	for curr_flag:FlagProgressBarFlag in flag_arr:
 		curr_flag.down_flag()
+
+
+## 设置进度条上的文字：**空串 = 不显示**（默认口径没有文字，战斗进度条就是一条空表）
+## 由 `LevelProgressBarController` 每帧经数据源的 `get_progress_text()` 写入
+func set_progress_text(text: String) -> void:
+	if progress_text.text == text and progress_text.visible == not text.is_empty():
+		return
+	progress_text.text = text
+	progress_text.visible = not text.is_empty()
 
 
 ## 设置真实进度（由 LevelProgressBarController 每帧写入；flag_i >= 0 时顺手升起那一面旗）

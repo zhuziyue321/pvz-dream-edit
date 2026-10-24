@@ -30,6 +30,12 @@ func get_flag_num() -> int:
 	return 0
 
 
+## 进度条上要显示的文字（原版在进度条正中画「分数/总数 名目」，如「3/5 吃掉的脑子」）
+## **空串 = 不显示**（默认）；控制器每帧取一次
+func get_progress_text() -> String:
+	return ""
+
+
 ## 取走「本帧要升旗」的旗帜下标（-1 = 不升）：取走后本源自己清掉
 func take_flag_raise_index() -> int:
 	return -1

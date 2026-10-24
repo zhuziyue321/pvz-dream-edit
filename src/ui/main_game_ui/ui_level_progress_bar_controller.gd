@@ -73,6 +73,7 @@ func _process(_delta: float) -> void:
 		return
 	_update_flags()
 	progress_bar.set_progress(provider.get_progress(), provider.take_flag_raise_index())
+	progress_bar.set_progress_text(provider.get_progress_text())
 
 
 ## 旗帜：数据源报的数量变了才重建一次；「全部收起」是事件，取到就做一次

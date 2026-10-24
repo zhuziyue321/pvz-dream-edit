@@ -1,10 +1,11 @@
-[gd_scene load_steps=11 format=3 uid="uid://brbdbxg2tocla"]
+[gd_scene load_steps=12 format=3 uid="uid://brbdbxg2tocla"]
 
 [ext_resource type="Script" uid="uid://b17126kyvx43n" path="res://src/ui/main_game_ui/ui_flag_progress_bar.gd" id="1_dtp4m"]
 [ext_resource type="Texture2D" path="res://pak/images/FlagMeterParts.png" id="1_l32th"]
 [ext_resource type="Texture2D" path="res://pak/images/FlagMeter.png" id="2_ea7cx"]
 [ext_resource type="Script" uid="uid://doq1iak45j5xk" path="res://src/ui/main_game_ui/ui_flag_progress_bar_flag.gd" id="3_dtp4m"]
 [ext_resource type="Texture2D" path="res://pak/images/FlagMeterLevelProgress.png" id="5_bkxnl"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="6_font"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_42xtw"]
 atlas = ExtResource("2_ea7cx")
@@ -82,3 +83,15 @@ offset_right = 167.0
 offset_bottom = 19.0
 mouse_filter = 2
 texture = SubResource("AtlasTexture_hry0n")
+
+[node name="ProgressText" type="Label" parent="."]
+visible = false
+layout_mode = 0
+offset_right = 158.0
+offset_bottom = 27.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.878431, 0.733333, 0.384314, 1)
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+vertical_alignment = 1
