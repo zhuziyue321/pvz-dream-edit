@@ -52,3 +52,11 @@ agents.state.json
 # 旧的 assets/ 已全量迁移（引用改指上面两个目录）并从磁盘删除，原先「整体忽略 + 逐文件放行」
 # 的 200 多行白名单随之作废，只留下面一行守卫，防止旧素材被整体拉回版本控制。
 /assets/
+
+# === tools 目录临时 / 生成物（排查或跑批遗留，清理时直接删，不入库）===
+tools/__pycache__/
+tools/_tmp_*
+tools/_*.gd.uid
+tools/_parse_res_tmp.py
+tools/asset_mapping_miss.txt
+tools/asset_mapping_report*
