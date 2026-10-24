@@ -56,8 +56,22 @@ const TIP_MAP := {
 }
 
 ## 名字 -> 点开音效（不配就用掉落物自带的那个）
+##
+## 原版口径（PvZ-Portable src/Lawn/Coin.cpp 的 `Coin::Collect` 关卡奖励那一支）：
+##   · 种子包类          → SOUND_SEEDLIFT + SOUND_TAP2（在 SeedPacket.pick 里播）
+##   · 奖杯              → SOUND_DIAMOND
+##   · 铁铲（冒险 1-4）   → SOUND_SHOVEL
+##   · 大图鉴 / 车钥匙 / 玉米卷（原版 2-4 / 3-4 / 4-4 关）→ SOUND_TAP2
+## ⚠️ 奖杯那条原版是 SOUND_DIAMOND，但**本仓库没有 diamond 音效**：
+## 原版资源里的 `diamond` 在 pak/sounds 里是 `diamond.au`，Godot 不导入 .au（没有 .import），
+## 所以这里用 chime 顶替（同样是一声清脆的「叮」）。
 const SFX_MAP := {
-	TROPHY: "winmusic",
+	TROPHY: "chime",
+	SHOVEL: "shovel",
+	ALMANAC: "tap2",
+	CAR_KEYS: "tap2",
+	TACO: "tap2",
+	WATERING_CAN: "tap2",
 }
 
 ## 种子包类战利品：名字 = "<植物>_seed_packet"，值是植物编号

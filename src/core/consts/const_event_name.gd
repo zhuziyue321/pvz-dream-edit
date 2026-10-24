@@ -85,6 +85,11 @@ const CREATE_UNLOCK_DROP := "create_unlock_drop"
 const LEVEL_COMPLETE_PICKUP := "level_complete_pickup"
 ## 通关掉落物拾取演出播完。payload: 无
 const LEVEL_COMPLETE_PICKUP_FINISHED := "level_complete_pickup_finished"
+## 通关战利品掉出来了（**生成点**推的，不是拾取时）。payload: 无
+##
+## 原版：关卡奖励掉出来时屏幕中央闪一下（PARTICLE_SCREEN_FLASH，
+## 见 PvZ-Portable src/Lawn/Challenge.cpp:2017）。订阅方是 CanvasLayerWhiteScreen。
+const LEVEL_COMPLETE_LOOT_SPAWNED := "level_complete_loot_spawned"
 #endregion
 
 #region 战斗效果（跨系统广播）
@@ -205,6 +210,8 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	## 通关掉落物本体（seed_packet.gd / present.gd 推的都是 self）
 	LEVEL_COMPLETE_PICKUP: [Variant.Type.TYPE_OBJECT],
 	LEVEL_COMPLETE_PICKUP_FINISHED: [],
+	## 关卡奖励掉出来的那一下（无参）
+	LEVEL_COMPLETE_LOOT_SPAWNED: [],
 	#endregion
 
 	#region 战斗效果（跨系统广播）

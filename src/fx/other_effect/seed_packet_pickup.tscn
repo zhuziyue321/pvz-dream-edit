@@ -1,0 +1,53 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://src/fx/other_effect/seed_packet_pickup.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://pak/particles/ZombieHead.png" id="2_head"]
+
+[sub_resource type="ParticleProcessMaterial" id="pm_head_warm"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_radius = 40.0
+radial_accel_min = 180.0
+radial_accel_max = 180.0
+orbit_velocity_min = 30.0
+orbit_velocity_max = 30.0
+scale_min = 0.5
+scale_max = 5.0
+color = Color(0.9, 0.9, 0.7, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="pm_head_gray"]
+particle_flag_disable_z = true
+emission_shape = 1
+emission_radius = 40.0
+radial_accel_min = 180.0
+radial_accel_max = 180.0
+orbit_velocity_min = -30.0
+orbit_velocity_max = -30.0
+scale_min = 0.5
+scale_max = 5.0
+color = Color(0.9, 0.9, 0.9, 1)
+
+[node name="LootSeedPacketPickup" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="HeadWarm" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 30
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+texture = ExtResource("2_head")
+process_material = SubResource("pm_head_warm")
+draw_order = 0
+blend_mode = 1
+
+[node name="HeadGray" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 30
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
+texture = ExtResource("2_head")
+process_material = SubResource("pm_head_gray")
+draw_order = 0
+blend_mode = 1

@@ -49,6 +49,19 @@ var PLANT_START_EFFECT_WATER: PackedScene = AssetRegistry.get_scene("res://src/i
 ## 坑洞
 var DOOM_SHROOM_CRATER: PackedScene = AssetRegistry.get_scene("res://src/fx/doom_shroom_crater.tscn")
 
+## 拾取战利品时的星星爆裂（原版 PARTICLE_STARBURST，见 src/fx/other_effect/loot_starburst.gd）
+var LOOT_STARBURST: PackedScene = AssetRegistry.get_scene("res://src/fx/other_effect/loot_starburst.tscn")
+
+## 拾取「带提示的礼物」时的星火（原版 PARTICLE_PRESENT_PICKUP，见 src/fx/other_effect/present_pickup.gd）
+var LOOT_PRESENT_PICKUP: PackedScene = AssetRegistry.get_scene("res://src/fx/other_effect/present_pickup.tscn")
+
+## 种子包被点开时的僵尸头粒子（原版 PARTICLE_SEED_PACKET_PICKUP，见 src/fx/other_effect/seed_packet_pickup.gd）
+var LOOT_SEED_PACKET_PICKUP: PackedScene = AssetRegistry.get_scene("res://src/fx/other_effect/seed_packet_pickup.tscn")
+
+
+## 原版「领奖屏」（新植物那一支，见 src/ui/award_screen/award_screen.gd）
+var AWARD_SCREEN: PackedScene = AssetRegistry.get_scene("res://src/ui/award_screen/award_screen.tscn")
+
 ## 墓碑
 var TOMBSTONE: PackedScene = AssetRegistry.get_scene("res://src/items/tombstone.tscn")
 

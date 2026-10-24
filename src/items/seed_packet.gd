@@ -48,9 +48,14 @@ func pick() -> void:
 	if is_opened:
 		return
 	is_opened = true
-	SoundManager.play_other_SFX("prize")
+	## 原版：种子包被点开是「拿起种子」+「轻点」两个音
+	## （PvZ-Portable src/Lawn/Coin.cpp:1216-1217 的 else 分支：SOUND_SEEDLIFT + SOUND_TAP2）
+	SoundManager.play_other_SFX("seedlift")
+	SoundManager.play_other_SFX("tap2")
 	## 打断抛物线
 	kill_launch_tween()
+	## 停掉原版那套表现（闪光 + 弹跳箭头）：它跟后面的淡出抢 modulate
+	stop_level_award_effects()
 	texture_button.queue_free()
 
 	if not tip_text.is_empty():
@@ -59,11 +64,23 @@ func pick() -> void:
 		reminder_info._init_info([tip_text], tip_show_time)
 
 	if is_level_complete_drop:
+		## 原版：关卡奖励被点开时播一次星星爆裂（PARTICLE_STARBURST，见 Coin.cpp:1220）
+		play_level_award_pick_fx()
+		## 原版：种子包还额外挂一串「僵尸头」粒子，跟着它一起飞向屏幕中心
+		## （PARTICLE_SEED_PACKET_PICKUP，见 Coin.cpp:1238 —— 原版是 AttachParticle 到掉落物身上）
+		play_seed_packet_pickup_fx()
 		EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP, [self])
 		return
 
 	## 拿不到卡槽位置（get_card_slot_target 返回 ZERO）时原地淡出
 	fly_to_target(get_card_slot_target())
+
+
+## 战利品上方弹跳箭头的位置：原版种子包 50x70 -> 中心 +(25, -25)，
+## 本仓库的种子包是原版 2 倍（100x140），按比例放大
+## （原版公式见 DropItemBase.get_level_award_arrow_offset）
+func get_level_award_arrow_offset() -> Vector2:
+	return Vector2(50, -50)
 
 
 ## 老名字的入口（探针直接点种子包时调）：一律走 `pick()`

@@ -12,8 +12,14 @@ const E_DropKind := ItemRegistry.E_DropKind
 const UNLOCK_DROP_EXIST_TIME := 15.0
 ## 解锁提示文本的停留秒数
 const UNLOCK_DROP_TIP_TIME := 4.0
-## 战利品未被点击时的存在秒数（比解锁道具再长一点：它是本关的收尾，玩家可能在看别处）
-const LOOT_EXIST_TIME := 20.0
+## **永不过期**：存在时长给这个值（0）时，掉落物不会自己消失
+##
+## 原版口径：关卡奖励（`Coin::IsLevelAward()`）**不会自己过期** —— 不点掉就一直留在场上，
+## 靠上方那个弹跳箭头提示玩家去点（PvZ-Portable src/Lawn/Coin.cpp 的 mDisappearCounter 分支：
+## `if (!IsLevelAward() && !IsPresentWithAdvice()) mDisappearCounter++`）。
+## 结算线上的战利品一律用这个值；玩家一直不点也不会卡死 ——
+## MgmRewardManager 那边的等待有兜底超时，超时后照样结算。
+const LOOT_NEVER_EXPIRE := 0.0
 ## 战利品提示文本的停留秒数
 const LOOT_TIP_TIME := 4.0
 ## 植物类通关奖励的提示文本模板（%s = 植物中文名，原版 lawn_strings [NEW_PLANT]）
@@ -213,9 +219,10 @@ func create_loot_drop(loot_name: String, drop_global_position: Vector2, tip_text
 func _create_loot_seed_packet(plant_type: StringName, tip_text: String, drop_global_position: Vector2) -> Node2D:
 	if dim_seed_packet == null:
 		return null
+	## 存在时长 0 = **永不过期**（原版的关卡奖励不自己消失，见 LOOT_NEVER_EXPIRE）
 	return dim_seed_packet.create_seed_packet(plant_type, tip_text,
 		get_clamp_drop_position(drop_global_position, SeedPacket.PACKET_SIZE.x / 2.0),
-		LOOT_EXIST_TIME, LOOT_TIP_TIME)
+		LOOT_NEVER_EXPIRE, LOOT_TIP_TIME)
 
 
 ## 掉一个战利品礼物盒：礼物盒本体换成战利品贴图（与冒险 4-4 的玉米卷同一套表现）
@@ -231,10 +238,13 @@ func _create_loot_present(
 		return null
 	## 存在时长要在入树之前给（_ready 里就按它起定时器），贴图由 setter 自己应用
 	new_drop.is_garden_plant = false
-	new_drop.auto_free_time = LOOT_EXIST_TIME
+	## 存在时长 0 = **永不过期**（原版的关卡奖励不自己消失，见 LOOT_NEVER_EXPIRE）
+	new_drop.auto_free_time = LOOT_NEVER_EXPIRE
 	new_drop.tip_show_time = LOOT_TIP_TIME
 	new_drop.open_tip_text = tip_text
 	new_drop.is_show_open_tip = not tip_text.is_empty()
+	## 记下这是哪个战利品：点开时才知道要不要散币（原版 Coin::FanOutCoins）
+	new_drop.loot_name = loot_name
 	new_drop.icon_texture = icon
 	var sfx := LootRegistry.get_sfx(loot_name)
 	if not sfx.is_empty():

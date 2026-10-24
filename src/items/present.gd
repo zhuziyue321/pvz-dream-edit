@@ -32,6 +32,9 @@ const TIP_NEW_GARDEN_PLANT := "你为你的花园找到一株新植物"
 			apply_icon_texture()
 ## 是否为花园植物礼包：false 表示解锁类礼包，不计入花园植物数量也不写存档
 @export var is_garden_plant := true
+## **这是哪个战利品**（战利品名，见 LootRegistry；花园礼包 / 解锁道具留空）
+## 用来判断「点开时要不要散币」—— 原版奖杯被点开会扇形散出钻石（Coin::FanOutCoins）
+var loot_name := ""
 
 @onready var present: Sprite2D = $Present
 @onready var present_open: Sprite2D = $PresentOpen
@@ -56,6 +59,8 @@ func pick() -> void:
 		return
 	is_opened = true
 	SoundManager.play_other_SFX(open_sfx)
+	## 停掉原版那套表现（闪光 + 弹跳箭头）：它跟后面的淡出抢 modulate
+	stop_level_award_effects()
 
 	if is_show_open_tip:
 		var reminder_info :ReminderInformation =  SceneRegistry.REMINDER_INFORMATION.instantiate()
@@ -63,6 +68,9 @@ func pick() -> void:
 		reminder_info._init_info([get_open_tip_text()], tip_show_time)
 
 	if is_garden_plant:
+		## 原版：花园植物礼包被点开时爆一蓬星火
+		## （`PARTICLE_PRESENT_PICKUP`，PvZ-Portable Coin.cpp:1071）
+		play_present_pickup_fx()
 		## 原版礼包里是一株**已定种**的盆栽（PottedPlant::InitializePottedPlant(PickRandomSeedType())），
 		## 这里在拾取时把物种一起入队，发芽期过后长成它
 		Global.global_game_state.add_new_garden_plant(
@@ -71,6 +79,10 @@ func pick() -> void:
 
 	## 本关结算线上的掉落物：收尾表演由 CanvasLayerWhiteScreen 接管，本体也由它在白屏到底时释放
 	if is_level_complete_drop:
+		## 原版：关卡奖励被点开时播一次星星爆裂（PARTICLE_STARBURST，见 Coin.cpp:1220）
+		play_level_award_pick_fx()
+		## 原版：奖杯被点开时把奖励扇形散成钻石（Coin::FanOutCoins，见 Coin.cpp:1153-1173）
+		_fan_out_coins()
 		EventBus.push_event(ConstEventName.LEVEL_COMPLETE_PICKUP, [self])
 		return
 
@@ -88,6 +100,28 @@ func pick() -> void:
 ## 老名字的入口（探针直接点礼包时调）：一律走 `pick()`
 func _on_texture_button_pressed() -> void:
 	pick()
+
+
+## **原版 `Coin::FanOutCoins`：奖杯被点开时把奖励扇形散成钻石**
+## （PvZ-Portable src/Lawn/Coin.cpp:1153-1173 —— 奖杯散 1 颗、冒险 5-10 散 3 颗）
+## 散币的具体做法在结算管理器那边（那里才有金币容器与冒险关卡号）
+func _fan_out_coins() -> void:
+	if loot_name != LootRegistry.TROPHY:
+		return
+	if not is_instance_valid(GameContext.curr_main_game):
+		return
+	var reward_manager := GameContext.curr_main_game.reward_manager
+	if reward_manager == null:
+		return
+	reward_manager.fan_out_coins(loot_name, global_position)
+
+
+## 战利品贴图的尺寸（箭头顶点按它算）：自定义贴图（奖杯 / 铲子…）用贴图自身尺寸，
+## 没贴图就是默认的礼物盒 80x80
+func get_level_award_icon_size() -> Vector2:
+	if icon_texture == null:
+		return Vector2(80, 80)
+	return icon_texture.get_size()
 
 
 ## 用关卡配置的贴图替换礼物盒，并把点击区域改成贴图大小

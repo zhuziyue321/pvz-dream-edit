@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3 uid="uid://dpluwf4hwf6qd"]
+[gd_scene load_steps=41 format=3 uid="uid://dpluwf4hwf6qd"]
 
 [ext_resource type="Texture2D" path="res://pak/images/Present.png" id="1_l75ig"]
 [ext_resource type="Script" uid="uid://c25vj64dvn2le" path="res://src/items/present.gd" id="1_ypulj"]
@@ -23,6 +23,8 @@
 [ext_resource type="Animation" uid="uid://dinr4c12c03rb" path="res://animation/garden/sprout/zen_garden_sprout_idle_noflower.tres" id="22_j302l"]
 [ext_resource type="Animation" uid="uid://lxnfqu6elcw2" path="res://animation/garden/sprout/zen_garden_sprout_sprout.tres" id="23_mfbgg"]
 [ext_resource type="Texture2D" path="res://pak/particles/Star40.png" id="24_26keg"]
+[ext_resource type="Script" path="res://src/fx/other_effect/loot_pickup_arrow.gd" id="25_arrow"]
+[ext_resource type="Texture2D" path="res://pak/particles/DownArrow.png" id="26_downarrow"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_e78dw"]
 _data = {
@@ -107,6 +109,14 @@ script = ExtResource("1_ypulj")
 
 [node name="PickUpGlow" type="Sprite2D" parent="."]
 texture = ExtResource("2_vd236")
+
+[node name="PickUpArrow" type="Node2D" parent="."]
+visible = false
+script = ExtResource("25_arrow")
+
+[node name="Arrow" type="Sprite2D" parent="PickUpArrow"]
+modulate = Color(1, 0.9, 0.4, 1)
+texture = ExtResource("26_downarrow")
 
 [node name="Present" type="Sprite2D" parent="."]
 visible = false

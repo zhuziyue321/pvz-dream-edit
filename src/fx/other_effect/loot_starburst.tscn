@@ -1,0 +1,92 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/fx/other_effect/loot_starburst.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://pak/particles/Star40.png" id="2_star"]
+[ext_resource type="Texture2D" path="res://pak/particles/AwardRays_star.png" id="3_rays"]
+
+[sub_resource type="ParticleProcessMaterial" id="pm_star_orange"]
+particle_flag_disable_z = true
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 1.0
+emission_ring_radius = 75.0
+emission_ring_inner_radius = 1.0
+emission_ring_cone_angle = 90.0
+radial_velocity_min = 300.0
+radial_velocity_max = 1080.0
+gravity = Vector3(0, 1800, 0)
+damping_min = 3.0
+damping_max = 3.0
+scale_min = 0.1
+scale_max = 0.3
+color = Color(1, 0.9, 0.25, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="pm_star_white"]
+particle_flag_disable_z = true
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 1.0
+emission_ring_radius = 60.0
+emission_ring_inner_radius = 1.0
+emission_ring_cone_angle = 90.0
+radial_velocity_min = 240.0
+radial_velocity_max = 960.0
+gravity = Vector3(0, 1800, 0)
+damping_min = 3.0
+damping_max = 3.0
+scale_min = 0.1
+scale_max = 0.3
+color = Color(1, 1, 0.7, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="pm_rays_star"]
+particle_flag_disable_z = true
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 1.0
+emission_ring_radius = 40.0
+emission_ring_inner_radius = 1.0
+emission_ring_cone_angle = 90.0
+radial_velocity_min = 180.0
+radial_velocity_max = 720.0
+gravity = Vector3(0, 1800, 0)
+damping_min = 3.0
+damping_max = 3.0
+scale_min = 0.1
+scale_max = 0.3
+color = Color(1, 0.65, 0.15, 1)
+
+[node name="LootStarburst" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="StarOrange" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 40
+lifetime = 0.83
+one_shot = true
+explosiveness = 1.0
+texture = ExtResource("2_star")
+process_material = SubResource("pm_star_orange")
+draw_order = 0
+blend_mode = 1
+
+[node name="StarWhite" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 30
+lifetime = 0.83
+one_shot = true
+explosiveness = 1.0
+texture = ExtResource("2_star")
+process_material = SubResource("pm_star_white")
+draw_order = 0
+blend_mode = 1
+
+[node name="RaysStar" type="GPUParticles2D" parent="."]
+emitting = false
+amount = 8
+lifetime = 0.83
+one_shot = true
+explosiveness = 1.0
+texture = ExtResource("3_rays")
+process_material = SubResource("pm_rays_star")
+draw_order = 0
+blend_mode = 1
