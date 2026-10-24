@@ -209,7 +209,8 @@ func _check_seed_packet(a, new_drop) -> void:
 		str(packet_bg.texture.resource_path))
 	_check(a, "种子包上写着阳光花费，与卡片一致", seed_packet.cost_label.text == card.cost.text,
 		seed_packet.cost_label.text + " vs " + card.cost.text)
-	var packet_cost_pos: Vector2 = seed_packet.cost_label.position + packet_bg.texture.get_size() / 2.0
+	var packet_cost_pos: Vector2 = seed_packet.cost_label.position \
+		+ packet_bg.texture.get_size() * packet_bg.scale / 2.0
 	_check(a, "阳光花费文本位置是卡片的 2 倍", (packet_cost_pos - card.cost.position * 2.0).length() < 1.0,
 		str(packet_cost_pos) + " vs " + str(card.cost.position * 2.0))
 	_check(a, "阳光花费字号是卡片的 2 倍",
@@ -222,7 +223,7 @@ func _check_seed_packet(a, new_drop) -> void:
 	## 卡片底图左上角是 (0,0)，种子包底图居中、左上角是 -size/2，换算回同一原点再比
 	var card_plant_pos: Vector2 = card_plant.position + card.get_node(^"CardBg/CharacterStatic").position
 	var packet_plant_pos: Vector2 = packet_plant.position + seed_packet.plant_container.position \
-		+ packet_bg.texture.get_size() / 2.0
+		+ packet_bg.texture.get_size() * packet_bg.scale / 2.0
 	_check(a, "植物位置是卡片的 2 倍", (packet_plant_pos - card_plant_pos * 2.0).length() < 1.0,
 		str(packet_plant_pos) + " vs " + str(card_plant_pos * 2.0))
 	_check(a, "植物缩放是卡片的 2 倍", (packet_plant.scale - card_plant.scale * 2.0).length() < 0.01,

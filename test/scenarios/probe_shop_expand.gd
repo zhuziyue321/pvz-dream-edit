@@ -1,7 +1,8 @@
 extends RefCounted
 ## 探针：冒险模式 4-4 掉落玉米卷 / 商店扩充 / 通关后直接进商店
 ## 覆盖：
-##   1. 4-4 关卡资源配了掉落解锁道具（通关时掉落 + 提示 + 玉米卷贴图），且掉落入口真的掉出来
+##   1. 4-4 关卡脚本配了通关战利品玉米卷（`level_complete_loot = "taco"`，走 LootRegistry 那条线），
+##      且掉落入口真的掉出来（**不再**走老的 drop_unlock_* 解锁道具线，见 2026-10-07 战利品按名字取贴图）
 ##   2. 首次通关 4-4 后**直接进商店**（不回主菜单），商店扩展阶段 0 -> 1
 ##   3. 扩充后忧郁蘑菇 / 香蒲上架（未扩充时不上架）
 ##   4. 重打 4-4 不再跳商店，按原流程回主菜单（冒险模式没有选关界面；跳转只触发一次）
@@ -49,18 +50,26 @@ func run(a) -> void:
 
 	var para = GameContext.curr_main_game.game_para
 	_check(a, "关卡 id=0034(4-4)", para.level_id == "0034", para.level_id)
-	_check(a, "配的是通关时掉落", para.drop_unlock_on_level_complete)
-	_check(a, "不再由波次携带", para.drop_unlock_wave < 0, str(para.drop_unlock_wave))
-	_check(a, "掉落提示提到玉米卷", "玉米卷" in para.drop_unlock_tip, para.drop_unlock_tip)
-	_check(a, "掉落贴图是玉米卷", para.drop_unlock_icon != null
-		and "Taco" in para.drop_unlock_icon.resource_path,
-		str(para.drop_unlock_icon.resource_path if para.drop_unlock_icon != null else "null"))
+	## 玉米卷走的是**战利品线**（关卡脚本 `_init` 里 `level_complete_loot = "taco"`）：
+	## 名字 -> 贴图 / 提示都在 LootRegistry，掉落由 `create_loot_drop()` 生产一个换上贴图的礼包
+	_check(a, "配的是通关战利品玉米卷", para.level_complete_loot == LootRegistry.TACO,
+		para.level_complete_loot)
+	_check(a, "战利品表登记了 taco", LootRegistry.has(LootRegistry.TACO))
+	_check(a, "战利品提示提到玉米卷",
+		"玉米卷" in LootRegistry.get_tip(LootRegistry.TACO), LootRegistry.get_tip(LootRegistry.TACO))
+	var taco_icon := LootRegistry.get_texture(LootRegistry.TACO)
+	_check(a, "战利品贴图是玉米卷", taco_icon != null and "Taco" in taco_icon.resource_path,
+		str(taco_icon.resource_path if taco_icon != null else "null"))
+	## 老那条线（drop_unlock_*）不该再挂：波次携带 / 通关掉解锁道具都不参与
+	_check(a, "不再走老的解锁道具线",
+		not para.drop_unlock_on_level_complete and para.drop_unlock_wave < 0,
+		"on_complete=%s wave=%d" % [str(para.drop_unlock_on_level_complete), para.drop_unlock_wave])
 
-	## 真的掉一次：走通关掉落入口后掉落容器应多出一个礼包
+	## 真的掉一次：走战利品掉落入口后掉落容器应多出一个礼包
 	var dim = GameContext.curr_main_game.drop_item_manager.dim_garden_plant
 	var parent = dim.all_drop_garden_plant_parent
 	var before: int = parent.get_child_count()
-	GameContext.curr_main_game.drop_item_manager.create_unlock_drop_on_level_complete(Vector2(600, 300))
+	GameContext.curr_main_game.drop_item_manager.create_loot_drop(LootRegistry.TACO, Vector2(600, 300))
 	await a.wait(1.0)
 	var after: int = parent.get_child_count()
 	_check(a, "4-4 掉出了玉米卷礼包", after == before + 1, str(before) + " -> " + str(after))

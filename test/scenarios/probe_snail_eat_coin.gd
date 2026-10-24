@@ -65,8 +65,9 @@ func run(a) -> void:
 		var pos: Vector2 = c.global_position + Vector2(0.0, -60.0)
 		a.log("---- 格子 %s 产钱点 %s" % [str(c.global_position), str(pos)])
 		EventBus.push_event("create_coin", [[1.0, 0.0, 0.0], pos])
-		await a.wait(1.5)
-		var coin := _last_coin(garden)
+		## 立刻轮询取这枚钱：蜗牛就在附近，等 1.5 秒的话它可能已经把钱吃掉（节点已释放），
+		## 那时再看容器是空的，会被误判成「钱没生成」
+		var coin := await _wait_new_coin(a, garden)
 		if coin == null:
 			a.log("  [NG] 钱没生成")
 			_failed += 1
@@ -79,7 +80,9 @@ func run(a) -> void:
 		var eaten := false
 		for _t in 14:
 			await a.wait(1.0)
-			if coin.is_get or not is_instance_valid(coin):
+			## 先判"节点还在吗"再读状态：钱被收走 / 超时后会被 queue_free，
+			## 反过来写会在已释放的对象上取值直接抛错，把整个探针协程打断
+			if not is_instance_valid(coin) or coin.is_get:
 				eaten = true
 				break
 		if eaten:
@@ -99,6 +102,18 @@ func _last_coin(garden) -> Coin:
 		if coin != null:
 			last = coin
 	return last
+
+
+## 等容器里出现第一枚钱（0.2 秒一趟，最多 3 秒）；一直没有返回 null
+func _wait_new_coin(a, garden, timeout := 3.0) -> Coin:
+	var waited := 0.0
+	while waited < timeout:
+		var coin := _last_coin(garden)
+		if coin != null:
+			return coin
+		await a.wait(0.2)
+		waited += 0.2
+	return null
 
 
 func _find_plant_cells(root: Node) -> Array:

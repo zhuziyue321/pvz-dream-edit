@@ -8,18 +8,18 @@ extends RefCounted
 
 ## 三段背景的锚点算式：x = 视口宽 * anchor_left + offset_left（见 start_menu.tscn）
 const BG_EXPECT: Dictionary[String, Vector2] = {
-	## 左锚：x 恒为 0；y = -40（贴图 680 高，上下各溢出 40）
-	"BG_Left": Vector2(0.0, -40.0),
-	## 居中锚（anchor_left = 0.5，offset_left = -493）
-	"BG_Center": Vector2(0.5, 250.0),
-	## 右锚（anchor_left = 1.0，offset_left = -726）：墓碑右边缘贴屏幕右边
-	"BG_Right": Vector2(1.0, 40.0),
+	## 左锚：x 恒为 0；y = -80（贴图 680 高，底部对齐 600，顶部溢出 80）
+	"BG_Left": Vector2(0.0, -80.0),
+	## 右锚（anchor_left = 1.0，offset_left = -720）：原版房屋贴右侧
+	"BG_Center": Vector2(1.0, 250.0),
+	## 右锚（anchor_left = 1.0，offset_left = -729）：墓碑右边缘贴屏幕右边
+	"BG_Right": Vector2(1.0, 41.0),
 }
 ## 锚点公式里的 offset_left（与上面 BG_EXPECT 一一对应）
 const BG_OFFSET_LEFT: Dictionary[String, float] = {
 	"BG_Left": 0.0,
-	"BG_Center": -493.0,
-	"BG_Right": -726.0,
+	"BG_Center": -720.0,
+	"BG_Right": -729.0,
 }
 ## 挂在大墓碑上的按钮：滑入动画结束后必须整块在屏内（左移前它们会被右边缘裁掉）
 const BUTTON_PATHS: Array[String] = [
@@ -77,14 +77,14 @@ func _check_bg(a, menu: Node, bg_name: String, vp: Vector2) -> void:
 	if bg == null:
 		_check(a, bg_name + " 存在", false, "节点缺失")
 		return
-	var exp: Vector2 = BG_EXPECT[bg_name]
-	var exp_x: float = vp.x * exp.x + BG_OFFSET_LEFT[bg_name]
+	var expected: Vector2 = BG_EXPECT[bg_name]
+	var exp_x: float = vp.x * expected.x + BG_OFFSET_LEFT[bg_name]
 	var pos := bg.position
 	a.log("  [INFO] " + bg_name + " position=" + str(pos) + " 期望 x=" + str(exp_x))
 	_check(a, bg_name + " x 贴合锚点", absf(pos.x - exp_x) <= 1.0,
 		"实际 x=" + str(pos.x) + " 期望 x=" + str(exp_x))
-	_check(a, bg_name + " y 已滑入到位", absf(pos.y - exp.y) <= 1.0,
-		"实际 y=" + str(pos.y) + " 期望 y=" + str(exp.y))
+	_check(a, bg_name + " y 已滑入到位", absf(pos.y - expected.y) <= 1.0,
+		"实际 y=" + str(pos.y) + " 期望 y=" + str(expected.y))
 
 
 #region 断言

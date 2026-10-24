@@ -1,8 +1,9 @@
 extends RefCounted
 ## 探针：禅境花园的水壶（基础水壶 / 黄金水壶）
 ## 覆盖：
-##   1. 没买黄金水壶时是基础水壶：普通壶身 / 普通按钮图标 / 没有范围准星 / 检测半径是个点，一次只浇 1 株
-##   2. 买断黄金水壶后换黄金款：金色壶身 / 金色按钮图标 / 显示范围准星 / 检测半径放大，一次最多浇 4 株
+##   1. 没买黄金水壶时是基础水壶：普通壶身 / 普通按钮图标 / 没有范围准星 / 检测矩形是个点，一次只浇 1 株
+##   2. 买断黄金水壶后换黄金款：金色壶身 / 金色按钮图标 / 显示范围准星 / 检测矩形放大成原版的
+##      160×160（x∈[-70,+90] / y∈[-80,+80]），范围里有几株浇几株（不限株数）
 ##   3. 两套浇水动画在动画库里都存在（避免动画名写错，play 时才炸）
 ## 机器可读汇总：最后一行 [WATERCAN] result=PASS|FAIL failed=<n>
 
@@ -48,15 +49,16 @@ func run(a) -> void:
 		and can.item_button.item_texture.texture.resource_path == NORM_ICON_PNG,
 		str(can.item_button.item_texture.texture))
 	_check(a, "不显示黄金水壶的范围准星", not can.zen_gold_tool_reticle_result.visible)
-	_check(a, "检测半径是个点（一次只罩 1 株）",
-		is_equal_approx((can.collision_shape.shape as CircleShape2D).radius, 0.1),
-		str((can.collision_shape.shape as CircleShape2D).radius))
+	_check(a, "检测矩形是个点（一次只罩 1 株）",
+		can.collision_shape.shape is RectangleShape2D
+		and (can.collision_shape.shape as RectangleShape2D).size == Vector2(1, 1),
+		str(can.collision_shape.shape))
 
 	a.log("STEP2 两套浇水动画都在动画库里")
 	_check(a, "基础水壶动画存在", can.anim_lib.has_animation(can.WATER_ANIM[false]), str(can.WATER_ANIM[false]))
 	_check(a, "黄金水壶动画存在", can.anim_lib.has_animation(can.WATER_ANIM[true]), str(can.WATER_ANIM[true]))
 
-	a.log("STEP3 基础水壶一次只浇 1 株，黄金水壶一次最多 4 株")
+	a.log("STEP3 基础水壶一次只浇 1 株，黄金水壶范围内全浇（不限株数）")
 	var dummy_cells := _make_dummy_cells(garden)
 	can.curr_plant_cells = dummy_cells.duplicate()
 	_check(a, "基础水壶只取 1 株", can.get_target_plant_cells().size() == 1,
@@ -75,12 +77,15 @@ func run(a) -> void:
 		and can.item_button.item_texture.texture.resource_path == GOLD_ICON_PNG,
 		str(can.item_button.item_texture.texture))
 	_check(a, "显示黄金水壶的范围准星", can.zen_gold_tool_reticle_result.visible)
-	_check(a, "检测半径放大成范围圈",
-		(can.collision_shape.shape as CircleShape2D).radius > 1.0,
-		str((can.collision_shape.shape as CircleShape2D).radius))
+	_check(a, "检测矩形放大成原版的 160×160、中心偏右 10px",
+		can.collision_shape.shape is RectangleShape2D
+		and (can.collision_shape.shape as RectangleShape2D).size == Vector2(160, 160)
+		and can.collision_shape.position == Vector2(10, 0),
+		str(can.collision_shape.shape) + " @ " + str(can.collision_shape.position))
 
 	can.curr_plant_cells = dummy_cells.duplicate()
-	_check(a, "黄金水壶一次最多浇 4 株", can.get_target_plant_cells().size() == 4,
+	_check(a, "黄金水壶范围内全部浇到（5 株假格子全取）",
+		can.get_target_plant_cells().size() == dummy_cells.size(),
 		str(can.get_target_plant_cells().size()))
 
 	for cell in dummy_cells:

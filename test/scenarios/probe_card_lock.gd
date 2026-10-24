@@ -108,17 +108,27 @@ func run(a) -> void:
 	## 紫卡与模仿者按「一行为一页」分三行摆放
 	var rows: Array = store.plant_card_rows
 	_check(a, "找到紫卡商品行", rows != null and rows.size() > 0, str(rows))
+	## 只数**植物卡商品**：坚果包扎术摆在模仿者那一行（原版货架顺序「模仿者 → 坚果包扎术」），
+	## 它不是植物卡片（静态商品，见 StoreManager.goods_wall_nut_first_aid），按子节点一起数会多数一个
 	var goods_kids: Array[Node] = []
+	var other_kids: Array[Node] = []
 	for row in rows:
-		goods_kids.append_array(row.get_children())
+		for kid in row.get_children():
+			if kid is GoodsPlantCard:
+				goods_kids.append(kid)
+			else:
+				other_kids.append(kid)
 	_check(a, "商店生成 9 个植物卡商品", goods_kids.size() == 9, str(goods_kids.size()))
+	_check(a, "同行的非植物卡商品只有坚果包扎术", other_kids.size() == 1, str(other_kids.size()))
 
 	var g_041 = _find_goods(goods_kids, PlantIds.GATLING_PEA)
 	var g_048 = _find_goods(goods_kids, PlantIds.COB_CANNON)
 	var g_999 = _find_goods(goods_kids, PlantIds.IMITATER)
-	_check(a, "机枪射手商品已上架", g_041 != null and g_041.visible and g_041.is_on_sale())
-	_check(a, "玉米加农炮未上架(隐藏)", g_048 != null and not g_048.visible)
-	_check(a, "模仿者未上架(隐藏)", g_999 != null and not g_999.visible)
+	## 未上架的商品**保留格位**（原版货架的洞位，见 Goods.set_goods_on_shelf），
+	## 所以判定用 is_on_shelf()，不再看 visible
+	_check(a, "机枪射手商品已上架", g_041 != null and g_041.is_on_shelf() and g_041.is_on_sale())
+	_check(a, "玉米加农炮未上架(下架但保留格位)", g_048 != null and not g_048.is_on_shelf() and g_048.visible)
+	_check(a, "模仿者未上架(下架但保留格位)", g_999 != null and not g_999.is_on_shelf() and g_999.visible)
 	if g_041 != null:
 		_check(a, "机枪射手售价 5000", g_041.price == 5000, str(g_041.price))
 

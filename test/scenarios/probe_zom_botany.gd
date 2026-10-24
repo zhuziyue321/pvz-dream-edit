@@ -24,12 +24,41 @@ const C_CONSTANT_SHOOT_ZOMBIE_TYPES: Array[StringName] = [
 	ZombieIds.PEA_SHOOTER_ZOMBIE,
 ]
 
+## 原版一代 6 只的总耐久（数据来源: PVZ Wiki 各僵尸条目，见 zom_botany_config.gd 文件头）：
+## 总耐久 = 僵尸本体 270 + 头顶植物那层耐久，所以「植物头耐久」= 总耐久 − 270。
+## 豌豆 / 窝瓜 / 机枪 的总耐久就是 270 —— 它们的植物头没有独立耐久（`plant_hp = 0`）。
+const C_ORIGINAL_TOTAL_HP: Dictionary[StringName, int] = {
+	ZombieIds.PEA_SHOOTER_ZOMBIE: 270,
+	ZombieIds.WALL_NUT_ZOMBIE: 1370,
+	ZombieIds.SQUASH_ZOMBIE: 270,
+	ZombieIds.JALAPENO_ZOMBIE: 500,
+	ZombieIds.GATLING_ZOMBIE: 270,
+	ZombieIds.TALL_NUT_ZOMBIE: 2470,
+}
+
+## 原版 6 只的「首次允许波次」（`ZombieDefinition.mFirstAllowedWave`，1 起算）
+const C_ORIGINAL_FIRST_WAVE: Dictionary[StringName, int] = {
+	ZombieIds.PEA_SHOOTER_ZOMBIE: 1,
+	ZombieIds.WALL_NUT_ZOMBIE: 1,
+	ZombieIds.SQUASH_ZOMBIE: 10,
+	ZombieIds.JALAPENO_ZOMBIE: 10,
+	ZombieIds.GATLING_ZOMBIE: 10,
+	ZombieIds.TALL_NUT_ZOMBIE: 10,
+}
+
+## 原版 ZomBotany 的两关（关卡脚本路径）：出怪 / 旗帜波规则与原版对齐的那两关
+const C_ZOM_BOTANY_LEVEL_SCRIPTS: Array[String] = [
+	"res://src/levels/mode_minigame/minigame_01_zom_botany.gd",
+	"res://src/levels/mode_minigame/minigame_17_zom_botany_2.gd",
+]
+
 var _failed := 0
 
 
 func run(a) -> void:
 	a.log("PROBE 植物僵尸 启动")
 	_check_config(a)
+	_check_levels(a)
 	_check_scenes(a)
 	a.log("")
 	a.log("[ZOMBOTANY] result=%s failed=%d" % [("PASS" if _failed == 0 else "FAIL"), _failed])
@@ -42,10 +71,35 @@ func _check_config(a) -> void:
 	for zombie_type in ZomBotanyConfig.C_ZOM_BOTANY_INFO:
 		var info := ZomBotanyConfig.get_info(zombie_type)
 		_expect(a, "配置 " + str(zombie_type) + " 的僵尸类型自洽", info.zombie_type, zombie_type)
-		_expect(a, "配置 " + str(zombie_type) + " 有贴图", info.sprites.size() > 0, true)
-		_expect(a, "配置 " + str(zombie_type) + " 植物耐久 > 0", info.plant_hp > 0, true)
+		## 植物头两种形态至少有一个：静态贴图（`sprites`）或带动画的头场景（`head_scene`）
+		_expect(a, "配置 " + str(zombie_type) + " 有植物头",
+			info.sprites.size() > 0 or info.head_scene != null, true)
+		if info.head_scene != null:
+			## 头场景是运行时 instantiate + play 的：少了播放器 / 少了 Head_Idle 只会静默变成静态图
+			var head := info.head_scene.instantiate() as Node2D
+			_expect(a, "配置 " + str(zombie_type) + " 的头场景有 " + str(ZombiePlantComponent.C_HEAD_IDLE_ANIM) + " 动画",
+				_head_has_idle_anim(head), true)
+			_expect(a, "配置 " + str(zombie_type) + " 的攻击动画有发射方法轨",
+				_head_attack_has_shoot_track(head), true)
+			## 动画头**复用植物自己的动画资源**（轨道路径仍是植物空间的 `Body/BodyCorrect/...`），
+			## 头场景里少一个节点 / 少写 `root_node` 都只会刷 "Node not found" 而不是报错，
+			## 表现是「植物的某个部件不动」——这里逐条轨道核对节点是否存在
+			_expect(a, "配置 " + str(zombie_type) + " 的头场景里每条动画轨道都能解析到节点",
+				_head_tracks_resolve(head), true)
+			## 配了 head_body_path 就必须能找到（坚果 / 高坚果的受损裂纹换的是它）
+			if not info.head_body_path.is_empty():
+				_expect(a, "配置 " + str(zombie_type) + " 的动画头主体贴图节点存在",
+					is_instance_valid(head) and head.get_node_or_null(info.head_body_path) is Sprite2D, true)
+			if is_instance_valid(head):
+				head.free()
+		## 耐久可以是 0：原版豌豆 / 窝瓜 / 机枪僵尸的植物头没有独立耐久（见 C_ORIGINAL_TOTAL_HP）
+		_expect(a, "配置 " + str(zombie_type) + " 植物耐久 >= 0", info.plant_hp >= 0, true)
 		_expect(a, "配置 " + str(zombie_type) + " 出怪战力 > 0", info.power > 0, true)
 		_expect(a, "配置 " + str(zombie_type) + " 出怪权重 > 0", info.weight > 0, true)
+		## 原版 6 只：本体 + 植物头 必须正好等于 wiki 的总耐久（改了其中任一边都会在这里露出来）
+		if C_ORIGINAL_TOTAL_HP.has(zombie_type):
+			_expect(a, "配置 " + str(zombie_type) + " 总耐久 = 本体 + 植物头",
+				ZomBotanyConfig.C_ZOMBIE_BODY_HP + info.plant_hp, C_ORIGINAL_TOTAL_HP[zombie_type])
 	_expect(a, "普僵不是植物僵尸", ZomBotanyConfig.is_zom_botany(ZombieIds.NORM), false)
 	_expect(a, "未知类型不是植物僵尸", ZomBotanyConfig.get_info(ZombieIds.NULL), null)
 	## 高坚果僵尸（原版 ZomBotany 2 专属，此前用南瓜僵尸顶替这个位置）
@@ -55,6 +109,55 @@ func _check_config(a) -> void:
 	_expect(a, "窝瓜僵尸只在陆地行",
 		Global.character_registry.get_zombie_info(ZombieIds.SQUASH_ZOMBIE, CharacterRegistry.ZombieInfoAttribute.ZombieRowType),
 		CharacterRegistry.ZombieRowType.Land)
+	## 首次允许波次（原版 `ZombieDefinition.mFirstAllowedWave`，1 起算）：
+	## 豌豆 / 坚果全程可出；窝瓜 / 辣椒 / 机枪 / 高坚果第 10 波起才进随机池
+	for zombie_type in C_ORIGINAL_FIRST_WAVE:
+		_expect(a, "配置 " + str(zombie_type) + " 首次允许波次",
+			ZomBotanyConfig.get_info(zombie_type).first_allowed_wave, C_ORIGINAL_FIRST_WAVE[zombie_type])
+	## 受损裂纹：只有坚果 / 高坚果有原版裂纹贴图（`WALLNUT_CRACKED1/2`、`TALLNUT_CRACKED1/2`）
+	for zombie_type in [ZombieIds.WALL_NUT_ZOMBIE, ZombieIds.TALL_NUT_ZOMBIE]:
+		_expect(a, "配置 " + str(zombie_type) + " 有 2 张裂纹贴图",
+			ZomBotanyConfig.get_info(zombie_type).cracked_sprites.size(), 2)
+		## 动画头的贴图由动画资源自己设，换裂纹只能按节点路径找主体贴图 —— 路径不能缺
+		_expect(a, "配置 " + str(zombie_type) + " 的动画头有主体贴图节点路径",
+			not ZomBotanyConfig.get_info(zombie_type).head_body_path.is_empty(), true)
+	## 外观移植（2026-10-23）：原版 6 只全部改用动画头 ——
+	## 直接播植物自己的 idle 动画（reanim 转出来的那套），不再用拼起来的静态 PNG；
+	## 摆位照抄原版 `AttachReanim`（挂点轨道 = 图层），必须给出 attach 参数
+	for zombie_type in C_ORIGINAL_TOTAL_HP:
+		var info := ZomBotanyConfig.get_info(zombie_type)
+		_expect(a, "原版 " + str(zombie_type) + " 用动画头（head_scene）", info.head_scene != null, true)
+		_expect(a, "原版 " + str(zombie_type) + " 配了原版 attach 参数", info.attach != null, true)
+	## 原版的挂点：这三只挂身体贴图 `Zombie_body`（跟身体走、画在身体之上）
+	for zombie_type in [ZombieIds.WALL_NUT_ZOMBIE, ZombieIds.TALL_NUT_ZOMBIE, ZombieIds.JALAPENO_ZOMBIE]:
+		var info := ZomBotanyConfig.get_info(zombie_type)
+		_expect(a, "原版 " + str(zombie_type) + " 挂 Zombie_body 轨道",
+			info.attach != null and info.attach.to_body, true)
+	## 其余三只挂僵尸头 `Anim_head1`（跟着摇头 / 点头）
+	for zombie_type in [ZombieIds.PEA_SHOOTER_ZOMBIE, ZombieIds.SQUASH_ZOMBIE, ZombieIds.GATLING_ZOMBIE]:
+		var info := ZomBotanyConfig.get_info(zombie_type)
+		_expect(a, "原版 " + str(zombie_type) + " 挂 Anim_head1 轨道",
+			info.attach != null and not info.attach.to_body, true)
+	## 原版对这三只 `ReanimShowPrefix("Zombie_tie", RENDER_GROUP_HIDDEN)`：整颗植物替换了头，领带会露出来
+	for zombie_type in [ZombieIds.WALL_NUT_ZOMBIE, ZombieIds.TALL_NUT_ZOMBIE, ZombieIds.JALAPENO_ZOMBIE]:
+		_expect(a, "原版 " + str(zombie_type) + " 藏掉领带",
+			ZomBotanyConfig.get_info(zombie_type).hide_tie, true)
+	## 窝瓜僵尸的移速倍率（原版 0.79~0.81 vs 普僵均值 0.3 ≈ 2.6 倍）
+	_expect(a, "窝瓜僵尸移速倍率下限 > 2", Zombie033Squash.C_SPEED_FACTOR_RANGE.x > 2.0, true)
+
+
+## 两关的关卡参数：原版 `Board::InitZombieWaves` 对 `WAR_AND_PEAS` / `WAR_AND_PEAS_2` 特判 ——
+## 两关整关只出植物僵尸，旗帜波既不补旗子僵尸也不补普僵（点数残差同样不补）。
+## 关 2 的出怪表里多写一个 `ZombieIds.NORM` 就等于把这条开关绕过去了，所以两处都要锁。
+func _check_levels(a) -> void:
+	for path in C_ZOM_BOTANY_LEVEL_SCRIPTS:
+		var level_script := load(path) as GDScript
+		if level_script == null:
+			_failed += 1
+			a.log("  FAIL 找不到关卡脚本 " + path)
+			continue
+		var level = level_script.new()
+		_expect(a, path.get_file() + " 旗帜波不补普僵 / 旗子僵尸", level.spawn_plain_zombie_extra, false)
 
 
 ## 场景属性落地
@@ -73,6 +176,10 @@ func _check_scenes(a) -> void:
 		## 「僵尸顶着一颗没被替换的人头」，静态检查查不出来，所以在这里钉住
 		_expect(a, "场景 " + str(zombie_type) + " 有可被替换的僵尸头节点",
 			zombie.get_node_or_null(^"Body/BodyCorrect/Anim_head/Anim_head1") is Sprite2D, true)
+		## 死亡掉落的头也要换成植物头（`ZombiePlantComponent._replace_drop_head()`）：
+		## 这条路径没了只会静默掉普僵头，不报错，所以在这里盯住
+		_expect(a, "场景 " + str(zombie_type) + " 有可替换的掉头节点",
+			zombie.get_node_or_null(^"Body/NodeDrop/Node2D_Head_Drop/Head_Drop") is Node2D, true)
 		if zombie.get_node_or_null(^"HpComponent") == null:
 			_failed += 1
 			a.log("  FAIL 植物僵尸 " + str(zombie_type) + " 没有 HpComponent")
@@ -122,6 +229,67 @@ func _check_scenes(a) -> void:
 			_expect(a, "火炬僵尸 Area2DUpBullet 已勾场景唯一名",
 				up_area != null and up_area.unique_name_in_owner, true)
 		zombie.free()
+
+
+## 动画版植物头场景：根下要有 AnimationPlayer，且里面有 Head_Idle
+func _head_has_idle_anim(head: Node2D) -> bool:
+	if not is_instance_valid(head):
+		return false
+	var anim_player := head.get_node_or_null(ZombiePlantComponent.C_HEAD_ANIM_PLAYER_NAME) as AnimationPlayer
+	if not is_instance_valid(anim_player):
+		return false
+	return anim_player.has_animation(ZombiePlantComponent.C_HEAD_IDLE_ANIM)
+
+
+## 动画版植物头的攻击动画：库里配了 `Head_Attack` 就必须有一条调 `_shoot_bullet` 的方法轨 ——
+## 豌豆就是靠那条轨在「吐出」那一帧发出去的，删了它只会变成「只演动画、不发子弹」。
+## 没配 `Head_Attack` 的头（原版其余 5 只只搬了 idle，发射仍是冷却到点直接发）视为通过。
+func _head_attack_has_shoot_track(head: Node2D) -> bool:
+	if not is_instance_valid(head):
+		return false
+	var anim_player := head.get_node_or_null(ZombiePlantComponent.C_HEAD_ANIM_PLAYER_NAME) as AnimationPlayer
+	if not is_instance_valid(anim_player) or not anim_player.has_animation(ZombiePlantComponent.C_HEAD_ATTACK_ANIM):
+		return true
+	var anim := anim_player.get_animation(ZombiePlantComponent.C_HEAD_ATTACK_ANIM)
+	for track in anim.get_track_count():
+		if anim.track_get_type(track) != Animation.TYPE_METHOD:
+			continue
+		## `method_track_get_name()` 要 (轨道, 关键帧) 两个下标
+		for key in anim.track_get_key_count(track):
+			if anim.method_track_get_name(track, key) == ZombiePlantComponent.C_HEAD_SHOOT_METHOD:
+				return true
+	return false
+
+
+## 头场景里的每条动画轨道都要能在场景里解析到节点：
+## 动画头复用植物场景的动画资源，轨道路径写的是植物空间（`Body/BodyCorrect/...`），
+## 解析起点是 `AnimationPlayer.root_node`（头场景里没写，默认 `..` = 场景根 `PlantHead`）——
+## 少一个部件节点 / 改错 `root_node` 都只会刷 Node not found，表现是「某个部件不动」
+func _head_tracks_resolve(head: Node2D) -> bool:
+	if not is_instance_valid(head):
+		return false
+	var anim_player := head.get_node_or_null(ZombiePlantComponent.C_HEAD_ANIM_PLAYER_NAME) as AnimationPlayer
+	if not is_instance_valid(anim_player):
+		return false
+	## `root_node` 是相对播放器本身的路径（默认 ".." = 它的父节点）
+	var track_root := anim_player.get_node_or_null(anim_player.root_node)
+	if track_root == null:
+		return false
+	for anim_name in anim_player.get_animation_list():
+		var anim := anim_player.get_animation(anim_name)
+		for track in anim.get_track_count():
+			## 方法轨是**故意**指到植物场景里的 `AttackComponent` 的（头挂到僵尸身上后由
+			## `_bind_head_attack_shoot_track()` 在运行期重定向），这里不参与「节点是否存在」的判断
+			if anim.track_get_type(track) == Animation.TYPE_METHOD:
+				continue
+			var path := anim.track_get_path(track)
+			## 轨道可能是 `节点:属性` 或 `节点:属性:子分量`，只取节点部分
+			var node_part := str(path).get_slice(":", 0)
+			if node_part.is_empty():
+				continue
+			if track_root.get_node_or_null(NodePath(node_part)) == null:
+				return false
+	return true
 
 
 func _expect(a, name: String, got, want) -> void:

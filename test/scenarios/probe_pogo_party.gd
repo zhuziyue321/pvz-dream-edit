@@ -44,9 +44,9 @@ func run(a) -> void:
 	_check(a, "BGM 是屋顶曲 Roof（原版本关播 Graze the Roof，不放通用小游戏曲）",
 		para.game_BGM == ConstLevelData.GameBGM.Roof, str(para.game_BGM))
 	_check(a, "出怪倍率 = 4", para.zombie_multy == 4, str(para.zombie_multy))
-	_check(a, "第一波延迟 = " + str(EXPECT_FIRST_WAVE_DELAY) + " 秒",
-		para.first_wave_delay == EXPECT_FIRST_WAVE_DELAY, str(para.first_wave_delay))
 	_check(a, "没有蹦极僵尸偷植物", para.is_bungi == false, str(para.is_bungi))
+	## 首波延迟不写在关卡数据里：由 run_flow 的 `start_battle(first_wave_time = 55.0)` 带进来，
+	## 开战后才落到 game_para 上（见 STEP4）
 
 	## 花盆不在关卡数据里了：由 run_flow() 开头的 plant_flower_pot_columns() 铺（见 STEP2.5）
 
@@ -119,6 +119,8 @@ func run(a) -> void:
 	_check(a, "波次管理器的每轮波数同步成 " + str(EXPECT_MAX_WAVE),
 		zm.zombie_wave_manager.max_wave_one_round == EXPECT_MAX_WAVE,
 		str(zm.zombie_wave_manager.max_wave_one_round))
+	_check(a, "开战事件把首波延迟写成 " + str(EXPECT_FIRST_WAVE_DELAY) + " 秒（start_battle 参数）",
+		mg.game_para.first_wave_delay == EXPECT_FIRST_WAVE_DELAY, str(mg.game_para.first_wave_delay))
 
 	# ---------------------------------------------- STEP5 逐波核对构成
 	a.log("STEP5 逐波核对僵尸构成")
@@ -140,9 +142,10 @@ func run(a) -> void:
 				bad_detail = str(got)
 				break
 		else:
-			## 旗帜波：1 只旗帜 + 4/8 只普僵（原版大波本来就掺普僵）
-			## + 战力预算不足一只蹦蹦时的余额补齐（每只 1 点，最多补 min_power-1 = 3 只）
-			var expect_norm: int = 4 if wave == 9 else 8
+			## 旗帜波：1 只旗帜 + `min(本波点数, 8)` 只普僵（原版 `Board::PickZombieWaves()`：
+			## `aPlainZombiesNum = min(aZombiePoints, 8)`，aZombiePoints = 波数 / 3 + 1）
+			## + 战力预算不足一只蹦蹦时的余额补齐（每只 1 点）
+			var expect_norm: int = mini(floori(float(wave) / 3.0) + 1, 8)
 			var ok: bool = got.get(FLAG, 0) == 1 and got.get(NORM, 0) >= expect_norm
 			## 旗帜波除旗帜 + 普僵外，剩下的也只能是蹦蹦僵尸
 			for t2 in got:

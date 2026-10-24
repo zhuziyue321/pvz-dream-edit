@@ -2,7 +2,7 @@ extends RefCounted
 
 ## 妯＄粍鎼埌 `user://mods/` 鍚?class_name 涓嶅啀娉ㄥ唽涓哄叏灞€绫伙紝鎺㈤拡杩欓噷 preload 鎴愬父閲忓啀寮曠敤
 const GloveMod := preload("res://mods_builtin/glove/glove_mod.gd")
-const ModBase := preload("res://mods_builtin/mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 ## 探针：模组页面（`src/ui/mod_page/`）
 ##
 ## 验七件事：
@@ -234,7 +234,7 @@ func run(a) -> void:
 	var glove_script: Script = glove_mod.get_script()
 	var dep_script := GDScript.new()
 	dep_script.source_code = """
-extends "res://mods_builtin/mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 
 func get_mod_id() -> StringName:
 	return &"glove"

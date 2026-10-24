@@ -3,7 +3,8 @@ extends RefCounted
 ##
 ## 无头可跑，不写用户存档（只动内存里的值，不调 save_config）。
 ## 校验：
-##   1. 注册表在 Global 上可用，内置 12 条都在
+##   1. 注册表在 Global 上可用，内置 11 条都在
+##      （2026-10-23 起少了「调试模式」那一条：它已搬成调试模组，见 ModIds.DEBUG）
 ##   2. 分组齐全（自动 / 显示 / 调试）；**没有「模组」那一组** ——
 ##      模组的列表与开 / 关已经搬到「模组页面」，控制台不再替模组挂开关
 ##   3. 内置条目真的读写到了 ConfigService（勾一下「开放所有关卡」）
@@ -31,9 +32,9 @@ func run(a) -> void:
 			ConsoleBuiltinEntries.CATEGORY_DEBUG]:
 		builtin_count += registry.get_entries(category).size()
 	a.log("[CONSOLE] 内置条目=%d 分组=%s" % [builtin_count, str(registry.get_categories())])
-	if builtin_count != 12:
+	if builtin_count != 11:
 		ok = false
-		a.log("[CONSOLE] !! 内置条目数应为 12，实际 %d" % builtin_count)
+		a.log("[CONSOLE] !! 内置条目数应为 11，实际 %d" % builtin_count)
 
 	## 模组开关已经搬到「模组页面」（主菜单 → 选项 → 控制台 →「模组」）：控制台里不该再留任何模组条目，
 	## 模组的名单与详情由 `ModManager.all_mods` + `ModBase.create_detail_control()` 供货

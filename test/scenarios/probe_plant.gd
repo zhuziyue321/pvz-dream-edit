@@ -185,7 +185,7 @@ func _wait_sun(a, need: int) -> void:
 		var suns: Node = GameContext.curr_main_game.suns
 		if suns != null:
 			for s in suns.get_children():
-				if not (s is Sun) or (s as Sun).collected:
+				if not (s is Sun) or (s as Sun).is_opened:
 					continue
 				var btn: Control = s.get_node_or_null("Button") as Control
 				if btn == null or not btn.is_visible_in_tree():

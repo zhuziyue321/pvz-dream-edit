@@ -16,7 +16,7 @@ const STORE_SCENE := "res://src/store/store.tscn"
 ## 商店禅境花园页的商品节点（货架 Row* 容器见 store.tscn，一页两行）
 const PATH_MUSHROOM := "Bg/Car2/Panel/RowGarden/Goods2"
 const PATH_AQUARIUM := "Bg/Car2/Panel/RowGarden/Goods3"
-const PATH_TREE := "Bg/Car2/Panel/RowGarden/Goods4"
+const PATH_TREE := "Bg/Car2/Panel/RowTreeFood/Goods4"
 const PATH_SPROUT := "Bg/Car2/Panel/RowGardenSprout/Goods1"
 
 
@@ -60,9 +60,17 @@ func run(a) -> void:
 	_check(a, "水族馆 $30000", g_aquarium.price == 30000, str(g_aquarium.price))
 	_check(a, "智慧树 $10000", g_tree.price == 10000, str(g_tree.price))
 	_check(a, "金盏花幼苗 $2500", g_sprout.price == 2500, str(g_sprout.price))
-	_check(a, "温室不再是商品（花园行只有 3 件）",
-		store.get_node("Bg/Car2/Panel/RowGarden").get_child_count() == 3,
-		str(store.get_node("Bg/Car2/Panel/RowGarden").get_child_count()))
+	## 温室（`GreenHouse`）是玩家默认就有的花园，不应在商店出售。
+	## ⚠️ 这里**只认「有没有温室商品」，不写死件数** —— 原断言写的是「花园行只有 3 件」，
+	## 后来蜗牛被挪进这一行（4 件）就变成了假红（2026-10-22 实测：蘑菇园 / 水族馆 / 蜗牛 / 智慧树）。
+	## 件数随商店改版变化属正常，写死就会随内容调整反复报红（E-07：红探针先归因，这里是探针过时）。
+	var garden_row: Node = store.get_node("Bg/Car2/Panel/RowGarden")
+	var has_greenhouse := false
+	for child in garden_row.get_children():
+		if child.get("curr_goods_garden_bg") == GardenManager.E_GardenBgType.GreenHouse:
+			has_greenhouse = true
+	_check(a, "温室不再是商品（花园行没有 GreenHouse 背景商品）", not has_greenhouse,
+		"花园行件数=%d" % garden_row.get_child_count())
 
 	# ------------------------------------------------ STEP3 花园背景买完售罄
 	a.log("STEP3 蘑菇园 / 水族馆买一次即售罄")
@@ -82,6 +90,12 @@ func run(a) -> void:
 	g_mushroom.comfirm_get_this_goods()
 	_check(a, "重复点蘑菇园不再扣钱", state.coin_value == coin_after, str(state.coin_value))
 
+	## 树肥料：原版需先买智慧树，否则为 Coming Soon（本探针里智慧树尚未购买）
+	var g_treefood := store.get_node_or_null("Bg/Car2/Panel/RowTreeFood/GoodsTreeFood")
+	_check(a, "未买智慧树时树肥料显示敬请期待",
+		g_treefood != null and g_treefood.button.disabled and "敬请期待" in g_treefood.curr_dialog_detail.text,
+		str(g_treefood.curr_dialog_detail.text) if g_treefood != null else "null")
+
 	# ------------------------------------------------ STEP4 智慧树买完售罄
 	a.log("STEP4 智慧树买一次即售罄")
 	_check(a, "智慧树初始可购买", g_tree.is_have_goods and not g_tree.button.disabled)
@@ -90,6 +104,13 @@ func run(a) -> void:
 	_check(a, "智慧树按钮已禁用", g_tree.button.disabled)
 	_check(a, "智慧树已落库存档",
 		bool(state.garden_data.get(ConstShop.TREE_OF_WISDOM_BOUGHT_KEY, false)))
+
+	## 树肥料：买智慧树（扣钱）后由金币变化信号自动解除 Coming Soon
+	var g_treefood2 := store.get_node_or_null("Bg/Car2/Panel/RowTreeFood/GoodsTreeFood")
+	if g_treefood2 != null:
+		g_treefood2.judge_can_get_goods()
+		_check(a, "买智慧树后树肥料可购买", not g_treefood2.button.disabled,
+			str(g_treefood2.button.disabled))
 
 	# ------------------------------------------------ STEP5 每个植物盆槽位每天限购 1 次
 	a.log("STEP5 每个植物盆槽位每天限购 1 次")
@@ -153,20 +174,43 @@ func run(a) -> void:
 	_check(a, "通关 5-10 后放出 4 页", store.get_page_num() == 4, str(store.get_page_num()))
 	_check(a, "默认显示第一页（道具行 + 第一批紫卡行）",
 		first_row.visible and first_page_second_row.visible and not last_page.visible)
+	## 翻页现在是「关箱 → 换页 → 开箱」动画（原版 mHatchTimer），换页后要等动画走完
 	store._on_prev_page_button_pressed()
+	await a.wait(0.6)
 	_check(a, "第一页往前翻到最后一页（禅境花园行）",
 		not first_row.visible and last_page.visible)
 	store._on_next_page_button_pressed()
+	await a.wait(0.6)
 	_check(a, "最后一页往后翻回第一页",
 		first_row.visible and first_page_second_row.visible and not last_page.visible)
-	## 原版第四页第一行: 蘑菇园 → 水族馆 → 蜗牛 → 智慧树
+	## 原版第四页第一行: 蘑菇园 → 水族馆 → 独轮车(Coming Soon占位) → 蜗牛；智慧树移到第二行
 	_check(a, "第四页第一行摆 4 件", last_page.get_child_count() == 4, str(last_page.get_child_count()))
-	var snail_goods := last_page.get_child(2) as GoodsGardenTool
-	_check(a, "第 3 格是蜗牛",
+	var wb_goods := last_page.get_child(2)
+	_check(a, "第 3 格是独轮车(Coming Soon占位)",
+		wb_goods != null and wb_goods is GoodsWheelBarrow, str(wb_goods))
+	_check(a, "独轮车售价 $200", wb_goods != null and wb_goods.price == 200,
+		str(wb_goods.price if wb_goods != null else null))
+	## 原版 IsComingSoon(WHEEL_BARROW)：蘑菇园 / 水族馆都没有时 Coming Soon；
+	## 买到任一背景后就可以花 $20 买下（买完 Sold Out，本身没有任何功能）
+	wb_goods.judge_can_get_goods()
+	_check(a, "已买蘑菇园后独轮车可购买(不再是 Coming Soon)",
+		wb_goods != null and not wb_goods.button.disabled,
+		str(wb_goods.button.disabled if wb_goods != null else null))
+	wb_goods.comfirm_get_this_goods()
+	_check(a, "独轮车买一次即售出", not wb_goods.is_have_goods and wb_goods.button.disabled)
+	_check(a, "独轮车买下后存档标记已拥有", state.is_wheel_barrow_owned())
+	var snail_goods := last_page.get_child(3) as GoodsGardenTool
+	_check(a, "第 4 格是蜗牛",
 		snail_goods != null and snail_goods.garden_tool == GardenManager.E_GardenTool.Snail,
 		str(snail_goods))
 	_check(a, "蜗牛买断 $3000", snail_goods != null and snail_goods.price == 3000,
 		str(snail_goods.price if snail_goods != null else null))
+	## 原版：智慧树在第四页第二行（ZEN2 页）首位
+	var tree_row := store.get_node("Bg/Car2/Panel/RowTreeFood")
+	_check(a, "智慧树移到第四页第二行首位", tree_row.get_child(0) is GoodsGardenTree,
+		str(tree_row.get_child(0)))
+	_check(a, "智慧树售价 $10000", tree_row.get_child(0).price == 10000,
+		str(tree_row.get_child(0).price))
 	## 巧克力不从商店购买(只有花园掉落),货架上不该有它
 	_check(a, "商店里不出售巧克力",
 		not all_goods_has_tool(store.all_goods, GardenManager.E_GardenTool.Chocolate))
@@ -197,7 +241,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP7 禅境花园段的「花园已解锁」门槛
 	a.log("STEP7 花园未解锁时禅境花园类商品禁售")
-	_mark_cleared(state, 44)  ## 通关到 5-4：商店已解锁，花园还没解锁
+	_mark_cleared(state, 43)  ## 通关到 5-3：商店已解锁，花园还没解锁（花园在通完 5-4 = 44 解锁）
 	g_aquarium.judge_can_get_goods()
 	g_sprout.judge_can_get_goods()
 	_check(a, "花园未解锁时水族馆禁售", g_aquarium.button.disabled)
@@ -207,6 +251,28 @@ func run(a) -> void:
 	g_sprout.judge_can_get_goods()
 	_check(a, "花园解锁后水族馆恢复可购买", not g_aquarium.button.disabled)
 	_check(a, "花园解锁后金盏花幼苗恢复可购买", not g_sprout.button.disabled)
+
+	# ------------------------------------------------ STEP8 第4页显示时机与 Coming Soon 状态
+	a.log("STEP8 第4页显示时机（原版 ZEN2 页需通关冒险）与 Coming Soon 状态")
+	## 5-5（45）：花园解锁但冒险未通关 → 第4页不显示，金盏花幼苗为 Coming Soon
+	_mark_cleared(state, 45)
+	store._refresh_valid_pages()
+	store._show_page(0)
+	_check(a, "5-5 时只有 3 页（第4页未上架）", store.get_page_num() == 3, str(store.get_page_num()))
+	_check(a, "5-5 时第4页（禅境花园行）不可见", not last_page.visible)
+	g_sprout.judge_can_get_goods()
+	_check(a, "5-5 时金盏花幼苗显示敬请期待(Coming Soon)",
+		g_sprout.button.disabled and "敬请期待" in g_sprout.curr_dialog_detail.text,
+		str(g_sprout.curr_dialog_detail.text))
+	## 通关冒险（50）→ 第4页显示，金盏花恢复可购买
+	_mark_cleared(state, 50)
+	store._refresh_valid_pages()
+	store._show_page(3)
+	_check(a, "通关冒险后第4页显示（共 4 页）", last_page.visible and store.get_page_num() == 4,
+		"visible=%s pages=%d" % [last_page.visible, store.get_page_num()])
+	g_sprout.judge_can_get_goods()
+	_check(a, "通关冒险后金盏花恢复可购买", not g_sprout.button.disabled,
+		str(g_sprout.button.disabled))
 
 	_finish(a)
 

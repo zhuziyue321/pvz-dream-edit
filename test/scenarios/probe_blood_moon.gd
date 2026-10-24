@@ -3,13 +3,23 @@ extends RefCounted
 ## 用法：powershell -ExecutionPolicy Bypass -File test/run_autopilot.ps1 -Scenario probe_blood_moon
 ## 覆盖：
 ##   1. 静态：月夜屋顶场景开血月（SceneSetting.is_blood_moon）→ 关卡参数跟着开；
-##      白天屋顶场景不开；四条血月音源都已登记
+##      白天屋顶场景不开；四条血月音源都已登记；**波次表**每 5 波一次（4/9/14/19…）
 ##   2. 实机：月夜屋顶合成关卡里手动起一次血月，核对
 ##      在场僵尸吃到 ×2 / 血月期间**新生成**的僵尸也吃到 / 红屏 alpha 抬起来 /
-##      结束后速度还原 + 红屏淡回 0
+##      结束后速度还原 + 红屏淡回 0 / 底图与房门遮罩换成血月那套并换回
+##   3. 光照清增益：被光照笼罩的僵尸不吃血月加速，已挂上的可被 `clear_speed_factor` 清掉
+##      （DLC 的 Lume-shroom："Removes the Blood Moon and other buffs"）
+##   4. 常驻形态：开 `is_blood_moon_permanent` 后开战即挂上、且**不**起自动落下的计时器
+##   5. 无专属底图的场景（把 gimmick 借用到 Night 那类）退化为**底图染红**，结束还原
 ## 机器可读汇总：最后一行 [BLOODMOON] result=PASS|FAIL failed=<n>
 
 const MAP_MOON := "res://data/map/map_moonroof.tres"
+
+## 月夜屋顶的两幅底图：平时月夜、血月时才换血月那张（id 见 DLC resources.xml）
+const TEX_BG_NIGHT := "res://pak/images/background6boss.jpg"
+const TEX_BG_BLOOD := "res://pak/images/background6moon.png"
+const TEX_MASK_NIGHT := "res://pak/images/background6_gameover_mask.png"
+const TEX_MASK_BLOOD := "res://pak/images/background6moon_gameover_mask.png"
 
 ## 血月期间全场僵尸的移速倍率（与 BloodMoonManager.SPEED_FACTOR 对齐）
 const EXPECT_SPEED_FACTOR := 2.0
@@ -21,6 +31,7 @@ func run(a) -> void:
 	a.log("")
 	a.log("========== 探针 血月（Blood Moon） ==========")
 	_check_scene_switch(a)
+	_check_wave_table(a)
 	_check_sfx(a)
 	await _check_runtime(a)
 	_finish(a)
@@ -47,11 +58,33 @@ func _check_scene_switch(a) -> void:
 	_check(a, "默认关卡不开血月", not para.is_blood_moon, str(para.is_blood_moon))
 	para.scene_name = SceneSettingRegistry.SCENE_MOON_ROOF
 	_check(a, "套用月夜屋顶场景后关卡开血月", para.is_blood_moon, str(para.is_blood_moon))
+	## 常驻形态默认关（Moon 章是周期性的，只有 DLC 活动关 Hemophilia 才常驻）
+	_check(a, "月夜屋顶不是常驻血月", not para.is_blood_moon_permanent,
+		str(para.is_blood_moon_permanent))
+	## 只有月夜屋顶有 DLC 的血月那幅底图，别的场景（Night 那类）走染红
+	_check(a, "月夜屋顶有专属血月底图", para.is_blood_moon_bg_art, str(para.is_blood_moon_bg_art))
+	if roof != null:
+		_check(a, "白天屋顶没有专属血月底图", not roof.is_blood_moon_bg_art,
+			str(roof.is_blood_moon_bg_art))
+
+
+## 波次表：旗帜波（%10==9）与两旗正中间（%10==4）交替 = **每 5 波一次**
+func _check_wave_table(a) -> void:
+	a.log("")
+	a.log("STEP2 血月波次表（每 5 波一次）")
+	var hits: Array[int] = []
+	for w in 20:
+		if BloodMoonManager.is_blood_moon_wave(w):
+			hits.append(w)
+	_check(a, "20 波里血月落在 4/9/14/19", hits == [4, 9, 14, 19], str(hits))
+	_check(a, "第 9 波（旗帜波）起血月", BloodMoonManager.is_blood_moon_wave(9))
+	_check(a, "第 4 波（两旗正中间）起血月", BloodMoonManager.is_blood_moon_wave(4))
+	_check(a, "第 3 波不起血月", not BloodMoonManager.is_blood_moon_wave(3))
 
 
 func _check_sfx(a) -> void:
 	a.log("")
-	a.log("STEP2 血月音源")
+	a.log("STEP3 血月音源")
 	for key in [&"bloodmoon_rise", &"bloodmoon_tension", &"bloodmoon_fall", &"bloodmoon"]:
 		var stream: AudioStream = SoundManager.SFXOtherMap.get(key)
 		_check(a, "音源 %s 已登记" % key, stream != null, str(stream))
@@ -64,7 +97,7 @@ func _check_sfx(a) -> void:
 ## 手动起一次血月，核对「速度因子 / 新僵尸也吃到 / 红屏 / 还原」四件事。
 func _check_runtime(a) -> void:
 	a.log("")
-	a.log("STEP3 实机：起一次血月")
+	a.log("STEP4 实机：起一次血月")
 	var para := ResourceLevelData.new()
 	if para == null:
 		_check(a, "ResourceLevelData 可实例化", false)
@@ -93,6 +126,21 @@ func _check_runtime(a) -> void:
 		return
 	_check(a, "开局没在血月里", not manager.is_active, str(manager.is_active))
 
+	## 进关瞬间必须**看不出**血月：红屏 alpha 必须是 0、效果层必须是藏着的，
+	## 否则玩家一进关就满屏红（视觉上像是血月已经在生效）
+	var init_panel := _blood_moon_panel(mg)
+	var init_layer := mg.get_node_or_null("CanvasLayerEffect")
+	_check(a, "红屏节点在（Panel_BloodMoon）", init_panel != null, str(init_panel))
+	if init_panel != null:
+		_check(a, "进关时红屏是透明的（alpha=0）", init_panel.modulate.a == 0.0,
+			str(init_panel.modulate.a))
+	if init_layer != null:
+		_check(a, "进关时效果层是藏着的", not init_layer.visible, str(init_layer.visible))
+	## 进关必须是**月夜**那幅：血月那幅紫红底图要是常驻，玩家一进关就以为血月已经开了
+	_check(a, "进关时底图是月夜那幅", _bg_texture_path(mg) == TEX_BG_NIGHT, _bg_texture_path(mg))
+	_check(a, "进关时房门遮罩是普通那张", _mask_texture_path(mg) == TEX_MASK_NIGHT,
+		_mask_texture_path(mg))
+
 	## 血月前先来一只僵尸，用来验证「在场的那批」会被刷到
 	var zm: ZombieManager = mg.zombie_manager
 	var old_zombie := _create_zombie(zm)
@@ -115,6 +163,10 @@ func _check_runtime(a) -> void:
 	_check(a, "红屏节点在（Panel_BloodMoon）", panel != null, str(panel))
 	if panel != null:
 		_check(a, "红屏已染色（alpha > 0）", panel.modulate.a > 0.0, str(panel.modulate.a))
+	## 血月一起，场景就该换成血月那套（底图 + 房门遮罩）
+	_check(a, "血月时底图换成血月那幅", _bg_texture_path(mg) == TEX_BG_BLOOD, _bg_texture_path(mg))
+	_check(a, "血月时房门遮罩换成血月那张", _mask_texture_path(mg) == TEX_MASK_BLOOD,
+		_mask_texture_path(mg))
 
 	manager.end_blood_moon()
 	await a.wait(0.5)
@@ -124,6 +176,93 @@ func _check_runtime(a) -> void:
 		## 红屏是 1.5 秒淡出，等它走完再看
 		await a.wait(2.0)
 		_check(a, "红屏已淡回 0", panel.modulate.a <= 0.01, str(panel.modulate.a))
+	_check(a, "血月结束后底图换回月夜那幅", _bg_texture_path(mg) == TEX_BG_NIGHT,
+		_bg_texture_path(mg))
+	_check(a, "血月结束后房门遮罩换回普通那张", _mask_texture_path(mg) == TEX_MASK_NIGHT,
+		_mask_texture_path(mg))
+
+	await _check_illuminated(a, mg, zm, manager)
+	await _check_permanent(a, mg, manager)
+	await _check_bg_tint(a, mg, manager)
+
+
+## 光照清增益（DLC 的 Lume-shroom："Removes the Blood Moon and other buffs"）：
+## 光域里的僵尸不吃血月加速，已经挂上的加速会被清掉，出光域后恢复正常。
+func _check_illuminated(a, mg, zm: ZombieManager, manager: BloodMoonManager) -> void:
+	a.log("")
+	a.log("STEP5 光照清除血月增益")
+	var lit := _create_zombie(zm)
+	if not is_instance_valid(lit):
+		_check(a, "创建了一只僵尸（光照用例）", false)
+		return
+	manager.start_blood_moon()
+	await a.wait(0.3)
+	_check(a, "血月起后僵尸吃到加速", _factor_of(lit) == EXPECT_SPEED_FACTOR, str(_factor_of(lit)))
+	## 进光域 = 光照蘑菇干的两件事：记一层光照 + 把已挂的这一档清掉
+	lit.add_illuminated_layer()
+	lit.clear_speed_factor(Character000Base.E_Influence_Speed_Factor.BloodMoon)
+	_check(a, "清增益后速度回到 1.0", _factor_of(lit) == 1.0, str(_factor_of(lit)))
+	## 还在光域里：血月再起一次也不该给它加速（血月管理器跳过被照到的僵尸）
+	manager.end_blood_moon()
+	manager.start_blood_moon()
+	await a.wait(0.3)
+	_check(a, "光域里的僵尸不再吃血月加速", _factor_of(lit) == 1.0, str(_factor_of(lit)))
+	## 出光域：豁免消失，重新吃到加速
+	lit.remove_illuminated_layer()
+	manager.end_blood_moon()
+	manager.start_blood_moon()
+	await a.wait(0.3)
+	_check(a, "离开光域后重新吃到加速", _factor_of(lit) == EXPECT_SPEED_FACTOR, str(_factor_of(lit)))
+	manager.end_blood_moon()
+	await a.wait(0.3)
+	_check(a, "血月已结束（光照用例收尾）", not manager.is_active, str(manager.is_active))
+
+
+## 常驻形态（DLC 活动关 Hemophilia："permanent Blood Moon effect"）：开战即挂上、不自动落
+func _check_permanent(a, mg, manager: BloodMoonManager) -> void:
+	a.log("")
+	a.log("STEP6 常驻血月")
+	var para = mg.game_para
+	if para == null:
+		_check(a, "拿得到关卡参数", false)
+		return
+	para.is_blood_moon_permanent = true
+	## 合成关没有流程在跑：直接发「开了一波」模拟开战（常驻形态 = 开战即挂上）
+	var wm: ZombieWaveManager = mg.zombie_manager.zombie_wave_manager
+	wm.wave_started.emit(0)
+	await a.wait(0.3)
+	_check(a, "常驻血月：开战即挂上", manager.is_active, str(manager.is_active))
+	## 常驻不起计时器（周期性那 15 秒的定时器）：读私有字段只为断言，玩法不依赖它
+	_check(a, "常驻血月不自动落（没有计时器）", manager._timer == null, str(manager._timer))
+	manager.end_blood_moon()
+	await a.wait(0.3)
+	para.is_blood_moon_permanent = false
+	_check(a, "常驻开关已还原", not para.is_blood_moon_permanent,
+		str(para.is_blood_moon_permanent))
+
+
+## 没有专属血月底图的场景（把 gimmick 借用到 Night 那类）退化为**底图染红**，结束还原
+func _check_bg_tint(a, mg, manager: BloodMoonManager) -> void:
+	a.log("")
+	a.log("STEP7 无专属底图的场景：底图染红")
+	var para = mg.game_para
+	if para == null:
+		_check(a, "拿得到关卡参数", false)
+		return
+	## 假装本关没有 DLC 的血月那幅底图（月夜屋顶是有专属图的，这里借它的场景验退化分支）
+	para.is_blood_moon_bg_art = false
+	manager.start_blood_moon()
+	await a.wait(2.0)
+	var bg: Sprite2D = mg.background_manager.background
+	if not is_instance_valid(bg):
+		_check(a, "拿得到底图节点", false)
+		return
+	_check(a, "底图已染红（绿蓝被压下去）", bg.modulate.g < 1.0 and bg.modulate.r > bg.modulate.g,
+		str(bg.modulate))
+	manager.end_blood_moon()
+	await a.wait(2.0)
+	_check(a, "底图还原成白色", bg.modulate.is_equal_approx(Color.WHITE), str(bg.modulate))
+	para.is_blood_moon_bg_art = true
 #endregion
 
 
@@ -151,6 +290,25 @@ func _blood_moon_panel(mg) -> Panel:
 	if layer == null:
 		return null
 	return layer.get_node_or_null("Panel_BloodMoon") as Panel
+
+
+func _bg_texture_path(mg) -> String:
+	var bg: Sprite2D = mg.background_manager.background
+	if bg == null or bg.texture == null:
+		return ""
+	return bg.texture.resource_path
+
+
+## 房门遮罩走 Home 的数组（MoonRoof 那一格），跟游戏里读的是同一个对象
+func _mask_texture_path(mg) -> String:
+	var masks: Array = mg.background_manager.home.door_masks
+	var idx: int = ConstLevelData.GameBg.MoonRoof
+	if idx >= masks.size():
+		return ""
+	var mask: Sprite2D = masks[idx]
+	if mask == null or mask.texture == null:
+		return ""
+	return mask.texture.resource_path
 #endregion
 
 

@@ -1,14 +1,14 @@
 extends RefCounted
-## 探针：「可选植物列表」——进选卡界面的门禁（见 `AllCards.add_selectable_plant`）
+## 探针：「可选植物列表」——进选卡界面的门禁（见 `AllCards.register_plant_choose_page`）
 ##
 ## 覆盖这条规矩：**注册 / 解锁都不等于可选**。
-##   1. 原版常规植物默认就在列表里（不需要谁去登记）；调试模式专属 / 模组新增这些**追加类**
-##      不在，开「调试模式」才由 `GlobalGameState._sync_debug_mode_plants()` 追加进去；
+##   1. 原版常规植物默认就在列表里（不需要谁去登记）；运行期解锁的 / 模组新增这些**追加类**
+##      不在，打开调试模组只把四株并进已解锁名单，**不登记**任何选卡页；
 ##   2. 运行期热注册一株植物（`PlantRuntimeKit.install`）之后：它有卡位、也解锁了，
 ##      但**待选区里没有它的卡位** —— 注册与解锁都只说明「它存在」；
-##   3. 再补一行 `kit.make_selectable()`：它追加到列表末尾、待选区里出现且可见，
-##      落位照「顺序下标 / 每页格数」（普通植物在前 ⇒ 追加类在第 2 页）；
-##   4. 关调试模式 / 卸模组要把这一项摘干净（否则选卡界面会留一张永远选不了的卡）。
+##   3. 再自己登记一页（`register_plant_choose_page`）：它在那一页上、待选区里出现且可见
+##      （页接在原版植物页之后 ⇒ 它不在第 1 页）；
+##   4. 卸模组要把那一页摘干净（否则选卡界面会留一张永远选不了的卡）。
 ##
 ## 无头可跑，只动内存（不写存档、不落配置）。
 ## 机器可读汇总：最后一行 [SELECTABLE] result=PASS|FAIL failed=<n>
@@ -28,7 +28,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP1 默认内容
 	a.log("STEP1 原版常规植物默认在列表里，追加类不在")
-	state.apply_debug_mode(false)
+	ModManager.set_mod_enabled(ModIds.DEBUG, false)
 	var ordered := AllCards.get_plant_types_in_choose_order()
 	a.log("   列表共 %d 株（每页 %d 格）" % [ordered.size(), _per_page_from_scene()])
 	_check(a, "豌豆射手（原版常规）默认就在可选植物列表里",
@@ -38,40 +38,33 @@ func run(a) -> void:
 			and not AllCards.is_selectable_plant(PlantIds.WALL_NUT_BOWLING),
 		"列表里有保龄球=%s" % ordered.has(PlantIds.WALL_NUT_BOWLING))
 
-	# ------------------------------------------------ STEP2 调试模式：四株追加在末尾
-	a.log("STEP2 打开「调试模式」→ 四株追加在列表末尾，并在待选区点亮")
-	state.apply_debug_mode(true)
+	# ------------------------------------------------ STEP2 调试模组：只解锁、不登记
+	a.log("STEP2 打开「调试模式」→ 四株进已解锁名单，但不进可选植物列表")
+	ModManager.set_mod_enabled(ModIds.DEBUG, true)
+	_check(a, "四株都已解锁",
+		_all_unlocked(state, ConstPlantUnlock.APPENDED_PLANT_TYPES), str(state.curr_plant))
 	ordered = AllCards.get_plant_types_in_choose_order()
-	_check(a, "调试四株追加在列表末尾（顺序照名单）",
-		_same_tail(ordered, ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES), str(ordered.size()))
-	_check(a, "调试四株都算可选", _all_selectable(ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES), "")
+	_check(a, "但四株都不在可选植物列表里（调试模式不登记选卡界面）",
+		not _has_any(ordered, ConstPlantUnlock.APPENDED_PLANT_TYPES), str(ordered.size()))
+	_check(a, "四株都不算可选",
+		not _any_selectable(ConstPlantUnlock.APPENDED_PLANT_TYPES), "")
 
 	var slot := await _open_card_slot(a)
 	if slot == null:
-		state.apply_debug_mode(false)
+		ModManager.set_mod_enabled(ModIds.DEBUG, false)
 		_finish(a)
 		return
 	var candidate := slot.get_node_or_null("CardSlotCandidate") as CardSlotCandidate
-	var per_page := _per_page(candidate)
-	_check(a, "每页卡片数取到", per_page > 0, str(per_page))
-	for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
-		var container := _container_of(candidate, plant_type)
-		_check(a, "%s 在待选区里有卡位且可见" % plant_type,
-			container != null and container.visible,
+	for plant_type: StringName in ConstPlantUnlock.APPENDED_PLANT_TYPES:
+		_check(a, "%s 在待选区里没有卡位（已解锁也没点亮）" % plant_type,
+			_container_of(candidate, plant_type) == null,
 			"card_id=%s" % str(AllCards.plant_card_ids.get(plant_type, -1)))
-		## 落位规矩：页码 = 顺序下标 / 每页格数（普通植物在前 ⇒ 追加类不在第 1 页）
-		var order_index := ordered.find(plant_type)
-		var page := _page_of(candidate, container)
-		@warning_ignore("integer_division")
-		var expect_page := order_index / per_page
-		_check(a, "%s 的页码 = 顺序下标 / 每页格数" % plant_type, page == expect_page,
-			"第 %d 页（期望第 %d 页）" % [page + 1, expect_page + 1])
-		_check(a, "%s 排在普通植物之后（不在第 1 页）" % plant_type, page >= 1, "第 %d 页" % (page + 1))
 	slot.free()
+	ModManager.set_mod_enabled(ModIds.DEBUG, false)
 
 	# ------------------------------------------------ STEP3 运行期注册 ≠ 可选
 	a.log("STEP3 运行期注册一株植物：注册 + 解锁 ≠ 可选")
-	state.apply_debug_mode(false)
+	ModManager.set_mod_enabled(ModIds.DEBUG, false)
 	var kit := PlantRuntimeKit.new()
 	var recipe := PlantRuntimeRecipe.new()
 	recipe.plant_scene = Global.character_registry.get_plant_info(
@@ -98,15 +91,18 @@ func run(a) -> void:
 		_container_of(candidate2, plant_type) == null, "card_id=%d" % AllCards.plant_card_ids[plant_type])
 	slot2.free()
 
-	# ------------------------------------------------ STEP4 make_selectable 之后才进选卡界面
-	a.log("STEP4 补一行 kit.make_selectable() → 进列表末尾、待选区里有卡且可见")
-	_check(a, "make_selectable() 登记成功", kit.make_selectable(), str(kit.recipe))
+	# ------------------------------------------------ STEP4 登记一页之后才进选卡界面
+	a.log("STEP4 自己登记一页选卡（第 1 格留空）→ 落位照模组排的版、待选区里有卡且可见")
+	## 第 1 格写成空位：验证「排版归模组」—— 卡片必须落在模组指定的第 2 格，本体不往前补
+	var page_handle: int = AllCards.register_plant_choose_page([PlantIds.NULL, plant_type])
+	_check(a, "register_plant_choose_page() 登记成功", page_handle >= 0, str(kit.recipe))
 	_check(a, "它进了可选植物列表", AllCards.is_selectable_plant(plant_type), "")
 	ordered = AllCards.get_plant_types_in_choose_order()
-	_check(a, "追加项排在列表最后", not ordered.is_empty() and ordered[ordered.size() - 1] == plant_type,
-		str(ordered.size()))
+	_check(a, "页里的卡片排在列表最后（空位不占列表项）",
+		not ordered.is_empty() and ordered[ordered.size() - 1] == plant_type, str(ordered.size()))
 	var slot3 := await _open_card_slot(a)
 	if slot3 == null:
+		AllCards.unregister_plant_choose_page(page_handle)
 		kit.uninstall()
 		_finish(a)
 		return
@@ -114,13 +110,27 @@ func run(a) -> void:
 	var container3 := _container_of(candidate3, plant_type)
 	_check(a, "待选区里有它的卡位且可见", container3 != null and container3.visible,
 		"container=%s" % str(container3))
+	if container3 != null:
+		_check(a, "落在模组排的第 2 格（第 1 格留空，本体不往前补）",
+			container3.get_parent().get_index() == 1, 
+			"实际格位=%d" % container3.get_parent().get_index())
+		var per_page: int = _per_page_from_scene()
+		var base_count: int = AllCards.get_seed_chooser_catalog().plants.size()
+		@warning_ignore("integer_division")
+		var expected_page: int = base_count / per_page + (1 if base_count % per_page > 0 else 0)
+		_check(a, "整页接在原版植物页之后（不混进第 1 页）",
+			candidate3.all_card_page_array.find(container3.get_parent().get_parent()) == expected_page,
+			"第 %d 页 / 期望第 %d 页" % [
+				candidate3.all_card_page_array.find(container3.get_parent().get_parent()) + 1,
+				expected_page + 1])
 	slot3.free()
 
-	# ------------------------------------------------ STEP5 卸载：列表项与卡位一起撤
-	a.log("STEP5 卸载 → 卡位与可选植物列表里那一项一起撤掉")
+	# ------------------------------------------------ STEP5 卸载：页与卡位一起撤
+	a.log("STEP5 卸载 → 卡位与登记的那一页一起撤掉")
+	AllCards.unregister_plant_choose_page(page_handle)
 	kit.uninstall()
 	_check(a, "卡位撤掉了", not AllCards.plant_card_ids.has(plant_type), str(plant_type))
-	_check(a, "可选植物列表里那一项也摘掉了",
+	_check(a, "那一页也摘掉了（它不再出现在可选植物列表里）",
 		not AllCards.is_selectable_plant(plant_type)
 			and not AllCards.get_plant_types_in_choose_order().has(plant_type), "")
 	_check(a, "解锁也撤掉了", not state.is_plant_unlocked(plant_type), str(plant_type))
@@ -149,20 +159,6 @@ func _container_of(candidate: CardSlotCandidate, plant_type: StringName) -> Card
 		AllCards.plant_card_ids.get(plant_type, -1), null)
 
 
-## 容器在第几页（页下标）
-func _page_of(candidate: CardSlotCandidate, container: CardCandidateContainer) -> int:
-	if candidate == null or container == null:
-		return -1
-	return candidate.all_card_page_array.find(container.get_parent().get_parent())
-
-
-## 已造好的卡槽每页几格
-func _per_page(candidate: CardSlotCandidate) -> int:
-	if candidate == null or candidate.all_card_page_array.is_empty():
-		return 0
-	return candidate.all_card_page_array[0].get_child_count()
-
-
 ## 还没造卡槽时先看一眼模板每页几格（只为日志）
 func _per_page_from_scene() -> int:
 	var scene: PackedScene = load(CARD_SLOT_SCENE)
@@ -178,22 +174,28 @@ func _per_page_from_scene() -> int:
 
 
 #region 断言与工具
-func _all_selectable(plant_types: Array[StringName]) -> bool:
+## 这几株是不是都已解锁（curr_plant 里都有）
+func _all_unlocked(state: GlobalGameState, plant_types: Array[StringName]) -> bool:
 	for plant_type: StringName in plant_types:
-		if not AllCards.is_selectable_plant(plant_type):
+		if not state.is_plant_unlocked(plant_type):
 			return false
 	return true
 
 
-## src 的末尾几项是否与 expect 逐项相同（顺序也要一致）
-func _same_tail(src: Array, expect: Array) -> bool:
-	if src.size() < expect.size():
-		return false
-	var offset: int = src.size() - expect.size()
-	for i in expect.size():
-		if src[offset + i] != expect[i]:
-			return false
-	return true
+## 这几株里有没有一株算「可选」
+func _any_selectable(plant_types: Array[StringName]) -> bool:
+	for plant_type: StringName in plant_types:
+		if AllCards.is_selectable_plant(plant_type):
+			return true
+	return false
+
+
+## 列表里有没有这几株中的任意一株
+func _has_any(ordered: Array[StringName], plant_types: Array[StringName]) -> bool:
+	for plant_type: StringName in plant_types:
+		if ordered.has(plant_type):
+			return true
+	return false
 
 
 func _check(a, label: String, ok: bool, detail: String = "") -> void:

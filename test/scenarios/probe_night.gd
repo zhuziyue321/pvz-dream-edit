@@ -44,10 +44,10 @@ const EXPECT_BGM_EXCEPT_NIGHT: Dictionary = {
 	10: ConstLevelData.GameBGM.UltimateBattle,
 }
 ## 生存夜晚关卡（原版 Survival: Night 一族）：墓碑会在每个大波前继续生长
+## （原版只有普通 / 困难两关，无尽只有泳池一张图）
 const SURVIVAL_NIGHT_LEVELS: Array[String] = [
 	"res://src/levels/mode_survival/survival_flag_02_night.gd",
 	"res://src/levels/mode_survival/survival_flag_07_night.gd",
-	"res://src/levels/mode_survival/survival_flag_12_night.gd",
 ]
 ## 第二大关的出战卡槽数：除 2-5 外一律跟存档走（基准 6，见 GlobalGameState.get_card_slot_num）
 ## 2-5 是原版「打地鼠」关（锤僵尸出怪）：关卡资源用 max_choosed_card_num = 3 覆盖存档卡槽数
@@ -204,7 +204,7 @@ func _check_level_02_01_runtime(a) -> bool:
 		tombstone_num == para.init_tombstone_num, str(tombstone_num))
 	var bg_texture: Texture2D = mg.background_manager.background.texture
 	_check(a, "2-1 底图 = 夜晚前院",
-		bg_texture == ConstLevelData.GameBgTextureMap[ConstLevelData.GameBg.FrontNight],
+		bg_texture == ConstLevelData.get_game_bg_texture(ConstLevelData.GameBg.FrontNight),
 		str(bg_texture))
 
 	## 夜晚不掉阳光：等一段足够长的时间，场上不应该出现任何未收集的阳光
@@ -213,12 +213,51 @@ func _check_level_02_01_runtime(a) -> bool:
 		str(mg.suns.get_child_count()))
 
 	## 夜晚关同样要正常开波（僵尸管理器不因夜晚而停摆）
-	## 超时需大于关卡的 first_wave_delay（默认 20 秒）
+	## 超时需大于关卡的 first_wave_delay（默认 18 秒，原版 1800 tick）
 	var wave_manager = mg.zombie_manager.zombie_wave_manager
 	if not await _wait_wave_start(a, wave_manager, 40.0):
 		_check(a, "2-1 僵尸波次已开始", false, str(wave_manager.curr_wave))
 		return false
 	_check(a, "2-1 僵尸波次已开始", true, "curr_wave=" + str(wave_manager.curr_wave))
+
+	## 出怪机制对齐原版：`Board::PickZombieWaves()` / `PickZombieType()` / `PutInMissingZombies()`
+	a.log("")
+	a.log("STEP3.5 出怪机制（冒险模式）")
+	var wcm = wave_manager.zombie_wave_create_manager
+	## ① 首次允许波次读注册表（原版 `ZombieDefinition.mFirstAllowedWave`）
+	_check(a, "潜水僵尸首次允许波次 = 原版 10",
+		wcm.get_zombie_first_allowed_wave(ZombieIds.SNORKLE) == 10,
+		str(wcm.get_zombie_first_allowed_wave(ZombieIds.SNORKLE)))
+	_check(a, "伽刚特尔首次允许波次 = 原版 15",
+		wcm.get_zombie_first_allowed_wave(ZombieIds.GARGANTUAR) == 15,
+		str(wcm.get_zombie_first_allowed_wave(ZombieIds.GARGANTUAR)))
+	_check(a, "普通僵尸首次允许波次 = 1（第 1 波就能出）",
+		wcm.get_zombie_first_allowed_wave(ZombieIds.NORM) == 1,
+		str(wcm.get_zombie_first_allowed_wave(ZombieIds.NORM)))
+	## ② 大波的普僵数 = min(波数 / 3 + 1, 8)（原版 `aPlainZombiesNum`）
+	_check(a, "第 10 波基础点数 = 4（大波补 4 只普僵）",
+		wcm.calculate_base_wave_points(9) == 4, str(wcm.calculate_base_wave_points(9)))
+	_check(a, "第 20 波基础点数 = 7（大波补 7 只，不是一律 8 只）",
+		wcm.calculate_base_wave_points(19) == 7, str(wcm.calculate_base_wave_points(19)))
+	## ③ 最后一波补齐本关出怪表里漏掉的类型（原版 `PutInMissingZombies`）
+	var final_wave: int = wave_manager.max_wave - 1
+	var final_list: Array = wcm.create_curr_wave_zombie_list(final_wave, true)
+	var missing_types: Array = []
+	for refresh_type in mg.game_para.zombie_refresh_types:
+		if not final_list.has(refresh_type):
+			missing_types.append(refresh_type)
+	_check(a, "2-1 最后一波含本关全部出怪类型", missing_types.is_empty(),
+		"缺 " + str(missing_types) + " / 本波=" + str(final_list))
+	## ④ 本关「新登场僵尸」= 读报僵尸（原版 `GetIntroducedZombieType()`：mStartingLevel == 11）
+	_check(a, "2-1 新登场僵尸 = 读报僵尸",
+		wcm.get_introduced_zombie_type() == ZombieIds.PAPER, str(wcm.get_introduced_zombie_type()))
+	_check(a, "2-1 中间波（第 5 波）必带新登场僵尸",
+		wcm.is_introduced_zombie_wave(ZombieIds.PAPER, 5), "第 5 波不算登场波")
+	var mid_list: Array = wcm.create_curr_wave_zombie_list(5, false)
+	_check(a, "2-1 第 5 波确实出了读报僵尸", mid_list.has(ZombieIds.PAPER), str(mid_list))
+	## ⑤ 首周目用波数/3+1 的点数公式（二周目才换成 波数*2/5+1，且 1-5 例外）
+	_check(a, "新档 = 首周目（不按二周目点数公式）", not wcm.is_second_round_adventure(),
+		"is_from_second_round=" + str(Global.global_game_state.is_from_second_round()))
 	return true
 #endregion
 

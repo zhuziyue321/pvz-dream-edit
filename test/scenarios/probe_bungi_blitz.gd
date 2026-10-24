@@ -409,7 +409,7 @@ func _check_auto_wave(a) -> void:
 	if not await _boot(a, LEVEL_05_05):
 		return
 	var zm = GameContext.curr_main_game.zombie_manager
-	## 5-5 的 first_wave_delay 是 20 秒，再等几波（最短波长 6 秒）
+	## 5-5 的 first_wave_delay 是默认 18 秒，再等几波（最短波长 6 秒）
 	var max_drop := 0
 	for _i in range(100):
 		await a.wait(0.6)

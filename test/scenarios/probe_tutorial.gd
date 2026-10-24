@@ -346,7 +346,7 @@ func _collect_sun_until_advice(a, expect_text: String, timeout: float) -> bool:
 		if suns != null:
 			for child in suns.get_children():
 				var sun := child as Sun
-				if sun == null or sun.collected:
+				if sun == null or sun.is_opened:
 					continue
 				## 阳光从屏幕上方掉下来，出屏之前点不到
 				if sun.get_global_transform_with_canvas().origin.y < 120.0:

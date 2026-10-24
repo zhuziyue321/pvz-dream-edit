@@ -77,6 +77,11 @@ func run(a) -> void:
 	_check(a, "收回后冷却复位（可再次选卡）",
 		is_instance_valid(container1) and not container1.card._is_cooling \
 			and is_equal_approx(container1.card.cool_time, card_cool_time))
+	## 回归：还池时若保持全局变换，容器本地坐标会被写成上一局的屏幕绝对坐标，
+	## 下一关取件不会纠正 → 选卡界面种子包整体偏移（历史 bug）
+	_check(a, "收回后容器坐标已归零（不残留上一局屏幕坐标）",
+		is_instance_valid(container1) and container1.position == Vector2.ZERO,
+		"已失效" if not is_instance_valid(container1) else str(container1.position))
 
 	# ------------------------------------------------ STEP4 第二次进关：复用
 	a.log("STEP4 UI：第二次进关，同一批容器与卡节点直接复用")
@@ -92,6 +97,9 @@ func run(a) -> void:
 			"%d vs %d" % [container2.get_instance_id(), container_id])
 		_check(a, "复用同一张卡节点", container2.card.get_instance_id() == card_node_id)
 		_check(a, "卡已挂回容器", container2.card.get_parent() == container2)
+		## 回归：容器挂在占位格里，本地坐标必须是 (0,0)，否则显示为偏移
+		_check(a, "复用后容器在占位格里的坐标为原点",
+			container2.position == Vector2.ZERO, str(container2.position))
 	_check(a, "第二份候选列表页数与第一份相同",
 		candidate2.all_card_page_array.size() == page_count1,
 		"%d vs %d" % [candidate2.all_card_page_array.size(), page_count1])

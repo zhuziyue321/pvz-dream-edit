@@ -301,7 +301,7 @@ func run(a) -> void:
 func _collect_dropped_suns(mg) -> Array[Sun]:
 	var list: Array[Sun] = []
 	for child in mg.suns.get_children():
-		if child is Sun and not child.collected:
+		if child is Sun and not child.is_opened:
 			list.append(child)
 	return list
 

@@ -76,7 +76,7 @@ func run(a) -> void:
 	## 解锁门一个都不能掉（二周目继承：这些读的都是历史最高）
 	_check(a, "铲子仍解锁（1-4）", state.is_shovel_unlocked())
 	_check(a, "图鉴仍解锁（2-4）", state.is_almanac_unlocked())
-	_check(a, "花园仍解锁（5-5）", state.is_garden_unlocked())
+	_check(a, "花园仍解锁（通完 5-4）", state.is_garden_unlocked())
 	_check(a, "商店仍解锁（3-4）", state.is_shop_unlocked())
 	_check(a, "商店扩展到顶（5-10）", state.get_shop_expand_stage() == 3,
 		str(state.get_shop_expand_stage()))

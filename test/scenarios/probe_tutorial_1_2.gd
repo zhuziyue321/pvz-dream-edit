@@ -119,8 +119,9 @@ func run(a) -> void:
 	_check(a, "场上已种下 3 株向日葵", _count_plant(mg, PlantIds.SUN_FLOWER) >= 3,
 		str(_count_plant(mg, PlantIds.SUN_FLOWER)))
 	## 教学收尾即开战：第一波由开战（ZombieManager.start_game()）统一开。
-	## 开战那一步自己还要先播 BGM / 推进阶段，所以这里等第一波真的落下来再断言
-	if await _wait_wave_started(a, 40.0):
+	## 开战那一步自己还要先播 BGM / 推进阶段，所以这里等第一波真的落下来再断言；
+	## 1-2 的首波延迟按原版单独翻倍成 36 秒，超时必须留够
+	if await _wait_wave_started(a, 60.0):
 		_check(a, "教学结束后开战，第一波僵尸启动", wave_manager.curr_wave >= 0,
 			str(wave_manager.curr_wave))
 	else:
@@ -267,7 +268,7 @@ func _click_all_suns(a, mg) -> void:
 		return
 	for child in suns.get_children():
 		var sun := child as Sun
-		if sun == null or sun.collected:
+		if sun == null or sun.is_opened:
 			continue
 		## 阳光从屏幕上方掉下来，出屏之前点不到
 		if sun.get_global_transform_with_canvas().origin.y < 120.0:

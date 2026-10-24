@@ -4,7 +4,7 @@ extends RefCounted
 ##   1. 新档（0 关）：花园、图鉴、商店 visible=false
 ##   2. 通关到 2-3(13) 图鉴仍隐藏 / 2-4(14) 图鉴出现 —— 门槛 14
 ##   3. 通关到 3-3(23) 商店仍隐藏 / 3-4(24) 商店出现 —— 门槛 24
-##   4. 通关到 5-4(44) 花园仍隐藏 / 5-5(45) 花园出现 —— 门槛 45
+##   4. 通关到 5-3(43) 花园仍隐藏 / 5-4(44) 花园出现 —— 门槛 44（原版通完 5-4 给花园）
 ##   5. 模式按钮（迷你游戏 22 / 解谜 36 / 生存 50）未解锁时是置灰而不是隐藏
 ##   6. 冒险模式按钮：通关 1-1 前是「开始冒险模式」贴图且不显示关卡号，之后换成
 ##      「冒险模式」贴图并填写当前关卡（几杠几，全部通关停在 5-10）
@@ -75,14 +75,16 @@ func run(a) -> void:
 	menu._update_mode_lock_state()
 	_check_visible(a, menu, PATH_SHOP, true, "通关到 3-4")
 
-	# ------------------------------------------------ STEP4 花园门槛 5-5
-	a.log("STEP4 花园门槛 = 5-5（序号 45）")
+	# ------------------------------------------------ STEP4 花园门槛 5-4
+	## 原版 AwardScreen 在 mLevel == 45（= 刚通完 5-4、下一关是 5-5）时就进禅境花园教程，
+	## 所以本仓库的口径是「通完 5-4 解锁花园」，见 ConstUnlockLevel.GARDEN_UNLOCK_ADVENTURE_LEVEL
+	a.log("STEP4 花园门槛 = 5-4（序号 44）")
+	_mark_cleared(state, 43)
+	menu._update_mode_lock_state()
+	_check_visible(a, menu, PATH_GARDEN, false, "通关到 5-3")
 	_mark_cleared(state, 44)
 	menu._update_mode_lock_state()
-	_check_visible(a, menu, PATH_GARDEN, false, "通关到 5-4")
-	_mark_cleared(state, 45)
-	menu._update_mode_lock_state()
-	_check_visible(a, menu, PATH_GARDEN, true, "通关到 5-5")
+	_check_visible(a, menu, PATH_GARDEN, true, "通关到 5-4")
 
 	# ------------------------------------------------ STEP5 模式按钮置灰不隐藏
 	a.log("STEP5 模式按钮未解锁时置灰保留")

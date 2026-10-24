@@ -1,5 +1,5 @@
 extends RefCounted
-## 探针：战斗植物「水盆」（模组 `water_bowl`，编号 P050WaterBowl）
+## 探针：战斗植物「水盆」（模组 `dlc` 兼收，编号 P050WaterBowl）
 ##
 ## 无头可跑，只动内存（开关写进 autopilot 那份临时 user 目录）。校验：
 ##   1. 装上模组 → 注册表里有场景 / 阳光 / 种植条件（地形与花盆相同、占 Down 位），且已解锁
@@ -29,12 +29,12 @@ const PLAYBACK_PARAM := "parameters/StateMachine/playback"
 
 func run(a) -> void:
 	a.log("")
-	a.log("========== 探针：战斗植物「水盆」（模组 water_bowl）==========")
+	a.log("========== 探针：战斗植物「水盆」（模组 dlc）==========")
 	var registry := Global.character_registry
 
 	# ------------------------------------------------ STEP1 装模组
 	a.log("STEP1 装上模组 → 水盆登记进注册表")
-	ModManager.set_mod_enabled(ModIds.WATER_BOWL, true)
+	ModManager.set_mod_enabled(ModIds.DLC, true)
 	var plant_scene = registry.get_plant_info(WATER_BOWL, CharacterRegistry.PlantInfoAttribute.PlantScenes)
 	_check(a, "水盆登记了场景", plant_scene != null, "null" if plant_scene == null else plant_scene.resource_path)
 	_check(a, "水盆阳光 = 25（与花盆一致）",
@@ -50,7 +50,7 @@ func run(a) -> void:
 	_check(a, "水盆占下层（Down）",
 		condition.place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Down,
 		str(condition.place_plant_in_cell))
-	## 图鉴：模组自己登记的那条（见 water_bowl_mod.gd 的 _register_almanac_entry）
+	## 图鉴：模组自己登记的那条（见 dlc_mod.gd 的 _register_water_bowl_almanac_entry）
 	_check(a, "装上模组后水盆有图鉴条目（图鉴扩展页能显示）",
 		str(Global.global_read_data.get_extra_almanac_entry(WATER_BOWL).get("名字", "")) == "水盆",
 		str(Global.global_read_data.get_extra_almanac_entry(WATER_BOWL)))
@@ -78,11 +78,11 @@ func run(a) -> void:
 		return
 	var per_page: int = candidate.all_card_page_array[0].get_child_count()
 	a.log("   每页 %d 张卡，共 %d 页" % [per_page, candidate.all_card_page_array.size()])
-	## 排列顺序取自数据层快照（待选卡槽按它排页）：普通植物在前，调试模式 / 模组新增追加在后
+	## 排列顺序取自数据层快照（待选卡槽按它排页）：普通植物在前，模组登记的页按模组自己的版式接在后面。
+	## 水盆落在 DLC 页第 3 行第 1 格（见 `dlc_mod.gd` 的 `CHOOSE_PAGE_LAYOUT`）——能挑到即可，不写死下标
 	var ordered := AllCards.get_plant_types_in_choose_order()
 	var bowl_order: int = ordered.find(WATER_BOWL)
-	_check(a, "水盆排在普通植物之后（属于追加的那批）",
-		bowl_order >= ordered.size() - ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES.size() - 1,
+	_check(a, "水盆在可选植物列表里（DLC 页能挑到）", bowl_order >= 0,
 		"顺序下标=%d / 共 %d 株" % [bowl_order, ordered.size()])
 	var container = candidate.all_card_candidate_containers_plant.get(bowl_id, null)
 	_check(a, "待选区里有水盆的卡位", container != null)
@@ -148,7 +148,7 @@ func run(a) -> void:
 
 	# ------------------------------------------------ STEP5 关掉模组
 	a.log("STEP5 关掉模组 → 撤干净")
-	ModManager.set_mod_enabled(ModIds.WATER_BOWL, false)
+	ModManager.set_mod_enabled(ModIds.DLC, false)
 	_check(a, "水盆不再是已解锁", not Global.global_game_state.is_plant_unlocked(WATER_BOWL))
 	_check(a, "注册表里没有水盆了",
 		registry.get_plant_info(WATER_BOWL, CharacterRegistry.PlantInfoAttribute.PlantScenes) == null)

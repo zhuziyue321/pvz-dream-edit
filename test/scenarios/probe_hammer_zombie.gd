@@ -16,18 +16,24 @@ const PAGE_MINI := 0
 const ID_MINI_15 := "0014"
 ## 迷你游戏 15 的存档键（关卡脚本里写死的老值，见 minigame_15_hammer_zombie.save_key）
 const ID_MINI_SAVE_KEY := "102_0_0002"
-const CARDS_MINI_15: Array[int] = [15, 12, 5]
+## ⚠️ 出战卡的植物 id 是 **StringName**（`Card.card_plant_type`，见 PlantIds），
+## 不是老的整数编号 —— 拿 int 去比永远不相等（LEGACY_INT_TO_ID 才是「老编号 -> id」那张表）
+const CARDS_MINI_15: Array[StringName] = [
+	PlantIds.ICE_SHROOM, PlantIds.GRAVE_BUSTER, PlantIds.POTATO_MINE]
 
 const LEVEL_ADV_2_5 := "res://src/levels/mode_adventure/adventure_02_05.gd"
 const ADV := MainSceneRegistry.MainScenes.ChooseLevelAdventure
 const PAGE_02 := 1
 const ID_02_05 := "0015"
-const CARDS_ADV_2_5: Array[int] = [5, 12, 3]
+const CARDS_ADV_2_5: Array[StringName] = [
+	PlantIds.POTATO_MINE, PlantIds.GRAVE_BUSTER, PlantIds.CHERRY_BOMB]
 
 ## 戴夫对话的点击位置（设计分辨率 800x600 的屏幕中心；戴夫的点击面板覆盖全屏，点哪都能推进）
 const DAVE_CLICK_POS := Vector2(400, 300)
 ## 出怪器固定延迟 2 秒开第一波，给足富余
 const WAIT_ZOMBIE := 25.0
+## 出战卡槽由关卡初始化预填，等它就绪的上限
+const WAIT_CARD_SLOT := 20.0
 
 var _failed := 0
 
@@ -48,7 +54,7 @@ func run(a) -> void:
 ## [expect_cards] 固定出战卡（本类玩法玩家不选卡）
 func _check_level(
 	a, label: String, level_path: String, scene: MainSceneRegistry.MainScenes,
-	page: int, level_id: String, expect_tombstone: int, expect_cards: Array[int]
+	page: int, level_id: String, expect_tombstone: int, expect_cards: Array[StringName]
 ) -> void:
 	a.log("")
 	a.log("---- %s ----" % label)
@@ -66,14 +72,21 @@ func _check_level(
 	var mg = GameContext.curr_main_game
 	await a.wait(1.0)
 
-	## 固定出战卡（玩家不选卡）
+	## 固定出战卡（玩家不选卡）：卡槽由 `prechosen_cards` 预填，要等关卡初始化到卡槽就绪才有
 	var battle = mg.card_manager.card_slot_battle
-	var got: Array[int] = []
+	var waited_card := 0.0
+	while (battle == null or battle.curr_cards.is_empty()) and waited_card < WAIT_CARD_SLOT:
+		await a.wait(1.0)
+		waited_card += 1.0
+		battle = mg.card_manager.card_slot_battle
+	a.log("  出战卡槽 %s 卡数=%d（等了 %.0f 秒）" % [
+		str(battle), 0 if battle == null else battle.curr_cards.size(), waited_card])
+	var got: Array[StringName] = []
 	if battle != null:
 		for c in battle.curr_cards:
 			got.append(c.card_plant_type)
 	got.sort()
-	var want: Array[int] = expect_cards.duplicate()
+	var want: Array[StringName] = expect_cards.duplicate()
 	want.sort()
 	_check(a, label + " 出战卡固定 %s" % str(want), got == want, str(got))
 

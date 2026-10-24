@@ -12,6 +12,8 @@ const LEVEL_05_10 := "res://src/levels/mode_adventure/adventure_05_10.gd"
 ## 冰冻附带的伤害（测试夹具），与 plant_ice_shroom.tscn 的角色 attack_value 一致
 const ICE_FREEZE_DAMAGE := 20
 ## 本次冰冻时长 / 解冻后减速时长，单位为游戏秒
+## （`ice_all_zombie()` 的第三参是「减速**总**时长，从冰冻那一刻起算」，见 ZombieManager，
+##  所以调用处得传 FREEZE_TIME + DECELERATE_TIME —— 原版 20 秒总时长也是这个口径）
 const FREEZE_TIME := 2.0
 const DECELERATE_TIME := 1.5
 
@@ -87,7 +89,7 @@ func _check_ice_shroom_freeze(a, mg, boss, hp) -> void:
 	var before: int = hp.curr_hp
 	## 同一帧内开关受击窗口并结算，避免状态机在两帧之间把它关掉。
 	_open_hurt_window(boss)
-	mg.zombie_manager.ice_all_zombie(FREEZE_TIME, DECELERATE_TIME, ICE_FREEZE_DAMAGE)
+	mg.zombie_manager.ice_all_zombie(FREEZE_TIME, FREEZE_TIME + DECELERATE_TIME, ICE_FREEZE_DAMAGE)
 	await a.wait(0.3)
 	var dealt: int = before - hp.curr_hp
 	a.log("  寒冰菇 -> 掉血 %d（前/后=%d/%d）" % [dealt, before, hp.curr_hp])

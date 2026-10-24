@@ -199,7 +199,7 @@ func _check_level_runtime(a) -> bool:
 		await a.wait(0.5)
 	_check(a, "左侧 4 列铺上了花盆（裸屋顶的种植位）", pot_num == EXPECT_ROW_NUM * 4, str(pot_num))
 	_check(a, "底图 = background6boss",
-		mg.background_manager.background.texture == ConstLevelData.GameBgTextureMap[ConstLevelData.GameBg.Boss],
+		mg.background_manager.background.texture == ConstLevelData.get_game_bg_texture(ConstLevelData.GameBg.Boss),
 		str(mg.background_manager.background.texture))
 	## 房门遮罩按 game_BG 打开：Boss 取的是第 6 张（只有夜屋顶背景子场景带它）
 	var masks: Array = mg.background_manager.home.door_masks

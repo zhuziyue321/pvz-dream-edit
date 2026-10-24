@@ -110,6 +110,33 @@ func run(a) -> void:
 	_check(a, "开战后进度条可见", lpc.progress_bar.visible, str(lpc.progress_bar.visible))
 	_check(a, "还没配对时进度 = 0%", lpc.progress_bar.real_value == 0.0, str(lpc.progress_bar.real_value))
 
+	# ------------------------------------------------ STEP2.6 阳光奖励公式
+	## 原版 `Challenge::BeghouledScore()`：`aNumSuns = 连线株数 - 2 (+2 若 ≥5 连)
+	##   + mBeghouledMatchesThisMove`，再 clamp(1, 5)，每颗 25。
+	## 也就是说：3 连 = 25、4 连 = 50、5 连及以上 = 125；同一次移动（含级联）第 2 组起
+	## 每组多一颗，封顶仍是 125。
+	a.log("STEP2.6 阳光奖励公式（连线长度 + 本次移动已结算组数）")
+	_check(a, "3 连 = 25 / 4 连 = 50 / 5 连 = 125",
+		ConstBeghouled.get_sun_by_chain_len(3) == 25
+			and ConstBeghouled.get_sun_by_chain_len(4) == 50
+			and ConstBeghouled.get_sun_by_chain_len(5) == 125,
+		"%d / %d / %d" % [
+			ConstBeghouled.get_sun_by_chain_len(3),
+			ConstBeghouled.get_sun_by_chain_len(4),
+			ConstBeghouled.get_sun_by_chain_len(5)])
+	_check(a, "同一次移动第 2 组起每组多一颗",
+		ConstBeghouled.get_sun_by_chain_len(3, 1) == 50
+			and ConstBeghouled.get_sun_by_chain_len(4, 1) == 75,
+		"%d / %d" % [
+			ConstBeghouled.get_sun_by_chain_len(3, 1),
+			ConstBeghouled.get_sun_by_chain_len(4, 1)])
+	_check(a, "奖励封顶 5 颗（125）",
+		ConstBeghouled.get_sun_by_chain_len(5, 1) == 125
+			and ConstBeghouled.get_sun_by_chain_len(3, 9) == 125,
+		"%d / %d" % [
+			ConstBeghouled.get_sun_by_chain_len(5, 1),
+			ConstBeghouled.get_sun_by_chain_len(3, 9)])
+
 	# ------------------------------------------------ STEP3 交换三消
 	a.log("STEP3 拖动交换相邻两株做三消")
 	var swap_pair := _find_valid_swap(mgr)
@@ -326,7 +353,7 @@ func run(a) -> void:
 func _collect_dropped_suns(mg) -> Array[Sun]:
 	var list: Array[Sun] = []
 	for child in mg.suns.get_children():
-		if child is Sun and not child.collected:
+		if child is Sun and not child.is_opened:
 			list.append(child)
 	return list
 

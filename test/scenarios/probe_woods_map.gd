@@ -97,6 +97,11 @@ func _check_bg_scene_contract(a) -> void:
 	_check(a, "有 Home(MainGameHome)", home is MainGameHome, str(home))
 	_check(a, "没有屋顶斜面（郊外是平地草坪）", slope == null, str(slope))
 	_check(a, "有 Woods 房门遮罩", mask is Sprite2D, str(mask))
+	if mask is Sprite2D:
+		## (0, 189) 是模板匹配算出来的（遮罩图与底图在该位置逐像素重合，MSE=0），
+		## 不是沿用 roof 系的估值 —— 防止将来有人手滑改回去
+		_check(a, "遮罩对准露营车（模板匹配位 (0,189)）", mask.position == Vector2(0, 189),
+			str(mask.position))
 	_check(a, "有僵尸进家落点", panel is Marker2D, str(panel))
 	inst.free()
 #endregion
@@ -107,7 +112,7 @@ func _check_bg_scene_contract(a) -> void:
 func _check_constants(a) -> void:
 	a.log("")
 	a.log("STEP3 底图 / BGM / 场景设置")
-	var tex: Texture2D = ConstLevelData.GameBgTextureMap.get(ConstLevelData.GameBg.Woods)
+	var tex: Texture2D = ConstLevelData.get_game_bg_texture(ConstLevelData.GameBg.Woods)
 	_check(a, "GameBg.Woods 已登记底图", tex != null, str(tex))
 	if tex != null:
 		_check(a, "底图 = background7woods", tex.resource_path == BG_WOODS_TEXTURE, tex.resource_path)
@@ -162,7 +167,7 @@ func _check_runtime(a) -> void:
 
 	var mg = GameContext.curr_main_game
 	_check(a, "底图 = background7woods",
-		mg.background_manager.background.texture == ConstLevelData.GameBgTextureMap[ConstLevelData.GameBg.Woods],
+		mg.background_manager.background.texture == ConstLevelData.get_game_bg_texture(ConstLevelData.GameBg.Woods),
 		str(mg.background_manager.background.texture))
 	## 房门遮罩数组必须随 GameBg 一起扩到 8（新增背景不同步扩数组会在 init_home 越界）
 	var masks: Array = mg.background_manager.home.door_masks

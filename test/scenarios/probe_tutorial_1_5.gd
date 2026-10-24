@@ -170,7 +170,7 @@ func run(a) -> void:
 	await a.wait(1.0)
 	_check(a, "开局后传送带已启动", mg.card_manager.is_conveyor_belt_started,
 		str(mg.card_manager.is_conveyor_belt_started))
-	## 第一波由关卡流程按 first_wave_delay 开波（1-5 配了 6 秒），超时要大于该值
+	## 第一波由关卡流程的开战参数开波（1-5 是原版坚果保龄球的 2 秒），超时要大于该值
 	if not await _wait_wave_start(a, wave_manager, 40.0):
 		_check(a, "开局后第一波僵尸已启动", false, str(wave_manager.curr_wave))
 	else:

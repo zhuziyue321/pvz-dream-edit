@@ -31,7 +31,11 @@ param(
     [switch]$Quiet,
     ## 2026-10-16: refuse to run while a previous godot instance still holds the
     ## shared output file - that is exactly how "I asked for probe_x but got
-    ## probe_y" happens. With this switch the leftovers are killed and we go on.
+    ## probe_y" happens.
+    ## WARNING (2026-10-18): do NOT use -KillStale in normal work - that process
+    ## may be the USER's open editor / game window, and killing it loses their
+    ## unsaved scenes and scripts. Wait for it to exit, or ask the user to close
+    ## it. Use a separate -UsrDir to run in parallel instead.
     [switch]$KillStale
 )
 
@@ -63,7 +67,8 @@ if ($stale.Count -gt 0) {
             Write-Host ('[autopilot]   pid {0}  started {1}' -f $p.Id, $p.StartTime) -ForegroundColor Red
         }
         Write-Host '[autopilot] they may hold the shared output file -> this run could print THEIR report.' -ForegroundColor Red
-        Write-Host '[autopilot] close them (editor + game window), or pass -KillStale to kill them.' -ForegroundColor Red
+        Write-Host '[autopilot] do NOT kill them: that may be the user editor / game (unsaved work).' -ForegroundColor Red
+        Write-Host '[autopilot] wait for them to exit, or ask the user to close the editor / game window.' -ForegroundColor Red
         Write-Host '[autopilot] result=STALE_PROCESS' -ForegroundColor Red
         exit 3
     }
@@ -136,7 +141,8 @@ if ($isStale) {
     Write-Host ''
     Write-Host '[autopilot] STALE OUTPUT: ap_out.txt was NOT written by this run.' -ForegroundColor Red
     Write-Host '            Everything below is from a PREVIOUS run - do NOT trust it.' -ForegroundColor Red
-    Write-Host '            Look for leftover godot processes, then re-run with -KillStale.' -ForegroundColor Red
+    Write-Host '            Look for leftover godot processes and let them exit - do NOT -KillStale' -ForegroundColor Red
+    Write-Host '            (it may be the user editor / game window with unsaved work).' -ForegroundColor Red
 }
 
 if (-not $Quiet) {

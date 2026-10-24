@@ -64,8 +64,9 @@ func run(a) -> void:
 	await ProbeUtil.wait_lawn_mowers(a, 20.0)
 	await a.wait(1.0)
 
-	# ------------------------------------------------ STEP1 关卡数据：45 秒开场 + 四面旗帜
-	a.log("STEP1 关卡数据：开场延迟按原版写死")
+	# ------------------------------------------------ STEP1 开战参数：45 秒开场 + 四面旗帜
+	a.log("STEP1 开战参数：开场延迟按原版写死")
+	## 首波延迟由「开战」事件的 start_battle(first_wave_time = 45.0) 写回关卡数据，所以这里读到的已是 45
 	_check(a, "第一波延迟是原版的 45 秒", para.first_wave_delay == 45.0, str(para.first_wave_delay))
 
 	# ------------------------------------------------ STEP2 开局冰道的分布

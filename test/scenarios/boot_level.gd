@@ -28,7 +28,7 @@ func run(a) -> void:
 	await a.wait(3.0)
 	await a.dump("游戏已开始（应进入 MAIN_GAME）")
 
-	## 第一波延迟由关卡的 first_wave_delay 决定（默认 20 秒）
+	## 第一波延迟由关卡的 first_wave_delay 决定（默认 18 秒，原版 1800 tick）
 	await a.wait(24.0)
 	await a.dump("运行 24 秒后（第一波僵尸已出场）")
 

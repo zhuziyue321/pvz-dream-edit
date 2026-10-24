@@ -1,14 +1,15 @@
 extends RefCounted
-## 探针：图鉴「扩展植物」页（调试模式专属植物 + 模组新增植物）
+## 探针：图鉴「扩展植物」页（运行期解锁的植物 + 模组新增植物）
 ##
 ## 覆盖这一页的三件事：
 ##   1. 场景能造出来，索引页上有「查看扩展植物」按钮，点它切到这一页
 ##   2. **哪些植物进这一页**：与选卡界面同一口径（AllCards.is_appended_plant），
-##      且按 curr_plant（已解锁）过滤 —— 没开调试模式时一株都没有
+##      且按 curr_plant（已解锁）过滤 —— 没解锁 / 没登记进可选列表时一株都没有
+##      （调试模组只解锁、不登记 ⇒ 打开它这一页仍是空的）
 ##   3. **图鉴文本从哪来**：本体那四株取 json 的 ExtraPlant 段；没写过的（含模组植物）
 ##      兜一条最简条目；模组登记 / 摘掉自己的条目
 ##
-## 无头可跑，只动内存（不写存档、不落配置）。
+## 无头可跑（模组开关会写模组存档，跑批把用户目录重定向到临时目录）。
 ## 机器可读汇总：最后一行 [ALMANACEXTRA] result=PASS|FAIL failed=<n>
 
 var _failed := 0
@@ -25,8 +26,8 @@ func run(a) -> void:
 	_check(a, "图鉴场景路径能取到", scene_path != "", scene_path)
 
 	# ------------------------------------------------ STEP1 没解锁时是空页
-	a.log("STEP1 默认（没开调试模式、没装模组）→ 这一页是空的")
-	Global.global_game_state.apply_debug_mode(false)
+	a.log("STEP1 默认（调试模组关着、没装别的模组）→ 这一页是空的")
+	ModManager.set_mod_enabled(ModIds.DEBUG, false)
 	var page1: AlmanacExtraPlantPage = await _open_page(a, scene_path)
 	if page1 == null:
 		_finish(a)
@@ -41,21 +42,31 @@ func run(a) -> void:
 		page1.almanac_character_show_panel.character_text_1.text)
 	root1.free()
 
-	# ------------------------------------------------ STEP2 开调试模式 → 四株进页
-	a.log("STEP2 打开「调试模式」→ 四种调试植物进这一页")
-	var debug_entry := Global.console_registry.get_entry(&"debug_mode")
-	if debug_entry == null:
-		_check(a, "取到控制台条目 debug_mode", false, "null")
+	# ------------------------------------------------ STEP2 开调试模组 → 仍不进页
+	a.log("STEP2 打开「调试模式」→ 四株只进已解锁名单；不在可选植物列表 ⇒ 这一页仍为空")
+	ModManager.set_mod_enabled(ModIds.DEBUG, true)
+	var page_mode: AlmanacExtraPlantPage = await _open_page(a, scene_path)
+	if page_mode == null:
 		_finish(a)
 		return
-	debug_entry.set_value(true)
+	_check(a, "调试模式下扩展页仍没有卡片（调试模式不登记选卡界面）",
+		page_mode.extra_plant_types.is_empty(), str(page_mode.extra_plant_types))
+	page_mode.get_parent().free()
+	ModManager.set_mod_enabled(ModIds.DEBUG, false)
+
+	# ------------------------------------------------ STEP2.5 登记一页 → 四株进页
+	a.log("STEP2.5 手动登记一页选卡（模组那条路）→ 四株进页")
+	var state := Global.global_game_state
+	state.unlock_plants(ConstPlantUnlock.APPENDED_PLANT_TYPES)
+	var debug_page := AllCards.register_plant_choose_page(ConstPlantUnlock.APPENDED_PLANT_TYPES)
+	_check(a, "登记一页选卡成功", debug_page >= 0, str(debug_page))
 	var page2: AlmanacExtraPlantPage = await _open_page(a, scene_path)
 	if page2 == null:
 		_finish(a)
 		return
 	var root2 := page2.get_parent()
 	_check(a, "四种调试植物全部进页",
-		page2.extra_plant_types.size() == ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES.size(),
+		page2.extra_plant_types.size() == ConstPlantUnlock.APPENDED_PLANT_TYPES.size(),
 		str(page2.extra_plant_types))
 	_check(a, "普通植物不进这一页（豌豆射手不在扩展页里）",
 		not page2.extra_plant_types.has(PlantIds.PEA_SHOOTER_SINGLE),
@@ -91,7 +102,10 @@ func run(a) -> void:
 			page2.extra_plant_types[0]).get("名字", ""))
 		_check(a, "点卡片后面板换成那一株", shown == expect, "显示=%s 期望=%s" % [shown, expect])
 	root2.free()
-	debug_entry.set_value(false)
+	## 撤销手动登记，别把状态留给后面的步骤
+	AllCards.unregister_plant_choose_page(debug_page)
+	for plant_type: StringName in ConstPlantUnlock.APPENDED_PLANT_TYPES:
+		state.lock_plant(plant_type)
 
 	# ------------------------------------------------ STEP4 模组登记 / 摘掉
 	a.log("STEP4 模组自己登记条目（水盆那一路）")

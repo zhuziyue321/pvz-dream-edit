@@ -364,8 +364,8 @@ func _check_leave_and_verdict(a) -> void:
 	## 退回哪个场景：mode 值本身就是那个选关页的场景 id
 	var adv := NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.ChooseLevelAdventure)
 	_check(a, "冒险模式没有选关页，退回主菜单", adv.contains("start_menu"), adv)
-	var mini := NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.ChooseLevelMiniGame)
-	_check(a, "迷你模式退回迷你选关页", mini.contains("mini_game_choose_level"), mini)
+	var mini_scene := NetplayMod.choose_level_scene_of_mode(MainSceneRegistry.MainScenes.ChooseLevelMiniGame)
+	_check(a, "迷你模式退回迷你选关页", mini_scene.contains("mini_game_choose_level"), mini_scene)
 	_check(a, "mode 没记录时不乱跑（返回空）", NetplayMod.choose_level_scene_of_mode(0).is_empty())
 	_check(a, "认不出选关页的 mode 也回主菜单（不扣在关卡里）",
 		NetplayMod.choose_level_scene_of_mode(
@@ -739,10 +739,15 @@ func _check_state_sync(a) -> void:
 	NetplayStateSync._apply_anim(zz, 250)
 	NetplayStateSync._apply_anim(null, 0)
 	_check(a, "★ 下标乱来（不接管 / 越界 / 空角色）都不会崩在这一行", true)
-	## 接管动画树只做一次（重复关会跟快照打架）
-	NetplayStateSync._take_over_anim(zz)
-	NetplayStateSync._take_over_anim(zz)
-	_check(a, "接管动画是幂等的（第二次不重复关）", zz.has_meta(&"netplay_anim_taken"))
+	## 接管只做一次（幂等）—— 判定与冻结都收在动画组件的驱动源里，
+	## 不再是模组往角色身上打 `meta` 标记（那样模组必须知道角色内部结构）
+	var empty_anim := AnimComponentEmpty.new()
+	empty_anim.take_over()
+	empty_anim.take_over()
+	_check(a, "接管动画是幂等的（重复接管不出错）", empty_anim.is_remote_driven())
+	empty_anim.release()
+	_check(a, "交还本地驱动后不再被接管", not empty_anim.is_remote_driven())
+	empty_anim.free()
 
 	## ★ 下标协议的**核心假设**：两端实例化的是同一份 .tscn ⇒ 同一下标就是同一条动画，
 	## 于是**不需要任何"动画名 → 编号"的硬编码表**（硬约束 §1-4 说的正是别散落这类映射）。
@@ -752,9 +757,10 @@ func _check_state_sync(a) -> void:
 	ap.add_animation_library("", lib)
 	lib.add_animation("walk", Animation.new())
 	lib.add_animation("death", Animation.new())
-	var anim_list := NetplayStateSync._anim_list_of(ap)
+	## 列表缓存搬到动画组件（`AnimComponentBase._anim_list_of`）：模组不再自己找播放器
+	var anim_list := AnimComponentBase._anim_list_of(ap)
 	_check(a, "动画列表缓存得住（不是每帧每只都重新取一遍）",
-		NetplayStateSync._anim_list_of(ap) == anim_list)
+		AnimComponentBase._anim_list_of(ap) == anim_list)
 	_check(a, "（前置）两条动画都在列表里", anim_list.size() == 2, str(anim_list))
 	_check(a, "★ 下标 ↔ 名字 往返一致（两端同下标就是同一条动画）",
 		anim_list[anim_list.find("walk")] == "walk"
