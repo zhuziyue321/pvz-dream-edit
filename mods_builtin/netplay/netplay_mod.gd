@@ -188,11 +188,15 @@ func install_to_main_game(main_game: MainGameManager) -> void:
 	ready_flow.setup(_session, main_game, _note)
 	main_game.choose_card_start_gate = ready_flow.start_gate
 	## 加装选卡协商
-	if main_game.card_manager != null and main_game.card_manager.card_slot_norm != null:
-		var sync := NetplayCardSync.new()
-		sync.name = NetplayCardSync.SELF_SYNC_NODE_NAME
-		main_game.add_child(sync)
-		sync.setup(_session, main_game, _note)
+	##
+	## ★ **无条件挂上**：卡槽控制器（`card_manager.init_manager()`）可能比模组装配**晚一步**，
+	##   那一刻 `card_slot_norm` 还是 null —— 早先"有卡槽才挂"的写法会让这一关**整条卡槽分块都不存在**
+	##   （选卡协商、分块、合并卡表、可见区间全都没有）。
+	##   这枚节点自己会等：卡槽还没建好时它什么也不做（`_battle_slot()` 返回 null）。
+	var sync := NetplayCardSync.new()
+	sync.name = NetplayCardSync.SELF_SYNC_NODE_NAME
+	main_game.add_child(sync)
+	sync.setup(_session, main_game, _note)
 	## ★ 战斗同步（主机权威）：客户端的操作不在本地生效，上行给主机；
 	##   主机跑成的那一遍再下行给全屋重放 —— 大家眼里是**同一串**操作
 	var battle_sync := NetplayBattleSync.new()
