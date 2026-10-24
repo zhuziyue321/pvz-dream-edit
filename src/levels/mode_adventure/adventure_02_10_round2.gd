@@ -23,6 +23,8 @@ func _init() -> void:
 	is_day_sun = false
 	is_have_tombston = true
 	init_tombstone_num = 13
+	## 出怪倍率 = 3：同正本（原版 MiniBoss 关，Board.cpp:675-678 + IsMiniBossLevel）
+	zombie_multy = 3
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
 	&"puff_shroom": 2,

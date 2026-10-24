@@ -18,6 +18,8 @@ func _init() -> void:
 	locked_random_card_num = 3
 	game_BGM = ConstLevelData.GameBGM.UltimateBattle
 	is_day_sun = false
+	## 出怪倍率 = 3：同正本（原版 MiniBoss 关，Board.cpp:675-678 + IsMiniBossLevel）
+	zombie_multy = 3
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
 	&"pea_shooter_single": 2,

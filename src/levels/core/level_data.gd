@@ -209,7 +209,20 @@ func apply_scene_setting() -> void:
 ##   旗数由 `game_round`（普通困难 5 轮、无尽 -1）+ 每轮波数（普通 10、困难/无尽 20）决定。
 @export var survival_difficulty: ConstLevelData.E_SurvivalDifficulty = ConstLevelData.E_SurvivalDifficulty.None
 ## 出怪倍率
+##
+## **必须按原版模式倍率填**（`Board::PickZombieWaves()` 的 "Certain levels multiply the
+## zombie points" 段，Board.cpp:666-686；两份本机 C++ 参照交叉验证一致）：
+##   COLUMN 排山倒海 = 6；小小大僵尸 / 坚果保龄球1·2 = 4；
+##   迷你Boss（冒险 1-10/2-10/3-10）/ 暴雨夜（冒险 4-10）= 3；
+##   铲子 / 蹦极闪电战（冒险 5-5）/ 传送门 / 隐形 = 2；**其余全部 1**。
+## 历史上这里被当成「加料旋钮」随手调（植物僵尸两关曾因此每波 10 倍出怪，2026-10-24 修正），
+## 调它之前先对照原版倍率分支，没有依据就写 1。全表见 docs/参考存档/僵尸波次.md「模式倍率」。
 @export var zombie_multy := 1
+## 波次基础点数公式：默认 Norm（`波/3+1`，二周目冒险自动升档）。
+## 只有原版另写公式的两类关要显式赋值：坚不可摧（迷你16）= LastStand、
+## 生存模式 11 关 = Survival（第 1 轮仍走 Norm，与原版 `mSurvivalStage > 0` 分支一致）。
+## 推导与化简见 `ZombieWaveCreateManager.calculate_base_wave_points()`。
+@export var wave_points_formula: ConstLevelData.E_WavePointsFormula = ConstLevelData.E_WavePointsFormula.Norm
 ## 每轮游戏出怪波次，每10波生成1旗帜
 ##
 ## ⚠️ 同名的「波数」在本项目里有三份，改之前先认准是哪一份：

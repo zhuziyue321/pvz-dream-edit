@@ -10,7 +10,9 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.Pool
 	monster_mode = ConstLevelData.E_MonsterMode.Null
-	zombie_multy = 10
+	## 出怪倍率：本关 monster_mode = Null（不自然出怪），此值不生效；写 1 与默认一致。
+	## 此前是 10（无依据，与植物僵尸两关的历史问题同值）
+	zombie_multy = 1
 	start_sun = 6460
 
 

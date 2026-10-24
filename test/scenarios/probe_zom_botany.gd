@@ -158,6 +158,9 @@ func _check_levels(a) -> void:
 			continue
 		var level = level_script.new()
 		_expect(a, path.get_file() + " 旗帜波不补普僵 / 旗子僵尸", level.spawn_plain_zombie_extra, false)
+		## 出怪倍率：原版 `Board::PickZombieWaves()` 对 WAR_AND_PEAS / _2 不乘任何倍率，
+		## 写成 >1 就是「每波出怪数是原版的 N 倍」（2026-10-24 用户反馈「植物僵尸明显过多」就是这里曾是 10）
+		_expect(a, path.get_file() + " 出怪倍率（原版无倍率）", level.zombie_multy, 1)
 
 
 ## 场景属性落地

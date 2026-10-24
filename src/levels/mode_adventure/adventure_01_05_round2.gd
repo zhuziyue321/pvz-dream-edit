@@ -44,6 +44,8 @@ func _init() -> void:
 	1: 1002
 	})
 	is_bowling_stripe = true
+	## 出怪倍率 = 4：同正本（原版 Wall-Nut Bowling 含冒险 1-5，Board.cpp:671-674）
+	zombie_multy = 4
 	plant_cell_can_use.assign({
 	"left_can_plant": true,
 	"left_can_zombie": true,

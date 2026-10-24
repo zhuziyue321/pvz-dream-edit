@@ -50,7 +50,10 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	## 场景曲：本关是泳池 → 泳池曲 Watery Graves
 	game_BGM = ConstLevelData.GameBGM.Pool
-	zombie_multy = 3
+	## 出怪倍率 = 1：原版点数倍率分支（Board.cpp:666-686）不含 BOBSLED_BONANZA。
+	## 此前是 3（无原版依据，每波出怪数是原版的 3 倍）；本关的难度在设计上是「冰面地形」，
+	## 不是「僵尸更多」—— 融冰后提高普僵密度那条走 before_wave_spawn 的密度倍率，与本字段无关
+	zombie_multy = 1
 
 
 #region 开局冰道（本关专属地形，硬约束 §1-8：不进游戏本体）

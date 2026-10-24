@@ -27,7 +27,8 @@ func _init() -> void:
 	can_choosed_card = false
 	## 进关就停在相机归位位（保龄球关没有预览僵尸 / 选卡，不该先拍房子）
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
-	zombie_multy = 3
+	## 出怪倍率 = 4：原版 Wall-Nut Bowling 2 同在 ×4 分支里（Board.cpp:671-674）
+	zombie_multy = 4
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	## 传送带送的三种「保龄球」：坚果 / 爆炸坚果 / 巨型坚果墙
 	## 出卡概率照原版 wiki 的百分比直接当权重（create_plant_weights 内部归一化）：

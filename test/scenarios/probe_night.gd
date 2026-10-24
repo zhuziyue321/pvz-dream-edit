@@ -300,7 +300,7 @@ func _check_tombstone_plant_condition(a) -> void:
 ## 本区的特殊关卡：
 ##   2-5  = 原版「打地鼠」关（E_MonsterMode.HammerZombie）：僵尸从墓碑冒出，用锤子砸，
 ##          出战卡由关卡资源固定（土豆地雷 / 墓碑吞噬者 / 樱桃炸弹），阳光全靠砸僵尸掉落。
-##   2-10 = 传送带收尾关，出怪表要含本区重点僵尸（舞王）、大波倍率 1（原版无倍率）、波数按原版两旗 = 20 波。
+##   2-10 = 传送带收尾关，出怪表要含本区重点僵尸（舞王）、大波倍率 3（原版 MiniBoss 分支）、波数按原版两旗 = 20 波。
 func _check_conveyor_and_final_level(a) -> void:
 	a.log("")
 	a.log("STEP5 2-5 锤僵尸 / 2-10 传送带与收尾关")
@@ -331,8 +331,9 @@ func _check_conveyor_and_final_level(a) -> void:
 	var para_10: ResourceLevelData = (load(_level_path(10)) as GDScript).new()
 	_check(a, "2-10 出怪表含舞王", para_10.zombie_refresh_types.has(ZombieIds.JACKSON),
 		str(para_10.zombie_refresh_types))
-	## 原版没有「出怪倍率」，收尾关统一 1：倍率 2 会让末波战力翻倍，密度远超原版
-	_check(a, "2-10 大波倍率 = 1（原版无倍率）", para_10.zombie_multy == 1, str(para_10.zombie_multy))
+	## 原版 MiniBoss 关（冒险 1-10 / 2-10 / 3-10）点数 ×3（Board.cpp:675-678 + IsMiniBossLevel），
+	## 不是「无倍率」——2026-10-24 全仓对齐模式倍率时补上，此前的默认 1 只有原版的 1/3
+	_check(a, "2-10 出怪倍率 = 3（原版 MiniBoss）", para_10.zombie_multy == 3, str(para_10.zombie_multy))
 	_check(a, "2-10 波数 = 20（原版两旗）", para_10.max_wave == 20, str(para_10.max_wave))
 #endregion
 

@@ -55,6 +55,8 @@ func _init() -> void:
 	## 空投本身是本关专属玩法,写在同目录的 adventure_05_05_bungi_blitz.gd 里,由本脚本创建
 	## 传送带补种 花盆/南瓜头/大嘴花/樱桃炸弹
 	is_bungi = true
+	## 出怪倍率 = 2：同正本（原版蹦极闪电战，Board.cpp:683-686 + IsBungeeBlitzLevel）
+	zombie_multy = 2
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
 	&"cherry_bomb": 2,

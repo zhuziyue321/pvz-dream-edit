@@ -24,7 +24,10 @@ func _init() -> void:
 	## 覆盖场景默认：本关（种子雨）在原版是雨天
 	is_rain = true
 	can_choosed_card = false
-	zombie_multy = 4
+	## 出怪倍率 = 1：原版点数倍率分支（COLUMN ×6 / 保龄·小麻烦 ×4 / MiniBoss·暴雨夜 ×3 /
+	## 铲子·蹦极·传送门·隐形 ×2，Board.cpp:666-686）**不含** RAINING_SEEDS。
+	## 此前是 4（无原版依据的本地发明，每波出怪数是原版的 4 倍）
+	zombie_multy = 1
 	card_mode = ConstLevelData.E_CardMode.Null
 	is_seed_rain = true
 	seed_rain_weights = ResourceCardWeight.create_plant_weights({

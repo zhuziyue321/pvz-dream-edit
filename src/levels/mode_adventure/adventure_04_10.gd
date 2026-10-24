@@ -13,6 +13,9 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.NoBGM
 	is_rain = true
 	is_lightning = true
+	## 出怪倍率 = 3：原版暴雨夜（冒险 4-10 = mLevel 40，LawnApp::IsStormyNightLevel）的倍率
+	## （Board.cpp:679-682）。此前漏配 = 默认 1
+	zombie_multy = 3
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	## 传送带卡池(原版 4-10): 莲叶17 / 海蘑菇25 / 仙人掌27 / 裂荚29 / 杨桃30 / 南瓜头31 / 磁力菇32
 	conveyor_weights = ResourceCardWeight.create_plant_weights({

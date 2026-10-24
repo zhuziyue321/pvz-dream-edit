@@ -90,6 +90,23 @@ func before_wave_spawn(
 	pass
 
 
+## 本波「固定出场」僵尸 —— **关卡脚本可覆写**（基类空实现）
+##
+## 调用时机：每一波开打时，按权重随机挑僵尸**之前**（与「最后一波补齐」同一时段）。
+## 返回的僵尸会**照原版扣本波点数**（`PutZombieInWave`）—— 不看出力够不够，
+## 扣成负数时本波就不再随机抽（这正是原版「排山倒海第 6 波 = 10 只扶梯、别的没有」的由来）。
+##
+## 原版用例：排山倒海 COLUMN（`Board::PickZombieWaves()` 的 COLUMN 分支，Board.cpp:727-759）——
+## 第 6 波（下标 5）扶梯僵尸×10、第 9 波（下标 8）玩偶匣僵尸×10、
+## 第 20 波（下标 19）伽刚特尔×3、第 30 波（下标 29）伽刚特尔×5。
+## 这些类型不必在 `zombie_refresh_types` 里（它们不走随机池，直接进清单）。
+##
+## [wave] 当前波次（从 0 开始）
+## [is_big_wave] 本波是不是大波（旗帜波）
+func get_fixed_wave_zombies(_wave: int, _is_big_wave: bool) -> Array[StringName]:
+	return []
+
+
 ## 本波僵尸**怎么进场** —— **关卡脚本可覆写**
 ##
 ## 默认实现 = 通用进场（僵尸从场地边缘走进来，见 ZombieWaveCreateManager）。

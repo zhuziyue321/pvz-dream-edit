@@ -18,7 +18,9 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	## 场景曲：本关是泳池 → 泳池曲 Watery Graves
 	game_BGM = ConstLevelData.GameBGM.Pool
-	zombie_multy = 2
+	## 出怪倍率 = 1：原版点数倍率分支（Board.cpp:666-686）不含 SPEED。
+	## 此前是 2（无原版依据）；本关的难度在设计上是「全场提速」，不是「僵尸更多」
+	zombie_multy = 1
 	## 全场加速（1.0 = 原速，2.0 = 两倍快）
 	speed_factor_zombie = 2.0
 	speed_factor_plant = 2.0

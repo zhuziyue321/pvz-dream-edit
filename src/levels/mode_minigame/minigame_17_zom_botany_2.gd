@@ -30,7 +30,11 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	## 场景曲：本关是泳池 → 泳池曲 Watery Graves
 	game_BGM = ConstLevelData.GameBGM.Pool
-	zombie_multy = 10
+	## 出怪倍率 = 1（原版口径）：同第 1 关——原版点数倍率分支不含 WAR_AND_PEAS_2，
+	## 波次点数就是 `aWave/3+1`（30 波关：第 1 波 1 点、第 10 波 10 点、第 30 波 11 点）。
+	## 此前这里是 10（本地发明、无原版依据），每波出怪数是原版的 10 倍，
+	## 表现为「植物僵尸满屏都是」（2026-10-24 用户反馈）。与下面那个开关一起被 probe_zom_botany 锁值。
+	zombie_multy = 1
 	## 原版这两关旗帜波不补「旗子僵尸 + 一批普僵」（Board.cpp 对 WAR_AND_PEAS / _2 特判），
 	## 整关只有出怪表里的植物僵尸；点数残差也不再补普僵
 	spawn_plain_zombie_extra = false

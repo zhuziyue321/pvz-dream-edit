@@ -25,6 +25,11 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.Pool
 	start_sun = SUN_START
 	zombie_multy = 1
+	## 波次点数公式：原版 LAST_STAND 单独一条分支（Board.cpp:634-637）——
+	## `(阶段*10 + 波 + 10)*2/5+1`；本仓库波次下标跨阶段累计（每阶段正好 10 波），
+	## 化简为 `(波+10)*2/5+1`：第 1 波 5 点、第 10 波 8 点、第 50 波 24 点。
+	## 此前走默认 `波/3+1`，第 1 波只有 1 点（不到原版的 1/5），整关都偏松
+	wave_points_formula = ConstLevelData.E_WavePointsFormula.LastStand
 	## 本关没有阳光收入：天上不掉阳光（is_day_sun），阳光只有开局那笔和每波补的 250，
 	## 这也是「不能带产阳光植物」的由来 —— 带了也没有后续产出可用
 	is_day_sun = false

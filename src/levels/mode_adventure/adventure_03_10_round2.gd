@@ -21,6 +21,8 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.UltimateBattle
 	is_day_sun = false
+	## 出怪倍率 = 3：同正本（原版 MiniBoss 关，Board.cpp:675-678 + IsMiniBossLevel）
+	zombie_multy = 3
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	## 传送带卡池(原版 3-10): 莲叶17 / 三线19 / 水草20 / 辣椒21 / 地刺22 / 火炬树桩23 / 高坚果24
 	conveyor_weights = ResourceCardWeight.create_plant_weights({

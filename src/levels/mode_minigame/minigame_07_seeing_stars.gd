@@ -78,7 +78,9 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.FrontDay
 	## 场景曲：本关是白天前院 → 白天曲 Grasswalk
 	game_BGM = ConstLevelData.GameBGM.FrontDay
-	zombie_multy = 2
+	## 出怪倍率 = 1：原版点数倍率分支（Board.cpp:666-686）不含 SEEING_STARS。
+	## 此前是 2（无原版依据，每波出怪数是原版的 2 倍）
+	zombie_multy = 1
 	## 4 面旗帜 = 40 波（进度条上的旗帜数 = max_wave / 10，见 ZombieWaveManager.get_flag_num）
 	max_wave = MAX_FLAG * WAVE_EVERY_FLAG
 	## 出怪表：对齐原版 SEEING_STARS（Challenge.cpp 无专属分支，落默认白名单 = 普/路障/铁桶）

@@ -12,6 +12,9 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.UltimateBattle
 	is_day = false
 	is_day_sun = false
+	## 出怪倍率 = 3：原版 MiniBoss 关（冒险 1-10 / 2-10 / 3-10）的倍率
+	## （Board.cpp:675-678 + LawnApp::IsMiniBossLevel = mLevel 10/20/30）。此前漏配 = 默认 1
+	zombie_multy = 3
 	is_have_tombston = true
 	init_tombstone_num = 13
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt

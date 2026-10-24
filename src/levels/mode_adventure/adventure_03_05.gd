@@ -15,6 +15,9 @@ func _init() -> void:
 	## 波长：原版 `IsLittleTroubleLevel()`（小游戏 + 冒险 mLevel == 25 即本关）写死
 	## `mZombieCountDown = 750` tick = 7.5 秒，不是通用的 25~31 秒
 	wave_norm_time_range = Vector2(7.5, 7.5)
+	## 出怪倍率 = 4：原版 Little Trouble 的倍率（Board.cpp:671-674 +
+	## LawnApp::IsLittleTroubleLevel 含冒险 3-5 = mLevel 25）。此前漏配 = 默认 1
+	zombie_multy = 4
 	## 小僵尸大麻烦:僵尸体型/血量减半、速度翻倍(见 Zombie000Base.update_mini_zombie)
 	can_choosed_card = false
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt

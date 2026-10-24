@@ -242,14 +242,34 @@ func create_curr_wave_zombie_list(wave:int, is_big_wave:bool):
 	return wave_spawn
 
 ## 本波的「基础点数」：原版 `aZombiePoints`（未乘大波 2.5 的那一份）
-## 首周目 `aWave / 3 + 1`；二周目 `aWave * 2 / 5 + 1`（1-5 例外，仍走首周目公式）
 ## 大波补几只普僵也按它算（`aPlainZombiesNum = min(aZombiePoints, 8)`）
-## 数据来源: 原版 `Board::PickZombieWaves()`（../PvZ-Portable-main/src/Lawn/Board.cpp:633-649）
+## 数据来源: 原版 `Board::PickZombieWaves()`（../PvZ-Portable-main/src/Lawn/Board.cpp:633-649），
+## 四条分支原样落地。本仓库 `curr_wave` 是**跨阶段累计**的下标且每阶段波数固定，
+## 原版按阶段展开的两条公式因此可以化简：
+##   坚不可摧 `(阶段*10 + 波 + 10)*2/5+1`：阶段 = 波/10（每阶段正好 10 波）→ `(波+10)*2/5+1`
+##   生存     `(阶段*每阶段波数 + 波)*2/5+1`：阶段*每阶段波数 + 波 = 累计波次 → `波*2/5+1`
+##   （第 1 轮生存在原版落默认分支，见 _is_survival_later_round）
 @warning_ignore("integer_division")
 func calculate_base_wave_points(wave: int) -> int:
+	var level_data := zombie_manager.game_para as ResourceLevelData
+	if level_data != null:
+		match level_data.wave_points_formula:
+			ConstLevelData.E_WavePointsFormula.LastStand:
+				return (wave + 10) * 2 / 5 + 1
+			ConstLevelData.E_WavePointsFormula.Survival:
+				## 原版只有 `mSurvivalStage > 0`（第 2 轮起）才走这条，第 1 轮落默认分支
+				if _is_survival_later_round():
+					return wave * 2 / 5 + 1
 	if is_second_round_adventure():
 		return wave * 2 / 5 + 1
 	return wave / 3 + 1
+
+
+## 生存模式第 2 轮起（原版 `mChallenge->mSurvivalStage > 0`）：
+## 第 1 轮的点数走默认公式（原版同样落默认分支），所以这里判「轮次 > 1」
+func _is_survival_later_round() -> bool:
+	return is_instance_valid(zombie_manager.main_game) \
+		and zombie_manager.main_game.curr_game_round > 1
 
 ## 计算每波的战力上限（原版「本波总级别」）
 ## 原版公式: n÷3 向下取整 + 1（n 为当前波数）；大波再乘 2.5 向下取整；出怪倍率最后整体相乘
@@ -414,6 +434,16 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 	## 补齐同样扣点数，扣成负数后面就不再随机抽了。
 	total_power += _put_in_missing_zombies(wave_spawn, wave)
 
+	## 关卡「固定出场」僵尸：与补齐同一时段（随机填充之前），同样扣点数（原版 `PutZombieInWave`，
+	## 不看出力够不够 —— 扣成负数本波就不再随机抽）。原版用例见
+	## `LevelScriptBase.get_fixed_wave_zombies()`（排山倒海的扶梯 / 玩偶匣 / 巨人）。
+	for fixed_zombie_type: StringName in _get_level_fixed_wave_zombies(wave, is_big_wave):
+		if curr_spare_slot <= 0:
+			break
+		wave_spawn.append(fixed_zombie_type)
+		total_power += get_zombie_power(fixed_zombie_type)
+		curr_spare_slot -= 1
+
 	# 生成剩余僵尸，直到总战力符合当前战力上限
 	while curr_spare_slot > 0 and total_power < curr_wave_power_limit:
 		var remaining_power: int = curr_wave_power_limit - total_power
@@ -457,6 +487,15 @@ func _put_in_missing_zombies(wave_spawn: Array[StringName], wave: int) -> int:
 		wave_spawn.append(zombie_type)
 		added_power += zombie_power
 	return added_power
+
+
+## 本波关卡脚本指定的「固定出场」僵尸（默认空，见 LevelScriptBase.get_fixed_wave_zombies）
+## 通用代码不认识任何具体玩法（硬约束 §1-8）：固定出场清单由关卡脚本自己给
+func _get_level_fixed_wave_zombies(wave: int, is_big_wave: bool) -> Array[StringName]:
+	var level_script := zombie_manager.game_para as LevelScriptBase
+	if level_script != null:
+		return level_script.get_fixed_wave_zombies(wave, is_big_wave)
+	return []
 
 
 ## 本关的最后一波（下标 = 总波数 - 1，与 `ZombieWaveManager.start_next_wave()` 同口径）

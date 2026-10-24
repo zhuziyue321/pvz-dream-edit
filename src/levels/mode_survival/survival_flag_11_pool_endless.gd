@@ -16,6 +16,10 @@ func _init() -> void:
 	## -1 = 无尽（约定见 ResourceLevelData.game_round）
 	game_round = -1
 	survival_difficulty = ConstLevelData.E_SurvivalDifficulty.Endless
+	## 波次点数公式：原版生存分支（Board.cpp:638-641）——第 2 轮起 `(阶段*每阶段波数 + 波)*2/5+1`，
+	## 本仓库波次下标跨轮累计，化简为 `波*2/5+1`；第 1 轮仍走默认 `波/3+1`（与原版一致）。
+	## 无尽轮次无上限，这条公式正是「越打越猛」的来源；此前全轮次走默认公式，涨不上去
+	wave_points_formula = ConstLevelData.E_WavePointsFormula.Survival
 	game_sences = MainSceneRegistry.MainScenes.MainGameBack
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.Pool

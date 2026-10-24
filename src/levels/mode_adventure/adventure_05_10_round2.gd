@@ -24,7 +24,9 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.Boss
 	is_day = false
 	is_day_sun = false
-	zombie_multy = 3
+	## 出怪倍率：本关不自然出怪（僵尸全由僵王投放），此值不生效；
+	## 写 1 与原版一致（僵王关不在任何点数倍率分支里，Board.cpp:666-686）。此前是 3（无依据）
+	zombie_multy = 1
 	is_bungi = true
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	monster_mode = ConstLevelData.E_MonsterMode.Null

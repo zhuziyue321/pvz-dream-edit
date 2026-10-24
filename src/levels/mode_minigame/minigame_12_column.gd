@@ -31,7 +31,8 @@ func _init() -> void:
 	##    and Brain Busters feature the track 'Ultimate Battle'」
 	game_BGM = ConstLevelData.GameBGM.UltimateBattle
 	is_day_sun = false
-	zombie_multy = 10
+	## 出怪倍率 = 6：原版 COLUMN 的分支倍率（Board.cpp:667-670）。此前是 10（无依据，多 40%）
+	zombie_multy = 6
 	## 波长：原版本关写死 `mZombieCountDown = 750` tick = 7.5 秒（不是通用的 25~31 秒）
 	wave_norm_time_range = Vector2(7.5, 7.5)
 	## 本关**不是**蹦极关（原版蹦极只在 Bungee Blitz 模式触发）：删掉误配的 is_bungi，
@@ -262,6 +263,31 @@ func _get_cell(row: int, col: int) -> PlantCell:
 	if col < 0 or col >= row_cells.size():
 		return null
 	return row_cells[col] as PlantCell
+#endregion
+
+
+#region 固定出场僵尸（原版 COLUMN 分支，Board.cpp:727-759）
+## 原版排山倒海在**随机填充之前**固定出场四批僵尸（`PutZombieInWave`，照扣本波点数）：
+##   第 6 波（下标 5）扶梯僵尸 ×10、第 9 波（下标 8）玩偶匣僵尸 ×10、
+##   第 20 波（下标 19）伽刚特尔 ×3、第 30 波（下标 29）伽刚特尔 ×5
+## 本关 30 波（start_battle(-1) 取关卡数据默认 max_wave = 30），下标 29 = 最后一波。
+## 固定出场扣掉的点数经常超出本波预算（原版同样如此）→ 这些波基本没有随机僵尸。
+## 这些类型不必在 zombie_refresh_types 里：它们不走随机池，由本钩子直接进清单。
+func get_fixed_wave_zombies(wave: int, _is_big_wave: bool) -> Array[StringName]:
+	var fixed: Array[StringName] = []
+	if wave % 10 == 5:
+		for _i in range(10):
+			fixed.append(ZombieIds.LADDER)
+	if wave % 10 == 8:
+		for _i in range(10):
+			fixed.append(ZombieIds.JACKBOX)
+	if wave == 19:
+		for _i in range(3):
+			fixed.append(ZombieIds.GARGANTUAR)
+	if wave == 29:
+		for _i in range(5):
+			fixed.append(ZombieIds.GARGANTUAR)
+	return fixed
 #endregion
 
 

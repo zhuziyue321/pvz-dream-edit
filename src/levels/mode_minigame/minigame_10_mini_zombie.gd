@@ -15,7 +15,9 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.MiniGame
 	is_day_sun = false
 	can_choosed_card = false
-	zombie_multy = 10
+	## 出怪倍率 = 4：原版 Little Trouble 在 ×4 分支里（Board.cpp:671-674）。
+	## 此前是 10（无原版依据，每波出怪数是原版的 2.5 倍）
+	zombie_multy = 4
 	## 波长：原版本关写死 `mZombieCountDown = 750` tick = 7.5 秒（不是通用的 25~31 秒）
 	wave_norm_time_range = Vector2(7.5, 7.5)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
@@ -62,5 +64,6 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
+	## 开战：30 波（原版 LITTLE_TROUBLE 在 30 波那一档，Board.cpp:603-606；此前写 20）
 	## 首波 2 秒：原版小僵尸大麻烦 `mZombieCountDown = 200` tick
-	await start_battle(20, zombie_list, 0.0, 2.0)
+	await start_battle(30, zombie_list, 0.0, 2.0)

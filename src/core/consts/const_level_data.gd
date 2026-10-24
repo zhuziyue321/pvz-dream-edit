@@ -95,6 +95,20 @@ enum E_SurvivalDifficulty {
 	Hard, ## 困难：10 旗
 	Endless, ## 无尽：泳池地图，轮次无上限
 }
+
+## 波次「基础点数」公式（原版 `Board::PickZombieWaves()` 的四条分支，Board.cpp:633-649）
+## 波次战力上限 = 基础点数 × zombie_multy（大波再 ×2.5）。
+## 本仓库 `curr_wave` 是**跨阶段累计**的下标且每阶段波数固定，原版按阶段展开的两条
+## 公式可化简（推导见 `ZombieWaveCreateManager.calculate_base_wave_points()`）：
+##   Norm      —— `波/3+1`（默认）；二周目冒险自动升档 `波*2/5+1`（1-5 例外）
+##   LastStand —— 坚不可摧：原版 `(阶段*10 + 波 + 10)*2/5+1` → 化简 `(波+10)*2/5+1`
+##   Survival  —— 生存：原版只有 `mSurvivalStage > 0` 才走 `(阶段*每阶段波数 + 波)*2/5+1`
+##                → 化简 `波*2/5+1`；第 1 轮落 Norm 分支（与原版一致）
+enum E_WavePointsFormula {
+	Norm,
+	LastStand,
+	Survival,
+}
 #endregion
 
 #region 卡槽
