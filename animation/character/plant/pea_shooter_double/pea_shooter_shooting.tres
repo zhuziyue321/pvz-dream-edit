@@ -703,14 +703,14 @@ tracks/56/keys = {
 tracks/57/type = "method"
 tracks/57/imported = false
 tracks/57/enabled = true
-tracks/57/path = NodePath("AttackComponent")
+tracks/57/path = NodePath("AnimComponent")
 tracks/57/interp = 1
 tracks/57/loop_wrap = true
 tracks/57/keys = {
 "times": PackedFloat32Array(1),
 "transitions": PackedFloat32Array(1),
 "values": [{
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }]
 }

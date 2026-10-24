@@ -1865,7 +1865,7 @@ tracks/152/keys = {
 tracks/153/type = "method"
 tracks/153/imported = false
 tracks/153/enabled = true
-tracks/153/path = NodePath("AttackComponent")
+tracks/153/path = NodePath("AnimComponent")
 tracks/153/interp = 1
 tracks/153/loop_wrap = true
 tracks/153/keys = {
@@ -1875,7 +1875,7 @@ tracks/153/keys = {
 "args": [],
 "method": &"random_choose_butter_or_corn"
 }, {
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }]
 }

@@ -940,23 +940,23 @@ tracks/76/keys = {
 tracks/77/type = "method"
 tracks/77/imported = false
 tracks/77/enabled = true
-tracks/77/path = NodePath("AttackComponent")
+tracks/77/path = NodePath("AnimComponent")
 tracks/77/interp = 1
 tracks/77/loop_wrap = true
 tracks/77/keys = {
 "times": PackedFloat32Array(1, 1.5, 2, 2.5),
 "transitions": PackedFloat32Array(1, 1, 1, 1),
 "values": [{
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }, {
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }, {
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }, {
-"args": [],
-"method": &"_shoot_bullet"
+"args": ["shoot"],
+"method": &"on_anim_event"
 }]
 }
