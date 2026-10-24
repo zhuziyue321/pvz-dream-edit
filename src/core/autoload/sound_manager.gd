@@ -414,12 +414,18 @@ const SFXOtherMap := {
 	&"gravestone_rumble":"res://pak/sounds/gravestone_rumble.ogg",
 	## 植物种植音效
 	&"plant1": "res://pak/sounds/plant.ogg",
+	## 拉霸小游戏拉下拉杆（原版 SOUND_SLOT_MACHINE，音频本体 pak/sounds/slotmachine.ogg）
+	&"slotmachine": "res://pak/sounds/slotmachine.ogg",
 	## 植物铲除音效
 	&"plant2":"res://pak/sounds/plant2.ogg",
 	## 植物种植在水上
 	&"plant_water": "res://pak/sounds/plant_water.ogg",
 	## 僵尸入水音效、水花音效
 	&"zombie_entering_water": "res://pak/sounds/zombie_entering_water.ogg",
+	## 买潜水僵尸时的水花（原版 FOLEY_ZOMBIESPLASH，僵尸水族馆买宠物用）
+	&"zombiesplash": "res://pak/sounds/zombiesplash.ogg",
+	## 吃脑子的声音（原版 FOLEY_SLURP，僵尸水族馆宠物吃脑子用）
+	&"slurp": "res://pak/sounds/slurp.ogg",
 	## -------- 小推车 --------
 	&"lawnmower": "res://pak/sounds/lawnmower.ogg",
 	&"pool_cleaner": "res://pak/sounds/pool_cleaner.ogg",
