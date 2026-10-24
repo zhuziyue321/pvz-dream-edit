@@ -68,13 +68,20 @@ func update_attack_value(value:float, influence_factor:E_AttackValueFactor):
 func _physics_process(delta: float) -> void:
 	if is_enabling and is_attack_res:
 		frame_counter = wrapi(frame_counter + 1, 0, EAT_SETTLE_FRAME_INTERVAL)
-		if not is_instance_valid(detect_component.enemy_can_be_attacked):
+		## 目标既不是植物也不是脑子时不结算（与原来「没有目标就整帧跳过」等价）
+		if not is_instance_valid(detect_component.enemy_can_be_attacked) \
+				and not is_instance_valid(detect_component.brain):
 			return
 		if frame_counter == 0:
 			var eat_damage := settle_eat_damage(delta)
 			## 0 点不发包：`DamageSystem` 那边同样会以 ZeroAmount 取消，这里省一次派发
 			if eat_damage > 0:
-				detect_component.enemy_can_be_attacked.be_zombie_eat(eat_damage, owner)
+				if is_instance_valid(detect_component.enemy_can_be_attacked):
+					detect_component.enemy_can_be_attacked.be_zombie_eat(eat_damage, owner)
+				else:
+					## 目标是脑子：原版 `Challenge::IZombieEatBrain` 每口 -1（每 4 tick 一口），
+					## 长期平均与啃植物的连续 DPS 同源 —— 走同一条结算路线，脑子按时间掉血
+					detect_component.brain.be_zombie_eat(eat_damage)
 
 
 ## 结算本轮啃食伤害（**含零头累加**），返回这次该打进伤害管线的点数（可能为 0）。
@@ -94,6 +101,6 @@ func attack_once():
 		SoundManager.play_character_SFX("Chomp")
 	elif is_instance_valid(detect_component.brain):
 		#detect_component = detect_component as DetectComponentZombie
-		detect_component.brain.be_attack_once()
+		## 啃咬伤害已走上面的连续结算（原版口径），这里只剩音效 —— 动画方法轨的一次「口」
 		SoundManager.play_character_SFX("Chomp")
 

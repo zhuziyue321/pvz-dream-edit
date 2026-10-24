@@ -28,21 +28,24 @@ var create_sun_color: Color = Color(1, 1, 1)
 
 
 #region 我是僵尸模式
-@export_group("我是僵尸模式")
-## 剩余的阳光数量
-@export var remaining_sun_on_zombie_mode := 8
-## 被攻击一次生产一个阳光
-func _on_be_eat_once():
-	if remaining_sun_on_zombie_mode > 0:
-		remaining_sun_on_zombie_mode -= 1
+## 原版口径的「掉阳光血量档」（`Zombie.cpp::EatPlant` 的 I_ZOMBIE 分支：health / 40）
+const SUN_DROP_STAGE_HP := 40
+
+## 被啃掉一段血量：每被打掉一档血量（40）当场掉一颗；打死的那一口（血量归零）也算一档
+## [param before_hp] 这次结算**前**的当前血量
+## [param damage] 这次结算打掉的血量
+func drop_sun_on_zombie_mode_hp_loss(before_hp:int, damage:int):
+	var after_hp := before_hp - damage
+	if after_hp / SUN_DROP_STAGE_HP < before_hp / SUN_DROP_STAGE_HP or after_hp <= 0:
 		_spawn_sun()
 
-## 当角色死亡时
-func _on_character_death():
-	if remaining_sun_on_zombie_mode > 0:
-		for _i in range(remaining_sun_on_zombie_mode):
-			_spawn_sun()
-		remaining_sun_on_zombie_mode = 0
+## 被啃死了：把剩下的阳光全掉出来
+## 原版 `Challenge::IZombiePlantDropRemainingSun`：死亡时掉「剩余血量 / 40 + 1」颗
+## （正常啃死时剩余血量 ≤ 0，即固定补 1 颗；被秒杀时按剩余血量折算）
+func drop_sun_on_zombie_mode_death(remain_hp:int):
+	var count := maxi(remain_hp, 0) / SUN_DROP_STAGE_HP + 1
+	for _i in count:
+		_spawn_sun()
 
 #endregion
 func component_ready() -> void:

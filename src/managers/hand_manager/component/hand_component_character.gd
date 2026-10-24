@@ -28,6 +28,15 @@ var _is_boss_card := false
 ## 紫卡植物可以的预种植植物，点击卡片时明暗交替
 var curr_all_preplant_purple: Array[Plant000Base] = []
 
+## 上一次僵尸放置失败是不是「放错侧」（我是僵尸模式，点击格子的失败提示用）
+var _is_last_zombie_reject_side := false
+
+## 我是僵尸模式放错侧的提示文案（data/strings/lawn_strings.txt 的 ADVICE_I_ZOMBIE_* 同文）
+const ZOMBIE_SIDE_HINT_NOT_PASSED_LINE := "在线的右边才能放置僵尸"
+const ZOMBIE_SIDE_HINT_LEFT_OF_LINE := "在线的左边才能放置飞贼僵尸"
+## 提示条停留秒数（原版 DisplayAdvice MESSAGE_STYLE_HINT_LONG 的量级）
+const ZOMBIE_SIDE_HINT_SHOW_TIME := 5.0
+
 
 func get_hand_component_type() -> E_HandComponentType:
 	return E_HandComponentType.Character
@@ -183,6 +192,7 @@ func click_cell(plant_cell: PlantCell) -> bool:
 		return false
 	if not is_shadow_in_cell:
 		SoundManager.play_other_SFX("buzzer")
+		_show_zombie_side_hint_if_needed()
 		return false
 
 	if _is_boss_card:
@@ -250,6 +260,16 @@ func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Nod
 
 	## 僵尸
 	else:
+		_is_last_zombie_reject_side = false
+		## 我是僵尸模式（原版 `Challenge::CanPlantAt`）：蹦极只能放红线**左侧**，
+		## 其余僵尸只能放红线**右侧**（红线贴在 `plant_cell_col_j` 列的右边缘，左区 = 第 0~col_j 列）
+		if main_game.game_para.is_zombie_mode:
+			var is_left_of_stripe: bool = \
+				plant_cell.row_col.y <= main_game.game_para.plant_cell_col_j
+			if is_left_of_stripe != (curr_card.card_zombie_type == ZombieIds.BUNGI):
+				_is_last_zombie_reject_side = true
+				curr_characte_static_shadow.modulate.a = 0
+				return false
 		## 如果当前格子不能放置普通僵尸（蹦极除外）
 		if not plant_cell.can_common_zombie and curr_card.card_zombie_type != ZombieIds.BUNGI:
 			return false
@@ -266,6 +286,36 @@ func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Nod
 			curr_characte_static_shadow.global_position = get_zombie_static_shadow_global_position(plant_cell)
 			curr_characte_static_shadow.modulate.a = 0.5
 			return true
+
+
+## 点击格子失败且原因是「放错侧」时：在屏幕下方提示条上给一句原版建议
+## （原版 `Challenge.cpp` 放置失败分支的 DisplayAdvice：蹦极 = LEFT_OF_LINE，其余 = NOT_PASSED_LINE）
+func _show_zombie_side_hint_if_needed() -> void:
+	if not _is_last_zombie_reject_side or not is_instance_valid(curr_card) \
+			or main_game == null or not main_game.game_para.is_zombie_mode:
+		return
+	var hint := TutorialAdviceUI.ensure_level_hint(main_game)
+	if hint == null:
+		return
+	var text := ZOMBIE_SIDE_HINT_NOT_PASSED_LINE
+	if curr_card.card_zombie_type == ZombieIds.BUNGI:
+		text = ZOMBIE_SIDE_HINT_LEFT_OF_LINE
+	hint.show_advice(text)
+	_auto_hide_side_hint(hint, text)
+
+
+## 提示条停留一段时间后自动收起（期间再点错会刷新计时）
+var _side_hint_hide_token := 0
+
+func _auto_hide_side_hint(hint: TutorialAdviceUI, text: String) -> void:
+	_side_hint_hide_token += 1
+	var token := _side_hint_hide_token
+	await main_game.get_tree().create_timer(ZOMBIE_SIDE_HINT_SHOW_TIME).timeout
+	## 等待期间场景可能已切换；期间若提示文本被别人改过也不再收
+	if not is_instance_valid(self) or not is_instance_valid(hint):
+		return
+	if token == _side_hint_hide_token and hint.get_advice_text() == text:
+		hint.hide_advice()
 
 
 ## 获取放置僵尸的虚影位置

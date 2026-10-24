@@ -722,4 +722,11 @@ func wait_sun_enough(sun_value: int = 100) -> void:
 	var event := LevelTimelineEventWaitSunEnough.new()
 	event.sun_value = sun_value
 	await _run_event(event, "等待阳光足够")
+
+
+## 等场上出现第一只僵尸（超时也会放行，见 LevelTimelineEventWaitZombie）
+func wait_zombie_appear(timeout: float = 30.0) -> void:
+	var event := LevelTimelineEventWaitZombie.new()
+	event.timeout = timeout
+	await _run_event(event, "等待第一只僵尸出现")
 #endregion

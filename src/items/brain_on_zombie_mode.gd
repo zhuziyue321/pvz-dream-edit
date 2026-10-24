@@ -7,11 +7,10 @@ class_name BrainOnZombieMode
 @onready var drop_item_component: DropItemComponent = %DropItemComponent
 @onready var brain_body: BrainBody = $BrainBody
 
-@export var max_hp:= 100
-var curr_hp :int = 100
-
-## 被啃一口掉的血（我是僵尸模式下僵尸啃脑子的单口伤害，场景可配）
-@export var attack_value: int = 25
+## 原版口径：脑子 70 口、每口 4 tick（100 Hz）= 2.8 秒吃完（`Challenge::IZombieEatBrain`）；
+## 仓库僵尸啃食是连续 DPS 100（见 AttackComponentZombieNorm），按时间换算 = **280 HP**
+@export var max_hp:= 280
+var curr_hp :int = 280
 
 ## 第一格的植物格子，屋顶时移动y
 var first_plant_cell:PlantCell
@@ -35,9 +34,10 @@ func init_brain(curr_first_plant_cell:PlantCell):
 	first_plant_cell = curr_first_plant_cell
 	lane = first_plant_cell.row_col.x
 
-## 被攻击一次掉血
-func be_attack_once():
-	_hp_loss()
+## 被啃食（与植物同一口径的连续掉血：僵尸攻击组件每 8 帧结算一次 DPS）
+## 原版 IZombieEatBrain 每口 -1（每 4 tick 一口），长期平均就是这条连续 DPS 路线
+func be_zombie_eat(damage:int):
+	_hp_loss(damage)
 
 ## 被压扁
 func be_flattened():
@@ -50,9 +50,7 @@ func hp_loss_to_death():
 	_hp_loss(curr_hp)
 
 ## 掉血
-func _hp_loss(value:int = -1):
-	if value < 0:
-		value = attack_value
+func _hp_loss(value:int):
 	curr_hp -= value
 	if curr_hp <= 0:
 		_brain_death()
