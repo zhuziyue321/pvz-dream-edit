@@ -17,6 +17,7 @@ script = ExtResource("1_script")
 texture = ExtResource("3_glow")
 
 [node name="SeedPacketBg" type="Sprite2D" parent="."]
+scale = Vector2(2, 2)
 texture = ExtResource("2_bg")
 
 [node name="PlantContainer" type="Node2D" parent="."]

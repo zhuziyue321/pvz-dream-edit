@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Animation" path="res://animation/character/plant/tall_nut/tallnut_idle.tres" id="1_idle"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tallnut_body.png" id="2_body"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Tallnut_blink1.png" id="3_blink"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_head"]
+_data = {
+&"Head_Idle": ExtResource("1_idle")
+}
+
+[node name="PlantHead" type="Node2D"]
+
+[node name="Body" type="Node2D" parent="."]
+
+[node name="BodyCorrect" type="Node2D" parent="Body"]
+
+[node name="Anim_idle" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(0.33533943, -36.08421)
+rotation = 0.0068108994
+scale = Vector2(0.80580455, 0.80729324)
+texture = ExtResource("2_body")
+centered = false
+
+[node name="Anim_blink_twice" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(31.2, -15)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("3_blink")
+centered = false
+
+[node name="Anim_blink_thrice" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(31.2, -15)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("3_blink")
+centered = false
+
+[node name="blink" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(53, 0.00000107288)
+scale = Vector2(0.774038, 0.608428)
+texture = ExtResource("3_blink")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_head")
+}

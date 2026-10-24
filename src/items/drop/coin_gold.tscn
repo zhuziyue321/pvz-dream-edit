@@ -5,7 +5,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/coin_black_gold.png" id="3_63pb2"]
 [ext_resource type="Texture2D" path="res://pak/reanim/coin_gold_dollar.png" id="4_4cgy0"]
 [ext_resource type="Texture2D" path="res://pak/reanim/coin_shading.png" id="5_rbw7l"]
-[ext_resource type="BitMap" uid="uid://bxo2ge8hl0k6y" path="res://assets/reanim/coin_gold_dollar_mask.png" id="6_uq70t"]
+[ext_resource type="BitMap" uid="uid://bxo2ge8hl0k6y" path="res://assets_custom/reanim/coin_gold_dollar_mask.png" id="6_uq70t"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 0.666667

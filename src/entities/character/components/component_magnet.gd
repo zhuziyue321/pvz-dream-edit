@@ -6,8 +6,9 @@ class_name MagnetComponent
 @onready var attack_cd_timer: Timer = $AttackCdTimer
 @onready var area_2d: Area2D = $Area2D
 
-## 攻击cd(笑话铁器时间)
-@export var attack_cd:float = 30
+## 攻击cd（消化铁器的时间）：原版吸取动作 `mStateCountdown = 1500` tick @100 Hz = **15 秒**
+## （`Plant.cpp:1860` 的 `MagnetShroomAttactItem()`，吸完 + 动画 loop 后即可再吸）
+@export var attack_cd:float = 15
 
 ## ★ 最多同时持有几件铁器（原版磁力菇 = 1：吸一件就进入消化 cd，消化完才能吸下一件）
 ##
@@ -107,12 +108,12 @@ func _on_area_2d_area_entered(area: Area2D) -> void:
 
 	elif area_owner is Ladder:
 		## 梯子身上的铁器节点
-		var iron_node:IronNode = area_owner.iron_node
-		if iron_node.is_be_magnet:
+		var ladder_iron_node:IronNode = area_owner.iron_node
+		if ladder_iron_node.is_be_magnet:
 			return
 		else:
-			iron_node.is_be_magnet = true
-		attack_once(iron_node)
+			ladder_iron_node.is_be_magnet = true
+		attack_once(ladder_iron_node)
 		area_owner.ladder_death()
 
 

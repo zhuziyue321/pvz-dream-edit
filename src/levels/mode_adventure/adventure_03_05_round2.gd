@@ -12,6 +12,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_2_0025"
 	## 二周目差异：开局锁定前 3 个随机卡槽 —— 从本关能用的植物里随机挑 3 株占住前 3 槽，
 	## 玩家只能编辑第 4 个槽起的部分（机制与边界见 docs/参考存档/二周目.md）
 	locked_random_card_num = 3
@@ -20,6 +21,9 @@ func _init() -> void:
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.MiniGame
 	is_day_sun = false
+	## 波长：原版 `IsLittleTroubleLevel()`（小游戏 + 冒险 mLevel == 25 即本关）写死
+	## `mZombieCountDown = 750` tick = 7.5 秒，不是通用的 25~31 秒（二周目同口径）
+	wave_norm_time_range = Vector2(7.5, 7.5)
 	## 小僵尸大麻烦:僵尸体型/血量减半、速度翻倍(见 Zombie000Base.update_mini_zombie)
 	can_choosed_card = false
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
@@ -63,7 +67,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(30, zombie_list)
+	## 首波 2 秒：原版小僵尸大麻烦 `mZombieCountDown = 200` tick
+	await start_battle(30, zombie_list, 0.0, 2.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

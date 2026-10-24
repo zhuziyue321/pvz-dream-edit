@@ -22,8 +22,9 @@ class_name ModManagerClass
 ##   `user://mods/<入口脚本>` 在 → 整个模组从 `user://mods/` 加载；不在 → 从 `res://mods_builtin/` 加载。
 ##
 ##   ⚠️ 一个模组只从**一个根**加载，绝不混着来：模组内部靠 `preload("相对路径")` 互相引用，
-##   一半 `user://`、一半包里会错位报错。所以改内置模组要**整个目录拷过去**（含 `mod_base.gd`），
+##   一半 `user://`、一半包里会错位报错。所以改内置模组要**整个目录拷过去**，
 ##   拷漏了不会自动退回内置源 —— 那样「改了不生效」更难查，改成启动打一行 warn 列出缺哪些。
+##   （模组基类 `mod_base.gd` 不在根里：它只有**框架一份**，在 `res://src/mods/`。）
 ##
 ##   内置源永远齐全，所以它是「只给玩家一个游戏文件」时保证模组一定能跑起来的那份；
 ##   玩家那份**读不出来**时（导出把脚本二进制化后引擎认不出的形态）也会退到这里再试一次。
@@ -43,6 +44,8 @@ class_name ModManagerClass
 ## ⚠️ 从 `user://mods/` 加载时，那些脚本**不是**工程脚本，有两条硬限制（Godot 4.6.2 实测）：
 ##   · 它们的 `class_name` **不会注册成全局类** —— 所以模组内部一律 `extends "相对路径.gd"`
 ##     与 `const Xxx := preload("xxx.gd")`，**不能**写 `extends ModBase` / `var m: ModBase`；
+##     **唯一的例外是模组基类**：它只有框架一份（`res://src/mods/mod_base.gd`），
+##     模组入口照写绝对路径 `extends "res://src/mods/mod_base.gd"` —— 两个根下都指向同一份；
 ##   · 相应地，本文件（在 `res://`）也不能引用任何模组里的类 —— 一律按 `Variant` 动态调用。
 ##   退回内置源加载时这两条限制会**自动消失**（`res://` 下写相对路径照样能用，只是整套已经按上面的
 ##   口吻写好了，**不要**因为「这次能写 `extends ModBase`」就去改 —— 玩家那份一回来就会炸）。
@@ -71,18 +74,29 @@ const IGNORE_SUFFIXES: Array[String] = [".uid", ".import"]
 const MOD_SCRIPT_PATHS: Dictionary = {
 	ModIds.GLOVE: "glove/glove_mod.gd",
 	ModIds.HAMMER: "hammer/hammer_mod.gd",
-	ModIds.WATER_BOWL: "water_bowl/water_bowl_mod.gd",
 	ModIds.PURPLE_DIRECT_PLANT: "purple_direct_plant/purple_direct_plant_mod.gd",
 	ModIds.MORE_ARMOR: "more_armor/more_armor_mod.gd",
 	ModIds.CUSTOM_LEVEL: "custom_level/custom_level_mod.gd",
 	ModIds.NETPLAY: "netplay/netplay_mod.gd",
 	ModIds.ECO: "eco/eco_mod.gd",
 	ModIds.PVZ2: "pvz2/pvz2_mod.gd",
+	ModIds.PAM: "pam/pam_mod.gd",
 	ModIds.ZHAOXIAO: "zhaoxiao/zhaoxiao_mod.gd",
 	ModIds.ARKNIGHTS: "arknights/arknights_mod.gd",
+	ModIds.DLC: "dlc/dlc_mod.gd",
+	ModIds.DEBUG: "debug/debug_mod.gd",
 }
-## 模组基类（两个根下各有一份）：用它判断「入口脚本是不是真的继承了 ModBase」
-const MOD_BASE_REL_PATH := "mod_base.gd"
+## 模组基类（**框架单一一份**，在 `src/mods/`）：用它判断「入口脚本是不是真的继承了 ModBase」
+## ⚠️ 它**不在**两个加载根里（`mods_builtin/` 只放模组目录）：模组入口一律
+##    `extends "res://src/mods/mod_base.gd"` —— 绝对路径在两个根下都指向同一份，
+##    把模组目录拷到 `user://mods/` 时不需要再带一份 `mod_base.gd`
+const MOD_BASE_PATH := "res://src/mods/mod_base.gd"
+## **旧版布局**里 `mod_base.gd` 的位置（各加载根下那份）：只为认出没跟着升级的玩家模组，
+## 别在新模组里用（它们仍能装载，只是基链比的是这两个旧路径）
+const LEGACY_MOD_BASE_PATHS: Array[String] = [
+	"user://mods/mod_base.gd",
+	"res://mods_builtin/mod_base.gd",
+]
 
 ## 工程默认开关（`ModConfig`）：**只在存档文件还不存在时播种一次**，之后一律以存档文件为准
 const CONFIG_PATH := "res://data/mods/mod_config.tres"
@@ -94,7 +108,7 @@ const ENABLED_KEY := "enabled"
 ## 每个模组**当前实际从哪个根加载**（两个源，`MODS_ROOT` 优先；见 `_resolve_mod_roots()`）
 var mod_roots: Dictionary[StringName, String] = {}
 ## 已创建的模组（不论开关，创建出来是为了让日志 / 将来的界面能列出全部模组）
-## ⚠️ 值**不能**标成 `ModBase`：那是 `user://` 里的脚本，本文件引用不到（见类注释）
+## ⚠️ 值**不能**标成 `ModBase`：基类不写 `class_name`（模组脚本可能在 `user://` 下加载），按名字引用不到
 var all_mods: Dictionary = {}
 ## 每个模组的开关状态（启动时由存档文件初始化，运行期可被改）
 var enabled_mods: Dictionary[StringName, bool] = {}
@@ -106,6 +120,9 @@ var mod_settings: Dictionary = {}
 var _save_scheduled := false
 ## 素材缓存：`"<模组 id>/<相对路径>"` → 读到的 Resource（见 `load_mod_asset()`）
 var _asset_cache: Dictionary = {}
+## 已经因为「用的是旧版 ModBase」告警过的模组（每个模组只告警一次，别刷屏）
+## 用途见 `_warn_legacy_mod()`：删掉三处 `has_method()` 兼容分支之前，先看这里还剩谁（TODO L-29）
+var _legacy_mod_warned: Dictionary[StringName, bool] = {}
 
 
 func _ready() -> void:
@@ -291,16 +308,31 @@ func _create_mod(mod_id: StringName):
 
 
 ## 实例的基链里有没有 `mod_base.gd`（比 `instance_has()` 可靠，见 `_create_mod` 注释）
-## 两个根下各有一份 `mod_base.gd`，所以两根都要认 —— 认哪一个取决于它是从哪个根加载的
+## 新模组一律 `extends "res://src/mods/mod_base.gd"`（单一一份）；旧版在各自加载根下带一份，
+## 那两个路径也认（`LEGACY_MOD_BASE_PATHS`），否则没跟着升级的玩家模组会被误判成「不是 ModBase 子类」
 func _extends_mod_base(mod) -> bool:
-	var user_path := MODS_ROOT.path_join(MOD_BASE_REL_PATH)
-	var builtin_path := BUILTIN_MODS_DIR.path_join(MOD_BASE_REL_PATH)
 	var sc = mod.get_script()
 	while sc != null:
-		if sc.resource_path == user_path or sc.resource_path == builtin_path:
+		if sc.resource_path == MOD_BASE_PATH or LEGACY_MOD_BASE_PATHS.has(sc.resource_path):
 			return true
 		sc = sc.get_base_script()
 	return false
+
+
+## 旧版 `ModBase` 兼容告警（每个模组只告警一次）
+##
+## `user://mods/` 下可能躺着没跟着升级的模组，它们的入口脚本缺新方法。
+## 本体因此不得不在三处写 `has_method()` 兜底（`_install` / 卸载 / `get_mod_dependencies`），
+## 每给 `ModBase` 加一个能力就多一处兜底 —— 见 TODO L-29。
+## 这里先做**统计与点名**，等日志里不再出现这条 warn，才能整批删掉兼容分支。
+func _warn_legacy_mod(mod_id: StringName, mod) -> void:
+	if _legacy_mod_warned.get(mod_id, false):
+		return
+	_legacy_mod_warned[mod_id] = true
+	var mod_name: String = str(mod_id)
+	if mod != null and mod.has_method("get_mod_name"):
+		mod_name = mod.get_mod_name()
+	Log.warn("ModManager: 模组 [%s] %s 用的是**旧版 ModBase**（缺伤害修饰器接口），已走兼容分支；请升级该模组，否则本体后续新能力它拿不到" % [str(mod_id), mod_name])
 
 
 func _install(mod_id: StringName, mod) -> void:
@@ -309,6 +341,8 @@ func _install(mod_id: StringName, mod) -> void:
 	## 把本模组的伤害修饰器接进 DamageSystem 的修饰器链（mod_base.gd 提供；旧版没有则跳过）
 	if mod.has_method("_install_damage_modifiers"):
 		mod._install_damage_modifiers()
+	else:
+		_warn_legacy_mod(mod_id, mod)
 	Log.info("ModManager: 已装载模组 [%s] %s" % [str(mod_id), mod.get_mod_name()])
 #endregion
 
@@ -546,6 +580,8 @@ func _apply_enabled_state(mod_id: StringName, value: bool) -> void:
 		## 摘掉本模组注册进 DamageSystem 的伤害修饰器（旧版 mod_base 没有则跳过）
 		if mod.has_method("_uninstall_damage_modifiers"):
 			mod._uninstall_damage_modifiers()
+		else:
+			_warn_legacy_mod(mod_id, mod)
 
 
 ## 换用户：模组开关与设置跟着换成新用户那一份（存档文件在用户目录下，一人一份）
@@ -580,4 +616,16 @@ func install_mods_to_main_game(main_game: MainGameManager) -> void:
 		if not is_mod_enabled(mod_id):
 			continue
 		all_mods[mod_id].install_to_main_game(main_game)
+
+
+## 全局存档重读完的通知（见 `ModBase.on_session_reloaded()`）
+## 由 `Global.reload_session_for_current_user()` 在读档之后调用：存档把全局状态覆盖过，
+## 已启用模组在这里补回它们写进那些状态里的东西（旧版模组没有这个方法则跳过）。
+func notify_session_reloaded() -> void:
+	for mod_id in all_mods:
+		if not is_mod_enabled(mod_id):
+			continue
+		var mod = all_mods[mod_id]
+		if mod != null and mod.has_method("on_session_reloaded"):
+			mod.on_session_reloaded()
 #endregion

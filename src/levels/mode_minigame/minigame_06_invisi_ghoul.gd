@@ -42,6 +42,27 @@ func _init() -> void:
 	})
 
 
+## 原版 `Board.cpp` 的 INVISIGHOUL 分支：`mCurrentWave <= 3 && aRow == 5` 时该行权重归零，
+## 也就是**开局这几波最下行一只不出**（原版注释写「前 3 波」，按代码 0 起算实际覆盖第 1~4 波；
+## 以代码为准，与 C++ 行号基准一致）。
+const NO_BOTTOM_ROW_UNTIL_WAVE := 3
+
+
+## 每波开打前设 / 撤「最下行不出怪」：走通用的行权重能力，本体不认识「隐形战争」
+func before_wave_spawn(
+	create_manager: ZombieWaveCreateManager,
+	wave: int,
+	_is_big_wave: bool
+) -> void:
+	var bottom_row := create_manager.get_row_num() - 1
+	if bottom_row < 0:
+		return
+	if wave <= NO_BOTTOM_ROW_UNTIL_WAVE:
+		create_manager.set_banned_spawn_rows([bottom_row])
+	else:
+		create_manager.clear_banned_spawn_rows()
+
+
 ## 本关核心：出战僵尸本体隐形
 ## 走「僵尸初始化参数」下发（ E_ZInitAttr.IsInvisible 是角色的通用外观项）：
 ## 一关专属的设定留在关卡脚本里，游戏本体不认识「隐形战争」；
@@ -56,8 +77,8 @@ func get_zombie_init_para_extra() -> Dictionary:
 ## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
-	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	## 原版本关的僵尸：普僵 / 路障 / 铁桶 / 铁门 / 潜水 / 洗冰车 / 海豚骑士 / 玩偶匣
+	## 出怪表：对齐原版 INVISIGHOUL 白名单（Challenge.cpp：普/路障/铁桶/海豚/洗冰车/玩偶匣）
+	## —— 此前误加了铁门(SCREEN_DOOR) / 潜水(SNORKLE)，C++ 权威名单里没有，这里修正
 	## （洗冰车的冰道与音效、海豚骑士与玩偶匣的入场音效是原版留给玩家的行踪线索）
 	## 不写 Z011Duckytube：它在自然刷怪黑名单里（写了也只会被 init_para 滤掉并打 warning），
 	## 水面行的鸭子泳圈由两栖僵尸（普僵等）入水时自动套上，见 docs/参考存档/植物僵尸.md §4 坑 2
@@ -65,10 +86,8 @@ func run_flow(mg: MainGameManager) -> void:
 		ZombieIds.NORM,
 		ZombieIds.CONE,
 		ZombieIds.BUCKET,
-		ZombieIds.SCREEN_DOOR,
-		ZombieIds.SNORKLE,
-		ZombieIds.ZAMBONI,
 		ZombieIds.DOLPHINRIDER,
+		ZombieIds.ZAMBONI,
 		ZombieIds.JACKBOX,
 	]
 
@@ -78,5 +97,8 @@ func run_flow(mg: MainGameManager) -> void:
 	## 初始化小推车
 	await init_lawn_mover()
 	await ready_set_plant()
+	## 原版本关传送带出卡约 2 倍速（Challenge.cpp: mConveyorBeltCounter=200），此前这里漏了没加速
+	mg.card_manager.set_conveyor_card_interval_scale(0.5)
 	## 开战
-	await start_battle(20, zombie_list)
+	## 首波 2 秒：原版 Invisighoul `mZombieCountDown = 200` tick（与传送带 2 倍速同一段）
+	await start_battle(20, zombie_list, 0.0, 2.0)

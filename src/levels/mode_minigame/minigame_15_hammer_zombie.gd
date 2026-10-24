@@ -33,8 +33,11 @@ func _init() -> void:
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 	monster_mode = ConstLevelData.E_MonsterMode.HammerZombie
 	is_have_tombston = true
-	init_tombstone_num = 10
+	## 原版开局 9 座墓碑（Board.cpp WhackAZombiePlaceGraves(9)），此前误配 10
+	init_tombstone_num = 9
 	start_sun = 0
+	## 原版 Whack-a-Zombie = 12 波（Board.cpp mNumWaves=12）；默认 10 是冒险 2-5 的口径，这里单独抬到 12
+	max_wave_hammer_zombie = 12
 	## 打地鼠小游戏（原版）：出战卡固定 3 张，卡槽数 = 固定卡数
 	max_choosed_card_num = 3
 	prechosen_cards = ResourceCardReference.create_plant_list([15, 12, 5])

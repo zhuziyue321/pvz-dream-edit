@@ -51,10 +51,10 @@ const NO_DEPENDENCY_TEXT := "（这个模组不依赖其它模组）"
 ## 依赖块的名字：详情区里靠名字找它（不靠下标 —— 它前面有几行随模组而变）
 const DEPENDENCY_BOX_NAME := "DependencyBox"
 
-## 「模组自己那一块」挂刷新回调用的 meta 键 —— 与 `mods_builtin/mod_base.gd` 的
+## 「模组自己那一块」挂刷新回调用的 meta 键 —— 与 `src/mods/mod_base.gd` 的
 ## `DETAIL_REFRESH_META` 必须一致。这里不能写 `DETAIL_REFRESH_META`：
-## 模组（含 `ModBase`）不写 `class_name`（它可能在 `user://mods/` 下加载，那里
-## `class_name` 不注册为全局类，内置源那一份照同一口径写），本体（本文件在 `res://`）
+## 模组（含 `ModBase`）不写 `class_name`（模组脚本可能在 `user://mods/` 下加载，那里
+## `class_name` 不注册为全局类，`mod_base.gd` 照同一口径也不写），本体（本文件在 `res://`）
 ## 引用不到 —— 见 [模组机制](../../../docs/参考存档/模组机制.md) §二。
 const DETAIL_REFRESH_META := &"mod_detail_refresh"
 

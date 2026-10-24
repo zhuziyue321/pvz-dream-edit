@@ -26,7 +26,7 @@ func judge_can_get_goods():
 	apply_garden_unlock_lock()
 
 
-## 刷新商品状态:已拥有该背景则标记为售罄且不可再购买
+## 刷新商品状态:已拥有该背景则标记为售出且不可再购买
 func _refresh_goods_state() -> void:
 	if Global.global_game_state.is_garden_bg_owned(curr_goods_garden_bg):
 		is_have_goods = false
@@ -36,8 +36,7 @@ func _refresh_goods_state() -> void:
 ## 获得该商品:解锁该花园背景
 func get_one_goods():
 	if Global.global_game_state.buy_garden_bg(curr_goods_garden_bg):
-		Global.save_service.save_now()
+		_finish_goods_granted()
 	else:
 		Log.warn("购买花园背景失败:该背景已拥有")
-	_refresh_goods_state()
-	judge_can_get_goods()
+		_finish_goods_granted(false)

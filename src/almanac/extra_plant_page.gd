@@ -1,18 +1,20 @@
 extends TextureRect
 class_name AlmanacExtraPlantPage
-## 图鉴「扩展植物」页：调试模式专属植物 + 模组新增植物
+## 图鉴「扩展植物」页：运行期解锁的植物 + 模组新增植物
 ##
 ## 与植物页（`AlmanacPlantPage`）只差「条目从哪来」：
 ## · **哪些植物进这一页** —— 与选卡界面同一口径 `AllCards.is_appended_plant()`
-##   （调试模式专属 `ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES` + 运行期注册的 = 模组新增），
+##   （原版流程拿不到的 `ConstPlantUnlock.APPENDED_PLANT_TYPES` + 运行期注册的 = 模组新增；
+##   只收**已登记进选卡页**的那些），
 ##   顺序也照 `AllCards.get_plant_types_in_choose_order()`，两处必须同一口径，
 ##   否则同一株植物在选卡界面与图鉴里会落在不同位置；
 ## · **图鉴文本从哪来** —— 这两类植物没有原版文本，走
 ##   `GlobalReadData.get_extra_almanac_entry()`（本体那几株写在 `almanac_data.json` 的
 ##   ExtraPlant 段，模组植物由模组自己登记；都没写就兜一条最简的）。
 ##
-## 是否显示仍按 `curr_plant`（已解锁）过滤，与植物页一致 —— 没解锁就是图鉴里还没收录：
-## 开「调试模式」那四株才会出现，装了带新植物的模组那一株才会出现。
+## 是否显示仍按 `curr_plant`（已解锁）过滤，与植物页一致 —— 没解锁就是图鉴里还没收录；
+## 同时还得在选卡页里（本页取的就是那份摊平顺序）：运行期解锁只把那四株并进已解锁名单、
+## 不替它们登记页，所以解锁它们这一页也不会多出卡片；装了带新植物的模组那一株才会出现。
 
 ## 卡片父节点
 @onready var card_grid_container: GridContainer = $CardGridContainer

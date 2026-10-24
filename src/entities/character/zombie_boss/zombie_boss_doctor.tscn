@@ -1520,10 +1520,13 @@ script = ExtResource("75_anim_player")
 
 ; 底座链 zombie_boss_base -> zombie_base 已经带了一个 HpStageChangeComponent，
 ; 这里是对它的属性覆写（不能写 type=，否则会被判成重名新节点而被自动改名）。
+; 破损阈值对齐原版 GetBodyDamageIndex：血量跌破 max*4/5(80%) 进入阶段1，
+; 跌破 max/2(50%) 进入阶段2（默认 40000 血对应 32000 / 20000）。
+; 关卡用 set_boss_hp() 改血量上限时会按比例缩放，始终维持 80% / 50% 两档。
 [node name="HpStageChangeComponent" parent="." index="4" unique_id=16482134]
 unique_name_in_owner = true
 script = ExtResource("58_vtygo")
-boundary_value_hp = Array[int]([20000, 10000, 0])
+boundary_value_hp = Array[int]([32000, 20000, 0])
 body_change = Array[ExtResource("doctor_body_change")]([SubResource("DoctorDamageStage1"), SubResource("DoctorDamageStage2"), null])
 
 ; 只覆写血量上限。**不要再往 HpComponent 下加 HpControl / ProgressBarHp / LabelHp**：

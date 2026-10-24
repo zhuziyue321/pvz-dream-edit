@@ -55,38 +55,38 @@ animation = &"ScaredyShroom_scaredidle"
 animation = &"ScaredyShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_oxht4"]
-advance_mode = 2
-advance_expression = "not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_und8k"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_6yjsh"]
-advance_mode = 2
-advance_expression = "is_scared"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_mi268"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_sk62e"]
-advance_mode = 2
-advance_expression = "not is_scared"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ftdw2"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ign1g"]
-advance_mode = 2
-advance_expression = "is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_tthcx"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_iwvsu"]
 states/End/position = Vector2(991, 100)
@@ -134,6 +134,7 @@ height = 378.0
 script = ExtResource("2_esfqn")
 is_scared = false
 plant_type = &"scaredy_shroom"
+norm_anim_state = &"ScaredyShroom_sleep"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent"), NodePath("ScaredyComponent")]
 

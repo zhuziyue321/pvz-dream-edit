@@ -17,7 +17,7 @@ extends LevelScriptBase
 ##
 ## 玩法：草坪开局铺满植物（最右一列留空给僵尸入场）→ 按住一株拖到相邻株（原版是拖动，不是点两下）
 ##   → 凑三个及以上同类连线
-##   → 消除给阳光（3 连 25 / 4 连 50 / 5 连及以上 100）→ 累计 75 次配对通关。
+##   → 消除给阳光（3 连 25 / 4 连 50 / 5 连 125）→ 累计 75 次配对通关。
 ##   植物被僵尸啃掉会留弹坑（花 200 阳光填），阳光还能买三档升级与手动重置。
 ##
 ## 数据来源: Plants vs Zombies Wiki(https://plantsvszombies.wiki.gg/wiki/Beghouled)（一代原版口径）
@@ -176,10 +176,13 @@ func _on_fill_packet_click(card: Card) -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 BEGHOULED 白名单（Challenge.cpp：普/路障/铁桶/铁门/橄榄球/读报）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.NORM,
 		ZombieIds.CONE,
 		ZombieIds.BUCKET,
+		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
 		ZombieIds.PAPER,
 	]
 

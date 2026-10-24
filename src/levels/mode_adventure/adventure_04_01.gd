@@ -10,6 +10,7 @@ const DAVE_OPENING := preload("res://data/dave/dialog/adventure_04_01_opening.tr
 
 
 func _init() -> void:
+	save_key = "101_3_0031"
 	## 场景：泳池·浓雾 —— 槽位 / 底图 / BGM / 雾 / 昼夜 / 天降阳光全由场景脚本给出
 	scene_name = SceneSettingRegistry.SCENE_FOG
 	dave_dialog_only_first_playthrough = true

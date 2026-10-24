@@ -32,6 +32,7 @@ enum E_ChangeColors{
 	LightAndDark,	## 明暗交替颜色变化(紫卡种植\咖啡豆)
 	CharredBlack,	## 被炸弹炸黑
 	Invisible,		## 隐形战争：本体透明（只压 alpha，rgb 保持不动）
+	PresentTint,	## 表现层着色（`AnimComponentBase.apply_visual(VISUAL_TINT)` 用；与其它颜色相乘）
 }
 
 

@@ -57,29 +57,20 @@ func _on_production_timer_timeout():
 	spawn_sun()
 	change_production_interval()
 
-## 创建阳光
+## 创建阳光：实例化 / 落点 / 下落 / 广播那套在 `SunSpawner.fall_from_sky`
+## （闸门判在那里：本方法有**两条入口** —— 定时器与关卡时间轴的教学阳光，见文件头）
 func spawn_sun():
-	## 闸门被占住时（联机客户端）这一颗不长：天上掉哪一颗由**主机**下发，本地只管继续摇定时器
-	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
+	if not is_instance_valid(GameContext.curr_main_game):
 		return
-	var new_sun = SceneRegistry.SUN.instantiate()
-	if new_sun is Sun:
-		GameContext.curr_main_game.suns.add_child(new_sun)
-		curr_sun_sum_value += new_sun.sun_value
-		# 控制阳光下落
-		new_sun.spawn_sun_tween = get_tree().create_tween()
-		new_sun.position = Vector2(randf_range(sun_x_min, sun_x_max), sun_y_ori)
-		var target_y = randf_range(sun_y_min, sun_y_max)
-		## 记下落点：联机要把"从哪儿掉到哪儿"一起下发，两端才落在同一处
-		new_sun.spawn_target = Vector2(new_sun.position.x, target_y)
-		var distance = float(abs(target_y - sun_y_ori))
-		var duration = distance / sun_y_speed
-		new_sun.spawn_fall = duration
-		new_sun.spawn_sun_tween.tween_property(new_sun, "position:y", target_y, duration)
-
-		new_sun.spawn_sun_tween.finished.connect(new_sun.on_sun_tween_finished)
-		## 落点已经写进去了，这时候才广播"多了这一颗"（联机主机靠它下发；单机没人连，发了也无事）
-		EventBus.push_event(ConstEventName.SUN_SPAWNED, [new_sun])
+	var target_y := randf_range(sun_y_min, sun_y_max)
+	var new_sun := SunSpawner.fall_from_sky(
+		GameContext.curr_main_game.suns,
+		Vector2(randf_range(sun_x_min, sun_x_max), sun_y_ori),
+		target_y,
+		absf(target_y - sun_y_ori) / sun_y_speed)
+	if new_sun == null:
+		return
+	curr_sun_sum_value += new_sun.sun_value
 
 
 

@@ -145,7 +145,8 @@ static func get_first_sun(main_game: MainGameManager) -> Sun:
 		return null
 	for child in main_game.suns.get_children():
 		var sun := child as Sun
-		if sun != null and not sun.collected:
+		## 「已被拾取」的统一字段名在 `DropItemBase.is_opened`（阳光的老名字是 `collected`）
+		if sun != null and not sun.is_opened:
 			return sun
 	return null
 

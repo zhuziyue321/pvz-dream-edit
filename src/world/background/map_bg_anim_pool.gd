@@ -3,9 +3,9 @@ class_name MapBgAnimPool
 ## 泳池 / 浓雾的背景动画：泳池水面（白天 / 夜晚 / 雨滴）+ 浓雾 + 雨。
 ## 这三种都只影响画面，不参与出怪 / 卡槽 / 罐子等关卡逻辑，因此全部收在这里。
 
-const POOL_SCENE = preload("res://src/world/background/pool.tscn")
-const FOG_SCENE = preload("res://src/world/background/fog.tscn")
-const RAIN_SCENE = preload("res://src/world/background/rain.tscn")
+var POOL_SCENE = AssetRegistry.get_scene("res://src/world/background/pool.tscn")
+var FOG_SCENE = AssetRegistry.get_scene("res://src/world/background/fog.tscn")
+var RAIN_SCENE = AssetRegistry.get_scene("res://src/world/background/rain.tscn")
 
 var pool: Pool
 var fog: Fog

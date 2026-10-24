@@ -29,20 +29,20 @@ animation = &"Blover_idle"
 animation = &"Blover_loop"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_o6d54"]
-advance_mode = 2
-advance_expression = "is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_oy86t"]
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_cfuuu"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_emad8"]
-advance_mode = 2
-advance_expression = "not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_usi7p"]
 states/Blover_blow/node = SubResource("AnimationNodeAnimation_nekc0")
@@ -68,6 +68,7 @@ node_connections = [&"TimeScale", 0, &"StateMachine", &"output", 0, &"TimeScale"
 script = ExtResource("2_rbyii")
 blover_time = 2.0
 plant_type = &"blover"
+norm_anim_state = &"Blover_blow"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="BodyCorrect" parent="Body" index="0"]

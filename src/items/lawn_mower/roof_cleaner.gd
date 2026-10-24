@@ -8,7 +8,6 @@ var move_x:float
 func _ready() -> void:
 	super()
 	if is_instance_valid(GameContext.curr_main_game.main_game_slope):
-		#await get_tree().process_frame
 		## 获取对应位置的斜面y相对位置
 		var slope_y_first = GameContext.curr_main_game.main_game_slope.get_all_slope_y(global_position.x)
 		position.y += slope_y_first

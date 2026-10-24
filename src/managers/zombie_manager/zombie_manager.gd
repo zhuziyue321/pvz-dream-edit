@@ -5,11 +5,15 @@ class_name ZombieManager
 const ZOMBIE_ROW_SCRIPT = preload("res://src/items/zombies_row.gd")
 
 ## 冰道场景：洗冰车自带一份子节点，关卡开局预铺的那份从这儿实例化
-const ICE_ROAD_SCENE = preload("res://src/items/ice_road.tscn")
+var ICE_ROAD_SCENE = AssetRegistry.get_scene("res://src/items/ice_road.tscn")
 
 ## 开局冰道相对本行僵尸落脚点的偏移：与 zombie_zamboni.tscn 的 $IceRoad 摆位对齐，
 ## 好让「预铺的冰」与「洗冰车开过去铺出来的冰」在同一条水平线上无缝接上
 const PRESET_ICE_ROAD_POS_OFFSET := Vector2(80, -22)
+
+## 生存模式第 2 轮起的第一波延迟：原版 `ZOMBIE_COUNTDOWN_RANGE = 600` tick = 6 秒
+## （第 1 轮仍走关卡数据的 first_wave_delay，原版首次进入用 `ZOMBIE_COUNTDOWN_FIRST_WAVE`）
+const SURVIVAL_NEXT_ROUND_FIRST_WAVE_DELAY := 6.0
 
 ## 最后一波僵尸每秒检测是否有僵尸离开当前视野
 @onready var check_zombie_end_wave_timer: Timer = $CheckZombieEndWaveTimer
@@ -144,6 +148,8 @@ func _ready():
 	## 非刷怪模式最后一波僵尸
 	EventBus.subscribe(ConstEventName.END_WAVE_ZOMBIE, func():is_end_wave=true)
 	EventBus.subscribe(ConstEventName.TEST_DEATH_ALL_ZOMBIE, death_all_zombie)
+	## 召唤类僵尸（巨人丢小鬼 / 舞王召唤伴舞）：僵尸侧只广播"我要一只"，怎么生成由这里决定
+	EventBus.subscribe(ConstEventName.ZOMBIE_SUMMON_REQUESTED, _on_zombie_summon_requested)
 
 	create_zombie_rows_from_map_data()
 
@@ -194,8 +200,9 @@ func init_manager() -> void:
 			check_zombie_end_wave_timer.start()
 
 		ConstLevelData.E_MonsterMode.Norm:
-			## 如果游戏是多轮游戏
-			if game_para.game_round != 1:
+			## 如果游戏是多轮游戏（生存模式哪怕只有一轮也要按轮生成：它自带原版出怪规则）
+			if game_para.game_round != 1 \
+					or game_para.survival_difficulty != ConstLevelData.E_SurvivalDifficulty.None:
 				update_multi_round_zombie_refresh_types(main_game.curr_game_round)
 			else:
 				## 刷怪类型
@@ -244,7 +251,12 @@ func start_game():
 		ConstLevelData.E_MonsterMode.Norm:
 			is_first_wave_started = true
 			## 关卡配置的第一波延迟秒数后开始刷新僵尸
-			await get_tree().create_timer(maxf(0.0, game_para.first_wave_delay)).timeout
+			## 生存模式第 2 轮起原版换用 `ZOMBIE_COUNTDOWN_RANGE`（6 秒）而不是首波延迟
+			var first_wave_delay := game_para.first_wave_delay
+			if game_para.survival_difficulty != ConstLevelData.E_SurvivalDifficulty.None \
+					and is_instance_valid(main_game) and main_game.curr_game_round > 1:
+				first_wave_delay = SURVIVAL_NEXT_ROUND_FIRST_WAVE_DELAY
+			await get_tree().create_timer(maxf(0.0, first_wave_delay)).timeout
 			zombie_wave_manager.start_next_wave()
 			## 第一波落定之后才让进度条走起来、把进度条亮出来
 			zombie_wave_manager.every_wave_progress_timer.start()
@@ -442,11 +454,30 @@ func start_next_game_zombie_mananger_update():
 
 
 #region 多轮(无尽)出怪
+## 生存模式随机出怪池排除表：原版 `Board::IsZombieTypeSpawnedOnly`（伴舞 / 雪橇 / 小鬼）
+## + 鸭子救生圈 / 雪人 / 旗帜 / 蹦极空投 / 雪橇单车 / 僵王；
+## 植物僵尸（ZomBotany）由 ZomBotanyConfig 另行排除。
+const SURVIVAL_SPAWN_EXCLUDE: Array[StringName] = [
+	ZombieIds.FLAG,
+	ZombieIds.DANCER,
+	ZombieIds.DUCKYTUBE,
+	ZombieIds.BOBSLED,
+	ZombieIds.IMP,
+	ZombieIds.YETI,
+	ZombieIds.BUNGI_DROP,
+	ZombieIds.BOBSLED_SINGLE,
+	ZombieIds.ZOMBOSS_DOCTOR,
+]
+
 ## 多轮出怪获取出怪列表
 func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 	## 清空数据
 	is_bungi = false
 	zombie_refresh_types.clear()
+	## 生存模式：走原版规则，不是通用的「按地图白名单随机抽一批」
+	if game_para.survival_difficulty != ConstLevelData.E_SurvivalDifficulty.None:
+		_update_survival_zombie_refresh_types(curr_round)
+		return
 	# 第一次选卡 (curr_round == 1) 的 “固定三种”：普僵 + 路障 + 铁桶
 	if curr_round == 1:
 		zombie_refresh_types.append(ZombieIds.NORM)
@@ -483,6 +514,73 @@ func update_multi_round_zombie_refresh_types(curr_round:int) -> void:
 
 			if whitelist_refresh_zombie_types_copy.is_empty():
 				break
+
+
+## 生存模式每一轮的出怪表 —— 原版 `Challenge::InitZombieWaves` 的生存分支
+##
+## 一轮 = 原版的一个 stage（普通 10 波 = 1 旗，困难 / 无尽 20 波 = 2 旗）：
+##   第 1 轮：普通 = 普僵 + 路障；困难 / 无尽 = 普僵 + 路障 + 铁桶
+##   之后每轮：普僵 +（80% 路障 / 20% 报纸）+ 随机 min(轮次, 9) 种
+## 随机池按地图过滤（原版 InitZombieWavesSurvival）：
+##   无水池不出潜水 / 海豚；屋顶不出矿工 / 舞王；有墓碑不出冰车；
+##   非屋顶且非无尽不出蹦极；普通档只出「潜水僵尸及以前」的僵尸。
+## 蹦极抽中时只置 `is_bungi`（大波由 spawn_special_zombie_in_big_wave 空投），不进出怪表。
+func _update_survival_zombie_refresh_types(curr_round: int) -> void:
+	var difficulty: ConstLevelData.E_SurvivalDifficulty = game_para.survival_difficulty
+	var is_normal := difficulty == ConstLevelData.E_SurvivalDifficulty.Normal
+	var is_endless := difficulty == ConstLevelData.E_SurvivalDifficulty.Endless
+	## 第 1 轮：原版固定起手，没有随机项
+	if curr_round <= 1:
+		zombie_refresh_types.append(ZombieIds.NORM)
+		zombie_refresh_types.append(ZombieIds.CONE)
+		if not is_normal:
+			zombie_refresh_types.append(ZombieIds.BUCKET)
+		return
+	## 第二种：80% 路障 (Cone)，20% 报纸 (Paper)
+	var second_type: StringName = ZombieIds.CONE if GameRng.randf() < 0.8 else ZombieIds.PAPER
+	zombie_refresh_types.append(ZombieIds.NORM)
+	zombie_refresh_types.append(second_type)
+	## 之后从地图允许的僵尸里随机补 min(轮次, 9) 种（原版是集合，已经进表的不再重复抽）
+	var candidates := _get_survival_zombie_candidates(is_normal, is_endless)
+	candidates.erase(ZombieIds.NORM)
+	candidates.erase(second_type)
+	for _i in range(mini(curr_round, 9)):
+		if candidates.is_empty():
+			break
+		var zombie_type: StringName = GameRng.pick_random(candidates)
+		candidates.erase(zombie_type)
+		if zombie_type == ZombieIds.BUNGI:
+			is_bungi = true
+			continue
+		zombie_refresh_types.append(zombie_type)
+
+
+## 生存模式随机出怪候选池（原版 InitZombieWavesSurvival 的一串 continue 条件）
+func _get_survival_zombie_candidates(is_normal: bool, is_endless: bool) -> Array[StringName]:
+	var candidates: Array[StringName] = []
+	var has_pool: bool = (game_para.game_BG == ConstLevelData.GameBg.Pool
+		or game_para.game_BG == ConstLevelData.GameBg.Fog)
+	var is_roof: bool = game_para.game_BG == ConstLevelData.GameBg.Roof
+	var has_graves: bool = game_para.is_have_tombston
+	## 普通档的「潜水僵尸及以前」按 ZombieIds.ALL 的原枚举顺序判断
+	var snorkle_index: int = ZombieIds.ALL.find(ZombieIds.SNORKLE)
+	for i in range(ZombieIds.ALL.size()):
+		var zombie_type: StringName = ZombieIds.ALL[i]
+		if SURVIVAL_SPAWN_EXCLUDE.has(zombie_type) or ZomBotanyConfig.is_zom_botany(zombie_type):
+			continue
+		## 水池专属（原版 IsZombieTypePoolOnly）
+		if (zombie_type == ZombieIds.SNORKLE or zombie_type == ZombieIds.DOLPHINRIDER) and not has_pool:
+			continue
+		if is_roof and (zombie_type == ZombieIds.DIGGER or zombie_type == ZombieIds.JACKSON):
+			continue
+		if has_graves and zombie_type == ZombieIds.ZAMBONI:
+			continue
+		if zombie_type == ZombieIds.BUNGI and not (is_roof or is_endless):
+			continue
+		if is_normal and i > snorkle_index:
+			continue
+		candidates.append(zombie_type)
+	return candidates
 
 
 #endregion
@@ -609,16 +707,29 @@ func create_skill_bungi(target_cell: PlantCell, anchor: Marker2D, on_created: Ca
 		spawn_position, _initialize_skill_bungi.bind(target_cell, anchor, on_created)) as Zombie021Bungi
 
 
+## 响应 `ZOMBIE_SUMMON_REQUESTED`：按行号取行、走统一创建口，可选回调在创建后调用
+##
+## 拿不到实例的召唤方（巨人丢小鬼）走事件即可；需要实例的（`create_skill_bungi`）仍走直连。
+func _on_zombie_summon_requested(zombie_type: StringName, lane: int, init_parameters: Dictionary,
+		spawn_position: Vector2, on_created: Variant = null) -> void:
+	if not is_game_running():
+		return
+	if lane < 0 or lane >= all_zombie_rows.size():
+		Log.error("ZOMBIE_SUMMON_REQUESTED：行号越界 %d（共 %d 行）" % [lane, all_zombie_rows.size()])
+		return
+	var callback: Callable = on_created if on_created is Callable else Callable()
+	create_norm_zombie(zombie_type, all_zombie_rows[lane], init_parameters, spawn_position, callback)
+
+
 ## [param zombie] 刚实例化且尚未入树的蹦极僵尸；先注入出战参数，再交给调用方登记。[br]
 ## 博士已经用进入动画表现召唤，因此这里跳过靶子预警、入树后立即下降。
 ## [param anchor] 博士手部绳子挂点；本仓库的蹦极绳子挂在自身节点下，暂时只作预留。
-func _initialize_skill_bungi(zombie: Zombie021Bungi, target_cell: PlantCell, anchor: Marker2D, on_created: Callable) -> void:
-	zombie.plant_cell = target_cell
-	zombie.drop_start_delay = 0.0
-	if is_instance_valid(zombie.bungee_target):
-		zombie.bungee_target.visible = false
-	if is_instance_valid(anchor) and zombie.has_method("set_bungee_anchor"):
-		zombie.set_bungee_anchor(anchor)
+##
+## 具体字段怎么改由僵尸自己的 `apply_skill_summon()` 决定：管理器不认识「靶子 / 前摇」，
+## 也就不必把参数类型钉成 `Zombie021Bungi`（U-55）。
+func _initialize_skill_bungi(zombie: Zombie000Base, target_cell: PlantCell, anchor: Marker2D, on_created: Callable) -> void:
+	if zombie.has_method(&"apply_skill_summon"):
+		zombie.call(&"apply_skill_summon", target_cell, anchor)
 	if on_created.is_valid():
 		on_created.call(zombie)
 #endregion
@@ -633,23 +744,52 @@ func delete_prepare_show_zombies():
 #endregion
 
 #region 植物调用相关，寒冰菇\火爆辣椒\三叶草
+## 原版冰冻口径（`../PvZ-Portable-main/src/Lawn/Zombie.cpp` 的 `ApplyIced()` / `ApplyChill()`，
+## 游戏固定 100 Hz，1 tick = 0.01 秒）：
+##   · **完全冻结**：陆地 `RandRangeInt(400, 600)` tick = 4~6 秒；水中 `300` tick = 3 秒
+##   · **减速**：`ApplyChill(true)` 把 `mChilledCounter` 设成 `2000` tick = **20 秒**，
+##     且从**冰冻那一刻**起算 —— 冻 4 秒的僵尸解冻后只剩约 16 秒减速
+## 本作的「解冻后减速」是串在冰冻之后的第二个计时器，所以等价换算 = 总时长 − 冻结时长
+## （判等标准见 `docs/参考存档/植物僵尸逻辑对照.md` §1）。
+const ICE_TRAP_FREEZE_LAND := Vector2(4.0, 6.0)
+const ICE_TRAP_FREEZE_POOL := 3.0
+const ICE_CHILL_TOTAL := 20.0
+
 ## 对所有僵尸和所有存活僵王结算一次伤害并附加冰冻；各僵王自行检查受击窗口。[br]
-## [param time_ice] 完全冻结时长，单位为游戏秒。[br]
-## [param time_decelerate] 解冻后的减速时长，单位为游戏秒。[br]
+## [param time_ice] 全场统一冻结时长（游戏秒）：**0 = 按原版口径**（陆地 4~6 秒随机、水中 3 秒）；
+##                   > 0 = 所有僵尸统一冻这么久（剧情 / 模组特调）[br]
+## [param chill_total] 减速**总**时长（游戏秒，从冰冻那一刻起算）：原版 20 秒；
+##                     实际下发的解冻后减速 = max(chill_total − 冻结时长, 0)；0 = 解冻后不再减速[br]
 ## [param damage] 本次伤害（寒冰菇自己的角色攻击力 `attack_value`），冰冻只是它的附加控制效果。
-func ice_all_zombie(time_ice:float, time_decelerate: float, damage:int):
-	## 冰消珊瑚
+func ice_all_zombie(time_ice:float, chill_total: float, damage:int):
+	## 冰消珊瑚：珊瑚僵尸在这段时间内不会补刷。自动口径下取冻结上限（6 秒），
+	## 否则传 0 会让计时器立刻到点、冰当场「化」掉
 	is_ice = true
-	start_ice_timer(time_ice)
+	start_ice_timer(time_ice if time_ice > 0.0 else ICE_TRAP_FREEZE_LAND.y)
 	for zombie_row:Array in all_zombies_2d:
 		if zombie_row.is_empty():
 			continue
 		for zombie:Zombie000Base in zombie_row:
 			if not is_instance_valid(zombie):
 				continue
-			zombie.be_ice_freeze(time_ice, time_decelerate, damage)
+			## 尸体不吃控制：原版 `ApplyIced` 先看 `mDead`（`Zombie.cpp`），
+			## 这里先挡一层，免得死亡动画里的僵尸被冻成冰块 / 重新染蓝
+			if zombie.is_death:
+				continue
+			var freeze_time := time_ice
+			if freeze_time <= 0.0:
+				freeze_time = ICE_TRAP_FREEZE_POOL if _is_zombie_in_pool(zombie) \
+					else randf_range(ICE_TRAP_FREEZE_LAND.x, ICE_TRAP_FREEZE_LAND.y)
+			zombie.be_ice_freeze(freeze_time, maxf(chill_total - freeze_time, 0.0), damage)
 	## 僵王已并入 all_zombies_2d，上面的全场遍历已经覆盖它，不需要再单独遍历登记集合
 	## （否则每只僵王会收到两次冻结通知）。窗口检查仍在 ZB000Base.be_ice_freeze 内。
+
+
+## 这只僵尸是否泡在水里（原版 `Zombie::mInPool`）：本作用「所在行属性 = 水路」近似。
+## 原版还排除飞行 / 特定 phase，但那些僵尸在 `Zombie000Base.be_ice_freeze()` 里各有重写
+## （气球落地、僵王窗口），冻结时长差异对它们没有可见影响。
+func _is_zombie_in_pool(zombie: Zombie000Base) -> bool:
+	return zombie.curr_zombie_row_type == CharacterRegistry.ZombieRowType.Pool
 
 ## 缩小全场僵尸（缩小紫罗兰）：对 `all_zombies_2d` 里所有僵尸结算一次缩小控制。[br]
 ## [param duration] 缩小持续时长（单位为游戏秒）[br]

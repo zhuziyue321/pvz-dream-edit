@@ -18,10 +18,10 @@ const MODE_BUTTON_PATHS: Dictionary[String, MainSceneRegistry.MainScenes] = {
 
 ## 冒险模式按钮(木牌)在通关 1-1 前 / 后用的两套贴图, 见 _apply_adventure_button_state()
 const ADVENTURE_BUTTON_PATH := "BG_Right/Menu/Button1"
-const START_ADVENTURE_TEXTURE := preload("res://pak/reanim/SelectorScreen_StartAdventure_Button1.png")
-const START_ADVENTURE_HIGHLIGHT_TEXTURE := preload("res://pak/reanim/SelectorScreen_StartAdventure_Highlight.png")
-const ADVENTURE_TEXTURE := preload("res://pak/reanim/SelectorScreen_Adventure_button.png")
-const ADVENTURE_HIGHLIGHT_TEXTURE := preload("res://pak/reanim/SelectorScreen_Adventure_highlight.png")
+var START_ADVENTURE_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/reanim/SelectorScreen_StartAdventure_Button1.png")
+var START_ADVENTURE_HIGHLIGHT_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/reanim/SelectorScreen_StartAdventure_Highlight.png")
+var ADVENTURE_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/reanim/SelectorScreen_Adventure_button.png")
+var ADVENTURE_HIGHLIGHT_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/reanim/SelectorScreen_Adventure_highlight.png")
 
 ## 冒险模式按钮上那行关卡号(几杠几): 挂在木牌下面的 LevelText, 未通关 1-1 时整块不显示
 ## 两个数字各挂一个 Label: 贴图自带的短横就是分隔符(原版也这么画, 见 pak/images/SelectorScreen_LevelNumbers.png),
@@ -34,7 +34,7 @@ const ADVENTURE_LEVEL_SECOND_NUMBER_PATH := "BG_Right/Menu/Button1/LevelText/Sec
 const ADVENTURE_LEVEL_ROUND_PATH := "BG_Right/Menu/Button1/LevelText/RoundText"
 
 ## 主菜单点冒险模式的僵尸手破土过场场景(由 assets/reanim/Zombie_hand.reanim 经 R2Ga 转换生成)
-const ZOMBIE_HAND_SCENE := preload("res://assets_custom/reanim/Zombie_hand.tscn")
+var ZOMBIE_HAND_SCENE: PackedScene = AssetRegistry.get_scene("res://assets_custom/reanim/Zombie_hand.tscn")
 ## 破土手相对原位的位移: 左移 75px、下移 10px
 const ZOMBIE_HAND_OFFSET := Vector2(-75.0, 10.0)
 ## 破土过场时长: 动画本身约 0.8s, 破土后画面继续停留到 3s 再进选关
@@ -46,7 +46,7 @@ const ZOMBIE_HAND_LAUGH_SFX := &"evillaugh"
 ## 过场播放中, 防止重复点击冒险模式
 var _adventure_transitioning := false
 
-## 道具栏里"没解锁就不该出现"的按钮:花园(5-5 戴夫交给你) / 图鉴(2-4 掉落大图鉴) / 商店(3-4 拿到车钥匙)
+## 道具栏里"没解锁就不该出现"的按钮:花园(5-4 戴夫交给你) / 图鉴(2-4 掉落大图鉴) / 商店(3-4 拿到车钥匙)
 ## 与模式按钮不同:模式按钮未解锁时置灰并保留(与 ChooseLevelButton 同口径,玩家能看到还有哪些玩法),
 ## 这三个属于"拿到了才有"的东西,没解锁时直接隐藏,不做置灰、也不做点击提示
 const GARDEN_BUTTON_PATH := "BG_Right/Item/TextureButton"
@@ -81,7 +81,7 @@ func _is_mode_enterable(game_mode: MainSceneRegistry.MainScenes) -> bool:
 	return Global.global_game_state.is_mode_unlocked(game_mode)
 
 
-## 花园是否可进入: 控制台打开"开放所有关卡"时一律放行,否则看冒险模式进度(5-5 戴夫交出花园后)
+## 花园是否可进入: 控制台打开"开放所有关卡"时一律放行,否则看冒险模式进度(通完 5-4 戴夫交出花园后)
 func _is_garden_enterable() -> bool:
 	if Global.config_service.open_all_level:
 		return true
@@ -295,7 +295,7 @@ func _on_full_screen_button_toggled(toggled_on: bool) -> void:
 #endregion
 
 
-## 花园(按钮在通关冒险模式 5-5 拿到花园后才显示,这里的判定只是兜底)
+## 花园(按钮在通关冒险模式 5-4 拿到花园后才显示,这里的判定只是兜底)
 func _on_item_button_1_pressed() -> void:
 	if not _is_garden_enterable():
 		return

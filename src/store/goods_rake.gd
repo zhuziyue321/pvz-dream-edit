@@ -28,16 +28,13 @@ func _create_dialog_detail() -> CrazyDaveDialogDetailResource:
 ## 刷新商品状态:手上还有钉耙(剩余关数 > 0)时不可再买,三关用完后自动恢复出售
 func _refresh_goods_state() -> void:
 	is_have_goods = not Global.global_game_state.is_rake_owned()
-	if not is_have_goods:
-		is_not_have_goods_label.text = "已拥有"
 	is_not_have_goods_label.visible = not is_have_goods
 
 
 ## 获得该商品:买一次钉耙,可用关数置为 ConstShop.RAKE_USE_NUM_PER_BUY
 func get_one_goods():
 	if Global.global_game_state.buy_rake():
-		Global.save_service.save_now()
+		_finish_goods_granted()
 	else:
 		Log.warn("购买钉耙失败:手上还有钉耙没用完")
-	_refresh_goods_state()
-	judge_can_get_goods()
+		_finish_goods_granted(false)

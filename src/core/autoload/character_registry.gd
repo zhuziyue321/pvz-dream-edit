@@ -74,6 +74,7 @@ enum ZombieInfoAttribute{
 	SunCost,		## 阳光消耗
 	ZombieScenes,	## 植物场景预加载
 	ZombieRowType,	## 僵尸行类型
+	ZombieCondition,	## 出怪规则资源（可选，见 ResourceZombieCondition；没登记表示按默认值）
 }
 
 
@@ -100,6 +101,8 @@ const PlantInfo: Dictionary = PlantInfoData.PLANT_INFO
 const ZombieInfo: Dictionary = ZombieInfoData.ZOMBIE_INFO
 const ZombieSpawnPower: Dictionary = ZombieInfoData.ZOMBIE_SPAWN_POWER
 const ZombieSpawnWeights: Dictionary = ZombieInfoData.ZOMBIE_SPAWN_WEIGHTS
+const ZombieFirstAllowedWave: Dictionary = ZombieInfoData.ZOMBIE_FIRST_ALLOWED_WAVE
+const ZombieStartingLevel: Dictionary = ZombieInfoData.ZOMBIE_STARTING_LEVEL
 const ZombieBossInfo: Dictionary = ZombieBossInfoData.ZOMBIE_BOSS_INFO
 #endregion
 
@@ -370,6 +373,33 @@ func get_zombie_info(zombie_type: StringName, info_attribute:ZombieInfoAttribute
 		return null
 	return curr_zombie_info[info_attribute]
 
+## 取僵尸的出怪规则资源（**可选属性**：没登记就是 null，不报错）
+##
+## 为什么不走 `get_zombie_info()`：后者缺键会 `Log.error`，而这条规则只有少数僵尸需要
+## （雪橇要冰道）；用通用访问器读会让二十多只普通僵尸每次都刷一条错误日志。
+func get_zombie_condition(zombie_type: StringName) -> ResourceZombieCondition:
+	if zombie_type == ZombieIds.NULL:
+		return null
+	var curr_zombie_info: Dictionary = {}
+	if _runtime_zombie_info.has(zombie_type):
+		curr_zombie_info = _runtime_zombie_info[zombie_type]
+	elif ZombieInfoData.ZOMBIE_INFO.has(zombie_type):
+		curr_zombie_info = ZombieInfoData.ZOMBIE_INFO[zombie_type]
+	else:
+		return null
+	if not curr_zombie_info.has(ZombieInfoAttribute.ZombieCondition):
+		return null
+	return curr_zombie_info[ZombieInfoAttribute.ZombieCondition] as ResourceZombieCondition
+
+
+## 这只僵尸是否「必须先有冰道才能出」（见 `ResourceZombieCondition.require_ice_road`）
+##
+## 替代出怪系统里按类型硬判 `zombie_type == ZombieIds.BOBSLED` 的写法（U-55 / U-56）。
+func is_zombie_need_ice_road(zombie_type: StringName) -> bool:
+	var condition := get_zombie_condition(zombie_type)
+	return condition != null and condition.require_ice_road
+
+
 ## 空类型或未注册类型返回 null，由生成入口决定如何处理，不回退成其他角色。
 func get_zombie_boss_info(boss_type: StringName, info_attribute: ZombieBossInfoAttribute):
 	if boss_type == ZombieBossIds.NULL:
@@ -396,7 +426,7 @@ func get_zombie_boss_info(boss_type: StringName, info_attribute: ZombieBossInfoA
 ## 怎么用：
 ## ```gdscript
 ## var recipe := ZombieRuntimeRecipe.new()
-## recipe.base_scene = preload("res://src/entities/character/zombie/zombie_norm.tscn")
+## recipe.base_scene = AssetRegistry.get_scene("res://src/entities/character/zombie/zombie_norm.tscn")
 ## recipe.zombie_script = preload("user://mods/my_mod/my_zombie.gd")
 ## recipe.spawn_power = 2
 ## recipe.spawn_weight = 1000
@@ -519,6 +549,16 @@ func get_zombie_spawn_power(zombie_type: StringName) -> int:
 	if _runtime_zombie_spawn_power.has(zombie_type):
 		return int(_runtime_zombie_spawn_power[zombie_type])
 	return ZombieInfoData.ZOMBIE_SPAWN_POWER.get(zombie_type, -1)
+
+
+## 首次允许出怪的波次（1 起算，原版 `ZombieDefinition.mFirstAllowedWave`）；没配的类型按 1
+func get_zombie_first_allowed_wave(zombie_type: StringName) -> int:
+	return int(ZombieInfoData.ZOMBIE_FIRST_ALLOWED_WAVE.get(zombie_type, 1))
+
+
+## 首次登场的冒险关卡序号（1 起算，原版 `ZombieDefinition.mStartingLevel`）；没配的类型按 0（不登场）
+func get_zombie_starting_level(zombie_type: StringName) -> int:
+	return int(ZombieInfoData.ZOMBIE_STARTING_LEVEL.get(zombie_type, 0))
 
 
 ## 自然出怪初始权重（静态表 + 运行期热注册）；**返回的是副本**，各出怪系统照旧复制后自行调整

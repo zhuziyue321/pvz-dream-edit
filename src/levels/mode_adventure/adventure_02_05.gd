@@ -12,6 +12,7 @@ const DAVE_OPENING := preload("res://data/dave/dialog/adventure_02_05_opening.tr
 
 
 func _init() -> void:
+	save_key = "101_1_0015"
 	## 特殊关(锤僵尸)用 Loonboon,来源: https://plantsvszombies.wiki.gg/wiki/Music_(PvZ)
 	game_BG = ConstLevelData.GameBg.FrontNight
 	game_BGM = ConstLevelData.GameBGM.MiniGame

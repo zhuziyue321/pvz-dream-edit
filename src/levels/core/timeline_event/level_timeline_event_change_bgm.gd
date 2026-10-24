@@ -36,4 +36,4 @@ func load_bgm_stream() -> AudioStream:
 	var path_bgm: String = ConstLevelData.GameBGMMap.get(bgm, "")
 	if path_bgm.is_empty():
 		return null
-	return load(path_bgm) as AudioStream
+	return AssetRegistry.get_audio(path_bgm)

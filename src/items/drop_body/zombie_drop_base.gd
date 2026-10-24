@@ -86,9 +86,6 @@ func acitvate_it(control_x:float = 0):
 	## 从地下出现的僵尸修改其陆地位置
 	if zombie.is_body_up_from_ground:
 		ground_y = zombie_lane.zombie_create_position.global_position.y - global_position.y
-		#var drop_body_glo_pos:Vector2 = drop_body.global_position
-		#global_position.y = zombie_lane.zombie_create_position.global_position.y
-		#drop_body.global_position = drop_body_glo_pos
 
 
 

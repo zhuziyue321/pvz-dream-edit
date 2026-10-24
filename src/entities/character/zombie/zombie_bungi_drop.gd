@@ -97,10 +97,13 @@ func ready_norm():
 
 
 func _process(_delta: float) -> void:
+	## 只在「吊着僵尸」那一段逐帧跟随；放开 / 被清掉后就关掉 process，别每帧空转
+	if not is_instance_valid(carry_zombie):
+		set_process(false)
+		return
 	## 吊着的僵尸本体跟着绳子走（本体在上文被挪了 perch_offset，这里补回来，
 	## 好让它在 t<0 是一条直上直下的正比例直线、t=0 正好落在落点上）
-	if is_instance_valid(carry_zombie):
-		carry_zombie.body.global_position = bungi_container.global_position - perch_offset + carry_offset
+	carry_zombie.body.global_position = bungi_container.global_position - perch_offset + carry_offset
 
 
 ## 蹦极自己的贴图整体下移 offset_y 像素（含挂在身上的绳子）
@@ -120,6 +123,8 @@ func offset_body_texture(offset_y: float) -> void:
 func hold_carry_zombie() -> void:
 	if not is_instance_valid(carry_zombie):
 		return
+	## 有东西要跟了才开逐帧跟随（见 `_process`）
+	set_process(true)
 	carry_body_position = carry_zombie.body.position
 	carry_body_scale = carry_zombie.body.scale
 	## 落地前不参与战斗：不被植物打到、不走、不吃

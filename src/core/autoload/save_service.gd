@@ -64,11 +64,14 @@ func save_now() -> void:
 		"coin_value": global_game_state.coin_value,
 		"garden_data": global_game_state.garden_data,
 		"curr_num_new_garden_plant": global_game_state.curr_num_new_garden_plant,
+		## 待放置花园植物的物种队列（入手即定种，见 GlobalGameState.add_new_garden_plant）
+		"curr_new_garden_plant_types": global_game_state.curr_new_garden_plant_types,
 		"card_slot_upgrade_num": global_game_state.card_slot_upgrade_num,
 		"is_pool_cleaner_bought": global_game_state.is_pool_cleaner_bought,
 		"is_roof_cleaner_bought": global_game_state.is_roof_cleaner_bought,
 		"rake_use_num": global_game_state.rake_use_num,
 		"is_wall_nut_first_aid_bought": global_game_state.is_wall_nut_first_aid_bought,
+		"is_wheel_barrow_bought": global_game_state.is_wheel_barrow_bought,
 		"is_first_coin_advice_shown": global_game_state.is_first_coin_advice_shown,
 		"curr_all_level_state_data": global_game_state.curr_all_level_state_data,
 		## 冒险模式周目: 老存档没有这个键 -> 读档时按默认值 1 处理(见 load_global_game_data)
@@ -112,13 +115,20 @@ func load_global_game_data() -> void:
 
 	var state := global_game_state
 	state.coin_value = data.get("coin_value", state.DEFAULT_COIN_VALUE)
-	state.curr_num_new_garden_plant = data.get("curr_num_new_garden_plant", state.DEFAULT_CURR_NUM_NEW_GARDEN_PLANT)
+	state.curr_num_new_garden_plant = int(data.get("curr_num_new_garden_plant", state.DEFAULT_CURR_NUM_NEW_GARDEN_PLANT))
+	## 待放置花园植物：物种队列（老存档没有这个键 -> 空队列，放置时兜底随机）
+	state.curr_new_garden_plant_types.clear()
+	for new_plant_species in (data.get("curr_new_garden_plant_types", []) as Array):
+		state.curr_new_garden_plant_types.append(PlantIds.from_legacy(new_plant_species))
 	state.card_slot_upgrade_num = data.get("card_slot_upgrade_num", state.DEFAULT_CARD_SLOT_UPGRADE_NUM)
 	state.is_pool_cleaner_bought = data.get("is_pool_cleaner_bought", state.DEFAULT_IS_POOL_CLEANER_BOUGHT)
 	state.is_roof_cleaner_bought = data.get("is_roof_cleaner_bought", state.DEFAULT_IS_ROOF_CLEANER_BOUGHT)
 	state.rake_use_num = data.get("rake_use_num", state.DEFAULT_RAKE_USE_NUM)
 	state.is_wall_nut_first_aid_bought = data.get(
 		"is_wall_nut_first_aid_bought", state.DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT
+	)
+	state.is_wheel_barrow_bought = data.get(
+		"is_wheel_barrow_bought", state.DEFAULT_IS_WHEEL_BARROW_BOUGHT
 	)
 	state.is_first_coin_advice_shown = data.get(
 		"is_first_coin_advice_shown", state.DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN

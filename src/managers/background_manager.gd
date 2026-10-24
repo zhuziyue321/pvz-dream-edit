@@ -36,7 +36,7 @@ func init_background():
 	background = bg_instance as Sprite2D
 	home = background.get_node("Home") as MainGameHome
 
-	var curr_bg_texture: Texture2D = ConstLevelData.GameBgTextureMap[game_para.game_BG]
+	var curr_bg_texture: Texture2D = ConstLevelData.get_game_bg_texture(game_para.game_BG)
 	## 地图可以指定自己的底图（如 1-1~1-3 用 background1unsodded 无草皮底图）
 	if game_para.map_data != null and game_para.map_data.bg_base_texture != null:
 		curr_bg_texture = game_para.map_data.bg_base_texture

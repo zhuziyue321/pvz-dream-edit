@@ -42,21 +42,21 @@ animation = &"PuffShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_kf1mc"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_tm5gy"]
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_mc8sy"]
-advance_mode = 2
-advance_expression = "is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_t2sgi"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_31qs1"]
 states/PuffShroom_idle/node = SubResource("AnimationNodeAnimation_sr8f0")
@@ -91,6 +91,7 @@ size = Vector2(249, 5)
 [node name="Plant009Puff" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_o8j4c")]
 script = ExtResource("2_wddx6")
 plant_type = &"puff_shroom"
+norm_anim_state = &"PuffShroom_sleep"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="Shadow" parent="." index="0"]

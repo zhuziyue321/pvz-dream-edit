@@ -9,18 +9,21 @@ class_name PlantRuntimeKit
 ##   · 取帧拿到的整株带着血条 / 组件容器那批 UI，得剥成一棵纯精灵树；
 ##   · 撤销时**先摘卡再清注册表**（重排编号时还得查得到冷却与阳光）；
 ##   · 撤销解锁要连「上次选卡」里的条目一起清（不清会点到一个不存在的卡位）。
-## 以前这些全写在模组里（`mods_builtin/water_bowl/` 一开始就是这么写的），
+## 以前这些全写在模组里（原「水盆」模组一开始就是这么写的，该模组现已并入 `mods_builtin/dlc/`），
 ## 每一只新植物都要重踩一遍 —— 现在收在这里，模组只管填 `PlantRuntimeRecipe`。
 ##
-## 用法（见 `mods_builtin/water_bowl/water_bowl_mod.gd`）：
+## 用法（见 `mods_builtin/dlc/dlc_mod.gd` 的 `_build_water_bowl_recipe()`）：
 ## ```gdscript
 ## var _kit := PlantRuntimeKit.new()
+## var _choose_page := -1
 ##
 ## func install() -> void:
 ## 	_kit.install(_build_recipe())
-## 	_kit.make_selectable()   ## 还想让玩家在选卡界面里挑到它，就补这一行
+## 	## 还想让玩家在选卡界面里挑到它：装完之后自己登记一页（排版归模组）
+## 	_choose_page = AllCards.register_plant_choose_page([_kit.recipe.plant_type])
 ##
 ## func uninstall() -> void:
+## 	AllCards.unregister_plant_choose_page(_choose_page)
 ## 	_kit.uninstall()
 ## ```
 ##
@@ -30,7 +33,7 @@ class_name PlantRuntimeKit
 ## 关联：[运行期植物](../../../../docs/参考存档/运行期植物.md) ｜ `PlantRuntimeRecipe` ｜ `CharacterRegistry` ｜ `AllCards`
 
 ## 卡片模板：运行期插进 `AllCards` 的源目录
-const CARD_SCENE := preload("res://src/ui/card/card.tscn")
+var CARD_SCENE := AssetRegistry.get_scene("res://src/ui/card/card.tscn")
 
 ## 当前装着的配方（没装 = null）
 var recipe: PlantRuntimeRecipe = null
@@ -42,8 +45,8 @@ var _card: Card = null
 ## [param new_recipe] 配方；`plant_type` 留空时由注册表自动分配 id，装完从 `recipe.plant_type` 读回来
 ## [return] 登记失败（配方不合法 / id 撞了内置植物）返回 false，其它一步都没做
 ##
-## ⚠️ 装完这株植物**还没有进选卡界面** —— 想在待选区挑到它，装完之后再写一行
-## `make_selectable()`（注册 / 解锁都不等于可选，理由见那个函数）。
+## ⚠️ 装完这株植物**还没有进选卡界面** —— 想在待选区挑到它，装完之后自己登记一页
+## `AllCards.register_plant_choose_page(...)`（注册 / 解锁都不等于可选，页的排版归模组）。
 func install(new_recipe: PlantRuntimeRecipe) -> bool:
 	if new_recipe == null:
 		Log.error("运行期植物：配方是空的，不装")
@@ -51,39 +54,34 @@ func install(new_recipe: PlantRuntimeRecipe) -> bool:
 	if not Global.character_registry.register_runtime_plant_recipe(new_recipe):
 		return false
 	recipe = new_recipe
+	## 紫卡：把「种在谁上面」登记进注册表 —— `PlantCell.create_plant()` 与卡片的
+	## `judge_purple_card_can_plant()` 都是**直接索引** `AllPrePlantPurple`（缺 key 会崩），
+	## 所以必须在插卡之前写好（卡片一 `_ready` 就会判「现在能不能种」）
+	if recipe.is_purple_card and recipe.purple_pre_plant != PlantIds.NULL:
+		Global.character_registry.AllPrePlantPurple[recipe.plant_type] = recipe.purple_pre_plant
 	_install_card()
 	unlock()
 	Log.info("运行期植物：已装 %s（id %s）" % [recipe.get_display_name(), recipe.plant_type])
 	return true
 
 
-## 卸一株植物：摘卡 → 退出可选列表 → 清注册表 → 撤解锁
-## （摘卡必须排在清注册表之前，理由见 `_remove_card()`；退出可选列表与摘卡谁先谁后都行）
+## 卸一株植物：摘卡 → 清注册表 → 撤解锁
+## （摘卡必须排在清注册表之前，理由见 `_remove_card()`）
+##
+## ⚠️ 模组自己登记过选卡页的，要在调本函数前后自己 `AllCards.unregister_plant_choose_page()`
+## （页归模组所有，Kit 不替它撤）；忘了撤也没关系：页里指向的卡已不在目录里，消费侧会跳过那一格。
 func uninstall() -> void:
 	if recipe == null:
 		return
 	var plant_type := recipe.plant_type
 	_remove_card()
-	AllCards.remove_selectable_plant(plant_type)
 	Global.character_registry.clear_runtime_plant(plant_type)
+	## 紫卡的前置植物登记也要擦掉：留着的 id 谁都种不出来，还会让 `judge_purple_card_can_plant`
+	## 的裸索引指到一个不存在的植物
+	Global.character_registry.AllPrePlantPurple.erase(plant_type)
 	Global.global_game_state.lock_plant(plant_type)
 	Log.info("运行期植物：已卸 %s（id %s）" % [recipe.get_display_name(), plant_type])
 	recipe = null
-
-
-## 把这株植物登记进「可选植物列表」（= 它进选卡界面，见 `AllCards.add_selectable_plant`）
-##
-## ★ 注册 / 解锁都**不等于**可选：`install()` 做到的是「这株植物存在 + 有卡 + 已解锁」，
-##   要不要让玩家在待选区里挑到它由模组自己说 —— 装完之后再写这一行就有了。
-##   为什么要有这道门禁：模组注册的植物未必都想上选卡界面（只给关卡脚本 / 传送带发货的也有），
-##   以前「注册了」就等于「可选」，两者分不开。
-##   卸载时 Kit 会把它从列表里摘掉（见 `uninstall()`），模组不必自己撤。
-##
-## [return] 本次是否真的登记了（没装 / 已经在列表里返回 false）
-func make_selectable() -> bool:
-	if recipe == null:
-		return false
-	return AllCards.add_selectable_plant(recipe.plant_type)
 
 
 ## 解锁这株植物；每局开局补一次（读档会按存档重建 `curr_plant`，只装一次的话一读档就没了）
@@ -103,8 +101,8 @@ func is_installed() -> bool:
 ##
 ## 为什么是最后一个容器：编号是按 `[PlantCards, PlantCards2]` 这个顺序重排的，
 ## 插在中间会把它后面每一张卡的编号都挪一格（PlantCards2 里还挂着保龄球坚果那批卡）。
-## 待选区的规矩也是「普通植物在最前面且顺序固定，调试模式 / 模组新增的追加在最后」
-## （见 `AllCards.get_plant_types_in_choose_order()`）。
+## 插在哪只影响编号，选卡界面的排版由模组自己登记的页决定
+## （见 `AllCards.register_plant_choose_page()`）。
 func _install_card() -> void:
 	var directories := AllCards.all_plant_cards_parent_node_root
 	if directories.is_empty():

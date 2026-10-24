@@ -12,6 +12,7 @@ const DAVE_LAST_VASES := preload("res://data/dave/dialog/adventure_04_05_last_va
 
 
 func _init() -> void:
+	save_key = "101_3_0035"
 	is_one_shot_flow = true
 	## 砸罐子关不按批次存档：罐子不进存档，续玩恢复不出任何进度，只会导致一进关就跳到第 3 批
 	game_round = 3

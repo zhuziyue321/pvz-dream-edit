@@ -10,6 +10,8 @@ class_name Zombie024Gargantuar
 @export_subgroup("数值")
 ## 丢小鬼的巨人位置的最小x值,位置小于该值时,不在丢小鬼
 @export var MinXThrowGargantuar:float = 400
+## 血量降到该值（含）时丢出小鬼
+@export var hp_threshold_throw_imp:int = 1500
 """
 巨人投掷200像素
 限制在投掷范围内
@@ -40,7 +42,7 @@ func ready_norm_signal_connect():
 
 ## 血量变化判断是否丢小鬼
 func jugde_throw_imp_form_hp_change(curr_hp:int, _is_drop:=true):
-	if not is_throw_once and global_position.x>MinXThrowGargantuar and curr_hp <= 1500:
+	if not is_throw_once and global_position.x>MinXThrowGargantuar and curr_hp <= hp_threshold_throw_imp:
 		is_throw_once = true
 		is_throw = true
 
@@ -59,23 +61,18 @@ func create_imp():
 		Zombie000Base.E_ZInitAttr.Lane:lane,
 		Zombie000Base.E_ZInitAttr.IsPotZombie: is_pot_zombie,
 	}
-	get_main_game().zombie_manager.create_norm_zombie(
-		ZombieIds.IMP,
-		get_main_game().zombie_manager.all_zombie_rows[lane],
-		zombie_init_para,
-		_get_imp_throw_glo_pos(),
-		update_imp_throw_pos
-	)
+	## 走事件总线：本类不需要认识 ZombieManager 的创建方法（U-54），
+	## 回调负责给刚生成的小鬼摆投掷姿态
+	EventBus.push_event(ConstEventName.ZOMBIE_SUMMON_REQUESTED, [
+		ZombieIds.IMP, lane, zombie_init_para, _get_imp_throw_glo_pos(), update_imp_throw_pos,
+	])
 
 ## 获取投掷小鬼的目标位置
 func _get_imp_throw_glo_pos()->Vector2:
 	var target_x_imp_throw = clamp(global_position.x - XThrow, RangeXImpThrow.x, RangeXImpThrow.y)
 	var target_x_imp_throw_res = target_x_imp_throw + randf_range(RangeRandomXThrow.x, RangeRandomXThrow.y)
-	#prints("全局位置:", global_position.x, "投掷位置:", target_x_imp_throw, "随机位置:", target_x_imp_throw_res)
 	glo_pos_imp_be_thrown = Vector2(target_x_imp_throw_res, get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.global_position.y)
 	return glo_pos_imp_be_thrown
-	#Vector2(target_x_imp_throw_res - get_main_game().zombie_manager.all_zombie_rows[lane].global_position.x, \
-	#get_main_game().zombie_manager.all_zombie_rows[lane].zombie_create_position.position.y)
 
 ## 更新投掷小鬼的位置
 func update_imp_throw_pos(zombie_imp:Zombie025Imp):

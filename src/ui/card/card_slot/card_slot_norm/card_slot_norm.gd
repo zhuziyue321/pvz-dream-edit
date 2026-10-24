@@ -46,8 +46,8 @@ func _on_re_card_button_pressed() -> void:
 			ResourceCardReference.CardType.Plant:
 				var plant_type: StringName = card_type_data.get("content_id", PlantIds.NULL)
 				## 这一株现在还有没有卡位：模仿者按设计没有（见 AllCards.imitater_card）；
-				## 没登记进「可选植物列表」的追加类植物也没有（见 AllCards.add_selectable_plant）——
-				## 条目可能是模组还开着 / 调试模式还开着的时候存下来的，点之前先判一次容器。
+				## 没登记进任何一页选卡的追加类植物也没有（见 AllCards.register_plant_choose_page）——
+				## 条目可能是模组还开着的时候存下来的，点之前先判一次容器。
 				var plant_card_id: int = AllCards.plant_card_ids.get(plant_type, -1)
 				var plant_containers: Dictionary[int, CardCandidateContainer] = {}
 				if is_imitater_data:
@@ -263,13 +263,6 @@ func pre_choosed_card(card: Card, target_parent: CanvasItem) -> void:
 		elif card.card_zombie_type != ZombieIds.NULL:
 			card.card_change_cool_time(0)
 
-### 预选卡隐藏对应待选卡槽的卡片(植物)
-#func disappear_card_slot_candidate_plant(plant_type):
-	#card_slot_candidate.all_card_candidate_containers_plant[AllCards.plant_card_ids[plant_type]].card.visible = false
-	#
-### 预选卡隐藏对应待选卡槽的卡片(僵尸)
-#func disappear_card_slot_candidate_zombie(zombie_type):
-	#card_slot_candidate.all_card_candidate_containers_zombie[AllCards.zombie_card_ids[zombie_type]].card.visible = false
 
 ## 关卡销毁前把待选卡容器整批还回池：下一关直接复用，不再重新 duplicate / 实例化
 ## （池在 autoload 上，跨关卡存活；见 `docs/参考存档/卡片与选卡流程.md`）

@@ -43,13 +43,13 @@
 [ext_resource type="Script" path="res://src/managers/drop_item_manager/dim_seed_packet.gd" id="23_dspkt"]
 [ext_resource type="Script" path="res://src/managers/drop_item_manager/dim_chocolate.gd" id="23_choco"]
 [ext_resource type="Texture2D" path="res://pak/images/background4_gameover_mask.png" id="23_401pl"]
-[ext_resource type="Texture2D" path="res://pak/reanim/ZombiesWon_.png" id="23_vyo3a"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_remind_word/ZombiesWon.png" id="23_vyo3a"]
 [ext_resource type="Script" uid="uid://dhkfw0onmxcyf" path="res://src/world/camera/main_game_camera.gd" id="24_b4qea"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="25_aop5g"]
 [ext_resource type="Script" uid="uid://duv8spyw6f44n" path="res://src/managers/zombie_manager/zm_zombie_choose_row_system.gd" id="25_iuyhw"]
 [ext_resource type="Script" path="res://src/managers/portal_manager.gd" id="71_portal"]
 [ext_resource type="Script" uid="uid://3j46ottso760" path="res://src/ui/main_game_ui/main_game_menu_button.gd" id="26_84h1o"]
-[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="27_w5iw5"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/options_menuback.png" id="27_w5iw5"]
 [ext_resource type="Texture2D" path="res://pak/images/background5_gameover_mask.png" id="28_71hfq"]
 [ext_resource type="Script" uid="uid://djkmy1xylm8hs" path="res://src/ui/ui_main_game_menu/main_game_menu_option_dialog.gd" id="28_mddbc"]
 [ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="29_8fvtd"]
@@ -267,8 +267,6 @@ unique_name_in_owner = true
 process_mode = 1
 layout_mode = 3
 anchors_preset = 0
-offset_left = 20.0
-offset_right = 20.0
 script = ExtResource("35_ee3wa")
 
 [node name="Marker2DSunTargetDefault" type="Marker2D" parent="CanvasLayerCardSlot/CardSlotRoot"]
@@ -423,7 +421,9 @@ script = ExtResource("35_mjx71")
 unique_name_in_owner = true
 visible = false
 
+; 平时整层藏着（三个 Panel 的 alpha 也都是 0）：光效由 canvas_layer_effect 自己开
 [node name="CanvasLayerEffect" type="CanvasLayer" parent="."]
+visible = false
 layer = 30
 script = ExtResource("51_qfhda")
 

@@ -103,6 +103,9 @@ const CANVAS_LAYER_EFFECT_ONCE := "canvas_layer_effect_once"
 ## 全屏染色渐变到指定浓度并保持（血月）：淡入用它、淡出把 alpha 传 0 即可。
 ## payload: [E_CanvasLayerEffectType, 目标 alpha, 渐变秒数]
 const CANVAS_LAYER_EFFECT_FADE := "canvas_layer_effect_fade"
+## 血月事件起 / 落：月夜屋顶背景拿它把底图与房门遮罩换成「血月」那套（传 false 换回来）。
+## payload: [是否生效]。只管**场景外观**，加速 / 红屏 / 音效各自走自己的路子
+const BLOOD_MOON_VISUAL := "blood_moon_visual"
 ## 磁力菇吸一次铁器。payload: 见 MagnetComponent
 const GOLD_MAGNET_ATTRACT_ONCE := "gold_magnet_attract_once"
 ## 有角色被魅惑，全场重判敌我。payload: 见 DetectComponent
@@ -128,6 +131,13 @@ const BATTLE_FINISHED := "battle_finished"
 const START_NEXT_ROUND_GAME := "start_next_round_game"
 ## 僵尸进家。payload: [僵尸]
 const ZOMBIE_GO_HOME := "zombie_go_home"
+## 有僵尸请求生成一只「召唤类」僵尸（巨人丢小鬼 / 舞王召唤伴舞）。
+## payload: [僵尸类型(StringName), 行号(int), 初始化参数(Dictionary), 生成位置(Vector2), 生成回调(Callable 或 null)]
+##
+## 为什么走事件而不是直连 `ZombieManager`：僵尸脚本不该钉在管理器的某个方法签名上
+## —— 联机回放 / 录像要接管生成时，只需要在这一个点上挂钩（同 `MAIN_GAME_SWAP_CELL` 的思路）。
+## ⚠️ 这是**广播**不是查询：需要拿到实例的调用方（如 `create_skill_bungi`）仍应直连。
+const ZOMBIE_SUMMON_REQUESTED := "zombie_summon_requested"
 ## 小推车被触发。payload: 见 ZombieChooseRowSystem
 const LAWN_MOVER_TRIGGERED := "lawn_mover_triggered"
 ## ⚠️ 已删两个死事件（2026-10-11）：`WIN_MAIN_GAME` / `REPLENISH_LAWN_MOVER` 全仓**只有订阅、0 处 push**，
@@ -198,7 +208,8 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	#endregion
 
 	#region 战斗效果（跨系统广播）
-	## [冰冻时长, 减速时长, 伤害]（见 component_bomb_ice.gd 的 time_ice / time_decelerate / 植物 attack_value）
+	## [统一冻结时长, 减速总时长, 伤害]（见 component_bomb_ice.gd 的 time_ice / time_decelerate / 植物 attack_value）
+	## 冻结时长 0 = 走原版口径（陆地 4~6 秒随机、水中 3 秒）；减速总时长从冰冻那一刻起算（原版 20 秒）。
 	## 寒冰菇的口径是「伤害 + 附加冰冻」：伤害是主体，冰冻只是挂在这次伤害上的控制效果。
 	ICE_ALL_ZOMBIE: [Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_INT],
 	## 三行热烈：payload 是所在行的列索引 owner_plant.row_col.x（int）
@@ -213,6 +224,7 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	CANVAS_LAYER_EFFECT_FADE: [
 		Variant.Type.TYPE_INT, Variant.Type.TYPE_FLOAT, Variant.Type.TYPE_FLOAT,
 	],
+	BLOOD_MOON_VISUAL: [Variant.Type.TYPE_BOOL],
 	GOLD_MAGNET_ATTRACT_ONCE: [Variant.Type.TYPE_VECTOR2],
 	CHARACTER_BE_HYPNO: [Variant.Type.TYPE_OBJECT],
 	## 两个位置都是对象（DamageInfo / DamageResult），具体类型由订阅方负责
@@ -223,6 +235,9 @@ const EVENT_PAYLOAD_SIGNATURES: Dictionary[String, Array] = {
 	## MainGameManager.E_MainGameProgress 枚举（int）：阶段变化由 setter 推（main_game_manager.gd）
 	MAIN_GAME_PROGRESS_UPDATE: [Variant.Type.TYPE_INT],
 	ZOMBIE_GO_HOME: [Variant.Type.TYPE_OBJECT],
+	## 召唤类生成：类型 / 行号 / 初始化参数 / 生成位置 / 回调（可能为 null，跳过校验）
+	ZOMBIE_SUMMON_REQUESTED: [Variant.Type.TYPE_STRING_NAME, Variant.Type.TYPE_INT,
+		Variant.Type.TYPE_DICTIONARY, Variant.Type.TYPE_VECTOR2, Variant.Type.TYPE_NIL],
 	END_WAVE_ZOMBIE: [],
 	BATTLE_FINISHED: [Variant.Type.TYPE_VECTOR2],
 	START_NEXT_ROUND_GAME: [],

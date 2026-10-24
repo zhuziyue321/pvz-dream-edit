@@ -10,10 +10,10 @@ class_name Zombie013Zamboni
 
 @export_group("动画状态")
 @export var is_caltrop:= false
-
-## 僵尸上一帧和当前帧位置(更新冰道使用)
-var zombie_last_x:float
-var zombie_curr_x:float
+## 血量阶段 1 的速度系数（原版：掉一层血后减半）
+@export var speed_factor_hp_stage_1:float = 0.5
+## 血量阶段 2 的速度系数（原版：再掉一层后停住）
+@export var speed_factor_hp_stage_2:float = 0.0
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
@@ -28,19 +28,19 @@ func ready_norm():
 	var main_game :MainGameManager = get_tree().current_scene
 	ice_road.reparent(main_game.background_manager.background)
 	ice_road.ice_road_init(lane)
-	zombie_last_x = global_position.x
+	## 冰道跟着本体扩张（位移信号下沉到移动组件，不再自己写 `_process` 比较上一帧坐标）
+	move_component.signal_body_x_moved.connect(_on_body_x_moved)
 
 ## 初始化展示角色
 func ready_show():
 	super()
 	move_component.disable_component(ComponentNormBase.E_IsEnableFactor.InitType)
-	zombie_last_x = global_position.x
 
-func _process(_delta: float) -> void:
-	zombie_curr_x = global_position.x
-	if zombie_curr_x != zombie_last_x and is_instance_valid(ice_road):
-		ice_road.expand_size(zombie_last_x - zombie_curr_x)
-		zombie_last_x = zombie_curr_x
+
+## 本体向左移动时扩张冰道（delta_x 向左为负，取反后是扩张量）
+func _on_body_x_moved(delta_x: float) -> void:
+	if is_instance_valid(ice_road):
+		ice_road.expand_size(-delta_x)
 
 
 ## 血量状态变化时zamboni的特殊变化

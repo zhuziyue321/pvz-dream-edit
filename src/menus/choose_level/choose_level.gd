@@ -16,7 +16,7 @@ var all_pages_array : Array[GridContainer]
 @export var curr_page := 0
 
 ## 选卡bgm
-var bgm_choose_card: AudioStream = preload("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
+var bgm_choose_card: AudioStream = AssetRegistry.get_audio("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
 
 func _ready() -> void:
 	open_level_num = calc_open_level_num()

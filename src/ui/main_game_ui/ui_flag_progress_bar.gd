@@ -31,8 +31,6 @@ var start_flag = start_minizombie + 6
 var end_flag = end_minizombie + 6
 ## 存储生成的旗帜
 var flag_arr : Array[FlagProgressBarFlag] = []
-## 当前旗帜的索引
-#@export var curr_flag_i : int = 0
 
 
 func _ready() -> void:

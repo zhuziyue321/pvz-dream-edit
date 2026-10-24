@@ -35,7 +35,7 @@ height = 300.0
 
 [node name="Bullet015WinterMelon" instance=ExtResource("1_ky7bl")]
 script = ExtResource("2_ydugh")
-time_be_decelerated = 3.0
+time_be_decelerated = 10.0
 parabola_height = -500.0
 bullet_type = &"winter_melon"
 is_rotate = true

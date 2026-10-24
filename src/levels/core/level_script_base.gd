@@ -488,15 +488,22 @@ func wait_battle_start() -> void:
 ## 本段的出怪参数可以在这里给（关卡脚本里一眼看出「这一仗怎么打」），留默认 = 沿用关卡数据上的值：
 ##   wave_num —— 本段波数（> 0 生效）
 ##   refresh_types —— 本段出怪表（非空生效）
+##   first_wave_time —— 开战后到第一波僵尸的秒数（>= 0 生效；-1 = 沿用关卡数据，默认 18 秒）
+##                      原版各关的首波时间都写在 Challenge::StartLevel / Board::InitZombieWaves 里，
+##                      对应值见 docs/参考存档/僵尸波次.md 的「第一波时机」表
 ## timeout > 0 时最多等这么多秒
-## 前两个参数**不能**叫 `max_wave` / `zombie_refresh_types` —— 会遮蔽基类 ResourceLevelData 的同名字段
+## 参数**不能**叫 `max_wave` / `zombie_refresh_types` / `first_wave_delay` —— 会遮蔽基类 ResourceLevelData 的同名字段
+## ⚠️ GDScript 没有具名实参：传首波时间要占满前三个位置参数，例如
+##    `await start_battle(10, zombie_list, 0.0, 36.0)`（10 波 / 出怪表 / 不设超时 / 首波 36 秒）
 func start_battle(wave_num: int = -1,
 		refresh_types: Array[StringName] = [],
-		timeout: float = 0.0) -> void:
+		timeout: float = 0.0,
+		first_wave_time: float = -1.0) -> void:
 	var event := LevelTimelineEventStartBattle.new()
 	event.max_wave = wave_num
 	event.zombie_refresh_types = refresh_types
 	event.timeout = timeout
+	event.first_wave_delay = first_wave_time
 	await _run_event(event, "开战")
 
 

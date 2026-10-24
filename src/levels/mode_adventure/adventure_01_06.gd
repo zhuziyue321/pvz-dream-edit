@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_0_0006"
 	## 本关通关掉落：寒冰射手（种子包）
 	level_complete_loot = "snow_pea_seed_packet"
 

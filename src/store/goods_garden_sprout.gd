@@ -17,7 +17,7 @@ func _ready() -> void:
 	super()
 
 
-## 花园未解锁(未通关冒险 5-5)时不可购买,与僵尸掉落花园植物同一套口径
+## 花园未解锁(未通完 5-4)时不可购买,与僵尸掉落花园植物同一套口径
 ## (见 ConstUnlockLevel.GARDEN_UNLOCK_ADVENTURE_LEVEL)
 ## 每个盆槽位当天买过一次后即售罄,跨自然日重置;且花园没有空位时不卖(卖掉植物后才恢复)
 func judge_can_get_goods():
@@ -30,6 +30,11 @@ func judge_can_get_goods():
 		curr_dialog_detail.text = DAILY_LIMIT_TIP + dialog_detail.text
 		return
 	if not apply_garden_unlock_lock():
+		return
+	## 原版：金盏花幼苗属 Zen Garden 段，未通关冒险模式前为 Coming Soon（暂不出售）
+	if not Goods.is_adventure_finished():
+		button.disabled = true
+		curr_dialog_detail.text = COMING_SOON_TIP + dialog_detail.text
 		return
 	if not Global.global_game_state.has_empty_garden_cell():
 		button.disabled = true
@@ -53,9 +58,12 @@ func get_slot_buy_date_dict() -> Dictionary:
 	return {}
 
 
-## 获得该商品的作用，子类重写
+## 获得该商品的作用
+## 注意：这里**不用**基类 `_finish_goods_granted()` —— 售罄态跟着「本槽位当天是否买过」走，
+## 由 `judge_can_get_goods()` 自己双向刷新售罄态，不需要（也不该）再调 `_refresh_goods_state()`。
 func get_one_goods():
-	Global.global_game_state.curr_num_new_garden_plant += 1
+	## 商店卖的这盆就是**金盏花**幼苗（原版 Zen 商店第一页的 Marigold sprout），不是随机物种
+	Global.global_game_state.add_new_garden_plant(PlantIds.MARI_GOLD)
 	## 记录本槽位当天的购买日期,用于"每个盆一天只能买一次"的限购
 	var garden_data: Dictionary = Global.global_game_state.garden_data
 	var slot_buy_date := get_slot_buy_date_dict()

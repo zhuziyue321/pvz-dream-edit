@@ -15,11 +15,11 @@ enum E_PortalType {
 	Circle,
 }
 
-const TEX_SQUARE_CENTER := preload("res://pak/reanim/Portal_Square_center.png")
-const TEX_SQUARE_GLOW := preload("res://pak/reanim/Portal_Square_glow.png")
-const TEX_CIRCLE_OUTER := preload("res://pak/reanim/Portal_Circle_outer.png")
-const TEX_CIRCLE_CENTER := preload("res://pak/reanim/Portal_Circle_center.png")
-const TEX_CIRCLE_GLOW := preload("res://pak/reanim/Portal_Circle_glow.png")
+var TEX_SQUARE_CENTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Square_center.png")
+var TEX_SQUARE_GLOW: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Square_glow.png")
+var TEX_CIRCLE_OUTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Circle_outer.png")
+var TEX_CIRCLE_CENTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Circle_center.png")
+var TEX_CIRCLE_GLOW: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Circle_glow.png")
 
 ## 门的像素高（贴图分辨率不一，统一按目标高度归一，不用逐张调 scale）
 const DOOR_HEIGHT := 120.0

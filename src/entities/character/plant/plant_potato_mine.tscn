@@ -64,22 +64,22 @@ animation = &"PotatoMine_light"
 animation = &"PotatoMine_rise"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_6wxu7"]
-advance_mode = 2
-advance_expression = "not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_csn61"]
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "is_prepare_end"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_i37gq"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_as5ej"]
-advance_mode = 2
-advance_expression = "is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_kteyv"]
 states/PotatoMine_armed/node = SubResource("AnimationNodeAnimation_civy0")
@@ -130,9 +130,11 @@ anim_offset_max = 1.0
 
 [node name="Plant005PotatoMine" node_paths=PackedStringArray("node_no_change_direction", "node2d_detect_in_slope") instance=ExtResource("1_8djfp")]
 script = ExtResource("2_0r7iw")
-prepare_time = 10.0
+prepare_time = 15.0
 is_prepare_end = false
 plant_type = &"potato_mine"
+show_anim_state = &"PotatoMine_rise"
+norm_anim_state = &"PotatoMine_light"
 node_no_change_direction = [null, null, null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("BombComponent/Area2DBomb"), NodePath("DetectComponent")]
 

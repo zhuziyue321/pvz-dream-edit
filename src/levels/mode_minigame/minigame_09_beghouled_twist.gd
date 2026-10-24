@@ -179,12 +179,14 @@ func _on_fill_packet_click(card: Card) -> void:
 
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 BEGHOULED_TWIST 白名单（Challenge.cpp：普/路障/铁桶/铁门/橄榄球/读报）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.NORM,
 		ZombieIds.CONE,
 		ZombieIds.BUCKET,
-		ZombieIds.PAPER,
 		ZombieIds.SCREEN_DOOR,
+		ZombieIds.FOOTBALL,
+		ZombieIds.PAPER,
 	]
 
 	## 展示僵尸

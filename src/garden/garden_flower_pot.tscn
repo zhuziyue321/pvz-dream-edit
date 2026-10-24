@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://djx300tx2setf"]
+[gd_scene load_steps=29 format=3 uid="uid://djx300tx2setf"]
 
 [ext_resource type="Script" uid="uid://ck6yyarqy5k55" path="res://src/garden/garden_flower_pot.gd" id="1_1vbfo"]
 [ext_resource type="Texture2D" path="res://pak/images/plantshadow.png" id="2_jgwvk"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Pot_top.png" id="10_4rkaw"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Pot_water_top.png" id="11_nnl5f"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Pot_water_base.png" id="12_4rkaw"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Pot_top_dark.png" id="13_pottopdark"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_wm6jt"]
 particle_flag_disable_z = true
@@ -1646,6 +1647,13 @@ centered = false
 position = Vector2(7.2, 12.837949)
 scale = Vector2(0.8, 0.8)
 texture = ExtResource("10_4rkaw")
+centered = false
+
+[node name="Pot_top_dark" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(7.2, 12.837949)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("13_pottopdark")
 centered = false
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]

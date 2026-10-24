@@ -1,7 +1,9 @@
 extends BulletLinear000Base
 class_name Bullet002PeaSnow
 
-@export var time_be_decelerated :float = 3.0
+## 冰冻减速时长（游戏秒）：原版口径 `ApplyChill(false)` = 1000 tick @100 Hz = **10 秒**
+## （见 `../PvZ-Portable-main/src/Lawn/Zombie.cpp` 的 `ApplyChill()`）
+@export var time_be_decelerated :float = 10.0
 
 ## 攻击一次
 func attack_once(enemy:Character000Base):

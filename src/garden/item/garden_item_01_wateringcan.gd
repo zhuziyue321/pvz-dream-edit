@@ -6,31 +6,36 @@ class_name WateringCan
 ## 壶身贴图 / 浇水动画 / 作用范围一起升级成黄金款(一次最多浇 4 株)。
 ## 是否已买见 GlobalGameState.is_garden_tool_bought,外观刷新见 refresh_visual()
 
-## 待机时壶身贴图
-const CAN_TEXTURE: Dictionary = {
-	false: preload("res://pak/reanim/ZenGarden_wateringcan1.png"),
-	true: preload("res://pak/reanim/ZenGarden_wateringcan1_gold.png"),
+## 待机时壶身贴图（贴图走 AssetRegistry，缓存复用；建节点时就取，命中缓存不再读盘）
+var CAN_TEXTURE: Dictionary = {
+	false: AssetRegistry.get_texture("res://pak/reanim/ZenGarden_wateringcan1.png"),
+	true: AssetRegistry.get_texture("res://pak/reanim/ZenGarden_wateringcan1_gold.png"),
 }
 ## 工具栏按钮图标
-const BUTTON_ICON: Dictionary = {
-	false: preload("res://pak/images/WateringCan.png"),
-	true: preload("res://pak/images/WateringCanGold.png"),
+var BUTTON_ICON: Dictionary = {
+	false: AssetRegistry.get_texture("res://pak/images/WateringCan.png"),
+	true: AssetRegistry.get_texture("res://pak/images/WateringCanGold.png"),
 }
 ## 浇水动画(动画里的壶身贴图也是分红金两套)
 const WATER_ANIM: Dictionary = {
 	false: &"ZenGarden_wateringcan_water",
 	true: &"ALL_ANIMS",
 }
-## 检测半径:基础水壶是个"点"(与肥料 / 杀虫剂一致,一次只罩住 1 株),
-## 黄金水壶是原版的范围圈(半径内最多罩 4 株)
-const REACH_RADIUS: Dictionary = {
-	false: 0.1,
-	true: 62.0081,
+## 检测范围:基础水壶是个"点"(与肥料 / 杀虫剂一致,一次只罩住 1 株),
+## 黄金水壶是原版 IsPlantInGoldWateringCanRange 的**矩形**:
+## 相对鼠标 x ∈ [-70, +90]、y ∈ [-80, +80]（中心偏右 10 像素，160×160）
+const REACH_RECT_SIZE: Dictionary = {
+	false: Vector2(1, 1),
+	true: Vector2(160, 160),
 }
-## 一次最多浇几株(原版:基础 1 株,黄金 4 株)
+const REACH_RECT_OFFSET: Dictionary = {
+	false: Vector2.ZERO,
+	true: Vector2(10, 0),
+}
+## 一次最多浇几株(原版:基础水壶 1 株;黄金水壶**不限株数**,范围里有几株浇几株)
 const MAX_PLANT_NUM: Dictionary = {
 	false: 1,
-	true: 4,
+	true: -1,
 }
 
 @onready var water_sprite: Sprite2D = $Body/Water
@@ -53,7 +58,12 @@ func refresh_visual() -> void:
 	water_sprite.texture = CAN_TEXTURE[gold]
 	## 范围准星是黄金水壶专属,基础水壶只瞄一株,不该画出来
 	zen_gold_tool_reticle_result.visible = gold
-	(collision_shape.shape as CircleShape2D).radius = REACH_RADIUS[gold]
+	## 原版黄金水壶是 160×160 的矩形（相对鼠标 x[-70,+90] / y[-80,+80]）；
+	## 基础水壶退化成 1×1 的点，等价于"只罩住光标下那一格"
+	var rect := RectangleShape2D.new()
+	rect.size = REACH_RECT_SIZE[gold]
+	collision_shape.shape = rect
+	collision_shape.position = REACH_RECT_OFFSET[gold]
 	if item_button:
 		item_button.item_texture.texture = BUTTON_ICON[gold]
 
@@ -63,14 +73,17 @@ func judge_is_curr_plant_cell() -> bool:
 	return curr_plant_cells != []
 
 
-## 本次浇水要作用的植物格子:基础水壶 1 株,黄金水壶取半径内最近的 4 株
+## 本次浇水要作用的植物格子:基础水壶 1 株(取最近的一株),
+## 黄金水壶按原版口径**范围里有几株浇几株**(不限株数)
 func get_target_plant_cells() -> Array[PlantCellGarden]:
 	var target_cells: Array[PlantCellGarden] = curr_plant_cells.duplicate()
-	if is_gold():
+	var gold := is_gold()
+	if gold:
 		target_cells.sort_custom(func(a: PlantCellGarden, b: PlantCellGarden) -> bool:
 			return a.global_position.distance_squared_to(global_position) \
 					< b.global_position.distance_squared_to(global_position))
-	return target_cells.slice(0, MAX_PLANT_NUM[is_gold()])
+		return target_cells
+	return target_cells.slice(0, MAX_PLANT_NUM[gold])
 
 
 func use_it():

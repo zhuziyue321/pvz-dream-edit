@@ -38,23 +38,21 @@ func is_on_sale() -> bool:
 		>= ConstShop.get_cleaner_shop_level(lawn_mover_type)
 
 
-## 刷新商品状态:未上架则隐藏,已购买则标记为售罄且不可再购买
+## 刷新商品状态:未上架则下架(保留格位),已购买则标记为售出且不可再购买
 func _refresh_goods_state() -> void:
 	if not is_on_sale():
-		visible = false
+		set_goods_on_shelf(false)
 		return
-	visible = true
 	if Global.global_game_state.is_lawn_mover_bought(lawn_mover_type):
 		is_have_goods = false
-		is_not_have_goods_label.text = "已拥有"
+	set_goods_on_shelf(true)
 	is_not_have_goods_label.visible = not is_have_goods
 
 
 ## 获得该商品:购买一次小推车解锁
 func get_one_goods():
 	if Global.global_game_state.buy_lawn_mover(lawn_mover_type):
-		Global.save_service.save_now()
+		_finish_goods_granted()
 	else:
 		Log.warn("购买小推车失败:该类型已购买或不需要购买")
-	_refresh_goods_state()
-	judge_can_get_goods()
+		_finish_goods_granted(false)

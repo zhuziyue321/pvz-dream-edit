@@ -19,7 +19,7 @@ extends LevelScriptBase
 ## `create_progress_provider()`），本体不认识「水族馆」这个概念（硬约束 §1-8）。
 
 ## 奖杯种子包的卡面：本体没有「奖杯」这种卡类型，只能拿奖杯贴图自己贴到静态形象那一块
-const PACKET_TROPHY_TEXTURE: Texture2D = preload("res://pak/images/trophy_hi_res.png")
+var PACKET_TROPHY_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/images/trophy_hi_res.png")
 ## 卡上静态形象的可用范围（见 card.tscn 的 CardBg/CharacterStatic）：奖杯原图比它大，要缩到放得进
 const PACKET_FACE_MAX_SIZE := Vector2(46.0, 34.0)
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://src/garden/bg_03_tree_of_wisdom.gd" id="1_tree"]
 [ext_resource type="Texture2D" path="res://pak/reanim/tree_bg.jpg" id="2_bg"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://src/garden/tree_of_wisdom_clouds.tscn" id="4_clouds"]
 [ext_resource type="Texture2D" path="res://pak/reanim/tree01.png" id="5_sprout"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="6_theme"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_SpeechBubble2.png" id="7_bubble"]
 
 [node name="TreeOfWisdomBg" type="Sprite2D"]
 texture = ExtResource("2_bg")
@@ -37,6 +38,7 @@ offset_left = 300.0
 offset_top = 82.0
 offset_right = 500.0
 offset_bottom = 112.0
+pivot_offset = Vector2(100, 15)
 theme = ExtResource("6_theme")
 theme_override_constants/outline_size = 4
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -44,16 +46,20 @@ theme_override_font_sizes/font_size = 24
 text = "0英尺高"
 horizontal_alignment = 1
 
-[node name="WisdomLabel" type="Label" parent="."]
-offset_left = 110.0
-offset_top = 512.0
-offset_right = 740.0
-offset_bottom = 588.0
+[node name="SpeechBubble" type="Sprite2D" parent="."]
+visible = false
+texture = ExtResource("7_bubble")
+centered = false
+
+[node name="Text" type="Label" parent="SpeechBubble"]
+offset_left = 25.0
+offset_top = 6.0
+offset_right = 258.0
+offset_bottom = 150.0
 theme = ExtResource("6_theme")
-theme_override_constants/outline_size = 4
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_font_sizes/font_size = 21
-autowrap_mode = 3
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 16
 text = "请给我点肥料吧！"
+autowrap_mode = 3
 horizontal_alignment = 1
 vertical_alignment = 1

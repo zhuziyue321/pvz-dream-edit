@@ -7,6 +7,10 @@ class_name ZombieWaveCreateManager
 var zombie_multy := 1
 ## 蹦极僵尸数量范围
 var range_num_bungi:Vector2i = Vector2i(3,5)
+## 波次里是否允许「额外补普僵」（旗帜波补旗子僵尸 + 一批普僵、点数残差补普僵）
+## 原版 ZomBotany 两关关掉：这两关在 `Board::InitZombieWaves` 里被特判，整关只出植物僵尸。
+## 数据来自关卡：`ResourceLevelData.spawn_plain_zombie_extra`
+var spawn_plain_zombie_extra := true
 #endregion
 @onready var zombie_manager: ZombieManager = %ZombieManager
 
@@ -21,7 +25,7 @@ var range_num_bungi:Vector2i = Vector2i(3,5)
 ## 「僵王召唤僵尸」读注册表 —— 改一次平衡数值要改两处，漏一处就是两套战力打架。
 ## 现在只剩注册表那一份；植物僵尸（Z031+）的战力 / 权重不在这两张表里，走 `ZomBotanyConfig`。
 
-## 初始权重的**运行期副本**：普僵 / 路障的后期衰减直接写这里（`_update_weights`），
+## 初始权重的**运行期副本**：出怪密度倍率乘在这一份上（见 `get_zombie_weight`），
 ## 不改动注册表里的公共基础数据。
 ## 开局在 `init_zombie_wave_create_manager()` 里按注册表重取一次（含热注册的僵尸）
 var zombie_weights:Dictionary = CharacterRegistry.ZombieSpawnWeights.duplicate_deep()
@@ -35,10 +39,6 @@ var zombie_choose_random_pool:RandomPicker
 @export var spawn_gap_x := 25.0
 ## 单波入场错开的总跨度上限（像素）：防止波末僵尸离场太远，把清场时间拖得过长
 @export var spawn_gap_x_max := 400.0
-## 刷新类型最小战力
-var min_power:=100
-## 当前所有可能出怪僵尸权重上限和,每波修改
-var curr_zombie_weight_upper_limit :int
 ## 当前波次生成的僵尸
 var wave_all_zombies:Array[Zombie000Base]
 
@@ -46,6 +46,7 @@ var wave_all_zombies:Array[Zombie000Base]
 func init_zombie_wave_create_manager(game_para:ResourceLevelData):
 	zombie_multy = game_para.zombie_multy
 	range_num_bungi = game_para.range_num_bungi
+	spawn_plain_zombie_extra = game_para.spawn_plain_zombie_extra
 	## 权重在这里重取一次：运行期热注册的僵尸（见 `CharacterRegistry.register_runtime_zombie`）
 	## 可能是本管理器建好之后才登记进来的，成员初始化那一次取不到它们
 	zombie_weights = Global.character_registry.get_zombie_spawn_weights()
@@ -56,15 +57,12 @@ func init_zombie_wave_create_manager(game_para:ResourceLevelData):
 func update_zombie_refresh_types():
 	## 初始化僵尸生成随机池数据
 	var zombie_choose_random_pool_data:Array[Array] = []
-	min_power = 100
 	for zombie_type in zombie_manager.zombie_refresh_types:
 		## 两张表并不覆盖所有僵尸类型，裸索引遇到表外类型会直接报错
 		var curr_power: int = get_zombie_power(zombie_type)
 		if curr_power <= 0:
 			Log.warn("僵尸类型 " + str(zombie_type) + " 没有配置 power，已从刷新池中跳过")
 			continue
-		if min_power > curr_power:
-			min_power = curr_power
 		zombie_choose_random_pool_data.append([zombie_type, get_zombie_weight(zombie_type)])
 	zombie_choose_random_pool = RandomPicker.new(zombie_choose_random_pool_data)
 
@@ -79,8 +77,7 @@ func get_zombie_power(zombie_type: StringName) -> int:
 
 
 ## 僵尸初始权重：植物僵尸走 ZomBotanyConfig，其余走 zombie_weights
-## **已乘上出怪密度倍率**（见 set_zombie_density）—— 随机池与权重上限一律按
-## 「密度生效后」这个值算，所以密度倍率对建池 / 后期普僵衰减 / 权重上限都一致生效
+## **已乘上出怪密度倍率**（见 set_zombie_density）—— 随机池一律按「密度生效后」这个值算
 func get_zombie_weight(zombie_type: StringName) -> int:
 	var base_weight: int
 	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
@@ -116,6 +113,23 @@ func get_zombie_density(zombie_type: StringName) -> float:
 
 
 ## 所有僵尸回到原版权重（清掉全部密度倍率）
+## 关卡级行限制：本波这些行不出怪（下标 = 行号）
+## 关卡脚本在 `LevelScriptBase.before_wave_spawn()` 里按波设置 / 清空，
+## 例如隐形食脑者「前几波最下行不刷怪」（原版 `Board.cpp` 的 INVISIGHOUL 分支）
+func set_banned_spawn_rows(rows: Array[int]) -> void:
+	zombie_choose_row_system.set_banned_lanes(rows)
+
+
+## 撤销行限制（每波该重设就重设，别让限制漏到后面几波）
+func clear_banned_spawn_rows() -> void:
+	zombie_choose_row_system.clear_banned_lanes()
+
+
+## 当前关卡的僵尸行数（关卡脚本按行做限制时，靠它算最后一行的下标）
+func get_row_num() -> int:
+	return zombie_choose_row_system.get_row_num()
+
+
 func clear_zombie_density() -> void:
 	if zombie_density_scale.is_empty():
 		return
@@ -125,7 +139,7 @@ func clear_zombie_density() -> void:
 		_sync_density_to_pool(zombie_type)
 
 
-## 把某类僵尸「密度生效后的权重」写回随机池，并重建别名表、重算权重上限
+## 把某类僵尸「密度生效后的权重」写回随机池，并重建别名表
 func _sync_density_to_pool(zombie_type: StringName) -> void:
 	if zombie_choose_random_pool == null or zombie_manager == null:
 		return
@@ -133,7 +147,6 @@ func _sync_density_to_pool(zombie_type: StringName) -> void:
 		return
 	zombie_choose_random_pool.update_item_weight(zombie_type, get_zombie_weight(zombie_type), false)
 	zombie_choose_random_pool.rebuild_alias_table()
-	curr_zombie_weight_upper_limit = calculate_all_zombie_weight()
 #endregion
 
 
@@ -164,8 +177,8 @@ func create_norm_wave_zombies(wave_spawn:Array[StringName], wave:int) -> Array[Z
 	for i in range(wave_spawn.size()):
 		var zombie_type : StringName = wave_spawn[i]
 		var lane :int = -1
-		## 雪橇队
-		if zombie_type == ZombieIds.BOBSLED:
+		## 需要冰道才能出的僵尸（雪橇队）：由注册表的规则资源声明，不再按类型硬判
+		if Global.character_registry.is_zombie_need_ice_road(zombie_type):
 			## 挑一条「冰面还在」的行：没有冰的小队一落地就开始掉血（见 Zombie014Bobsled.judge_is_in_ice_road），
 			## 这样的班级不算有效出怪 —— 一条冰道都没有时本波改出洗冰车，由它把冰铺回来
 			## （对应原版「玩家把冰面融掉后，冰面恢复前只出洗冰车」）
@@ -223,21 +236,26 @@ func wave_create_zombie(
 func create_curr_wave_zombie_list(wave:int, is_big_wave:bool):
 	## 计算当前波僵尸战力上限
 	var curr_wave_power_limit = calculate_wave_power_limit(wave, is_big_wave)
-	## 更新僵尸权重上限
-	update_curr_zombie_weight_upper_limit(wave)
 	## 获取当前波的生成僵尸列表
 	var wave_spawn :Array[StringName] = get_curr_wave_zombie_list(wave, is_big_wave, curr_wave_power_limit)
 
 	return wave_spawn
 
+## 本波的「基础点数」：原版 `aZombiePoints`（未乘大波 2.5 的那一份）
+## 首周目 `aWave / 3 + 1`；二周目 `aWave * 2 / 5 + 1`（1-5 例外，仍走首周目公式）
+## 大波补几只普僵也按它算（`aPlainZombiesNum = min(aZombiePoints, 8)`）
+## 数据来源: 原版 `Board::PickZombieWaves()`（../PvZ-Portable-main/src/Lawn/Board.cpp:633-649）
+@warning_ignore("integer_division")
+func calculate_base_wave_points(wave: int) -> int:
+	if is_second_round_adventure():
+		return wave * 2 / 5 + 1
+	return wave / 3 + 1
+
 ## 计算每波的战力上限（原版「本波总级别」）
-## 原版公式: n÷3 向上取整(n 为当前波数)；大波再乘 2.5 向下取整；出怪倍率最后整体相乘
-## 数据来源: 新PVZ通关技术理论1.1 第二章 2.3 级别与权重(https://www.bilibili.com/read/cv40586093)
+## 原版公式: n÷3 向下取整 + 1（n 为当前波数）；大波再乘 2.5 向下取整；出怪倍率最后整体相乘
+## 数据来源: 原版 `Board::PickZombieWaves()`（../PvZ-Portable-main/src/Lawn/Board.cpp:633-686）
 func calculate_wave_power_limit(wave:int, is_big_wave: bool) -> int:
-	## x从0开始
-	## 计算战力上限 = y=int(x/3)+1
-	@warning_ignore("integer_division")
-	var base_power_limit:int = wave / 3 + 1
+	var base_power_limit: int = calculate_base_wave_points(wave)
 	## 如果是大波，战力上限是原战力上限的2.5倍
 	var power_limit:int = base_power_limit * zombie_multy
 	if is_big_wave:
@@ -245,60 +263,123 @@ func calculate_wave_power_limit(wave:int, is_big_wave: bool) -> int:
 	## 至少保留1点战力，避免某一波一只都不出
 	return max(1, power_limit)
 
-## 计算当前波僵尸权重上限
-func update_curr_zombie_weight_upper_limit(wave:int):
-	## 如果是第0波
-	if wave == 0:
-		# 计算所有可能僵尸的权重总和
-		curr_zombie_weight_upper_limit = calculate_all_zombie_weight()
-	elif wave < 4:
-		pass
-	elif wave < 26:
-		_update_weights(wave)
-		# 计算所有可能僵尸的权重总和
-		curr_zombie_weight_upper_limit = calculate_all_zombie_weight()
-	else:
-		pass
+## 取某类僵尸的「首次允许波次」（**1 起算**）
+## 植物僵尸读 `ZomBotanyConfig`（原版 ZomBotany 两关的硬规则），其余读注册表里的
+## `ZOMBIE_FIRST_ALLOWED_WAVE`（原版 `ZombieDefinition.mFirstAllowedWave`，见 `zombie_info_data.gd`）
+func get_zombie_first_allowed_wave(zombie_type: StringName) -> int:
+	var zom_botany_info := ZomBotanyConfig.get_info(zombie_type)
+	if zom_botany_info != null:
+		return zom_botany_info.first_allowed_wave
+	return Global.character_registry.get_zombie_first_allowed_wave(zombie_type)
 
-## 当前出怪表里所有僵尸的权重总和
-## 口径必须和 update_zombie_refresh_types 一致：
-##   · 植物僵尸（Z031+）的权重在 ZomBotanyConfig 里，裸读 zombie_weights[type] 会直接报
-##     「Invalid access to property or key」——两张表加起来才覆盖全部可出怪类型；
-##   · power <= 0 的类型建池时就被跳过，不会自然出怪，权重也不该计进来
-func calculate_all_zombie_weight() -> int:
-	var total_weight := 0
+
+## 本关是不是冒险模式：原版有几条出怪规则（首次允许波次 / 新登场僵尸 / 最后一波补齐）只对冒险模式生效
+func is_adventure_level() -> bool:
+	var level_data := zombie_manager.game_para as ResourceLevelData
+	return level_data != null \
+		and level_data.game_mode == MainSceneRegistry.MainScenes.ChooseLevelAdventure
+
+
+## 本关是否按**二周目**的点数公式算出怪（原版 `IsAdventureMode() && HasFinishedAdventure() && mLevel != 5`）
+## 原版 1-5 例外：二周目回到本关时仍用首周目公式（那一关原版是「第二次玩追加撑杆 / 铁桶 / 读报」的特殊关）。
+func is_second_round_adventure() -> bool:
+	if not is_adventure_level():
+		return false
+	var level_data := zombie_manager.game_para as ResourceLevelData
+	if level_data == null or level_data.get_adventure_level_index() == 5:
+		return false
+	return Global.global_game_state.is_from_second_round()
+
+
+## 本关「新登场的僵尸」（原版 `Board::GetIntroducedZombieType()`）：`&""` = 本关没有新僵尸
+## 只认**本关出怪表里也有**的类型，原版那几条排除就自动成立了：
+##   鸭子圈（原版显式跳过，本仓库 3-1 出怪表里本来也没有）、
+##   蹦极（本仓库走 `is_bungi` 的大波空投，不进出怪表）、
+##   雪人（本仓库不进自然出怪池，只在重玩 4-10 那条线上）。
+func get_introduced_zombie_type() -> StringName:
+	var level_data := zombie_manager.game_para as ResourceLevelData
+	if not is_adventure_level() or level_data == null:
+		return &""
+	## 原版 1-1 不算「新登场」（`mLevel == 1` 直接返回无效）
+	var level_index: int = level_data.get_adventure_level_index()
+	if level_index <= 1:
+		return &""
+	## 按 `ZombieIds.ALL` 的顺序先到先得（与原版枚举序一致：3-6 的冰车排在雪橇前）
+	for zombie_type: StringName in ZombieIds.ALL:
+		if Global.character_registry.get_zombie_starting_level(zombie_type) != level_index:
+			continue
+		if not zombie_manager.zombie_refresh_types.has(zombie_type):
+			continue
+		return zombie_type
+	return &""
+
+
+## 这只「新登场僵尸」该不该出现在本波（原版 `Board.cpp:688-715`）
+##   矿工 / 气球：第 7 波（下标 + 1 == 7）与最后一波
+##   其余：中间波（每轮波数 / 2）与最后一波
+@warning_ignore("integer_division")
+func is_introduced_zombie_wave(intro_zombie: StringName, wave: int) -> bool:
+	if _is_final_wave(wave):
+		return true
+	if intro_zombie == ZombieIds.DIGGER or intro_zombie == ZombieIds.BALLOON:
+		return wave + 1 == 7
+	return wave == zombie_manager.zombie_wave_manager.max_wave_one_round / 2
+
+
+## 按「首次允许波次」开关随机池
+## 原版 `Board::PickZombieType()`：`theWaveIndex + 1 < mFirstAllowedWave` 的僵尸直接跳过。
+## 池子只能整项增删（`update_item_weight()` 不接受 0 权重），所以每波按需加回 / 移除一次，
+## 变了才重建别名表。`power <= 0` 的类型建池时就被跳过，这里也不往回加。
+##
+## ⚠️ 注册表那张表只对**冒险模式**生效：小游戏 / 生存 / 我是僵尸在原版里各自另写一套出怪规则
+## （原版还专门豁免了蹦蹦舞会 / 全面冻结 / 蹦极闪电战），本仓库这些关卡的出怪表已经按各自规则写好，
+## 再套一层会让波数少的关卡前几波一只都出不来（如蹦蹦舞会的出怪表只有蹦蹦，首次允许波次是 10）。
+## 植物僵尸那几个「第 10 波起」的类型不受这条限制 —— 那是原版 ZomBotany 的硬规则，任何模式都生效。
+func _apply_first_allowed_wave(wave: int) -> void:
+	if not is_instance_valid(zombie_choose_random_pool):
+		return
+	var gate_by_table := is_adventure_level()
+	var changed := false
 	for zombie_type in zombie_manager.zombie_refresh_types:
 		if get_zombie_power(zombie_type) <= 0:
 			continue
-		total_weight += get_zombie_weight(zombie_type)
-	return total_weight
-
-## 更新权重到达上限后最后一次已经更新
-var is_update_weight_on_limit:=false
-
-## 更新僵尸权重
-func _update_weights(wave: int):
-	if wave >= 5:
-		if wave >= 25:
-			if is_update_weight_on_limit:
-				return
-			is_update_weight_on_limit = true
-			wave = 25
-
-		var norm_weight = 4000 - (wave - 5) * 180
-		zombie_weights[ZombieIds.NORM] = norm_weight
-		if ZombieIds.NORM in zombie_manager.zombie_refresh_types:
-			## 写进池子的是「衰减后 × 密度倍率」：后期的普僵衰减和本关的密度加成要叠加，不能互相覆盖
-			zombie_choose_random_pool.update_item_weight(ZombieIds.NORM, get_zombie_weight(ZombieIds.NORM), false)
-		var cone_weight = 4000 - (wave - 5) * 150
-		zombie_weights[ZombieIds.CONE] = cone_weight
-		if ZombieIds.CONE in zombie_manager.zombie_refresh_types:
-			zombie_choose_random_pool.update_item_weight(ZombieIds.CONE, get_zombie_weight(ZombieIds.CONE), false)
-
+		var first_wave: int = get_zombie_first_allowed_wave(zombie_type)
+		var is_gated: bool = first_wave > 1 \
+			and (gate_by_table or ZomBotanyConfig.get_info(zombie_type) != null)
+		var allowed: bool = (not is_gated) or wave + 1 >= first_wave
+		var in_pool: bool = zombie_choose_random_pool.has_item(zombie_type)
+		if allowed and not in_pool:
+			changed = zombie_choose_random_pool.add_item(
+				zombie_type, get_zombie_weight(zombie_type), false, false) or changed
+		elif not allowed and in_pool:
+			changed = zombie_choose_random_pool.remove_item(zombie_type, false) or changed
+	if changed:
 		zombie_choose_random_pool.rebuild_alias_table()
 
-## 获取当前波僵尸列表
+
+## 按权重抽一只「战力 ≤ 剩余点数」的僵尸
+## 原版 `Board::PickZombieType()` 的做法是**先把买不起的类型整个排除**再按权重抽，
+## 而不是「抽一只，买不起就重抽」—— 后者在只剩 1~2 点时会把便宜的普僵/路障抽成主力。
+## 返回 `&""` = 池子里一只都买不起（原版这时会从空权重表落到 0 号普僵，等价于下面的余额补齐）。
+func pick_zombie_within_power(remaining_power: int) -> StringName:
+	var candidates: Array = []
+	for zombie_type in zombie_manager.zombie_refresh_types:
+		## 池里没有 = 本波还没到它的首次允许波次（见 _apply_first_allowed_wave）
+		if not zombie_choose_random_pool.has_item(zombie_type):
+			continue
+		var zombie_power: int = get_zombie_power(zombie_type)
+		if zombie_power <= 0 or zombie_power > remaining_power:
+			continue
+		candidates.append([zombie_type, zombie_choose_random_pool.get_item_weight(zombie_type)])
+	if candidates.is_empty():
+		return &""
+	return RandomPicker.new(candidates).get_random_item()
+
+
+## 获取当前波僵尸列表（对齐原版 `Board::PickZombieWaves()` 里「一波」的算法）
 func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limit:int) ->Array[StringName]:
+	## 先按波次开关池子：撑杆 / 舞王 / 潜水 / 伽刚特尔这些原版有「首次允许波次」的类型
+	_apply_first_allowed_wave(wave)
 	## 当前波的僵尸列表
 	var wave_spawn :Array[StringName]= []
 	## 目前总战力
@@ -306,49 +387,83 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 	## 当前空隙位置
 	var curr_spare_slot = max_zombies_per_wave
 
-	## 如果是大波，先刷新特殊僵尸
-	if is_big_wave:
-		## 第一个旗帜僵尸
+	## 大波：原版先按点数放一批普僵、再放旗帜僵尸（`Board.cpp:651-664`）
+	## 关掉 `spawn_plain_zombie_extra` 的关卡（原版 ZomBotany 两关）连旗子僵尸也不补：
+	## 原版在这两关整关只出植物僵尸，旗帜波只是点数 ×2.5 的普通波
+	if is_big_wave and spawn_plain_zombie_extra:
+		## 原版 `aPlainZombiesNum = min(aZombiePoints, 8)`：
+		## 第 10 波 4 只、第 20 波 7 只、第 30 波起封顶 8 只（不是简单的「5+ 一律 8 只」）
+		var plain_num: int = mini(calculate_base_wave_points(wave), 8)
+		for i in range(plain_num):
+			wave_spawn.append(ZombieIds.NORM)
+			total_power += get_zombie_power(ZombieIds.NORM)
+			curr_spare_slot -= 1
+		## 旗帜僵尸
 		wave_spawn.append(ZombieIds.FLAG)
 		total_power += get_zombie_power(ZombieIds.FLAG)
 		curr_spare_slot -= 1
 
-		# 第一次大波（第10波），刷新4个普通僵尸
-		if wave == 9:
-			for i in range(4):
-				wave_spawn.append(ZombieIds.NORM)
-				total_power += get_zombie_power(ZombieIds.NORM)
-				curr_spare_slot -= 1
-		# 之后的大波（第20波、30波...），刷新8个普通僵尸
-		else:
-			for i in range(8):
-				wave_spawn.append(ZombieIds.NORM)
-				total_power += get_zombie_power(ZombieIds.NORM)
-				curr_spare_slot -= 1
+	## 本关「新登场的僵尸」：原版让它必定出现在中间波与最后一波（矿工 / 气球提前到第 7 波起）
+	var intro_zombie: StringName = get_introduced_zombie_type()
+	if intro_zombie != &"" and is_introduced_zombie_wave(intro_zombie, wave) and curr_spare_slot > 0:
+		wave_spawn.append(intro_zombie)
+		total_power += get_zombie_power(intro_zombie)
+		curr_spare_slot -= 1
+
+	## 原版第 5 步（随机填充**之前**）：冒险关最后一波补齐本关漏掉的类型。
+	## 补齐同样扣点数，扣成负数后面就不再随机抽了。
+	total_power += _put_in_missing_zombies(wave_spawn, wave)
 
 	# 生成剩余僵尸，直到总战力符合当前战力上限
 	while curr_spare_slot > 0 and total_power < curr_wave_power_limit:
-
-		var selected_zombie: StringName = zombie_choose_random_pool.get_random_item()
-		var zombie_power_value = get_zombie_power(selected_zombie)
-
-		#prints("当前剩余僵尸", curr_spare_slot, "当前战力:", total_power, "当前所选僵尸:", selected_zombie, "当前所选僵尸战力:", zombie_power_value)
-
-		# 检查如果加上该僵尸的战力后超过当前波的战力上限，重新选择
-		if total_power + zombie_power_value <= curr_wave_power_limit:
-			wave_spawn.append(selected_zombie)
-			total_power += zombie_power_value
-			curr_spare_slot -= 1
-		elif curr_wave_power_limit - total_power < min_power:
-			for i in range(curr_wave_power_limit - total_power):
-				wave_spawn.append(ZombieIds.NORM)
-				total_power += get_zombie_power(ZombieIds.NORM)
-				curr_spare_slot -= 1
-			continue
-		else:
-			continue
+		var remaining_power: int = curr_wave_power_limit - total_power
+		var selected_zombie: StringName = pick_zombie_within_power(remaining_power)
+		if selected_zombie == &"":
+			## 余额已经买不起出怪表里任何一只 = 原版会从空权重表落到 0 号普僵（即拿普僵补余额）。
+			## 这一步同样受「额外补普僵」开关约束：关掉的关卡宁可这一波少几只，
+			## 也不凭空多出出怪表里没有的普僵
+			if spawn_plain_zombie_extra:
+				for i in range(remaining_power):
+					wave_spawn.append(ZombieIds.NORM)
+					total_power += get_zombie_power(ZombieIds.NORM)
+					curr_spare_slot -= 1
+			break
+		wave_spawn.append(selected_zombie)
+		total_power += get_zombie_power(selected_zombie)
+		curr_spare_slot -= 1
 
 	return wave_spawn
+
+
+## 原版 `Board::PutInMissingZombies()`（`Board.cpp:560-569` / `722-726`）：
+## 冒险关**最后一波**把本关出怪表里这一波还没出现过的类型各补一只 ——
+## 所以冒险关的最后一波必定凑齐本关全部僵尸种类（这正是原版「最后一波最凶」的一环）。
+## 雪人除外：原版这里显式跳过 `ZOMBIE_YETI`，它只在暴雨夜放。
+## 返回这些僵尸占掉的战力：原版 `PutZombieInWave()` 一样扣点数，扣成负数后本波就不再随机抽了。
+func _put_in_missing_zombies(wave_spawn: Array[StringName], wave: int) -> int:
+	if not is_adventure_level() or not _is_final_wave(wave):
+		return 0
+	var added_power := 0
+	for zombie_type in zombie_manager.zombie_refresh_types:
+		if zombie_type == ZombieIds.YETI:
+			continue
+		var zombie_power: int = get_zombie_power(zombie_type)
+		if zombie_power <= 0:
+			continue
+		if wave_spawn.has(zombie_type):
+			continue
+		if wave_spawn.size() >= max_zombies_per_wave:
+			break
+		wave_spawn.append(zombie_type)
+		added_power += zombie_power
+	return added_power
+
+
+## 本关的最后一波（下标 = 总波数 - 1，与 `ZombieWaveManager.start_next_wave()` 同口径）
+func _is_final_wave(wave: int) -> bool:
+	if wave < 0:
+		return false
+	return wave == zombie_manager.zombie_wave_manager.max_wave - 1
 
 #endregion
 

@@ -115,8 +115,8 @@ func create_one_group_min_zombie():
 
 	if big_wave:
 		## 最后一波：所有墓碑同时召唤僵尸，每只单独挑类型（原版上限 20 只）
-		for i in range(min(idle_tombstones.size(), BIG_WAVE_MAX_ZOMBIE)):
-			idle_tombstones[i].create_new_zombie(curr_zombie_type_candidate.pick_random(), curr_speed_zombie)
+		for big_wave_i in range(min(idle_tombstones.size(), BIG_WAVE_MAX_ZOMBIE)):
+			idle_tombstones[big_wave_i].create_new_zombie(curr_zombie_type_candidate.pick_random(), curr_speed_zombie)
 		return
 
 	## 同一小组出同一种僵尸

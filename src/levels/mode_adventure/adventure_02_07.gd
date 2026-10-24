@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_1_0017"
 	game_BG = ConstLevelData.GameBg.FrontNight
 	game_BGM = ConstLevelData.GameBGM.FrontNight
 	is_day = false

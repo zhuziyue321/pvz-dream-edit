@@ -24,6 +24,17 @@ signal signal_can_trigger_mower
 func ready_norm():
 	super()
 	gpu_particles_dirt.emitting = true
+	## 掘土状态：走到最后一格就出土。位置判定下沉到移动组件，不再自己写 `_process` 比较坐标
+	move_component.watch_position_x(digger_target_pos_x, _on_reach_dig_target)
+
+
+## 到达最后一格
+func _on_reach_dig_target():
+	if not is_dig:
+		return
+	## 更新方向
+	update_direction_x_root(-1)
+	dig_end()
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():

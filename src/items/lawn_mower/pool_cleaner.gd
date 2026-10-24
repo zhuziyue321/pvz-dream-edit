@@ -11,10 +11,6 @@ var is_zombie: bool = false
 
 @export_group("游泳相关")
 @export var is_water := false
-###游泳消失的精灵图
-#@export var swimming_fade : Array[Sprite2D]
-###游泳出现的精灵图
-#@export var swimming_appear : Array[Sprite2D]
 #endregion
 
 

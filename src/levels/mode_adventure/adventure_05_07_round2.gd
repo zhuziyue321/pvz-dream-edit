@@ -12,6 +12,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_4_0047"
 	## 二周目差异：开局锁定前 3 个随机卡槽 —— 从本关能用的植物里随机挑 3 株占住前 3 槽，
 	## 玩家只能编辑第 4 个槽起的部分（机制与边界见 docs/参考存档/二周目.md）
 	locked_random_card_num = 3

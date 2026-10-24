@@ -20,7 +20,6 @@ var create_speed := 1.0
 var create_interval :float
 
 func component_ready() -> void:
-	#if get_tree().current_scene != MainGameManager:
 	if not get_tree().current_scene is MainGameManager:
 		return
 	create_interval = randf_range(create_time_range_first.x, create_time_range_first.y)

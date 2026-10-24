@@ -10,6 +10,7 @@ const DAVE_OPENING := preload("res://data/dave/dialog/adventure_02_01_opening.tr
 
 
 func _init() -> void:
+	save_key = "101_1_0011"
 	game_BG = ConstLevelData.GameBg.FrontNight
 	game_BGM = ConstLevelData.GameBGM.FrontNight
 	is_day = false

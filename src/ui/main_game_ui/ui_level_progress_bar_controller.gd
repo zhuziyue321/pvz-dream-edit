@@ -45,7 +45,7 @@ func set_enabled(is_enabled: bool) -> void:
 	_is_enabled = is_enabled
 
 
-## 本关该用哪个数据源：关卡脚本指定 > 僵王关 = 僵王血量 > 默认 = 战斗进度
+## 本关该用哪个数据源：关卡脚本指定 > 僵王关 = 僵王血量 > 多轮关 = 拼接战斗进度 > 默认 = 战斗进度
 func _pick_provider() -> LevelProgressProvider:
 	if main_game == null or main_game.game_para == null:
 		return LevelProgressBattleProvider.new()
@@ -58,6 +58,10 @@ func _pick_provider() -> LevelProgressProvider:
 	## 僵王关：这一条就是僵王的血量百分比（原版僵王战没有波次进度）
 	if para.has_boss():
 		return ZombossProgressProvider.new()
+	## 多场战斗（多轮关卡：生存 5 轮 / 砸罐子 3 批）：把各场拼成一条进度条，
+	## 切轮不再从 0 重来、已升起的旗留着（见 LevelProgressChainedBattleProvider）
+	if para.game_round > 1:
+		return LevelProgressChainedBattleProvider.new()
 	return LevelProgressBattleProvider.new()
 
 

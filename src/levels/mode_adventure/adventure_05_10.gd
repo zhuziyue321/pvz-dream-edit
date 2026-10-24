@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_4_0050"
 	game_sences = MainSceneRegistry.MainScenes.MainGameRoof
 	## 僵王关是夜屋顶：几何与 map_roof 逐格相同，换的是夜色底图与背景子场景
 	## （见 docs/参考存档/特殊关卡.md），地图由本关显式指定，不再靠场景槽位区分

@@ -6,11 +6,15 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_2_0025"
 	game_sences = MainSceneRegistry.MainScenes.MainGameBack
 	## 特殊关(小僵尸大麻烦)用 Loonboon,来源: https://plantsvszombies.wiki.gg/wiki/Music_(PvZ)
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.MiniGame
 	is_day_sun = false
+	## 波长：原版 `IsLittleTroubleLevel()`（小游戏 + 冒险 mLevel == 25 即本关）写死
+	## `mZombieCountDown = 750` tick = 7.5 秒，不是通用的 25~31 秒
+	wave_norm_time_range = Vector2(7.5, 7.5)
 	## 小僵尸大麻烦:僵尸体型/血量减半、速度翻倍(见 Zombie000Base.update_mini_zombie)
 	can_choosed_card = false
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
@@ -54,7 +58,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20, zombie_list)
+	## 首波 2 秒：原版小僵尸大麻烦 `mZombieCountDown = 200` tick
+	await start_battle(20, zombie_list, 0.0, 2.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

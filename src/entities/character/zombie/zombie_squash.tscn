@@ -12,7 +12,7 @@ zombie_type = &"squash_zombie"
 script = ExtResource("9_armor")
 armor_type = 9
 armor_class = 1
-max_hp = 300
+max_hp = 0
 
 [node name="ZombiePlantComponent" type="Node2D" parent="." index="13"]
 script = ExtResource("2_plant")

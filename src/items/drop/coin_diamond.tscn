@@ -8,7 +8,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Diamond_shine3.png" id="5_ecdep"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Diamond_shine4.png" id="6_u6y0i"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Diamond_shine5.png" id="7_e32hp"]
-[ext_resource type="BitMap" uid="uid://bfd7eqrrbiib5" path="res://assets/reanim/Diamond_mask.png" id="8_djgmt"]
+[ext_resource type="BitMap" uid="uid://bfd7eqrrbiib5" path="res://assets_custom/reanim/Diamond_mask.png" id="8_djgmt"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 1.7

@@ -12,7 +12,7 @@ class_name PlantRuntimeRecipe
 ##   · `AllCards.rebuild()` 往卡片源目录插卡后重排编号
 ##   · `Plant000DownBase.own_condition_bit` 底部植物自己声明「我给格子加哪个地形位」
 ##
-## 用法（模组里三步，见 `mods_builtin/water_bowl/`）：
+## 用法（模组里三步，见 `mods_builtin/dlc/dlc_mod.gd` 的 `_build_water_bowl_recipe()`）：
 ## ```gdscript
 ## var recipe := PlantRuntimeRecipe.new()
 ## recipe.plant_type = &"my_plant"        ## 留空由注册表自动分配 `runtime_plant_1`
@@ -55,6 +55,13 @@ var condition_bits: int = PlantConditionBits.DEFAULT_NORM
 
 ## 种进格子的哪个位置（普通位 / 保护壳 / 花盆睡莲那一层…）
 @export var place_in_cell: CharacterRegistry.PlacePlantInCell = CharacterRegistry.PlacePlantInCell.Norm
+
+## 是否为**紫卡**（升级植物）：卡面自动换紫背景，只能种在 `purple_pre_plant` 上（原版机制）
+## 种下去时前置植物会被顶掉（见 `PlantCell.create_plant()`），场上每有一株同种还要 +50 阳光
+@export var is_purple_card := false
+
+## 紫卡的前置植物：`is_purple_card = true` 时必填，否则卡会永远「不能种」且种植时裸索引崩
+@export var purple_pre_plant: StringName = PlantIds.NULL
 #endregion
 
 
@@ -93,6 +100,9 @@ func build_condition() -> ResourcePlantCondition:
 	var condition := ResourcePlantCondition.new()
 	condition.plant_condition = condition_bits
 	condition.place_plant_in_cell = place_in_cell
+	## 紫卡标记必须在这里落进去：卡片 `_ready()` 读的就是这份条件资源，
+	## 等 `install()` 之后再换资源，卡面背景已经按普通卡画好了
+	condition.is_purple_card = is_purple_card
 	return condition
 
 

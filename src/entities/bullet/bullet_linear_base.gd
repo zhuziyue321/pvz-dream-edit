@@ -38,7 +38,6 @@ func change_y(target_y:float):
 func _on_area_2d_attack_area_entered(area: Area2D) -> void:
 	## 线性子弹判断是否攻击到斜坡,非穿透子弹
 	if area.owner is Slope:
-		#if bullet_mode !=ConstDamage.E_DamageMode.Penetration:
 		var slope:Slope = area.owner
 		## 如果方向与斜面法向量夹角小于90度
 		if direction.dot(slope.normal_vector_slope) < 0:

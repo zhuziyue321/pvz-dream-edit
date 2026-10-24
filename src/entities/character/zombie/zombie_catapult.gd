@@ -5,8 +5,10 @@ class_name Zombie023Catapult
 @onready var smoke: GPUParticles2D = %Smoke
 @onready var death_bomb: ZamboniDeathBomb = $Body/DeathBomb
 
-## 位置x小于该值时可以攻击
-@export var global_pos_x_can_attack:float = 730
+## 位置x小于该值时可以攻击：原版 `mPosX <= 650` 才进入投掷（`Zombie.cpp:1578`）
+@export var global_pos_x_can_attack:float = 650
+## 血量阶段 2（半血以下）的速度系数
+@export var speed_factor_hp_stage_2:float = 0.5
 
 @export_group("子弹相关")
 ## 最大子弹数量
@@ -38,6 +40,8 @@ func ready_norm():
 		num_real_bullet_node_bullet = 0
 	else:
 		num_real_bullet_node_bullet = int(ceil(float(MaxNumBullet) / float(node_bullet.size())))
+	## 移动到攻击位置后解禁攻击（位置判定下沉到移动组件）
+	move_component.watch_position_x(global_pos_x_can_attack, _on_reach_attack_pos)
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
@@ -47,13 +51,11 @@ func ready_norm_signal_connect():
 	attack_component = attack_component as AttackComponentBulletPultBase
 	attack_component.signal_shoot_bullet.connect(update_bullet_data)
 
-func _process(_delta: float) -> void:
-	## 每帧判断是否需要移动到攻击位置
-	if not is_attack_pos:
-		if global_position.x <= global_pos_x_can_attack:
-			is_attack_pos = true
-			## 到达可以攻击的位置后,启用攻击组件
-			attack_component.update_is_attack_factors(true, AttackComponentBase.E_IsAttackFactors.Character)
+## 到达可以攻击的位置（位置判定下沉到移动组件，不再自己写 `_process`）
+func _on_reach_attack_pos():
+	is_attack_pos = true
+	## 到达可以攻击的位置后,启用攻击组件
+	attack_component.update_is_attack_factors(true, AttackComponentBase.E_IsAttackFactors.Character)
 
 #region 攻击精灵图片变化
 func update_pole_sprite_no_bullet():
@@ -85,7 +87,7 @@ func hp_stage_zamboni_change(curr_hp_stage:int):
 			update_pole_sprite_have_bullet()
 			smoke.emitting = true
 		2:
-			update_speed_factor(0.5, E_Influence_Speed_Factor.ZamboniHp)
+			update_speed_factor(speed_factor_hp_stage_2, E_Influence_Speed_Factor.ZamboniHp)
 			## 抖动
 			var tween = create_tween()
 			tween.tween_property(body, "position", body.position + Vector2(1, 1), 0.05).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

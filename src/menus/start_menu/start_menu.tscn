@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dkbq8o27gtu37" path="res://src/menus/start_menu/start_menu_root.gd" id="1_2isde"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG.jpg" id="1_s2p02"]
-[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Right.png" id="2_j2mjb"]
-[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Center.png" id="2_jjhxv"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_BG_Right.png" id="2_j2mjb"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_BG_Center.png" id="2_jjhxv"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud1.png" id="2_xll4c"]
 [ext_resource type="AudioStream" uid="uid://bhwjr5o1d2cb8" path="res://assets_custom/audio/BGM/crazy_dave.mp3" id="2_yl4bl"]
 [ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_Cloud2.png" id="3_2isde"]
@@ -34,7 +34,7 @@
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_ZenGardenHighlight.png" id="29_jjhxv"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_Almanac.png" id="31_sxpcx"]
 [ext_resource type="Texture2D" path="res://pak/images/SelectorScreen_AlmanacHighlight.png" id="32_ortyp"]
-[ext_resource type="Texture2D" path="res://pak/reanim/SelectorScreen_BG_Left.png" id="37_at8of"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_start_menu/SelectorScreen_BG_Left.png" id="37_at8of"]
 [ext_resource type="Texture2D" path="res://pak/images/plantspeechbubble.png" id="41_l67l0"]
 [ext_resource type="Script" uid="uid://i4n5co3domph" path="res://src/menus/start_menu/garden_water_flag.gd" id="42_lvy6c"]
 [ext_resource type="Texture2D" path="res://pak/images/waterdrop.png" id="43_sa52e"]
@@ -59,13 +59,13 @@
 [ext_resource type="PackedScene" uid="uid://cp0kgnsx20pyh" path="res://src/ui/dialog.tscn" id="57_ry5e1"]
 [ext_resource type="PackedScene" uid="uid://cngkuh03v6yty" path="res://src/ui/dialog_confirm.tscn" id="58_confirm"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="59_e0j7q"]
-[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="60_343qg"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/options_menuback.png" id="60_343qg"]
 [ext_resource type="Script" uid="uid://batxx0jfofa74" path="res://src/menus/start_menu/start_menu_option_dialog.gd" id="61_pnpk5"]
 [ext_resource type="Texture2D" path="res://pak/images/options_backtogamebutton0.png" id="62_5qe3w"]
 [ext_resource type="PackedScene" uid="uid://5v0fdtao52jl" path="res://src/ui/control_canvas_layer.tscn" id="62_e0j7q"]
 [ext_resource type="Script" uid="uid://byfoq607wecwj" path="res://src/menus/start_menu/wood_sign.gd" id="63_gis02"]
 [ext_resource type="Script" uid="uid://61qhr6plpibr" path="res://src/menus/start_menu/user.gd" id="75_altii"]
-[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="75_ito2j"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/options_menuback.png" id="75_ito2j"]
 [ext_resource type="Texture2D" path="res://pak/images/dialog_header.png" id="76_nu6d8"]
 [ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="77_nu6d8"]
 [ext_resource type="Script" uid="uid://bubdoydqtlc6d" path="res://src/menus/start_menu/panel_create_new_user.gd" id="79_xqlaa"]
@@ -1278,7 +1278,7 @@ tracks/0/keys = {
 "times": PackedFloat32Array(0, 0.5),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(74, 550), Vector2(74, 40)]
+"values": [Vector2(71, 600), Vector2(71, 41)]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
@@ -1290,7 +1290,7 @@ tracks/1/keys = {
 "times": PackedFloat32Array(0, 0.5),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(0, 1), Vector2(0, -40)]
+"values": [Vector2(0, 0), Vector2(0, -80)]
 }
 tracks/2/type = "value"
 tracks/2/imported = false
@@ -1302,7 +1302,7 @@ tracks/2/keys = {
 "times": PackedFloat32Array(0, 0.5),
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
-"values": [Vector2(-93, 271), Vector2(-93, 250)]
+"values": [Vector2(80, 310), Vector2(80, 250)]
 }
 tracks/3/type = "value"
 tracks/3/imported = false
@@ -1314,7 +1314,7 @@ tracks/3/keys = {
 "times": PackedFloat32Array(0, 0.5, 0.933333),
 "transitions": PackedFloat32Array(1, 1, 1),
 "update": 0,
-"values": [Vector2(47, -249), Vector2(47, -249), Vector2(47, 0)]
+"values": [Vector2(23, -181), Vector2(23, -181), Vector2(23, -8)]
 }
 tracks/4/type = "value"
 tracks/4/imported = false
@@ -1569,29 +1569,29 @@ speed_scale = 0.2
 
 [node name="BG_Center" type="TextureRect" parent="." unique_id=1428561620]
 layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
+anchors_preset = 3
+anchor_left = 1.0
 anchor_top = 1.0
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -493.0
+offset_left = -720.0
 offset_top = -350.0
-offset_right = 286.0
-offset_bottom = 0.00048828125
-grow_horizontal = 2
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("2_jjhxv")
 
 [node name="BG_Left" type="TextureRect" parent="." unique_id=1417766778]
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -340.0
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -680.0
 offset_right = 476.0
-offset_bottom = 340.0
-grow_vertical = 2
+offset_bottom = 0.0
+grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("37_at8of")
 
@@ -1602,10 +1602,10 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -726.0
-offset_top = -50.0
-offset_right = 4.0
-offset_bottom = 510.0
+offset_left = -729.0
+offset_top = -559.0
+offset_right = 1.0
+offset_bottom = 1.0
 grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
@@ -1621,15 +1621,11 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Button1" type="TextureButton" parent="BG_Right/Menu" unique_id=769641551]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -389.0
-offset_top = 14.0
-offset_right = -58.0
-offset_bottom = 160.0
-grow_horizontal = 0
+layout_mode = 0
+offset_left = 334.0
+offset_top = 24.0
+offset_right = 665.0
+offset_bottom = 170.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("3_jrmm2")
 texture_pressed = ExtResource("4_qq5l0")
@@ -1677,15 +1673,11 @@ label_settings = SubResource("LabelSettings_advround")
 vertical_alignment = 1
 
 [node name="Button2" type="TextureButton" parent="BG_Right/Menu" unique_id=328292847]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -392.0
-offset_top = 119.0
-offset_right = -61.0
-offset_bottom = 265.0
-grow_horizontal = 0
+layout_mode = 0
+offset_left = 335.0
+offset_top = 132.1
+offset_right = 648.0
+offset_bottom = 265.1
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("7_udhvq")
 texture_pressed = ExtResource("8_kfgfy")
@@ -1693,15 +1685,11 @@ texture_hover = ExtResource("8_kfgfy")
 script = ExtResource("5_j2mjb")
 
 [node name="Button3" type="TextureButton" parent="BG_Right/Menu" unique_id=557463343]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -388.0
-offset_top = 209.0
-offset_right = -57.0
-offset_bottom = 355.0
-grow_horizontal = 0
+layout_mode = 0
+offset_left = 339.0
+offset_top = 216.5
+offset_right = 625.0
+offset_bottom = 338.5
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("10_intoo")
 texture_pressed = ExtResource("11_kjwot")
@@ -1709,15 +1697,11 @@ texture_hover = ExtResource("11_kjwot")
 script = ExtResource("5_j2mjb")
 
 [node name="Button4" type="TextureButton" parent="BG_Right/Menu" unique_id=1000885998]
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -393.0
-offset_top = 283.0
-offset_right = -62.0
-offset_bottom = 429.0
-grow_horizontal = 0
+layout_mode = 0
+offset_left = 342.0
+offset_top = 287.0
+offset_right = 608.0
+offset_bottom = 410.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("13_f134t")
 texture_pressed = ExtResource("14_614ej")
@@ -1726,25 +1710,19 @@ script = ExtResource("5_j2mjb")
 
 [node name="Flower" type="Control" parent="BG_Right" unique_id=321955551]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -251.0
-offset_top = -173.0
-offset_right = -19.0
-offset_bottom = -29.0
-grow_horizontal = 0
-grow_vertical = 0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="Button1" type="TextureButton" parent="BG_Right/Flower" unique_id=1570673420]
 layout_mode = 0
-offset_left = 133.0
-offset_top = 2.0
-offset_right = 169.0
-offset_bottom = 49.0
+offset_left = 609.0
+offset_top = 373.0
+offset_right = 645.0
+offset_bottom = 420.0
 pivot_offset = Vector2(21, 28)
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("16_oe188")
@@ -1754,10 +1732,10 @@ script = ExtResource("28_lvy6c")
 
 [node name="Button2" type="TextureButton" parent="BG_Right/Flower" unique_id=132857899]
 layout_mode = 0
-offset_left = 92.0
-offset_top = 14.0
-offset_right = 135.0
-offset_bottom = 57.0
+offset_left = 569.0
+offset_top = 396.0
+offset_right = 612.0
+offset_bottom = 439.0
 rotation = 0.293139
 pivot_offset = Vector2(22.3893, 19.4856)
 mouse_default_cursor_shape = 2
@@ -1767,11 +1745,11 @@ texture_hover = ExtResource("18_p37de")
 script = ExtResource("28_lvy6c")
 
 [node name="Button3" type="TextureButton" parent="BG_Right/Flower" unique_id=1743611085]
-layout_mode = 1
-offset_left = 184.0
-offset_top = 23.0
-offset_right = 230.0
-offset_bottom = 76.0
+layout_mode = 0
+offset_left = 669.0
+offset_top = 417.0
+offset_right = 715.0
+offset_bottom = 470.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("20_rdc4m")
 texture_pressed = ExtResource("20_rdc4m")
@@ -1780,25 +1758,19 @@ script = ExtResource("28_lvy6c")
 
 [node name="Option" type="Control" parent="BG_Right" unique_id=1553159727]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -251.0
-offset_top = -176.0
-offset_right = -16.0
-offset_bottom = -31.0
-grow_horizontal = 0
-grow_vertical = 0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="TextureButton" type="TextureButton" parent="BG_Right/Option" unique_id=541841903]
 layout_mode = 0
-offset_left = 10.0
-offset_top = 64.99963
-offset_right = 91.0
-offset_bottom = 97.99963
+offset_left = 494.0
+offset_top = 449.0
+offset_right = 575.0
+offset_bottom = 480.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("22_fkqsy")
 texture_pressed = ExtResource("23_c836s")
@@ -1807,10 +1779,10 @@ script = ExtResource("5_j2mjb")
 
 [node name="TextureButton2" type="TextureButton" parent="BG_Right/Option" unique_id=1448240739]
 layout_mode = 0
-offset_left = 100.0
-offset_top = 98.0
-offset_right = 149.0
-offset_bottom = 124.0
+offset_left = 576.0
+offset_top = 488.0
+offset_right = 624.0
+offset_bottom = 510.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("24_2ir4x")
 texture_pressed = ExtResource("25_0it6s")
@@ -1819,10 +1791,10 @@ script = ExtResource("5_j2mjb")
 
 [node name="TextureButton3" type="TextureButton" parent="BG_Right/Option" unique_id=601669848]
 layout_mode = 0
-offset_left = 168.0
-offset_top = 85.0
-offset_right = 218.0
-offset_bottom = 116.0
+offset_left = 649.0
+offset_top = 474.0
+offset_right = 696.0
+offset_bottom = 501.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("26_0sp34")
 texture_pressed = ExtResource("27_jjhxv")
@@ -1831,25 +1803,19 @@ script = ExtResource("5_j2mjb")
 
 [node name="Item" type="Control" parent="BG_Right" unique_id=1708783652]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -692.0
-offset_top = -164.0
-offset_right = -211.0
-offset_bottom = -6.0
-grow_horizontal = 0
-grow_vertical = 0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 
 [node name="TextureButton" type="TextureButton" parent="BG_Right/Item" unique_id=1183991008]
 layout_mode = 0
-offset_left = 25.0
-offset_top = -11.000366
-offset_right = 216.0
-offset_bottom = 151.99963
+offset_left = 100.0
+offset_top = 360.0
+offset_right = 291.0
+offset_bottom = 523.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("28_0sp34")
 texture_pressed = ExtResource("29_jjhxv")
@@ -1858,10 +1824,10 @@ script = ExtResource("5_j2mjb")
 
 [node name="GardenConditionFlag" type="TextureRect" parent="BG_Right/Item/TextureButton" unique_id=750186919]
 layout_mode = 0
-offset_left = 102.371
-offset_top = 32.2858
-offset_right = 152.371
-offset_bottom = 82.2858
+offset_left = 106.0
+offset_top = 36.0
+offset_right = 156.0
+offset_bottom = 86.0
 texture = ExtResource("41_l67l0")
 script = ExtResource("42_lvy6c")
 
@@ -1961,10 +1927,10 @@ centered = false
 
 [node name="TextureButton2" type="TextureButton" parent="BG_Right/Item" unique_id=783228993]
 layout_mode = 0
-offset_left = 211.0
-offset_top = -5.000366
-offset_right = 310.0
-offset_bottom = 93.99963
+offset_left = 256.0
+offset_top = 387.0
+offset_right = 355.0
+offset_bottom = 486.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("31_sxpcx")
 texture_pressed = ExtResource("32_ortyp")
@@ -1973,10 +1939,10 @@ script = ExtResource("5_j2mjb")
 
 [node name="TextureButton3" type="TextureButton" parent="BG_Right/Item" unique_id=1430078172]
 layout_mode = 0
-offset_left = 292.0
-offset_top = 46.999626
-offset_right = 423.68
-offset_bottom = 142.43936
+offset_left = 334.0
+offset_top = 441.0
+offset_right = 464.0
+offset_bottom = 530.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("53_wymjr")
 texture_pressed = ExtResource("54_ojqr6")
@@ -2121,9 +2087,10 @@ label_settings = SubResource("LabelSettings_x7dp7")
 
 [node name="WoodSign" type="Control" parent="." unique_id=1519060501]
 anchors_preset = 0
-offset_left = 47.0
-offset_right = 351.0
-offset_bottom = 249.0
+offset_left = 23.0
+offset_top = -8.0
+offset_right = 327.0
+offset_bottom = 241.0
 script = ExtResource("63_gis02")
 
 [node name="TextureRect" type="TextureRect" parent="WoodSign" unique_id=266057545]
@@ -2137,10 +2104,10 @@ layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -117.5
-offset_top = 86.1205
-offset_right = 123.5
-offset_bottom = 126.12
+offset_left = -96.6
+offset_top = 94.6
+offset_right = 144.4
+offset_bottom = 134.6
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_343qg")
 

@@ -6,7 +6,7 @@ class_name AlmanacZombiePage
 @onready var almanac_character_show_panel: AlmanacCharacterShowPanel = $AlmanacCharacterShowPanel
 
 ## 图鉴僵尸卡牌场景
-const ALMANAC_ZOMBIE_CARD = preload("res://src/almanac/almanac_zombie_card.tscn")
+var ALMANAC_ZOMBIE_CARD = AssetRegistry.get_scene("res://src/almanac/almanac_zombie_card.tscn")
 
 func init_almanac_page() -> void:
 	## 连接所有僵尸卡片点击信号

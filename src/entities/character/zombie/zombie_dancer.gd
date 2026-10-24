@@ -53,16 +53,6 @@ func init_random_speed():
 ## 伴舞僵尸从地下出现
 func zombie_appear_from_ground():
 	await zombie_up_from_ground()
-	#dirt.start_dirt()
-	#body.visible = false
-	#mask.visible = true
-	#body_in_mask.position.y = 300.0
-	#var tween = create_tween()
-	##await get_tree().process_frame
-	#tween.tween_property(body_in_mask, ^"global_position", body.global_position, 1.0)
-	#await tween.finished
-	#body.visible = true
-	#mask.visible = false
 
 ## 初始化展示角色
 func _init_show_jackon():

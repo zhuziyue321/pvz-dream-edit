@@ -1,11 +1,14 @@
 extends LevelScriptBase
-## survival_flag_03_pool —— 由同目录的 survival_flag_03_pool.tres 迁移而来
+## survival_flag_03_pool —— 原版「生存模式：泳池（普通）」
 ##
-## 关卡 = 属性（_init 里赋值）+ 流程（run_flow 一段顺序程序），不再有 .tres。
-## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
+## 普通生存 = 5 旗，每轮 10 波；出怪逐轮按原版生存规则生成（见 ZombieManager）。
 
 
 func _init() -> void:
+	save_key = "104_0_0003"
+	max_wave = 10
+	game_round = 5
+	survival_difficulty = ConstLevelData.E_SurvivalDifficulty.Normal
 	game_sences = MainSceneRegistry.MainScenes.MainGameBack
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.Pool
@@ -15,27 +18,13 @@ func _init() -> void:
 ## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
-	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[StringName] = [
-		ZombieIds.NORM,
-		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
-		ZombieIds.BUCKET,
-		ZombieIds.PAPER,
-		ZombieIds.SCREEN_DOOR,
-		ZombieIds.FOOTBALL,
-		ZombieIds.ZAMBONI,
-		ZombieIds.BOBSLED,
-		ZombieIds.DOLPHINRIDER,
-	]
-
-	## 展示僵尸
-	await show_zombie(zombie_list)
+	## 展示僵尸（空表 = 用僵尸管理器本轮生成的出怪表）
+	await show_zombie()
 	## 选卡
 	await choose_card()
-	## 准备安放植物
 	## 初始化小推车
 	await init_lawn_mover()
+	## 准备安放植物
 	await ready_set_plant()
-	## 开战
-	await start_battle(100, zombie_list)
+	## 开战：普通档每轮 10 波，打满 5 轮判胜
+	await start_battle(10)

@@ -16,3 +16,5 @@ func _init() -> void:
 	is_day = false
 	is_day_sun = false
 	is_blood_moon = true
+	## DLC 给月夜屋顶画了专属的血月底图（`BACKGROUND_BLOODMOON`），血月时直接换图而不是染红
+	is_blood_moon_bg_art = true

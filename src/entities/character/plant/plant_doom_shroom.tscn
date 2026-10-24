@@ -31,26 +31,26 @@ animation = &"DoomShroom_idle"
 animation = &"DoomShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_74em3"]
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xi7k7"]
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_rcrem"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_h4mhh"]
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_vckfh"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_fmcth"]
 states/DoomShroom_explode/node = SubResource("AnimationNodeAnimation_dc52l")
@@ -1582,6 +1582,7 @@ _data = {
 [node name="Plant016DoomShroom" node_paths=PackedStringArray("node_no_change_direction", "node2d_detect_in_slope") instance=ExtResource("1_uubea")]
 script = ExtResource("2_tjrwq")
 plant_type = &"doom_shroom"
+norm_anim_state = &"DoomShroom_explode"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("BombComponent/Area2DBomb")]
 

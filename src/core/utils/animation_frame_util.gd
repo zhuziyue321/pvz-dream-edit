@@ -5,13 +5,13 @@ class_name AnimationFrameUtil
 ## 最常见的两种调用：
 ##   ## 一步拿到图片(内部要离屏渲染,必须 await)
 ##   var tex := await AnimationFrameUtil.create_frame_texture(
-##       preload("res://src/items/lawn_mower/pool_cleaner.tscn"),
+##       AssetRegistry.get_scene("res://src/items/lawn_mower/pool_cleaner.tscn"),
 ##       &"PoolCleaner_land_static", 0, Vector2(67, 68), 2.0)
 ##   $Icon.texture = tex
 ##
 ##   ## 只想拿到"定格的形象节点"(不渲染,同步返回)
 ##   var node := AnimationFrameUtil.create_frame_node(
-##       preload("res://src/items/lawn_mower/roof_cleaner.tscn"), &"RoofCleaner", 0)
+##       AssetRegistry.get_scene("res://src/items/lawn_mower/roof_cleaner.tscn"), &"RoofCleaner", 0)
 ##   add_child(node)
 ##
 ## 实现要点(改这里前先看)：

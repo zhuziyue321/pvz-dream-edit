@@ -12,6 +12,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_0_0010"
 	## 二周目差异：开局锁定前 3 个随机卡槽 —— 从本关能用的植物里随机挑 3 株占住前 3 槽，
 	## 玩家只能编辑第 4 个槽起的部分（机制与边界见 docs/参考存档/二周目.md）
 	locked_random_card_num = 3
@@ -44,7 +45,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(30)
+	## 首波 1 秒：原版迷你 boss（冒险 1-10 / 2-10 / 3-10）`mZombieCountDown = 100` tick
+	await start_battle(30, [], 0.0, 1.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

@@ -1,0 +1,90 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Animation" path="res://animation/character/plant/jalapeno/jalapeno_idle.tres" id="1_idle"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_stem.png" id="2_stem"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_body.png" id="3_body"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_mouth.png" id="4_mouth"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_eye1.png" id="5_eye1"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_eye2.png" id="6_eye2"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_cheek.png" id="7_cheek"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_eyebrow1.png" id="8_brow1"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_eyebrow2.png" id="9_brow2"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_head"]
+_data = {
+&"Head_Idle": ExtResource("1_idle")
+}
+
+[node name="PlantHead" type="Node2D"]
+
+[node name="Body" type="Node2D" parent="."]
+
+[node name="BodyCorrect" type="Node2D" parent="Body"]
+
+[node name="Anim_blink" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+centered = false
+
+[node name="Anim_idle" type="Sprite2D" parent="Body/BodyCorrect"]
+centered = false
+
+[node name="Anim_explode" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+centered = false
+
+[node name="Jalapeno_stem" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(34.1913, 2.9248998)
+rotation = 0.11341165
+scale = Vector2(0.77409106, 0.79458505)
+skew = -0.016867105
+texture = ExtResource("2_stem")
+centered = false
+
+[node name="Jalapeno_body" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(16.8834, 11.049799)
+scale = Vector2(0.814079, 0.784838)
+texture = ExtResource("3_body")
+centered = false
+
+[node name="Jalapeno_mouth" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(25.900402, 34.3083)
+scale = Vector2(0.8714779, 0.75018203)
+texture = ExtResource("4_mouth")
+centered = false
+
+[node name="Jalapeno_eye1" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(21.3, 19.7498)
+scale = Vector2(0.8, 0.75009906)
+texture = ExtResource("5_eye1")
+centered = false
+
+[node name="Jalapeno_eye2" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(41, 25.549799)
+scale = Vector2(0.8, 0.6884511)
+texture = ExtResource("6_eye2")
+centered = false
+
+[node name="Jalapeno_cheek" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(41.783398, 28.8751)
+scale = Vector2(0.70356095, 0.75226504)
+texture = ExtResource("7_cheek")
+centered = false
+
+[node name="Jalapeno_eyebrow1" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(23.082998, 15.8)
+rotation = 0.094509065
+scale = Vector2(0.840154, 0.793585)
+skew = -0.0034902415
+texture = ExtResource("8_brow1")
+centered = false
+
+[node name="Jalapeno_eyebrow2" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(39.908302, 21.949799)
+scale = Vector2(0.84440297, 0.772925)
+texture = ExtResource("9_brow2")
+centered = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_head")
+}

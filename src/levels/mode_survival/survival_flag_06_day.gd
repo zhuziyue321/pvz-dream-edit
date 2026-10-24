@@ -1,37 +1,28 @@
 extends LevelScriptBase
-## survival_flag_06_day —— 由同目录的 survival_flag_06_day.tres 迁移而来
+## survival_flag_06_day —— 原版「生存模式：白天（困难）」
 ##
-## 关卡 = 属性（_init 里赋值）+ 流程（run_flow 一段顺序程序），不再有 .tres。
-## 原 .tres 上的 timeline 事件数组已按原顺序平铺成 run_flow() 里的 await 序列。
+## 困难生存 = 10 旗：每轮 20 波（一轮两旗），打满 5 轮判胜。
+## 出怪按原版生存规则逐轮生成（见 ZombieManager._update_survival_zombie_refresh_types）。
 
 
 func _init() -> void:
-	game_round = 10
+	save_key = "104_0_0006"
+	max_wave = 20
+	game_round = 5
+	survival_difficulty = ConstLevelData.E_SurvivalDifficulty.Hard
 
 
 ## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
 ## 本关流程用不上 mg（流程方法自己会去取主游戏），照抄基类签名并按下这条未使用告警。
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
-	## 出怪表：本关多处要用同一份，抽成变量避免重复写
-	var zombie_list: Array[StringName] = [
-		ZombieIds.NORM,
-		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
-		ZombieIds.BUCKET,
-		ZombieIds.FOOTBALL,
-		ZombieIds.JACKSON,
-		ZombieIds.LADDER,
-		ZombieIds.GARGANTUAR,
-	]
-
-	## 展示僵尸
-	await show_zombie(zombie_list)
+	## 展示僵尸（空表 = 用僵尸管理器本轮生成的出怪表）
+	await show_zombie()
 	## 选卡
 	await choose_card()
-	## 准备安放植物
 	## 初始化小推车
 	await init_lawn_mover()
+	## 准备安放植物
 	await ready_set_plant()
-	## 开战
-	await start_battle(20, zombie_list)
+	## 开战：困难档每轮 20 波，打满 5 轮判胜
+	await start_battle(20)

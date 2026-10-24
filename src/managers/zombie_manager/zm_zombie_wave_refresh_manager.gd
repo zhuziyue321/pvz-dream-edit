@@ -45,7 +45,8 @@ enum E_RefreshStatus{
 
 ## 残半刷新的血量流失比例范围(本波僵尸剩余总血量低于该比例时激活刷新)
 @export var refresh_threshold_range := Vector2(0.5, 0.65)
-## 残半刷新的下一波正常刷新的时间范围(原版最长波长 = 25 + rand(0,6) 秒)
+## 残半刷新的下一波正常刷新的时间范围(原版最长波长 = 25 + rand(0,6) 秒,按整数 tick 取到 25.00~30.99)
+## 关卡可用 `ResourceLevelData.wave_norm_time_range` 覆盖(原版小僵尸大麻烦 / 排山倒海 / 坚不可摧 = 7.5 秒)
 @export var norm_refresh_time_range_in_half_refresh :=  Vector2(25.0, 31.0)
 ## 全部死亡刷新的下一波正常刷新的时间范围(旗前波)
 ## 原版旗前波是固定 45 秒:全场僵尸死完或拖延 45 秒才激活红字,红字后再过约 7.45 秒刷出大波
@@ -54,6 +55,9 @@ enum E_RefreshStatus{
 @export var time_min_wave := 6.0
 ## 刷新真空:提前刷新条件满足只是「激活刷新」,再过本秒数才真正刷出下一波(原版 2 秒)
 @export var refresh_vacuum_time := 2.0
+
+## 原版逻辑时钟:100 tick = 1 秒(原版波长 / 刷新倒计时全部按整数 tick 取随机)
+const TICKS_PER_SECOND := 100
 
 ## 当前刷新状态
 var curr_refresh_status:=E_RefreshStatus.DisableRefresh
@@ -81,6 +85,15 @@ signal signal_start_await_refresh
 func _ready() -> void:
 	wave_min_time_timer.wait_time = time_min_wave
 
+
+## 应用关卡数据里的普通波 / 旗帜波波长（`ResourceLevelData.wave_norm_time_range`）
+## 原版对小僵尸大麻烦 / 排山倒海 / 最后防线三关写死 750 tick = 7.5 秒，覆盖走这里；
+## 传 Vector2.ZERO 或非法区间时保持默认 25.00 ~ 30.99 秒
+func apply_wave_norm_time_range(time_range: Vector2) -> void:
+	if time_range.x <= 0.0 or time_range.y < time_range.x:
+		return
+	norm_refresh_time_range_in_half_refresh = time_range
+
 ## 每次刷新僵尸后获取当前波次生成僵尸血量值
 func update_wave_health_data(curr_wave_total_health:int, new_curr_wave_type:ZombieWaveManager.E_WaveType, new_curr_wave:int):
 	self.curr_wave_type = new_curr_wave_type
@@ -107,15 +120,24 @@ func update_wave_health_data(curr_wave_total_health:int, new_curr_wave_type:Zomb
 			Log.info("最后一波")
 	_update_timer()
 
+## 区间内按原版口径取一个波长：原版是整数 tick，即 25 + rand(0,600) tick = 25.00 ~ 30.99 秒
+## 区间端点相同（旗前波 45 秒 / 三关写死的 7.5 秒）时直接返回该值
+func _random_norm_refresh_time(time_range: Vector2) -> float:
+	var span_ticks := int(round((time_range.y - time_range.x) * TICKS_PER_SECOND))
+	if span_ticks <= 0:
+		return time_range.x
+	return time_range.x + float(GameRng.randi_range(0, span_ticks - 1)) / TICKS_PER_SECOND
+
+
 ## 更新计时器
 func _update_timer():
 	var wave_norm_refresh_time := 0.0
 	match curr_can_refresh_type:
 		E_RefreshType.HalfRefresh:
-			wave_norm_refresh_time = GameRng.randf_range(norm_refresh_time_range_in_half_refresh.x, norm_refresh_time_range_in_half_refresh.y)
+			wave_norm_refresh_time = _random_norm_refresh_time(norm_refresh_time_range_in_half_refresh)
 
 		E_RefreshType.TotalRefresh:
-			wave_norm_refresh_time = GameRng.randf_range(norm_refresh_time_range_in_total_refresh.x, norm_refresh_time_range_in_total_refresh.y)
+			wave_norm_refresh_time = _random_norm_refresh_time(norm_refresh_time_range_in_total_refresh)
 
 	## 不可以刷新
 	if curr_can_refresh_type == E_RefreshType.Null:

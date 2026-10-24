@@ -105,6 +105,11 @@ func force_win_on_flow_finished() -> void:
 func win_with_trophy(glo_pos:Vector2) -> void:
 	if not _try_start_win():
 		return
+	## 原版关卡结算的奖项里有 15% 是一盆花园植物（Challenge.cpp 的 aHit < 15），
+	## 条件是已通关冒险 + 花园没满（见 DropItemManager.try_drop_garden_plant_award）。
+	## 它是"额外掉落"，不参与结算流程，点了就进花园待放置队列
+	if is_instance_valid(main_game) and main_game.drop_item_manager != null:
+		main_game.drop_item_manager.try_drop_garden_plant_award(glo_pos)
 	## 本关的解锁道具是"通关时掉落"（关卡数据 drop_unlock_on_level_complete）：
 	## 先掉道具，等玩家点开再抛奖杯
 	await drop_unlock_item_on_level_complete(glo_pos)
@@ -284,7 +289,11 @@ func wait_reward_drop_opened(new_drop:Node2D) -> bool:
 		return false
 	var waited := 0.0
 	while is_instance_valid(new_drop) and not new_drop.is_queued_for_deletion() and waited < UNLOCK_DROP_WAIT_TIME:
-		if bool(new_drop.get("is_opened")):
+		## `is_opened` 现在在 `DropItemBase` 上（掉落物统一的"已被拾取"），不再靠名字反射去取
+		if new_drop is DropItemBase:
+			if (new_drop as DropItemBase).is_opened:
+				return true
+		elif bool(new_drop.get("is_opened")):
 			return true
 		await get_tree().create_timer(UNLOCK_DROP_WAIT_STEP).timeout
 		waited += UNLOCK_DROP_WAIT_STEP
@@ -344,6 +353,7 @@ func win_main_game():
 		Global.global_game_state.advance_adventure_round()
 
 	if is_need_goto_store_on_win(is_shop_unlocked_before, shop_expand_stage_before):
+		_prepare_store_intro()
 		GlobalUtils.change_scene(
 			Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.Store)
 		)
@@ -370,11 +380,36 @@ func is_need_goto_store_on_win(is_shop_unlocked_before: bool, shop_expand_stage_
 		Log.info("通关 3-4 拿到车钥匙，商店解锁，直接进入商店")
 		return true
 	if Global.global_game_state.get_shop_expand_stage() > shop_expand_stage_before:
+		## 原版通关 5-10 不跳商店（AwardScreen 里只处理 3-4 / 4-4 / 5-1；5-10 是结局），
+		## 第四页（禅境花园 / 蜗牛 / 智慧树 / 树肥料）只是随通关上架，玩家自己从主菜单进店看
+		if _get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
+			Log.info("通关冒险模式 5-10：商店第四页上架（原版不自动跳商店）")
+			return false
 		Log.info(str("通关冒险模式 ") \
 			+ ConstUnlockLevel.get_adventure_level_name(_get_curr_adventure_level()) \
 			+ str(" 商店扩充，直接进入商店"))
 		return true
 	return false
+
+
+## 原版进店时的专属开场（SetupForIntro）：3-4 车钥匙开张、5-1 新货上架。
+## 文案取 data/strings/lawn_strings.txt 的 CRAZY_DAVE_301/302、CRAZY_DAVE_3100。
+## 4-4（原版 aLevel 35 → SetupForIntro(601) 送魔法塔可）本仓库把塔可放在 4-4 的通关奖励里，
+## 进店开场仍用默认的 303/304，不重复说一次。
+## 5-10 原版不跳商店，见 is_need_goto_store_on_win。
+const STORE_INTRO_301 := "嘿，你找到了我的车钥匙！"
+const STORE_INTRO_302 := "你知道这意味着……"
+const STORE_INTRO_3100 := "嘿，我的邻居！我有一些新东西出售啦！"
+
+
+## 把本关的进店开场塞给 StoreManager（切场景前赋值，静态变量，见 StoreManager.pending_intro_lines）
+func _prepare_store_intro() -> void:
+	var curr_level := _get_curr_adventure_level()
+	StoreManager.pending_intro_lines = []
+	if curr_level == ConstUnlockLevel.SHOP_UNLOCK_ADVENTURE_LEVEL:
+		StoreManager.pending_intro_lines = [STORE_INTRO_301, STORE_INTRO_302]
+	elif curr_level == ConstUnlockLevel.SHOP_EXPAND_SECOND_ADVENTURE_LEVEL:
+		StoreManager.pending_intro_lines = [STORE_INTRO_3100]
 
 
 ## 通关后是否需要直接打开图鉴（原版：2-4 掉落大图鉴后才开放图鉴）

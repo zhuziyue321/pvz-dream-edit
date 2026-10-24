@@ -395,12 +395,12 @@ animation = &"Squash_lookright"
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_m8m84"]
-advance_mode = 2
-advance_expression = "is_attack and not is_right"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_fa7qm"]
-advance_mode = 2
-advance_expression = "is_attack and is_right"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_q67rh"]
 switch_mode = 2

@@ -10,14 +10,42 @@ var sell_plant_cell :PlantCellGarden
 ## 给戴夫手上的plant_cell
 var plant_cell_give_dave:PlantCellGarden
 
-const price_from_stage = {
-	GardenManager.E_GrowthStage.Sprout: 1500,
-	GardenManager.E_GrowthStage.Small: 3000,
-	GardenManager.E_GrowthStage.Medium: 5000,
-	GardenManager.E_GrowthStage.Large: 8000,
-	GardenManager.E_GrowthStage.Perfect: 8000,
-
+## 售价（原版 ZenGarden::GetPlantSellPrice）：
+##   金盏花：苗 150 / 小 200 / 中 250 / 满级 300
+##   其余：  苗 150 / 小 300 / 中 500 / 满级 800（满级的水生 / 夜行植物 1000）
+const MARIGOLD_PRICE_FROM_STAGE := {
+	GardenManager.E_GrowthStage.Sprout: 150,
+	GardenManager.E_GrowthStage.Small: 200,
+	GardenManager.E_GrowthStage.Medium: 250,
+	GardenManager.E_GrowthStage.Full: 300,
 }
+const PRICE_FROM_STAGE := {
+	GardenManager.E_GrowthStage.Sprout: 150,
+	GardenManager.E_GrowthStage.Small: 300,
+	GardenManager.E_GrowthStage.Medium: 500,
+	GardenManager.E_GrowthStage.Full: 800,
+}
+## 满级水生 / 夜行植物的售价（原版 Plant::IsAquatic / IsNocturnal 的加价）
+const FULL_AQUATIC_OR_NOCTURNAL_PRICE := 1000
+
+
+## 这株植物戴夫出多少钱（原版 GetPlantSellPrice）
+## 物种在入手时就定了，存在 curr_plant_species；老存档没有这个键时退回 curr_plant_type
+func _get_sell_price(plant_data: Dictionary) -> int:
+	var stage := int(plant_data.get("curr_growth_stage", GardenManager.E_GrowthStage.Sprout)) \
+		as GardenManager.E_GrowthStage
+	var species := PlantIds.from_legacy(plant_data.get("curr_plant_species", PlantIds.NULL))
+	if species == PlantIds.NULL:
+		species = PlantIds.from_legacy(plant_data.get("curr_plant_type", PlantIds.NULL))
+
+	if species == PlantIds.MARI_GOLD:
+		return int(MARIGOLD_PRICE_FROM_STAGE.get(stage, 150))
+	if stage == GardenManager.E_GrowthStage.Full:
+		## curr_plant_condition 的 bit1 = 陆地，清掉就是水生
+		var is_aquatic := (int(plant_data.get("curr_plant_condition", 2)) & 2) == 0
+		if is_aquatic or PlantIds.NOCTURNAL.has(species):
+			return FULL_AQUATIC_OR_NOCTURNAL_PRICE
+	return int(PRICE_FROM_STAGE.get(stage, 150))
 @onready var crazy_dave: CrazyDave = $DaveCanvasLayer/CrazyDave
 
 
@@ -27,7 +55,7 @@ func use_it():
 	sell_plant_cell = curr_plant_cell
 	curr_plant_cell.free_curr_plant()
 
-	curr_plant_price = price_from_stage[choosed_plant_data["curr_growth_stage"]]
+	curr_plant_price = _get_sell_price(choosed_plant_data)
 
 	dave_dialog.dialog_detail_list[0].text = "我给你$" + str(curr_plant_price) + "换你这棵植物！"
 

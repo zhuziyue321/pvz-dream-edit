@@ -12,9 +12,15 @@ func ready_norm_signal_connect():
 	signal_update_speed.connect(attack_component.owner_update_speed)
 
 	attack_component.signal_change_is_attack.connect(
-		## 可以攻击时禁用眨眼
 		func(_value):
-			is_rise = attack_component.detect_component.judge_zombie_in_sky()
+			## ★ 起 / 落动画由本脚本点名（两条转换已改为手动 travel，见 `plant_cactus.tscn`）
+			## ⚠️ 只在 `is_rise` **真的变化**时切换：`Cactus_rise` 只能从低位攻击状态
+			##    （BlendTree）过去、`Cactus_lower` 只能从高位（BlendTree 2）过去，
+			##    每帧都 request 会在另一个状态下 travel 失败（静默）
+			var rise_now: bool = attack_component.detect_component.judge_zombie_in_sky()
+			if rise_now != is_rise:
+				is_rise = rise_now
+				request_anim_state(&"Cactus_rise" if is_rise else &"Cactus_lower")
 			attack_component.on_cactus_update_is_rise(is_rise)
 	)
 

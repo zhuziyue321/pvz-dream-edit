@@ -5,23 +5,31 @@ class_name GoodsGardenTool
 ##   (见 ConstShop.ONE_TIME_GARDEN_TOOL_PRICE)
 ## 消耗型(肥料 / 杀虫剂 / 树肥料): 一份 ConstShop.get_garden_tool_num_per_buy() 个,可重复购买;
 ##   持有满 ConstShop.get_tool_max_own_num() 时禁售,戴夫提示先去花园里用掉一些
-## 花园未解锁(未通关 5-5)时不可购买,与金盏花幼苗同一套口径(Goods.apply_garden_unlock_lock)
+## 花园未解锁(未通完 5-4)时不可购买,与金盏花幼苗同一套口径(Goods.apply_garden_unlock_lock)
 ## 花园侧的可用性门控见 GardenManager._refresh_garden_tool_visible
 
 ## 本商品卖的是哪件工具
 @export var garden_tool: GardenManager.E_GardenTool = GardenManager.E_GardenTool.Fertilizer
 
-## 各工具的商品图标(原版图标就在 assets/image/garden 下,不必另配商店图)
+## 各工具的商品图标**路径**(原版图标就在 pak 素材里,不必另配商店图)
+## 值存路径:加载与缓存交给 AssetRegistry(见 get_tool_icon)
 const TOOL_ICON: Dictionary = {
-	GardenManager.E_GardenTool.GoldWateringCan: preload("res://pak/images/WateringCanGold.png"),
-	GardenManager.E_GardenTool.Fertilizer: preload("res://pak/images/Fertilizer.png"),
-	GardenManager.E_GardenTool.BugSpray: preload("res://pak/images/bug_spray.png"),
-	GardenManager.E_GardenTool.Phonograph: preload("res://pak/images/Phonograph.png"),
-	GardenManager.E_GardenTool.GardeningGlove: preload("res://pak/images/Zen_GardenGlove.png"),
-	GardenManager.E_GardenTool.Chocolate: preload("res://pak/images/chocolate.png"),
-	GardenManager.E_GardenTool.Snail: preload("res://pak/reanim/Stinky_shell.png"),
-	GardenManager.E_GardenTool.TreeFood: preload("res://pak/images/TreeFood.png"),
+	GardenManager.E_GardenTool.GoldWateringCan: "res://pak/images/WateringCanGold.png",
+	GardenManager.E_GardenTool.Fertilizer: "res://pak/images/Fertilizer.png",
+	GardenManager.E_GardenTool.BugSpray: "res://pak/images/bug_spray.png",
+	GardenManager.E_GardenTool.Phonograph: "res://pak/images/Phonograph.png",
+	GardenManager.E_GardenTool.GardeningGlove: "res://pak/images/Zen_GardenGlove.png",
+	GardenManager.E_GardenTool.Chocolate: "res://pak/images/chocolate.png",
+	GardenManager.E_GardenTool.Snail: "res://pak/reanim/Stinky_shell.png",
+	GardenManager.E_GardenTool.TreeFood: "res://pak/images/TreeFood.png",
 }
+
+## 取某个园艺工具的商品图标;没登记返回 null(调用方判空)
+static func get_tool_icon(tool: GardenManager.E_GardenTool) -> Texture2D:
+	var path: String = TOOL_ICON.get(tool, "")
+	if path == "":
+		return null
+	return AssetRegistry.get_texture(path)
 
 ## 少数工具的图标不用单张贴图,而是「取动画的某一帧」渲染出来(见 AnimationFrameUtil)
 ## 目前只有蜗牛:TOOL_ICON 里的 Stinky_shell 只是个壳,没有身体 / 触角 / 尾巴,
@@ -73,7 +81,7 @@ const TOOL_NUM_FULL_TIP := "**你手上已经有 %d 个了，先去花园里用�
 
 func _ready() -> void:
 	price = ConstShop.get_garden_tool_price(garden_tool)
-	store_icon.texture = TOOL_ICON.get(garden_tool, null)
+	store_icon.texture = get_tool_icon(garden_tool)
 	## 配了"取动画某一帧"的工具,图标换成渲染出来的那一帧(渲染完成前先用 TOOL_ICON 兜底)
 	_render_frame_icon()
 	## 没有配置戴夫对话时,用该工具的默认话术兜底
@@ -103,17 +111,22 @@ func judge_can_get_goods():
 	super.judge_can_get_goods()
 	if not apply_garden_unlock_lock():
 		return
+	## 树肥料：原版需先买智慧树，否则为 Coming Soon（暂不出售）
+	if garden_tool == GardenManager.E_GardenTool.TreeFood \
+			and not Global.global_game_state.is_tree_of_wisdom_bought():
+		button.disabled = true
+		curr_dialog_detail.text = COMING_SOON_TIP + dialog_detail.text
+		return
 	if _is_tool_num_full():
 		button.disabled = true
 		curr_dialog_detail.text = TOOL_NUM_FULL_TIP % ConstShop.get_tool_max_own_num(garden_tool) \
 			+ dialog_detail.text
 
 
-## 买断型已买过则售罄("已拥有");消耗型永远有货,靠持有上限禁售
+## 买断型已买过则售出("已售出");消耗型永远有货,靠持有上限禁售
 func _refresh_goods_state() -> void:
 	if Global.global_game_state.is_garden_tool_bought(garden_tool):
 		is_have_goods = false
-		is_not_have_goods_label.text = "已拥有"
 	is_not_have_goods_label.visible = not is_have_goods
 
 
@@ -139,6 +152,4 @@ func get_one_goods():
 			garden_tool, ConstShop.get_garden_tool_num_per_buy(garden_tool))
 	else:
 		Global.global_game_state.buy_garden_tool(garden_tool)
-	Global.save_service.save_now()
-	_refresh_goods_state()
-	judge_can_get_goods()
+	_finish_goods_granted()

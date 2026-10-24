@@ -29,12 +29,12 @@ func _init() -> void:
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 SPEED 白名单（Challenge.cpp：普/路障/海豚/撑杆）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.NORM,
 		ZombieIds.CONE,
+		ZombieIds.DOLPHINRIDER,
 		ZombieIds.POLE_VAULTER,
-		ZombieIds.BUCKET,
-		ZombieIds.FOOTBALL,
 	]
 
 	## 展示僵尸
@@ -45,5 +45,5 @@ func run_flow(mg: MainGameManager) -> void:
 	## 初始化小推车
 	await init_lawn_mover()
 	await ready_set_plant()
-	## 开战
-	await start_battle(20, zombie_list)
+	## 开战（原版 SPEED 无专属波数，落默认 else 分支 = 40 波 / 4 旗；此前误写 20）
+	await start_battle(40, zombie_list)

@@ -58,21 +58,21 @@ animation = &"FumeShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_oiiue"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ic5q6"]
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_p2ylm"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_47ii7"]
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_bbrt2"]
 states/FumeShroom_idle/node = SubResource("AnimationNodeAnimation_asf73")

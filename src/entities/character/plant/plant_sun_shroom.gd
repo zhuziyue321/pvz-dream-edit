@@ -4,8 +4,8 @@ class_name Plant010SunShroom
 @onready var create_sun_component: CreateSunComponent = $CreateSunComponent
 @onready var grow_timer: Timer = $GrowTimer
 
-## 成长所需时间
-@export var time_grow:float = 100
+## 成长所需时间（游戏秒）：原版 `mStateCountdown = 12000` tick @100 Hz = **120 秒**（`Plant.cpp:388`）
+@export var time_grow:float = 120
 ## 小阳光价值
 @export var mini_sun_value := 15
 ## 正常阳光价值
@@ -32,8 +32,11 @@ func ready_norm_signal_connect():
 	signal_update_speed.connect(create_sun_component.owner_update_speed)
 
 ## 成长结束
+##
+## ★ 动画状态由本脚本点名（该转换已改为手动 travel，见 `plant_sun_shroom.tscn`）
 func _on_grow_timer_timeout() -> void:
 	self.is_grow = true
+	request_anim_state(&"SunShroom_grow")
 	create_sun_component.change_sun_value(norm_sun_value)
 
 ## 更新成长的速度
@@ -72,3 +75,5 @@ func load_game_data_plant(save_game_data_plant:Dictionary):
 	if is_grow:
 		grow_timer.stop()
 		create_sun_component.change_sun_value(norm_sun_value)
+		## 读档时状态机已经按初始值选过 idle 了，这里补一次显式切换
+		request_anim_state(&"SunShroom_grow")

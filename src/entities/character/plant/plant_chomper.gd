@@ -45,18 +45,22 @@ func owner_update_speed(speed_product:float):
 
 ## 改变是否正在攻击,即攻击范围内是否有敌人
 ## [param is_attack] true: 检测到可攻击敌人；false: 范围内已经没有目标（敌人死了 / 走了）
+## ★ 动画状态由本脚本点名（该植物 4 条转换已改为手动 travel，见 `plant_chomper.tscn`）
 func change_is_attack(is_attack:bool):
 	if is_attack:
 		## 不在咀嚼状态,并且不在啃咬状态
 		if not is_chewing and not is_bite:
 			is_bite = true
+			request_anim_state(&"Bite")
 	elif not is_chewing:
 		## 目标消失就把咬的意图收回去，避免对着空气咬一口
 		is_bite = false
+		request_anim_state(&"Chomper_idle")
 
-## 咀嚼完成
+## 咀嚼完成：接吞咽动画
 func _on_chew_timer_timeout() -> void:
 	is_chewing = false
+	request_anim_state(&"Chomper_swallow")
 #endregion
 
 #region 动画轨道调用
@@ -64,6 +68,7 @@ func _on_chew_timer_timeout() -> void:
 func swallow_end():
 	if is_instance_valid(detect_component.enemy_can_be_attacked):
 		is_bite = true
+		request_anim_state(&"Bite")
 
 ## 啃咬动画结束
 func bite_end():
@@ -71,7 +76,10 @@ func bite_end():
 	## 如果没有啃咬到僵尸
 	if not is_chewing:
 		if is_instance_valid(detect_component.enemy_can_be_attacked):
+			## 还有目标：留在 Bite（该状态动画自循环），不重新 travel 免得从第一帧重播
 			is_bite = true
+		else:
+			request_anim_state(&"Chomper_idle")
 #endregion
 
 ## 大嘴花咬一口,动画调用
@@ -92,6 +100,7 @@ func _eat_zombie():
 		zombie.be_chomper_eat(0, true)
 		chew_timer.start()
 		is_chewing = true
+		request_anim_state(&"Chomper_chew")
 	else:
 		## 啃咬：伤害就是角色攻击力，不进入咀嚼
 		zombie.be_chomper_eat(attack_value)

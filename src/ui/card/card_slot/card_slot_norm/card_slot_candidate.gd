@@ -93,34 +93,16 @@ func _init_card_page():
 				all_show_page_imitater.append(card_page)
 				break
 
-## 初始化生成植物待选卡槽：卡位顺序取数据层快照，容器从池里取（跨关卡复用）
+## 初始化生成植物待选卡槽：卡位排版取数据层快照，容器从池里取（跨关卡复用）
 func _init_card_slot_candidate_plant(catalog: CardSeedChooserCatalog):
-	## 页数由植物总数算出来（见 _create_card_pages）
-	var all_placeholder_of_page := _create_card_pages(grid_container_plant, all_card_page,
-		all_card_page_array, catalog.plants.size())
-	if all_placeholder_of_page.is_empty():
-		return
-	## 每一页的卡片数量
-	var num_card_every_page: int = all_placeholder_of_page[0].size()
-	for i:int in catalog.plants.size():
-		## 源卡（AllCards 常驻节点）→ 池里同身份的候选容器（没有才新建）
-		var source_card: Card = catalog.plants[i]
-		var card_candidate_container: CardCandidateContainer = \
-			SceneRegistry.acquire_candidate_container(source_card, false)
-		## 页下标 = i / 每页格数，这里要的就是整除取整（页数由 _create_card_pages 按卡片总数算出来）
-		@warning_ignore("integer_division")
-		card_candidate_container.reparent(
-			all_placeholder_of_page[i / num_card_every_page][i % num_card_every_page], false)
-		## 容器仍按 card_id 登记：禁选、预选、"重选上次卡片"都按 card_id 找卡位
-		all_card_candidate_containers_plant[source_card.card_id] = card_candidate_container
-
-		card_candidate_container.visible = false
+	_init_plant_card_pages(catalog, grid_container_plant, all_card_page, all_card_page_array,
+		false, all_card_candidate_containers_plant)
 
 	for plant_type: StringName in Global.global_game_state.curr_plant:
 		## 已解锁名单里可能有没有卡位的植物，两类都要跳过（跳过即「它不在待选区」）：
 		## · 模仿者在商店购买后会进 curr_plant，但按设计不进 all_plant_card_prefabs
 		##   （见 AllCards.imitater_card 注释）；
-		## · 注册了却没登记进「可选植物列表」的追加类植物（见 AllCards.add_selectable_plant）
+		## · 注册了却没登记进任何一页的追加类植物（见 AllCards.register_plant_choose_page）
 		##   压根没造卡位 —— 照 plant_card_ids 取下标会取到一个不存在的键。
 		var plant_card_id: int = AllCards.plant_card_ids.get(plant_type, -1)
 		if not all_card_candidate_containers_plant.has(plant_card_id):
@@ -175,29 +157,14 @@ func _init_card_slot_candidate_zombie(catalog: CardSeedChooserCatalog):
 
 	grid_container_zombie.queue_free()
 
-## 初始化生成模仿者待选卡槽：与普通植物页共用同一份顺序快照
+## 初始化生成模仿者待选卡槽：与普通植物页共用同一份排版（含模组登记的页与格位）
 func _init_card_slot_candidate_imitater(catalog: CardSeedChooserCatalog):
-	var all_placeholder_of_page := _create_card_pages(grid_container_plant_imitater, all_card_page_imitater,
-		all_card_page_array_imitater, catalog.plants.size())
-	if all_placeholder_of_page.is_empty():
-		return
-	## 每一页的卡片数量
-	var num_card_every_page: int = all_placeholder_of_page[0].size()
-	for i:int in catalog.plants.size():
-		## 模仿者版是**另一份池条目**（键带 :imitater）：独立身份引用与灰底材质都由池创建时设置
-		var source_card: Card = catalog.plants[i]
-		var card_candidate_container: CardCandidateContainer = \
-			SceneRegistry.acquire_candidate_container(source_card, true)
-		## 页下标 = i / 每页格数，这里要的就是整除取整（页数由 _create_card_pages 按卡片总数算出来）
-		@warning_ignore("integer_division")
-		card_candidate_container.reparent(
-			all_placeholder_of_page[i / num_card_every_page][i % num_card_every_page], false)
-		all_card_candidate_containers_plant_imitater[source_card.card_id] = card_candidate_container
-
-		card_candidate_container.visible = false
+	## 模仿者版是**另一份池条目**（键带 :imitater）：独立身份引用与灰底材质都由池创建时设置
+	_init_plant_card_pages(catalog, grid_container_plant_imitater, all_card_page_imitater,
+		all_card_page_array_imitater, true, all_card_candidate_containers_plant_imitater)
 
 	for plant_type: StringName in Global.global_game_state.curr_plant:
-		## 同上：没有卡位的植物（含模仿者自己、没进「可选植物列表」的追加类）在模仿者页也没有卡位
+		## 同上：没有卡位的植物（含模仿者自己、没登记进任何一页的追加类）在模仿者页也没有卡位
 		var plant_card_id: int = AllCards.plant_card_ids.get(plant_type, -1)
 		if not all_card_candidate_containers_plant_imitater.has(plant_card_id):
 			continue
@@ -206,22 +173,95 @@ func _init_card_slot_candidate_imitater(catalog: CardSeedChooserCatalog):
 	grid_container_plant_imitater.queue_free()
 
 
+## 造出植物候选页并把容器落位（普通页与模仿者页共用：同一份快照、同一批格位）
+##
+## [param imitater] 取池里 `:imitater` 那份容器（独立身份引用 + 灰底材质）
+## [param containers] 收「card_id → 容器」，禁选 / 预选 / 重选上次卡片都按它找卡位
+func _init_plant_card_pages(catalog: CardSeedChooserCatalog, grid_template: GridContainer,
+		page_parent: Control, page_array: Array[GridContainer], imitater: bool,
+		containers: Dictionary[int, CardCandidateContainer]) -> void:
+	var page_slots := _build_plant_page_slots(catalog, grid_template.get_child_count())
+	if page_slots.is_empty():
+		return
+	var all_placeholder_of_page := _create_blank_card_pages(
+		grid_template, page_parent, page_array, page_slots.size())
+	for page_index: int in page_slots.size():
+		for slot_index: int in page_slots[page_index].size():
+			var source_card: Card = page_slots[page_index][slot_index]
+			## 空位（原版页没填满 / 模组排版时留的空格）：这一格不放卡
+			if source_card == null:
+				continue
+			## 源卡（AllCards 常驻节点）→ 池里同身份的候选容器（没有才新建）
+			var card_candidate_container: CardCandidateContainer = \
+				SceneRegistry.acquire_candidate_container(source_card, imitater)
+			card_candidate_container.reparent(
+				all_placeholder_of_page[page_index][slot_index], false)
+			containers[source_card.card_id] = card_candidate_container
+			card_candidate_container.visible = false
+
+
+## 把快照摊成「页 → 格位」矩阵（`null` = 空一格）
+##
+## · 原版常规植物：按每页格数连续切页 —— 装不装模组，前面那几页一格都不变；
+## · 模组登记的页：接在后面，格位照模组登记的顺序（`null` 就是模组留的空格）；
+##   一页装不下（超过每页格数）时顺延到它自己的下一页。
+func _build_plant_page_slots(catalog: CardSeedChooserCatalog,
+		num_card_every_page: int) -> Array[Array]:
+	var page_slots: Array[Array] = []
+	if num_card_every_page <= 0:
+		return page_slots
+	for i: int in catalog.plants.size():
+		@warning_ignore("integer_division")
+		var page_index: int = i / num_card_every_page
+		while page_slots.size() <= page_index:
+			page_slots.append(_new_empty_page_slots(num_card_every_page))
+		page_slots[page_index][i % num_card_every_page] = catalog.plants[i]
+	for page_cards: Array in catalog.plant_pages:
+		if page_cards.is_empty():
+			continue
+		var page_start: int = page_slots.size()
+		var page_num: int = ceili(float(page_cards.size()) / float(num_card_every_page))
+		for _page_index: int in page_num:
+			page_slots.append(_new_empty_page_slots(num_card_every_page))
+		for slot_index: int in page_cards.size():
+			var source_card: Card = page_cards[slot_index]
+			if source_card == null:
+				continue
+			@warning_ignore("integer_division")
+			var page_offset: int = slot_index / num_card_every_page
+			page_slots[page_start + page_offset][slot_index % num_card_every_page] = source_card
+	return page_slots
+
+
+## 一页的空格位（长度 = 每页格数，元素全是 null）
+func _new_empty_page_slots(num_card_every_page: int) -> Array[Card]:
+	var slots: Array[Card] = []
+	slots.resize(num_card_every_page)
+	return slots
+
+
 ## 造出装得下 num_card 张卡所需的全部页面：**页数 = ceil(卡片总数 / 每页格数)**
 ##
-## 为什么页数要按总数先算出来再建页：待选区有几页是「总共有几张卡」决定的，
-## 多一张卡（模组加的、调试模式开的）就多一页；不能等循环里填满了才顺带建下一页 ——
-## 那样新卡插在中间时会把后面的普通植物整页挤走。
-## 页面一律先隐藏，由 `_init_card_page()` 按「这一页有没有已解锁的卡」决定哪几页真正显示。
+## 只给「连续列表」这一类（敌方卡）用：植物侧要保留模组排的格位，走 `_build_plant_page_slots`。
 ## 返回「每一页的占位节点列表」，空数组表示没有卡位（模板一个占位都没有 / 没有卡）。
 func _create_card_pages(grid_template: GridContainer, page_parent: Control,
 		page_array: Array[GridContainer], num_card: int) -> Array[Array]:
-	var all_placeholder_of_page: Array[Array] = []
 	var num_card_every_page: int = grid_template.get_child_count()
 	if num_card <= 0 or num_card_every_page <= 0:
+		return []
+	return _create_blank_card_pages(grid_template, page_parent, page_array,
+		ceili(float(num_card) / float(num_card_every_page)))
+
+
+## 按页数复制网格模板：页面一律先隐藏，由 `_init_card_page()` 按「这一页有没有已解锁的卡」
+## 决定哪几页真正显示。返回每一页的占位节点列表（顺序与 `page_array` 一致）
+func _create_blank_card_pages(grid_template: GridContainer, page_parent: Control,
+		page_array: Array[GridContainer], page_num: int) -> Array[Array]:
+	var all_placeholder_of_page: Array[Array] = []
+	if page_num <= 0:
 		return all_placeholder_of_page
 	if grid_template.get_parent() == page_parent:
 		page_parent.remove_child(grid_template)
-	var page_num: int = ceili(float(num_card) / float(num_card_every_page))
 	for _page_index in range(page_num):
 		var new_grid_container: GridContainer = grid_template.duplicate()
 		page_parent.add_child(new_grid_container)

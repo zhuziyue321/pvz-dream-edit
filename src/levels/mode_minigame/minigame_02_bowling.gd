@@ -45,4 +45,5 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20)
+	## 首波 2 秒：原版坚果保龄球 `mZombieCountDown = 200` tick
+	await start_battle(20, [], 0.0, 2.0)

@@ -8,7 +8,8 @@ class_name ChooseLevelButton
 @onready var preview_icon_node: TextureRect = $PreviewIcon
 
 
-## 预览图标: 从 Challenge_Thumbnails 图集裁出, 显示在窗框下 (留空则不显示)
+## 预览图标: 从选关图集裁出（迷你 / 解谜用 Challenge_Thumbnails，生存用 Survival_Thumbnails），
+## 显示在窗框下 (留空则不显示)
 @export var preview_icon: Texture2D
 
 

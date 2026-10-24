@@ -48,10 +48,11 @@ func zombie_approach(final:bool) -> void:
 	visible = false
 
 ## 僵尸获胜
+##
+## 红字**保持常亮**，一直显示到切场景（失败画面）。这是刻意的：原来这里有三行
+## 「等 0.8 秒后淡出」的实现被注释掉了 —— 不要照着注释加回来，除非确认原版
+## 失败画面就是「红字一闪即逝」。要改先开游戏对照失败画面的实际观感。
 func zombie_won_word_appear() -> void:
 
 	visible = true
 	zombies_won.visible = true
-	#await get_tree().create_timer(0.8).timeout  # 等待 1 秒
-	#zombies_won.visible = false
-	#visible = false

@@ -1125,20 +1125,20 @@ animation = &"ALL_ANIMS"
 animation = &"Gravebuster_idle"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_emegd"]
-advance_mode = 2
-advance_expression = "is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bnopb"]
-advance_mode = 2
-advance_expression = "not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_am010"]
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_7g43g"]
-advance_mode = 2
-advance_expression = "is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_2qhkr"]
 states/ALL_ANIMS/node = SubResource("AnimationNodeAnimation_cqm7d")
@@ -1162,6 +1162,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Plant012GraveBuster" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_kxqnt")]
 script = ExtResource("2_2a3ft")
 plant_type = &"grave_buster"
+norm_anim_state = &"ALL_ANIMS"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="BodyCorrect" parent="Body" index="0"]

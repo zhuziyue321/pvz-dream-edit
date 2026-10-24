@@ -1,0 +1,50 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Animation" path="res://animation/character/plant/wall_nut/wallnut_idle.tres" id="1_idle"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Wallnut_body.png" id="2_body"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Wallnut_twitch.png" id="3_twitch"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Wallnut_blink1.png" id="4_blink"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_head"]
+_data = {
+&"Head_Idle": ExtResource("1_idle")
+}
+
+[node name="PlantHead" type="Node2D"]
+
+[node name="Body" type="Node2D" parent="."]
+
+[node name="BodyCorrect" type="Node2D" parent="Body"]
+
+[node name="_ground" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+centered = false
+
+[node name="Anim_idle" type="Sprite2D" parent="Body/BodyCorrect"]
+centered = false
+
+[node name="Anim_face" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(6.5065374, 4.1246166)
+rotation = -0.0053410362
+scale = Vector2(0.7, 0.71550256)
+texture = ExtResource("2_body")
+centered = false
+
+[node name="Anim_blink_twitch" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(28.981411, 35.75301)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("3_twitch")
+centered = false
+
+[node name="Anim_blink_twice" type="Sprite2D" parent="Body/BodyCorrect"]
+visible = false
+position = Vector2(27.78141, 21.753014)
+scale = Vector2(0.7, 0.7)
+texture = ExtResource("4_blink")
+centered = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_head")
+}

@@ -25,8 +25,8 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_i7rq2"]
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_wi000"]
 states/Coffeebean_crumble/node = SubResource("AnimationNodeAnimation_u0e3e")
@@ -52,6 +52,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 z_index = 2
 script = ExtResource("2_wi000")
 plant_type = &"coffee_bean"
+norm_anim_state = &"Coffeebean_crumble"
 
 [node name="BeAttackStatusComponentPlant" parent="." index="7"]
 init_be_attack_status = 2

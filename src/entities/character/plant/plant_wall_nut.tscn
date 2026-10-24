@@ -33,8 +33,8 @@ animation = &"Wallnut_face"
 animation = &"Wallnut_idle"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_esarn"]
-advance_mode = 2
-advance_expression = "is_face"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_kqxfl"]
 advance_mode = 2

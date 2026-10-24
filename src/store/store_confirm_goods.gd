@@ -29,3 +29,9 @@ func _on_pvz_button_yes_pressed() -> void:
 func _on_pvz_button_no_pressed() -> void:
 	curr_goods_node = null
 	visible = false
+
+
+## 外部关闭(ESC 键，见 StoreManager._unhandled_key_input)
+func close() -> void:
+	curr_goods_node = null
+	visible = false

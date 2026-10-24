@@ -28,13 +28,12 @@ func _init() -> void:
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 PORTAL_COMBAT 白名单（Challenge.cpp：普/铁桶/橄榄球/气球）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.NORM,
-		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
 		ZombieIds.BUCKET,
-		ZombieIds.SCREEN_DOOR,
 		ZombieIds.FOOTBALL,
+		ZombieIds.BALLOON,
 	]
 
 	## 展示僵尸
@@ -46,4 +45,5 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20, zombie_list)
+	## 首波 2 秒：原版传送门之战 `mZombieCountDown = 200` tick（Challenge::PortalStart 同款）
+	await start_battle(20, zombie_list, 0.0, 2.0)

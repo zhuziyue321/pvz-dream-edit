@@ -38,7 +38,9 @@ func run_flow(mg: MainGameManager) -> void:
 		## 本关教学只在还没通关过 1-2 时播（原版教程只在冒险模式第一轮出现）
 		await _tutorial_flow(mg)
 	## 开战：10 波，出怪表里只有普通僵尸
-	await start_battle(10, zombie_list)
+	## 首波 36 秒：原版首次冒险的 1-2 单独翻倍 —— `ZOMBIE_COUNTDOWN * 2` = 3600 tick
+	## （其余关是 `ZOMBIE_COUNTDOWN_FIRST_WAVE` = 18 秒；二周目不翻倍，见 round2 变体）
+	await start_battle(10, zombie_list, 0.0, 36.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

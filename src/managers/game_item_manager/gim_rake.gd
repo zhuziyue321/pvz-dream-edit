@@ -14,7 +14,7 @@ class_name GIM_Rake
 @onready var game_item_manager: GameItemManager = %GameItemManager
 @onready var rakes: Node2D = %Rakes
 
-const RAKE_SCENE := preload("res://src/items/rake/rake.tscn")
+var RAKE_SCENE := AssetRegistry.get_scene("res://src/items/rake/rake.tscn")
 ## 钉耙落在「从右数第 2 列」(原版: "the second column (from the right)")
 const RAKE_COL_FROM_RIGHT := 2
 ## 行内 z_index 偏移:僵尸行 30、小推车 40,钉耙压在僵尸脚下所以用 20

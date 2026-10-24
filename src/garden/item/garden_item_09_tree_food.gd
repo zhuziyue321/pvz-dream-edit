@@ -12,6 +12,8 @@ var tree_of_wisdom: TreeOfWisdom
 
 @onready var anim_lib: AnimationPlayer = $AnimLib
 
+## 袋子本体取基类的 `body`：手持时靠它的 (-40,-46) 偏移把袋子居中在光标上（贴图约 80×92）
+
 
 func _input(event: InputEvent) -> void:
 	if is_clone or not is_activate:
@@ -37,22 +39,41 @@ func _is_hit_tree(global_pos: Vector2) -> bool:
 		and tree_of_wisdom.is_hit(global_pos)
 
 
+## 现在能不能喂:得指着树,且树不在「刚长高」的弹跳里(原版 TreeOfWisdomCanFeed)
+func _can_feed() -> bool:
+	var mouse_pos := get_global_mouse_position()
+	return _is_hit_tree(mouse_pos) and not tree_of_wisdom.is_growing()
+
+
 ## 施肥:先扣一袋库存,没库存就用不了(正常情况下工具栏已隐藏)
 ## 本体当场收起,让克隆体在树根播"倒肥料"动画,播完树才长高
+## 原版口径:树正在"刚长高"的弹跳里时不给再喂(TreeOfWisdomCanFeed),这里也要在**扣库存之前**拦住
 func use_it() -> void:
-	if not _is_hit_tree(get_global_mouse_position()) or not Global.global_game_state.use_garden_tool(
-			GardenManager.E_GardenTool.TreeFood):
+	if not _can_feed():
 		deactivate_it()
 		return
+	if not Global.global_game_state.use_garden_tool(GardenManager.E_GardenTool.TreeFood):
+		deactivate_it()
+		return
+	## 袋子落下的音效(原版 TreeOfWisdomFertilize 的 FOLEY_FERTILIZER);生长音效在 add_height 里
+	SoundManager.play_other_SFX("fertilizer")
+	var tree := tree_of_wisdom
 	var clone := clone_self() as TreeFood
-	clone.global_position = tree_of_wisdom.get_feed_position()
+	## 原版把袋子 reanim 整组摆在 (340,300)，那套坐标是「贴图左上角」口径；
+	## 本场景的 Body 为了手持时居中在光标上带了一个 (-40,-46) 的偏移，落点要把它抵掉，
+	## 否则整袋会整体偏左上 40×46 像素（看起来就像"施肥动画有偏移"）
+	clone.global_position = tree.get_feed_position() - body.position
 	deactivate_it(false)
 	clone.visible = true
 	clone.anim_lib.play("ALL_ANIMS")
 	await clone.anim_lib.animation_finished
-	## 等动画的这会儿可能被切走(翻页 / 进商店),树已经被释放了
-	if is_instance_valid(tree_of_wisdom):
-		tree_of_wisdom.add_height()
+	## 等动画的这会儿可能被切走(翻页 / 进商店 / 离开花园),树已经被释放了;
+	## 原版 TreeOfWisdomLeave 会把还没结算的这袋肥料照样算上,所以这里直接写存档
+	if is_instance_valid(tree):
+		tree.add_height()
+	else:
+		Global.global_game_state.add_tree_of_wisdom_height()
+		Global.save_service.save_now()
 	clone.queue_free()
 	## 喂掉最后一袋就当场撤下工具栏,别等到重进花园才消失
 	item_button.visible = Global.global_game_state.is_garden_tool_available(

@@ -5,8 +5,8 @@ class_name Plant005PotatoMine
 @onready var bomb_component: BombComponentBase = $BombComponent
 @onready var prepare_timer: Timer = $PrepareTimer
 
-## 准备时间
-@export var prepare_time := 10.0
+## 准备时间（游戏秒）：原版 `mStateCountdown = 1500` tick @100 Hz = **15 秒**（`Plant.cpp:346`）
+@export var prepare_time := 15.0
 
 @export_group("动画状态")
 @export var is_prepare_end := false
@@ -45,8 +45,11 @@ func _rise_end():
 	bomb_component.is_auto_bomb_in_death = true
 
 ## 准备时间结束
+##
+## ★ 动画状态由本脚本点名（该转换已改为手动 travel，见 `plant_potato_mine.tscn`）
 func _on_prepare_timer_timeout() -> void:
 	is_prepare_end = true
+	request_anim_state(&"PotatoMine_rise")
 
 ## 改变准备的速度
 func update_prepare_speed(speed_factor:float):

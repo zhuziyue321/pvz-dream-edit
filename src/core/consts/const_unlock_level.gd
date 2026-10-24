@@ -41,11 +41,18 @@ const SHOVEL_UNLOCK_ADVENTURE_LEVEL := 4
 ## 原版口径: 通关 2-4 后戴夫掉落 Suburban Almanac,在此之前主菜单与暂停菜单的图鉴入口不可用
 const ALMANAC_UNLOCK_ADVENTURE_LEVEL := 14
 
-## 花园解锁: 通关冒险模式 5-5(关卡序号 45)后疯狂戴夫把禅境花园交给玩家。
+## 花园解锁: 通关冒险模式 5-4(关卡序号 44)后疯狂戴夫把禅境花园交给玩家。
 ## 与铲子 / 手套同一套口径(由通关记录推导,不落库存档),判定入口 is_garden_unlocked()。
 ## 解锁前: 僵尸不掉落花园植物礼包(见 DropItemComponent.drop_garden_plant)、商店不卖花园植物礼包,
 ## 即"没有花园就没有花园植物";解锁后两者同时放开。
-const GARDEN_UNLOCK_ADVENTURE_LEVEL := 45
+##
+## ⚠️ 口径是"打完 5-4",不是"打完 5-5": 原版 AwardScreen 在 `mLevel == 45`(即刚通完 5-4、
+## 下一关是 5-5)时直接 PreNewGame(GAMEMODE_CHALLENGE_ZEN_GARDEN) + SetupForZenTutorial(),
+## 见 ../PvZ-Portable-main/src/Lawn/Widget/AwardScreen.cpp 的 StartButtonPressed。
+## 5-5 开场戴夫那句「花园很漂亮，对吧？你随时都可以从主菜单那里来到这个花园。」
+## (CRAZY_DAVE_1301~1303)也是建立在"花园已经到手"之上。
+## 商店第三页(花园工具)的上架门槛同样吃这个值,见 ConstShop.PAGE_SHOP_LEVEL。
+const GARDEN_UNLOCK_ADVENTURE_LEVEL := 44
 
 
 ## 金钱解锁: 冒险模式 2-1(关卡序号 11)开始,僵尸就会掉落金币,在此之前不产生任何金币
@@ -86,7 +93,7 @@ static func is_almanac_unlocked(max_success_adventure_level: int) -> bool:
 	return max_success_adventure_level >= ALMANAC_UNLOCK_ADVENTURE_LEVEL
 
 
-## 花园是否已解锁(已通关的最大冒险关卡序号 >= 5-5,见 GARDEN_UNLOCK_ADVENTURE_LEVEL)
+## 花园是否已解锁(已通关的最大冒险关卡序号 >= 5-4,见 GARDEN_UNLOCK_ADVENTURE_LEVEL)
 static func is_garden_unlocked(max_success_adventure_level: int) -> bool:
 	return max_success_adventure_level >= GARDEN_UNLOCK_ADVENTURE_LEVEL
 

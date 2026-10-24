@@ -200,7 +200,9 @@ var marker_2d_sun_target: Marker2D
 ## 卡槽
 @onready var card_slot_root: CardSlotRoot = %CardSlotRoot
 ## 全局检测组件,用于检测敌人
-##TODO:可能会用于检测敌人离开场景后删除
+## ⚠️ 预留用途：**将来**用它检测「敌人离开场景」并回收 —— 现在**没有**这个逻辑，别当成已实现
+## 它对应 `main_game_base.tscn` 里的 `%DetectComponentGlobal` 正式节点，删这个字段要连场景一起改
+## （原为 TODO，见 docs/TODO清单.md 的 T-01；2026-10-22 澄清后转为正式注释）
 @onready var detect_component_global: DetectComponent = %DetectComponentGlobal
 
 ## 指定行的基准 y（角色脚下的地面 y）
@@ -233,7 +235,7 @@ var is_keep_system_cursor_visible := false
 #region bgm
 @export_group("bgm")
 ## 选卡bgm
-var bgm_choose_card: AudioStream = preload("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
+var bgm_choose_card: AudioStream = AssetRegistry.get_audio("res://assets_custom/audio/BGM/choose_your_seeds.mp3")
 ## 主游戏bgm
 var bgm_main_game: AudioStream
 #endregion
@@ -489,7 +491,7 @@ func _init_game_BGM():
 	if path_bgm_game.is_empty():
 		bgm_main_game = null
 		return
-	bgm_main_game = load(path_bgm_game) as AudioStream
+	bgm_main_game = AssetRegistry.get_audio(path_bgm_game)
 
 
 ## 选卡阶段入口（时间轴的「选卡」事件走这里）
@@ -557,6 +559,11 @@ func start_curr_round_game():
 	## 暂停天降阳光
 	if game_para.is_day_sun:
 		day_suns_manager.pause_day_sun()
+	## 清掉上一轮没被点掉的钱 / 巧克力 / 阳光：切轮是**同一个场景**里继续，
+	## 这些东西会跟着进下一轮（定时器还跑了一半，点一下入账的还是上一轮的钱）。
+	## 失败 / 退出那条路不用管：那两步会切场景，整棵节点树一起释放
+	if drop_item_manager != null and is_instance_valid(drop_item_manager):
+		drop_item_manager.clear_all_drops()
 	## 更新卡槽数据
 	card_manager.start_next_game_card_manager_update()
 	## 更新背景,浓雾回退

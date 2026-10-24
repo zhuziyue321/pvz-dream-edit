@@ -13,6 +13,14 @@ var second_last_picked: Array[int] = []
 ## 每行剩余的丢车保护时间（秒），下标 = 行号，由 _process 递减
 var lane_protect_time_left: Array[float] = []
 
+## 关卡级「本波不出怪的行」（下标 = 行号，空 = 不限制）
+##
+## 关卡脚本在 `before_wave_spawn()` 里设置 / 清空（原版同类规则：隐形食脑者前几波
+## 最下行不刷怪，见 `Board.cpp` 的 `INVISIGHOUL && mCurrentWave <= 3 && aRow == 5`）。
+## 与丢车保护走同一条路径：命中即权重归零，**兜底选行也会避开**，
+## 只有「所有可出怪行都被禁」时才忽略禁行兜底（不能让整波停刷）。
+var banned_lanes: Array[int] = []
+
 var curr_type: CharacterRegistry.ZombieRowType = CharacterRegistry.ZombieRowType.Land
 ## 是否完成行配置初始化；僵王的私有选行系统据此避免每次技能都重置历史。
 var is_initialized: bool = false
@@ -82,6 +90,8 @@ func init_zombie_choose_row_system(zombie_rows: Array = []):
 	last_picked.clear()
 	second_last_picked.clear()
 	lane_protect_time_left.clear()
+	## 关卡级禁行也跟着关卡重来：不清会把上一关的禁行漏到下一关
+	banned_lanes.clear()
 	for i in range(row_num):
 		last_picked.append(0)
 		second_last_picked.append(0)
@@ -144,6 +154,21 @@ func is_lane_in_mower_protect(lane: int) -> bool:
 	if lane < 0 or lane >= lane_protect_time_left.size():
 		return false
 	return lane_protect_time_left[lane] > 0.0
+
+
+## 设置本波不出怪的行（下标 = 行号）；传空数组 = 撤销限制
+func set_banned_lanes(lanes: Array[int]) -> void:
+	banned_lanes = lanes.duplicate()
+
+
+## 撤销行限制（换波 / 关掉玩法时要调，否则一直禁下去）
+func clear_banned_lanes() -> void:
+	banned_lanes.clear()
+
+
+## 该行是否被关卡级规则禁掉
+func is_lane_banned(lane: int) -> bool:
+	return banned_lanes.has(lane)
 #endregion
 
 
@@ -193,6 +218,10 @@ func calculate_smooth_weights(zombie_row_type: CharacterRegistry.ZombieRowType, 
 		if is_lane_in_mower_protect(i):
 			smooth_weights.append(0.0)
 			continue
+		## 关卡级禁行（隐形食脑者前几波最下行这类）：与丢车保护同一条路径，权重归零
+		if is_lane_banned(i):
+			smooth_weights.append(0.0)
+			continue
 
 		var weight_p = base_weight[i] / total_base_weight
 
@@ -226,11 +255,19 @@ func select_spawn_row(zombie_row_type: CharacterRegistry.ZombieRowType, special_
 		Log.warn("整体平滑权重小于等于0，改用基础权重兜底选行")
 		var fallback_rows: Array[int] = []
 		for i in range(row_num):
-			if i < base_weight.size() and base_weight[i] > 0 and not is_lane_in_mower_protect(i):
+			if i < base_weight.size() and base_weight[i] > 0 \
+					and not is_lane_in_mower_protect(i) and not is_lane_banned(i):
 				fallback_rows.append(i)
 		if fallback_rows.is_empty():
 			## 能出怪的行全在丢车保护里：保护只负责让行「少出怪」，不能让整波停刷，忽略保护再兜一次
+			## （关卡级禁行仍生效 —— 那是玩法规则，不是临时保护）
 			Log.warn("所有可出怪行都处于丢车保护中，本次选行忽略保护")
+			for i in range(row_num):
+				if i < base_weight.size() and base_weight[i] > 0 and not is_lane_banned(i):
+					fallback_rows.append(i)
+		if fallback_rows.is_empty():
+			## 禁行把可出怪行全排除了：宁可破坏玩法规则也不能让整波停刷（与上面忽略保护同一口径）
+			Log.warn("所有可出怪行都被关卡禁行，本次选行忽略禁行")
 			for i in range(row_num):
 				if i < base_weight.size() and base_weight[i] > 0:
 					fallback_rows.append(i)
@@ -251,31 +288,17 @@ func select_spawn_row(zombie_row_type: CharacterRegistry.ZombieRowType, special_
 	var rand_num = GameRng.randf_range(0.0, total_smooth_weight)
 	var cumulative_weight = 0.0
 
-	for i in range(smooth_weights.size()):
-		cumulative_weight += smooth_weights[i]
+	for row_index in range(smooth_weights.size()):
+		cumulative_weight += smooth_weights[row_index]
 		if cumulative_weight >= rand_num:
-			on_zombie_spawned(i)
-			return i
+			on_zombie_spawned(row_index)
+			return row_index
 
 	## 浮点误差导致没命中：取最后一个有权重的行
 	var last_valid_row := 0
-	for i in range(smooth_weights.size()):
-		if smooth_weights[i] > 0:
-			last_valid_row = i
+	for row_index in range(smooth_weights.size()):
+		if smooth_weights[row_index] > 0:
+			last_valid_row = row_index
 	Log.warn("出怪权重累加未命中，兜底为最后一行有效行 %d" % last_valid_row)
 	on_zombie_spawned(last_valid_row)
 	return last_valid_row
-
-
-### 获取概率
-#func get_row_probabilities() -> Array:
-	#var smooth_weights = calculate_smooth_weights(0 as CharacterRegistry.ZombieRowType)
-	#var total = 0.0
-	#for w in smooth_weights:
-		#total += w
-#
-	#var probabilities = []
-	#for w in smooth_weights:
-		#probabilities.append(w / total if total > 0 else 0.0)
-#
-	#return probabilities

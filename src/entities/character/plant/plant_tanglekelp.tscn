@@ -11,7 +11,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm5.png" id="8_ytogi"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm6.png" id="9_icm4b"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm7.png" id="10_28p6e"]
-[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets_custom/reanim/Tanglekelp_arm 8.png" id="11_me61c"]
+[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets_custom/reanim/Tanglekelp_arm8.png" id="11_me61c"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_blink1.png" id="12_18tlf"]
 [ext_resource type="Animation" uid="uid://de2ywni806y6o" path="res://animation/character/plant/tanglekelp/tanglekelp_idle.tres" id="13_s4e2w"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://data/character/resource_body_change.gd" id="14_28p6e"]
@@ -43,20 +43,20 @@ animation = &"Tanglekelp_idle"
 animation = &"Tanglekelp_idle_aquarium"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_18tlf"]
-advance_mode = 2
-advance_expression = "not is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_s4e2w"]
-advance_mode = 2
-advance_expression = "is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_nuhg4"]
-advance_mode = 2
-advance_expression = "not is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_nescp"]
-advance_mode = 2
-advance_expression = "is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_bwsto"]
 states/Tanglekelp_idle/node = SubResource("AnimationNodeAnimation_28p6e")

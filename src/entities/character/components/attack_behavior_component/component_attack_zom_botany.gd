@@ -59,3 +59,24 @@ func _get_plant_head() -> Node2D:
 	if plant_component == null:
 		return null
 	return plant_component.plant_head
+
+
+## 发射点是否按原版实时取头顶植物头的轨道位置（见 `get_shoot_global_position`）
+##
+## 默认**关**：仓库扩展的投手僵尸（卷心菜 / 西瓜 / 冰瓜）原版 ZomBotany 里没有，
+## 没有可照抄的发射点口径，继续用场景里的 `Marker2D` 静态坐标。
+## 有原版口径的两只（机枪 / 寒冰射手）在各自场景里打开。
+@export var shoot_from_head_track := false
+
+
+## 发射点：原版僵尸的直线弹是从「`anim_head1` 轨道当前帧 + 偏移」出来的
+##（`Zombie.cpp` `UpdateZombiePeaHead()` 2338-2339、`UpdateZombieGatlingHead()` 2458-2459 同一套公式），
+## 算法与常量统一放在 `ZombiePlantComponent.get_head_shoot_global_position()`。
+func get_shoot_global_position(index: int) -> Vector2:
+	var fallback := super(index)
+	if not shoot_from_head_track:
+		return fallback
+	var plant_component := owner.get_node_or_null(^"ZombiePlantComponent") as ZombiePlantComponent
+	if plant_component == null:
+		return fallback
+	return plant_component.get_head_shoot_global_position(fallback)

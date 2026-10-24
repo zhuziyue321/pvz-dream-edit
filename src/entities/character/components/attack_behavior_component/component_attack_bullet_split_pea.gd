@@ -2,17 +2,16 @@ extends AttackComponentBulletBase
 class_name AttackComponentBulletSplitPea
 
 
-## 攻击间隔后触发执行攻击
+## 攻击间隔后触发执行攻击（🌱 分裂豌豆两个头各一条 OneShot，都走组件的统一入口）
 func _on_bullet_attack_cd_timer_timeout() -> void:
 	# 在这里调用实际攻击逻辑
-	animation_tree.set("parameters/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-	animation_tree.set("parameters/OneShot 2/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	request_one_shot(&"parameters/OneShot/request")
+	request_one_shot(&"parameters/OneShot 2/request")
 
 
 func set_cancel_attack():
-	#animation_tree.set("parameters/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
-	#animation_tree.set("parameters/OneShot 2/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
-	pass
+	cancel_one_shot(&"parameters/OneShot/request")
+	cancel_one_shot(&"parameters/OneShot 2/request")
 
 ## 发射子弹（动画调用）
 func _shoot_bullet():

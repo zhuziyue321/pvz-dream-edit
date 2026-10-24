@@ -12,8 +12,8 @@ func _on_bullet_attack_cd_timer_timeout() -> void:
 	last_target_enemy = detect_component.update_first_enemy()
 	if is_instance_valid(last_target_enemy):
 		last_target_enemy_global_pos = last_target_enemy.global_position
-		# 在这里调用实际攻击逻辑
-		animation_tree.set(attack_para, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		# 在这里调用实际攻击逻辑（统一走组件的 OneShot 入口，客户端被接管时自动忽略）
+		request_one_shot(attack_para)
 
 
 func get_bullet_paras(marker_2d_bullet_glo_pos:Vector2, ray_direction:Vector2) -> Dictionary[Bullet000NormBase.E_InitParasAttr,Variant]:

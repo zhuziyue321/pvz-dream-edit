@@ -101,6 +101,14 @@ func jump_end():
 	## 注意：不要直接改 jump_x，它是 @export 值；倍率只在本次位移中计算，避免连续跳跃累乘
 	var offset_x: float = jump_x * absf(owner_zombie.scale.x)
 	owner.global_position.x -= offset_x
+	## 落点兜底：原版撑杆跳的落点是「植物 x − 70」（`Zombie.cpp:1730/1768`：
+	## 跳跃位移 = mX − 植物x − 80，动画结束再 `mPosX -= 150`），总之**一定越过植物**。
+	## 本作是固定距离 jump_x + 跳中补偿，遇到细植物（大蒜 / 花盆）可能落不到位，
+	## 这里补一道"至少越过 jump_compensate_distance"的兜底，越过了就完全不动。
+	if is_jump_compensate and jump_plant_position_x != 0.0:
+		var cleared_x: float = jump_plant_position_x - jump_compensate_distance
+		if owner.global_position.x > cleared_x:
+			owner.global_position.x = cleared_x
 	signal_jump_end_end.emit()
 
 ## 跳跃被高坚果强行停止

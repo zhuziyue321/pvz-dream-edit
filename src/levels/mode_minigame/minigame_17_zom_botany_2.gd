@@ -17,6 +17,7 @@ extends LevelScriptBase
 ##   Z044TallNut 高坚果僵尸 —— 本次新增（原版的第 4 只新增，此前仓库用南瓜僵尸顶替这个位置），耐久 2200
 ##
 ## 原版本关是 3 面旗帜 = 30 波（关 1 是 2 面旗帜 = 20 波），见 docs/参考存档/僵尸波次.md。
+## 出怪表 2026-10-23 起已裁成原版口径（只有 6 只植物僵尸，见 run_flow 里的注释）。
 ##
 ## 水面行不出「鸭子圈僵尸」：Z011Duckytube 不在本场景的自然刷怪白名单里（会被 init_para 过滤掉），
 ## 泳池关的水面行由**两栖**（ZombieRowType.Both）僵尸顶上，它们入水会自己套上鸭子圈。
@@ -30,6 +31,9 @@ func _init() -> void:
 	## 场景曲：本关是泳池 → 泳池曲 Watery Graves
 	game_BGM = ConstLevelData.GameBGM.Pool
 	zombie_multy = 10
+	## 原版这两关旗帜波不补「旗子僵尸 + 一批普僵」（Board.cpp 对 WAR_AND_PEAS / _2 特判），
+	## 整关只有出怪表里的植物僵尸；点数残差也不再补普僵
+	spawn_plain_zombie_extra = false
 
 
 ## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
@@ -37,22 +41,19 @@ func _init() -> void:
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 原版口径（PVZ Wiki ZomBotany zombies + `Board::InitZombieWaves`）：本关 = 关 1 的豌豆 / 坚果
+	## + 窝瓜 / 火爆辣椒 / 机枪 / 高坚果，共 **6 只植物僵尸，没有普僵**。
+	## 原版对这两关特判（旗帜波那段 `!= WAR_AND_PEAS && != WAR_AND_PEAS_2`）：
+	## 既不补普通僵尸、也不补旗子僵尸 —— 本关用 `spawn_plain_zombie_extra = false` 表达。
+	## 那 8 只仓库扩展植物僵尸（寒冰 / 火炬 / 磁力菇 / 南瓜 / 卷心菜 / 玉米炮 / 西瓜 / 冰瓜）已按原版移除，
+	## 想加料再把类型加回本数组即可，数据都还在 ZomBotanyConfig 里。
 	var zombie_list: Array[StringName] = [
 		ZombieIds.PEA_SHOOTER_ZOMBIE,
 		ZombieIds.WALL_NUT_ZOMBIE,
 		ZombieIds.SQUASH_ZOMBIE,
 		ZombieIds.JALAPENO_ZOMBIE,
 		ZombieIds.GATLING_ZOMBIE,
-		ZombieIds.SNOW_PEA_ZOMBIE,
-		ZombieIds.TORCHWOOD_ZOMBIE,
-		ZombieIds.MAGNET_SHROOM_ZOMBIE,
-		ZombieIds.PUMPKIN_ZOMBIE,
-		ZombieIds.CABBAGE_PULT_ZOMBIE,
-		ZombieIds.MELON_PULT_ZOMBIE,
-		ZombieIds.WINTER_MELON_ZOMBIE,
-		## 原版 ZomBotany 2 的 4 只新增里唯一此前缺的一只
 		ZombieIds.TALL_NUT_ZOMBIE,
-		ZombieIds.NORM,
 	]
 
 	## 展示僵尸

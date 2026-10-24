@@ -21,6 +21,7 @@ const DAVE_SURPRISE := preload("res://data/dave/dialog/adventure_01_05_surprise.
 
 
 func _init() -> void:
+	save_key = "101_0_0005"
 	## 二周目差异：开局锁定前 3 个随机卡槽 —— 从本关能用的植物里随机挑 3 株占住前 3 槽，
 	## 玩家只能编辑第 4 个槽起的部分（机制与边界见 docs/参考存档/二周目.md）
 	locked_random_card_num = 3
@@ -32,7 +33,6 @@ func _init() -> void:
 	## 进关就停在相机归位位（保龄球关没有选卡，不该先拍房子）
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 	can_choosed_card = false
-	first_wave_delay = 6.0
 	## 本关传送带只出普通坚果(1001) / 爆炸坚果(1002)，不出巨型坚果保龄球(1003)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
@@ -91,8 +91,8 @@ func run_flow(mg: MainGameManager) -> void:
 	## 初始化小推车
 	await init_lawn_mover()
 	await ready_set_plant()
-	## 开战
-	await start_battle(20, zombie_list)
+	## 开战（首波 2 秒：原版坚果保龄球 `mZombieCountDown = 200` tick）
+	await start_battle(20, zombie_list, 0.0, 2.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

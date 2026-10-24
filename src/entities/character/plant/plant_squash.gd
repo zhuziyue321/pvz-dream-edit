@@ -40,14 +40,17 @@ func attack_start():
 		is_attack = true
 		target_x = detect_component.enemy_can_be_attacked.shadow.global_position.x
 		is_right = target_x > global_position.x
+		## ★ 动画状态由本脚本点名（两条转换已改为手动 travel，见 `plant_squash.tscn`）
+		request_anim_state(&"Squash_lookright" if is_right else &"Squash_lookleft")
 		hurt_box_component.disable_component(ComponentNormBase.E_IsEnableFactor.Character)
 
 ## 开始跳跃
 func jump_up_start():
-	z_index += 50
-	## 如果地形为睡莲或者水
+	## 层级走表现接口（跳起来压到僵尸之上）
+	anim_component.apply_visual({&"kind": AnimComponentBase.VISUAL_Z, &"offset": 50})
+	## 如果地形为睡莲或者水（影子走表现接口）
 	if plant_cell.curr_condition & 8 or  plant_cell.curr_condition & 16:
-		shadow.visible = false
+		anim_component.apply_visual({&"kind": AnimComponentBase.VISUAL_SHADOW_VISIBLE, &"visible": false})
 
 	var tween:Tween = create_tween()
 	if is_instance_valid(detect_component.enemy_can_be_attacked):

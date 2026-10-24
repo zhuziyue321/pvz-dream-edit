@@ -1,10 +1,10 @@
-[gd_scene load_steps=48 format=3 uid="uid://clqecxrxm0peb"]
+[gd_scene load_steps=60 format=3 uid="uid://clqecxrxm0peb"]
 
 [ext_resource type="Script" uid="uid://dj45uwooyxcqq" path="res://src/store/store_manager.gd" id="1_2eot4"]
-[ext_resource type="Texture2D" path="res://pak/images/Store_CarClosed_.png" id="2_2q1s6"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/store/Store_CarClosed.png" id="2_2q1s6"]
 [ext_resource type="Texture2D" path="res://pak/images/Store_Background.jpg" id="2_68plr"]
 [ext_resource type="Texture2D" path="res://pak/images/Store_HatchbackOpen.png" id="3_8gqjn"]
-[ext_resource type="Texture2D" path="res://pak/images/Store_Car_.png" id="4_u8m56"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/store/Store_Car.png" id="4_u8m56"]
 [ext_resource type="Texture2D" path="res://pak/images/Store_MushroomGardenIcon.png" id="5_1407h"]
 [ext_resource type="Script" uid="uid://7qucqjvdq78q" path="res://data/dave/crazy_dave_dialog_detail_resource.gd" id="7_36gbm"]
 [ext_resource type="PackedScene" uid="uid://oia7m8j6yhjl" path="res://src/store/goods.tscn" id="7_gw0he"]
@@ -38,6 +38,14 @@
 [ext_resource type="PackedScene" path="res://src/store/goods_rake.tscn" id="29_rake"]
 [ext_resource type="PackedScene" path="res://src/store/goods_wall_nut_first_aid.tscn" id="30_firstaid"]
 [ext_resource type="PackedScene" path="res://src/store/goods_garden_tool.tscn" id="31_gtool"]
+[ext_resource type="Script" path="res://src/store/goods_wheel_barrow.gd" id="32_wbarrow"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_BackgroundNight.jpg" id="33_nightbg"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_PrevButton.png" id="34_prev"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_PrevButtonHighlight.png" id="35_prevhl"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_NextButton.png" id="36_next"]
+[ext_resource type="Texture2D" path="res://pak/images/Store_NextButtonHighlight.png" id="37_nexthl"]
+[ext_resource type="Script" path="res://src/store/store_dialog.gd" id="38_storedlg"]
+[ext_resource type="Texture2D" path="res://pak/images/Zen_WheelBarrow.png" id="39_wbicon"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_o853e"]
 
@@ -80,6 +88,11 @@ is_enter_up = true
 is_long_time_dave = true
 metadata/_custom_type_script = "uid://dlfnh7fjqyil6"
 
+[sub_resource type="Resource" id="Resource_wbarrow"]
+script = ExtResource("7_36gbm")
+text = "这是辆小推车！不过现在还没到卖它的时候，敬请期待！"
+metadata/_custom_type_script = "uid://7qucqjvdq78q"
+
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8c1ng"]
 
 [node name="Store" type="Control"]
@@ -100,6 +113,18 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("2_68plr")
+expand_mode = 1
+
+[node name="NightBg" type="TextureRect" parent="Bg"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("33_nightbg")
 expand_mode = 1
 
 [node name="CarClosed" type="TextureRect" parent="Bg"]
@@ -156,7 +181,10 @@ offset_bottom = -124.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_default_cursor_shape = 2
-texture_normal = ExtResource("10_vkx5w")
+texture_normal = ExtResource("34_prev")
+texture_hover = ExtResource("35_prevhl")
+texture_pressed = ExtResource("35_prevhl")
+texture_disabled = ExtResource("10_vkx5w")
 
 [node name="NextPageButton2" type="TextureButton" parent="Bg/Car2"]
 layout_mode = 1
@@ -172,7 +200,24 @@ offset_bottom = -117.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_default_cursor_shape = 2
-texture_normal = ExtResource("11_36gbm")
+texture_normal = ExtResource("36_next")
+texture_hover = ExtResource("37_nexthl")
+texture_pressed = ExtResource("37_nexthl")
+texture_disabled = ExtResource("11_36gbm")
+
+[node name="PageLabel" type="Label" parent="Bg/Car2"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 222.0
+offset_top = 350.0
+offset_right = 326.0
+offset_bottom = 376.0
+theme_override_colors/font_color = Color(0.313726, 0.313726, 0.313726, 1)
+theme_override_font_sizes/font_size = 14
+text = "1 / 1页"
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
 
 [node name="Panel" type="Panel" parent="Bg/Car2"]
 layout_mode = 1
@@ -202,6 +247,19 @@ offset_right = 65.0
 offset_bottom = 65.0
 mouse_filter = 2
 texture = ExtResource("26_pktup")
+
+[node name="SlotCountLabel" type="Label" parent="Bg/Car2/Panel/RowTools/GoodsCardSlot"]
+layout_mode = 0
+offset_right = 55.0
+offset_bottom = 70.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "7\n卡片槽"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="GoodsPoolCleaner" parent="Bg/Car2/Panel/RowTools" instance=ExtResource("27_pool")]
 layout_mode = 2
@@ -282,22 +340,22 @@ offset_bottom = 68.0
 mouse_filter = 2
 texture = ExtResource("8_uxw12")
 
-[node name="GoodsStinky" parent="Bg/Car2/Panel/RowGarden" instance=ExtResource("31_gtool")]
+[node name="GoodsWheelBarrow" parent="Bg/Car2/Panel/RowGarden" instance=ExtResource("7_gw0he")]
 layout_mode = 2
-garden_tool = 6
+script = ExtResource("32_wbarrow")
+dialog_detail = SubResource("Resource_wbarrow")
 
-[node name="Goods4" parent="Bg/Car2/Panel/RowGarden" instance=ExtResource("7_gw0he")]
-layout_mode = 2
-script = ExtResource("27_tree")
-dialog_detail = ExtResource("14_vu7tl")
-
-[node name="StoreIcon" type="TextureRect" parent="Bg/Car2/Panel/RowGarden/Goods4"]
+[node name="StoreIcon" type="TextureRect" parent="Bg/Car2/Panel/RowGarden/GoodsWheelBarrow"]
 z_index = -1
 layout_mode = 0
 offset_right = 67.0
 offset_bottom = 68.0
 mouse_filter = 2
-texture = ExtResource("9_2eot4")
+texture = ExtResource("39_wbicon")
+
+[node name="GoodsStinky" parent="Bg/Car2/Panel/RowGarden" instance=ExtResource("31_gtool")]
+layout_mode = 2
+garden_tool = 6
 
 [node name="RowGardenSprout" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
@@ -392,6 +450,19 @@ offset_bottom = 252.0
 mouse_filter = 2
 theme_override_constants/separation = 8
 
+[node name="Goods4" parent="Bg/Car2/Panel/RowTreeFood" instance=ExtResource("7_gw0he")]
+layout_mode = 2
+script = ExtResource("27_tree")
+dialog_detail = ExtResource("14_vu7tl")
+
+[node name="StoreIcon" type="TextureRect" parent="Bg/Car2/Panel/RowTreeFood/Goods4"]
+z_index = -1
+layout_mode = 0
+offset_right = 67.0
+offset_bottom = 68.0
+mouse_filter = 2
+texture = ExtResource("9_2eot4")
+
 [node name="GoodsTreeFood" parent="Bg/Car2/Panel/RowTreeFood" instance=ExtResource("31_gtool")]
 layout_mode = 2
 garden_tool = 7
@@ -462,6 +533,17 @@ offset_right = 206.0
 offset_bottom = -51.0
 grow_vertical = 0
 auto_hide = false
+
+[node name="StoreDialog" type="Control" parent="."]
+visible = false
+z_index = 2000
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("38_storedlg")
 
 [node name="ConfirmGoods" type="Control" parent="."]
 visible = false

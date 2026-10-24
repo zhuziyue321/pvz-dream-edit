@@ -21,11 +21,13 @@ var save_game_name: String
 ## 存档键：显式写死后就不再依赖选关场景的遍历顺序（旧版由 set_choose_level 现场拼出）
 ## 留空 = 回退到旧的自动拼法 str(game_mode)_str(level_page)_str(level_id)，所以 V1 关卡不用改
 ## 迁移方式：**读权威值再写死**（不要推算 —— level_id 来自选关场景遍历按钮的顺序）：
-##   `test/scenarios/tool_dump_save_keys.gd`（只读，跑一遍 4 个选关场景 dump 出权威键）
-##   → `test/scenarios/tool_write_save_keys.gd`（写入）
+##   `test/scenarios/tool_dump_save_keys.gd`（只读，跑一遍 3 个选关场景 dump 出权威键；
+##     冒险模式**没有**选关界面，它的 level_id 就是关卡序号，走 `GlobalGameState.get_adventure_save_game_name()`）
+##   → `test/scenarios/tool_write_save_keys.gd`（写入：改 `.gd` 里 `save_key = "..."` 那一行）
 ##   → `test/scenarios/probe_save_key.gd`（**另起一个进程**回读校验，同进程内关卡资源被选关场景引用、缓存顶不掉）
-## ⚠️ 2026-10-16 核实：写入工具当前仍面向 `.tres` 关卡，而关卡 V2 已改成 `.gd`（`src/levels/` 下 `.tres` 实测 = 0），
-##   迁移前要先把写入目标改成 `.gd` 里 `save_key = "..."` 那一行（见 docs/TODO清单.md 的 U-22）。
+## ✅ 2026-10-22 已补齐：全 155 关（冒险 50 关 × 正本 / 二周目变体 + 迷你 / 解密 / 生存 55 关），见 docs/TODO清单.md 的 U-22。
+##   ⚠️ 已写死的键**不要再动**：迷你 / 解密有 28 关的写死值与「当前遍历顺序拼出来的值」对不上，
+##      那是既有事实 —— **写死值才是权威**（玩家存档里用的就是它），拿当前拼法去「纠正」等于把进度整体挪位。
 ## ⚠️ 只补 `save_key`，**不要**顺手把 `format_version` 改成 2 —— 那是「字段怎么读」的开关，属行为变更。
 @export var save_key: String = ""
 
@@ -100,9 +102,14 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 @export var is_day: bool = true
 ## 是否天降阳光,传送带没有
 @export var is_day_sun: bool = true
-## 是否有血月事件（DLC 版月夜屋顶章）：旗帜波触发血月，期间全场僵尸大幅加速 + 画面变红。
-## 由场景开关带出来（scene_moon_roof.gd 给 true），关卡也能自己覆盖
+## 是否有血月事件（DLC 版 Moon 章的关卡级 gimmick，活动关也借用到 Night 上）：
+## 全场僵尸大幅加速 + 画面变红。由场景开关带出来（scene_moon_roof.gd 给 true），关卡也能自己覆盖。
+## 触发节奏 / 时长 / 强度见 `blood_moon_manager.gd`
 @export var is_blood_moon: bool = false
+## 血月是否**常驻**（开战即挂上、整关不退，DLC 活动关 Hemophilia 那类）
+@export var is_blood_moon_permanent: bool = false
+## 本关场景是否有专属的血月底图（有 = 换底图，没有 = 把底图染红）
+@export var is_blood_moon_bg_art: bool = false
 ## 是否有小推车
 @export var is_lawn_mover: bool = true
 ## 是否僵尸能进房
@@ -141,6 +148,8 @@ func apply_scene_setting() -> void:
 	is_day = setting.is_day
 	is_day_sun = setting.is_day_sun
 	is_blood_moon = setting.is_blood_moon
+	is_blood_moon_permanent = setting.is_blood_moon_permanent
+	is_blood_moon_bg_art = setting.is_blood_moon_bg_art
 
 #endregion
 
@@ -193,6 +202,12 @@ func apply_scene_setting() -> void:
 ## 出怪模式
 @export var monster_mode: ConstLevelData.E_MonsterMode = ConstLevelData.E_MonsterMode.Norm
 @export_subgroup("正常出怪模式")
+## 生存模式难度：非 None 时，多轮出怪改走**原版生存规则**（见
+## `ZombieManager.update_multi_round_zombie_refresh_types`）：
+##   第 1 轮固定起手，之后每轮按档位从地图允许的僵尸里随机抽一批；
+##   普通档还只出「潜水僵尸及以前」的前期僵尸。普通 / 困难 / 无尽各填对应值，
+##   旗数由 `game_round`（普通困难 5 轮、无尽 -1）+ 每轮波数（普通 10、困难/无尽 20）决定。
+@export var survival_difficulty: ConstLevelData.E_SurvivalDifficulty = ConstLevelData.E_SurvivalDifficulty.None
 ## 出怪倍率
 @export var zombie_multy := 1
 ## 每轮游戏出怪波次，每10波生成1旗帜
@@ -208,7 +223,20 @@ func apply_scene_setting() -> void:
 @export var max_wave := 30
 ## 开局到第一波僵尸的延迟秒数（「开战」事件里等这个秒数再开第一波；
 ## 关卡流程要提前开波就用 `await start_first_wave()`，不读本值）
-@export var first_wave_delay: float = 20.0
+##
+## **关卡自己的首波时间不要写在这里**：写在流程里那一句开战上，看得见「这一仗怎么打」——
+##   `await start_battle(10, zombie_list, 0.0, 36.0)   # 1-2：36 秒（10 波 / 出怪表 / 不超时 / 首波 36 秒）`
+## 本字段只是**兜底默认值**：原版 `ZOMBIE_COUNTDOWN_FIRST_WAVE = 1800` tick
+## （原版逻辑时钟 100 tick = 1 秒）= 18 秒。
+## 各关的原版首波时间（1-2 的 36 秒 / 迷你 boss 的 1 秒 / 保龄球等 2 秒 / 排山倒海 24 秒 /
+## 雪橇狂欢 45 秒 / 蹦蹦舞会 55 秒 / 坚不可摧 0.1 秒）见 docs/参考存档/僵尸波次.md 的「第一波时机」表；
+## 生存模式第 2 轮起压到 `ZOMBIE_COUNTDOWN_RANGE = 600` tick = 6 秒（见 ZombieManager.start_game）
+@export var first_wave_delay: float = 18.0
+## 普通波 / 旗帜波到点的刷新间隔（秒）：Vector2(最短, 最长)，每波在区间内按 0.01 秒取整随机
+## 对齐原版 `ZOMBIE_COUNTDOWN + Rand(ZOMBIE_COUNTDOWN_RANGE)` = 2500 + rand(0,600) tick
+## = 25.00 ~ 30.99 秒；最短波长 6 秒的下限由刷新管理器统一兜着，不在这里配
+## 原版对小僵尸大麻烦 / 排山倒海 / 最后防线三关写死 750 tick = 7.5 秒，那三关在本字段里覆盖
+@export var wave_norm_time_range: Vector2 = Vector2(25.0, 31.0)
 ## 僵尸种类刷新列表 多轮游戏且自然出怪 自动更新自然出怪列表
 @export var zombie_refresh_types: Array[StringName] = [
 	ZombieIds.NORM, # 普通僵尸
@@ -217,6 +245,11 @@ func apply_scene_setting() -> void:
 	ZombieIds.POLE_VAULTER, # 撑杆僵尸
 	ZombieIds.BUCKET, # 铁桶僵尸
 ]
+## 波次里是否允许「额外补普僵」：大波（旗帜波）补旗子僵尸 + 一批普通僵尸，点数残差也拿普僵填。
+## 原版绝大多数关卡都补；但**原版 ZomBotany 两关**（`Board::InitZombieWaves` 里对
+## `WAR_AND_PEAS` / `WAR_AND_PEAS_2` 的特判）既不补普通僵尸、也不补旗子僵尸 ——
+## 整关只出植物僵尸。这两关在 `_init()` 里写 false（见 docs/参考存档/植物僵尸.md §4）。
+@export var spawn_plain_zombie_extra: bool = true
 ## 是否有蹦极僵尸
 @export var is_bungi := false
 ## 大波时生成的蹦极僵尸数量范围

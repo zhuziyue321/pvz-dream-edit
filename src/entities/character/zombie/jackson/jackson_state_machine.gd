@@ -147,7 +147,6 @@ func anim_play(anim_name: StringName, curr_scale: Vector2, start_time: float, _s
 		zombie_009_jackson.update_direction_x_body(int(curr_scale.x))
 
 		if anim_name == "walk":
-			#await get_tree().create_timer(0.1).timeout
 			await get_tree().process_frame
 			await get_tree().process_frame
 			await get_tree().process_frame

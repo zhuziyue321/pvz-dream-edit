@@ -32,7 +32,10 @@ func _init() -> void:
 	game_BGM = ConstLevelData.GameBGM.UltimateBattle
 	is_day_sun = false
 	zombie_multy = 10
-	is_bungi = true
+	## 波长：原版本关写死 `mZombieCountDown = 750` tick = 7.5 秒（不是通用的 25~31 秒）
+	wave_norm_time_range = Vector2(7.5, 7.5)
+	## 本关**不是**蹦极关（原版蹦极只在 Bungee Blitz 模式触发）：删掉误配的 is_bungi，
+	## 否则大波会空投偷植物的蹦极僵尸，而原版「排山倒海」没有这个
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
 	start_sun = 50000
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
@@ -268,17 +271,12 @@ func _get_cell(row: int, col: int) -> PlantCell:
 func run_flow(mg: MainGameManager) -> void:
 	## 屋顶是裸地：先沿整列铺出左侧 8 列的种植位（原版本关 9 列里只有最右一列没有花盆）
 	await plant_flower_pot_columns(8)
-	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 COLUMN 白名单（Challenge.cpp：普/路障/铁桶/橄榄球 4 种）
 	var zombie_list: Array[StringName] = [
-		ZombieIds.SCREEN_DOOR,
 		ZombieIds.NORM,
 		ZombieIds.CONE,
 		ZombieIds.BUCKET,
-		ZombieIds.PAPER,
 		ZombieIds.FOOTBALL,
-		ZombieIds.GARGANTUAR,
-		ZombieIds.LADDER,
-		ZombieIds.JACKSON,
 	]
 
 	## 展示僵尸
@@ -290,6 +288,7 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(-1, zombie_list)
+	## 首波 24 秒：原版排山倒海 `mZombieCountDown = 2400` tick（越长越像原版的「慢慢压过来」）
+	await start_battle(-1, zombie_list, 0.0, 24.0)
 	## 关卡结束（赢 / 输 / 僵尸进家都从这里往下走）：整列虚影与格子接线由本关自己收掉
 	_free_column_items()

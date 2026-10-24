@@ -420,19 +420,19 @@ func _find_match_groups(grid: Array[Array]) -> Array[Array]:
 	var col_num: int = grid[0].size()
 	## 横向
 	for row in range(grid.size()):
-		var col := 0
-		while col < col_num:
-			var plant_type: StringName = grid[row][col]
+		var col_start := 0
+		while col_start < col_num:
+			var plant_type: StringName = grid[row][col_start]
 			if plant_type == PlantIds.NULL:
-				col += 1
+				col_start += 1
 				continue
-			var end_col := col + 1
+			var end_col := col_start + 1
 			while end_col < col_num and grid[row][end_col] == plant_type:
 				end_col += 1
-			if end_col - col >= 3:
+			if end_col - col_start >= 3:
 				## (起点行, 起点列, 长度, 步长)：横向步长 0 —— 行不动、列往后数
-				groups.append(_make_coord_list(row, col, end_col - col, 0))
-			col = end_col
+				groups.append(_make_coord_list(row, col_start, end_col - col_start, 0))
+			col_start = end_col
 	## 纵向
 	for col in range(col_num):
 		var row := 0
@@ -461,6 +461,9 @@ func _make_coord_list(start_row: int, start_col: int, length: int, step: int) ->
 ## 消除 → 给阳光 → 下落补充 → 再判定，直到棋盘上没有连线（连锁一路消到底）
 func _resolve_board() -> void:
 	is_resolving = true
+	## 本次移动内已结算的连线组数：原版 `mBeghouledMatchesThisMove`，每结算一组 +1、
+	## 一次移动结束归零（级联消也算同一次移动，所以放在 while 外面）
+	var matches_this_move := 0
 	while true:
 		var groups := _find_match_groups(_build_type_grid())
 		if groups.is_empty():
@@ -474,7 +477,8 @@ func _resolve_board() -> void:
 		_remove_cells(to_remove)
 		## 阳光掉在被消掉的那些格子上（玩家点了才进账，与「配对完立刻进计数器」不同，见 _drop_match_sun）
 		for group in groups:
-			_drop_match_sun(group)
+			_drop_match_sun(group, matches_this_move)
+			matches_this_move += 1
 		_refresh_ui()
 		if match_num >= ConstBeghouled.TARGET_MATCH_NUM:
 			break
@@ -646,9 +650,9 @@ func _shuffle_plants() -> void:
 			if is_crater(cell):
 				continue
 			cells.append(cell)
-			var plant := get_cell_plant(cell)
-			if plant != null:
-				plants.append(plant)
+			var cell_plant := get_cell_plant(cell)
+			if cell_plant != null:
+				plants.append(cell_plant)
 	if plants.size() < 2:
 		return
 	var guard := 0
@@ -736,11 +740,14 @@ func get_sun() -> int:
 
 ## 一条连线的奖励阳光：在连线所在的格子上掉下来，玩家点了才进账
 ## （原版是配对完立刻进计数器，本关按需求改成掉落式：阳光出现在「消在哪儿」的位置）
-## 奖励 50 / 100 时拆成多颗 25 一起掉（Sun 会按面值缩放，单颗 100 的贴图会大得离谱）
-func _drop_match_sun(group: Array[Vector2i]) -> void:
+## 奖励 50 / 125 时拆成多颗 25 一起掉（Sun 会按面值缩放，单颗 100+ 的贴图会大得离谱）
+##
+## [param matches_this_move] 本次移动里**已经结算过**的连线组数（原版 `mBeghouledMatchesThisMove`）：
+## 第 2 组起每组多一颗阳光，见 `ConstBeghouled.get_sun_by_chain_len()`
+func _drop_match_sun(group: Array[Vector2i], matches_this_move: int = 0) -> void:
 	if group.is_empty():
 		return
-	var sun_value := ConstBeghouled.get_sun_by_chain_len(group.size())
+	var sun_value := ConstBeghouled.get_sun_by_chain_len(group.size(), matches_this_move)
 	if sun_value <= 0:
 		return
 	var num := ceili(float(sun_value) / float(ConstBeghouled.SUN_UNIT_VALUE))
@@ -761,25 +768,9 @@ func _drop_one_sun(cell: PlantCell, sun_value: int) -> void:
 		return
 	if main_game.suns == null:
 		return
-	## 闸门被占住时（联机客户端）这一颗不长：消一次掉哪几颗由**主机**下发，
-	## 本地再长一份就会变成「一次消除两份阳光」（与天降 / 向日葵同一个闸门，见 GlobalUtils）
-	if GlobalUtils.sun_spawn_gate.is_valid() and bool(GlobalUtils.sun_spawn_gate.call()):
-		return
-	var sun: Sun = SceneRegistry.SUN.instantiate()
-	sun.init_sun(sun_value, main_game.suns.to_local(cell.global_position))
-	main_game.suns.add_child(sun)
-	var offset_x := randf_range(-30.0, 30.0)
-	## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）
-	sun.mark_pop_up(offset_x)
-	EventBus.push_event(ConstEventName.SUN_SPAWNED, [sun])
-	var tween := sun.create_tween()
-	tween.tween_property(sun, "position:y", -15.0, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(sun, "position:y", 45.0, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	sun.spawn_sun_tween = get_tree().create_tween()
-	sun.spawn_sun_tween.set_parallel()
-	sun.spawn_sun_tween.tween_subtween(tween)
-	sun.spawn_sun_tween.tween_property(sun, "position:x", offset_x, 0.9).as_relative()
-	sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
+	## 闸门 / 落点 / 弹起再落下 / 广播那套在 `SunSpawner.pop_up`
+	## （本地再长一份就会变成「一次消除两份阳光」，与天降 / 向日葵同一个闸门）
+	SunSpawner.pop_up(main_game.suns, main_game.suns.to_local(cell.global_position), sun_value)
 
 
 func _cost_sun(sun_value: int) -> void:
@@ -820,9 +811,9 @@ func _replace_all_plants(from_type: StringName, to_type: StringName) -> void:
 	var targets: Array[PlantCell] = []
 	for row in range(board_row_num):
 		for col in range(board_col_num):
-			var cell := get_cell(row, col)
-			if get_cell_type(cell) == from_type:
-				targets.append(cell)
+			var scan_cell := get_cell(row, col)
+			if get_cell_type(scan_cell) == from_type:
+				targets.append(scan_cell)
 	if targets.is_empty():
 		return
 	_is_replacing = true

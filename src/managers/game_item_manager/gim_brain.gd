@@ -3,7 +3,7 @@ class_name GIM_Brain
 
 
 ## 脑子场景
-const BRAIN_ON_ZOMBIE_MODE = preload("res://src/items/brain_on_zombie_mode.tscn")
+var BRAIN_ON_ZOMBIE_MODE = AssetRegistry.get_scene("res://src/items/brain_on_zombie_mode.tscn")
 ## 脑子父节点
 @onready var brain_on_zombie_mode: Node2D = %BrainOnZombieMode
 ## 脑子生成的全局x位置

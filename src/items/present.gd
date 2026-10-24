@@ -1,7 +1,7 @@
-extends Node2D
+extends DropItemBase
 class_name Present
 ## 掉落的礼包
-## 三种用途:
+## 四种用途:
 ##   1. 花园植物礼包(is_garden_plant = true,僵尸死亡概率掉落,默认)
 ##   2. 关卡掉落的解锁道具(is_garden_plant = false,时机由关卡数据决定:
 ##      drop_unlock_on_level_complete = true 在通关时掉,否则由 drop_unlock_wave 指定波次的僵尸携带,
@@ -10,6 +10,9 @@ class_name Present
 ##      （拿到新植物掉的是种子包 SeedPacket,由 DropItemManager.dim_seed_packet 直接掉,不包礼物盒）
 ##   4. 战利品（奖杯 / 玉米卷…）：同样是「自定义贴图 + 不弹提示」，贴图由 LootRegistry 按名字给
 ##      （见 DropItemManager.create_loot_drop），点开后走 CanvasLayerWhiteScreen 的收尾表演
+##
+## 与金币那类的区别：**没有抛物线** —— 掉在哪儿就停在哪儿（has_launch_animation() = false），
+## 所以开了自动收集时会当场被收走（见 DropItemBase._ready）。
 
 ## 默认的花园植物礼包提示文本（原版见 data/strings/lawn_strings.txt）
 const TIP_NEW_GARDEN_PLANT := "你为你的花园找到一株新植物"
@@ -21,22 +24,14 @@ const TIP_NEW_GARDEN_PLANT := "你为你的花园找到一株新植物"
 ## 打开时播放的音效名（见 SoundManager.play_other_SFX），战利品由 LootRegistry 指定
 @export var open_sfx := "prize"
 ## 掉落物贴图，留空用默认的礼物盒（车钥匙 / 铲子等解锁道具传对应贴图）
-@export var icon_texture: Texture2D
+## 生产方有的在入树前给（那时由 `drop_ready()` 统一应用），有的入树后才给 —— 后者靠这个 setter
+@export var icon_texture: Texture2D:
+	set(value):
+		icon_texture = value
+		if is_inside_tree():
+			apply_icon_texture()
 ## 是否为花园植物礼包：false 表示解锁类礼包，不计入花园植物数量也不写存档
 @export var is_garden_plant := true
-## 未被点击时自动消失的秒数（解锁类礼包的提示更长，可以配得更久）
-@export var auto_free_time := 10.0
-## 提示文本停留的秒数
-@export var tip_show_time := 2.0
-
-## 是否已经打开，避免自动收集与手动点击重复触发
-var is_opened := false
-## 是否是「本关结算线」上的掉落物（由 DropItemManager.create_adventure_reward_drop 标记）
-## true 表示玩家点开它之后本关就结束了：交给 CanvasLayerWhiteScreen 播
-## 「移向屏幕中央 -> 发光 -> 屏幕逐渐变白 -> 完全白了结算」，不再走下面的普通拾取表现
-var is_level_complete_drop := false
-
-@onready var pick_up_glow: Sprite2D = $PickUpGlow
 
 @onready var present: Sprite2D = $Present
 @onready var present_open: Sprite2D = $PresentOpen
@@ -44,21 +39,19 @@ var is_level_complete_drop := false
 @onready var texture_button: TextureButton = $TextureButton
 @onready var gpu_particles_2d: GPUParticles2D = $GPUParticles2D
 
-func _ready():
+
+func drop_ready() -> void:
 	apply_icon_texture()
-	TweenUtil.breath_scale_loop(pick_up_glow)  # 无限循环
-
-	## 自动收集金币
-	if Global.config_service.auto_collect_coin:
-		_on_texture_button_pressed()
-
-	## 等待指定秒数未点击删除（已打开时由打开流程自行释放）
-	await get_tree().create_timer(auto_free_time).timeout
-	if not is_opened:
-		queue_free()
 
 
-func _on_texture_button_pressed() -> void:
+## 没有抛物线：掉在哪儿就停在哪儿
+func has_launch_animation() -> bool:
+	return false
+
+
+## 点开拾取：入账（花园植物数 / 解锁）-> 弹提示 -> 开盒特效 -> 删除
+## 本关结算线上的礼包改走 CanvasLayerWhiteScreen 的收尾表演，本体由它在白屏到底时释放
+func pick() -> void:
 	if is_opened:
 		return
 	is_opened = true
@@ -70,7 +63,10 @@ func _on_texture_button_pressed() -> void:
 		reminder_info._init_info([get_open_tip_text()], tip_show_time)
 
 	if is_garden_plant:
-		Global.global_game_state.curr_num_new_garden_plant += 1
+		## 原版礼包里是一株**已定种**的盆栽（PottedPlant::InitializePottedPlant(PickRandomSeedType())），
+		## 这里在拾取时把物种一起入队，发芽期过后长成它
+		Global.global_game_state.add_new_garden_plant(
+			Global.global_game_state.pick_random_garden_plant_species())
 		Global.save_service.save_now()
 
 	## 本关结算线上的掉落物：收尾表演由 CanvasLayerWhiteScreen 接管，本体也由它在白屏到底时释放
@@ -89,6 +85,11 @@ func _on_texture_button_pressed() -> void:
 	queue_free()
 
 
+## 老名字的入口（探针直接点礼包时调）：一律走 `pick()`
+func _on_texture_button_pressed() -> void:
+	pick()
+
+
 ## 用关卡配置的贴图替换礼物盒，并把点击区域改成贴图大小
 func apply_icon_texture() -> void:
 	if icon_texture == null:
@@ -103,10 +104,8 @@ func apply_icon_texture() -> void:
 	texture_button.offset_bottom = icon_size.y / 2.0
 
 
-
 ## 打开礼包后显示的提示文本
 func get_open_tip_text() -> String:
 	if open_tip_text.is_empty():
 		return TIP_NEW_GARDEN_PLANT
 	return open_tip_text
-

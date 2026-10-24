@@ -37,7 +37,6 @@ func _ready() -> void:
 	user_manager.ensure_default_user()
 	if not user_manager.curr_user_name.is_empty():
 		reload_session_for_current_user()
-	_spawn_debug_window()
 	## 不再起定时自动存档：存档一律由业务节点在关键时机调 SaveService.save_now()
 
 
@@ -47,10 +46,11 @@ func reload_session_for_current_user() -> void:
 		return
 	save_service.load_global_game_data()
 	config_service.load_and_apply_config()
-	## 「调试模式」给的三种保龄球不写在存档里,而 curr_plant 刚被读档覆盖过 ——
-	## 按 ConfigService 里那个开关再同步一次（换用户 / 重进游戏都走这条路）
-	global_game_state.apply_debug_mode(bool(config_service.get_console_value(
-		ConsoleBuiltinEntries.DEBUG_MODE_KEY, false)))
+	## 存档刚把全局状态覆盖过一遍（curr_plant 等）—— 通知已启用模组补一次它们写进
+	## 存档态里的东西（见 `ModBase.on_session_reloaded()`）。本体自己不认识任何一个模组。
+	## ⚠️ 启动时本函数跑在 `ModManager._ready()` 之前（autoload 顺序），那时它可能是 null。
+	if ModManager != null:
+		ModManager.notify_session_reloaded()
 
 ## ⚠️ **当前局上下文不在 Global 里** —— 唯一持有者是 `GameContext.curr_main_game`。
 ##
@@ -66,34 +66,6 @@ var game_para:ResourceLevelData
 ## 游戏倍速
 ## @本局（U-32）：本局倍速，应迁到 `GameContext`；跨局无此语义，新代码勿从 Global 取
 var time_scale := 1.0
-
-
-#region 调试窗口
-## 调试窗口（`DebugWindow`）：Ctrl+Q（输入映射 ShortcutKeys_DebugWindow）呼出 / 隐藏，
-## 半透明贴在屏幕右侧，里面是一组调试动作与实时状态行（条目在 `DebugWindowEntries`）。
-##
-## 只在「调试模式」开着时才会弹出来，判定见 `DebugWindow.is_debug_mode_on()`。
-##
-## 这里只负责 new 出来并常驻在 Global 下 —— **它自己认 Ctrl+Q**，因为 Global 继承到
-## `PROCESS_MODE_PAUSABLE`，树一被菜单暂停就收不到按键了，而调试窗口恰要在暂停时也能呼出来。
-var debug_window: DebugWindow = null
-
-
-## 延到本帧末再造窗口：`Global` 是第 2 个 autoload，而 `EventBus` 是第 7 个 ——
-## 在 `Global._ready()` 里直接 new，`DebugWindow._ready()` 里的 `EventBus.subscribe()` 会撞上
-## 还没进树的 EventBus。挂在同一帧的末尾就没有这个先后顺序问题了。
-func _spawn_debug_window() -> void:
-	if is_instance_valid(debug_window):
-		return
-	debug_window = DebugWindow.new()
-	add_child.call_deferred(debug_window)
-
-
-## 「调试模式」开关是否开着（控制台 → 调试 → 调试模式）
-func is_debug_mode_on() -> bool:
-	return bool(config_service.get_console_value(
-		ConsoleBuiltinEntries.DEBUG_MODE_KEY, false))
-#endregion
 
 
 #region 调试快捷键
@@ -185,4 +157,3 @@ func debug_unlock_all_shop_goods() -> void:
 	var num := global_game_state.unlock_all_shop_goods()
 	Log.info("调试快捷键：已解锁商店全部商品，本次新拥有 %d 件" % num)
 #endregion
-

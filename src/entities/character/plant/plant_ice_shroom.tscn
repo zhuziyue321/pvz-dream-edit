@@ -38,34 +38,34 @@ animation = &"IceShroom_idle_only"
 animation = &"IceShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_sxd4y"]
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_hkwun"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping and not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_n3wco"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_qhmsm"]
-advance_mode = 2
-advance_expression = "is_show and not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wi4d4"]
-advance_mode = 2
-advance_expression = "not is_sleeping and is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bep3f"]
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ohyhk"]
-advance_mode = 2
-advance_expression = "not is_show and not is_sleeping "
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_fc1ok"]
 states/IceShroom_idle/node = SubResource("AnimationNodeAnimation_2xsdr")

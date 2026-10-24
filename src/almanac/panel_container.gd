@@ -2,14 +2,20 @@ extends Panel
 class_name AlmanacCharacterShowPanel
 ## 图鉴植物信息描述
 
+## 场景名 -> 底图**路径**（加载与缓存交给 AssetRegistry，见 get_character_bg）
 const CharacterBgMap = {
-	"Day": preload("res://pak/images/Almanac_GroundDay.jpg"),
-	"Ice":preload("res://pak/images/Almanac_GroundIce.jpg"),
-	"Night": preload("res://pak/images/Almanac_GroundNight.jpg"),
-	"Pool": preload("res://pak/images/Almanac_GroundPool.jpg"),
-	"Fog": preload("res://pak/images/Almanac_GroundNightPool.jpg"),
-	"Roof": preload("res://pak/images/Almanac_GroundRoof.jpg")
+	"Day": "res://pak/images/Almanac_GroundDay.jpg",
+	"Ice": "res://pak/images/Almanac_GroundIce.jpg",
+	"Night": "res://pak/images/Almanac_GroundNight.jpg",
+	"Pool": "res://pak/images/Almanac_GroundPool.jpg",
+	"Fog": "res://pak/images/Almanac_GroundNightPool.jpg",
+	"Roof": "res://pak/images/Almanac_GroundRoof.jpg"
 }
+
+## 取某场景的图鉴底图；没登记的按 Day 兜底
+static func get_character_bg(bg_name: String) -> Texture2D:
+	var path: String = CharacterBgMap.get(bg_name, CharacterBgMap["Day"])
+	return AssetRegistry.get_texture(path)
 
 ## 背景
 @onready var character_bg: TextureRect = $CharacterBg
@@ -133,8 +139,7 @@ func special_zombie_update_pos(new_show_zombie:Zombie000Base):
 ## 这里一律按「缺了就用空值兜」读，别裸索引（缺一个键就是一进图鉴就崩）。
 ## 参数项最多 5 条（面板里只摆了 PlantPara ~ PlantPara5），超出部分忽略。
 func almanac_update_character_panel_common(data_almanac_character:Dictionary):
-	character_bg.texture = CharacterBgMap.get(data_almanac_character.get("背景", "Day"),
-		CharacterBgMap["Day"])
+	character_bg.texture = get_character_bg(String(data_almanac_character.get("背景", "Day")))
 	## 名字
 	character_name.text = str(data_almanac_character.get("名字", ""))
 	## 描述

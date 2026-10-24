@@ -97,13 +97,35 @@ func attack_end():
 ## 攻击间隔后触发执行攻击
 func _on_bullet_attack_cd_timer_timeout() -> void:
 	# 在这里调用实际攻击逻辑
-	animation_tree.set(attack_para, AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	request_one_shot(attack_para)
+
+
+## 请角色播一次"开火"动画（★ 统一入口）
+##
+## 本地驱动时就是 AnimationTree 的 OneShot 请求；客户端被包分发接管后，
+## 动画由主机下发的快照决定，这里的请求会在组件里被忽略 —— 判定与表现从此只有一个入口。
+func request_one_shot(param: StringName) -> void:
+	var character := owner_character
+	if character == null or not is_instance_valid(character.anim_component):
+		return
+	character.anim_component.request_one_shot(param)
+
+
+## 撤掉正在播的开火动画（淡出）；用途见各子类的 `set_cancel_attack()`
+func cancel_one_shot(param: StringName) -> void:
+	var character := owner_character
+	if character == null or not is_instance_valid(character.anim_component):
+		return
+	character.anim_component.cancel_one_shot(param)
 
 func set_cancel_attack():
 	#animation_tree.set(attack_para, AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
 	pass
 
-## 发射子弹（动画调用）
+## 发射子弹（**动画事件**调用）
+##
+## 动画资源里不再点名本方法：方法轨调 `AnimComponent.on_anim_event("shoot")`，
+## 由 `AttackComponentBase._on_anim_event()` 转调到这里（见该组件类注释）。
 func _shoot_bullet():
 	shoot_burst()
 
@@ -111,8 +133,9 @@ func _shoot_bullet():
 ## 一次攻击的连发：连发几颗由 `burst_num` 决定（默认 1 = 只发一颗）
 ##
 ## ★ 抽成独立入口是因为「谁触发发射」有两条路：
-##   · 植物 —— 攻击**动画**里的方法轨道调 `_shoot_bullet()`，动画没有轨道的组件（植物僵尸）
-##     走 `_on_bullet_attack_cd_timer_timeout()` 直接调本方法；
+##   · 植物 —— 攻击**动画**的 `on_anim_event("shoot")` 事件经
+##     `AttackComponentBase._on_anim_event()` 转调到 `_shoot_bullet()`；
+##   · 动画里没有轨道的组件（部分僵尸 / 特殊植物）走 `_on_bullet_attack_cd_timer_timeout()` 直接调本方法；
 ##   两条路都统一到本方法，连发只在这里循环一次，避免「连发里再套连发」。
 func shoot_burst() -> void:
 	for i in range(maxi(burst_num, 1)):
@@ -131,10 +154,22 @@ func _shoot_bullet_once():
 		## 闸门被占住时（联机客户端）造不出来：那一颗由主机随快照下发，本地不该再造一份
 		if bullet == null:
 			return
-		var bullet_paras = get_bullet_paras(markers_2d_bullet[i].global_position, detect_component.ray_area_direction[i])
+		var bullet_paras = get_bullet_paras(get_shoot_global_position(i), detect_component.ray_area_direction[i])
 		bullet.init_bullet(bullet_paras)
 		bullets.add_child(bullet)
 		play_throw_sfx()
+
+
+## 第 [param index] 个发射点的世界坐标：默认就是场景里 `markers_2d_bullet[index]` 的位置
+##
+## 抽成可覆写入口，是为了让「发射点不是静态点」的组件接管 —— 植物僵尸里的直线弹
+## （机枪 / 寒冰）按原版实时取头顶植物头的轨道位置，见
+## `AttackComponentZomBotany.get_shoot_global_position()`。
+func get_shoot_global_position(index: int) -> Vector2:
+	if index < 0 or index >= markers_2d_bullet.size():
+		return global_position
+	var marker: Marker2D = markers_2d_bullet[index]
+	return marker.global_position if is_instance_valid(marker) else global_position
 
 
 ## 子弹掩码来源：攻击组件自带掩码组件时用自身的（仙人掌），否则用检测组件的

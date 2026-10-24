@@ -29,8 +29,6 @@ func _init() -> void:
 	## 原版本关播屋顶曲 Graze the Roof，不是通用小游戏曲
 	game_BGM = ConstLevelData.GameBGM.Roof
 	zombie_multy = 4
-	## 原版「蹦蹦舞会 / 全面冻结」共有的超长开场：摆完植物要等约 55 秒才来第一波
-	first_wave_delay = 55.0
 
 
 ## ⚠️ 参数只能叫 `mg`：基类的 `_mg` 字段存在，改叫 `_mg` 会遮蔽它（见 LevelScriptBase 那行说明）。
@@ -54,4 +52,6 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战（原版 3 面旗帜 = 30 波）
-	await start_battle(30, zombie_list)
+	## 首波 55 秒：原版 `GAMEMODE_CHALLENGE_POGO_PARTY` → `mZombieCountDown = 5500` tick
+	## （原版 Trivia：摆完植物到第一波约 55 秒，是全场最长的开场）
+	await start_battle(30, zombie_list, 0.0, 55.0)

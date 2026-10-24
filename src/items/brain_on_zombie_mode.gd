@@ -26,7 +26,6 @@ func _ready() -> void:
 	## 斜面与水平面的差值
 	var diff_slope_flat:float = 0
 	if is_instance_valid(first_plant_cell):
-		#await get_tree().process_frame
 		diff_slope_flat = first_plant_cell.slope_step_y
 	position.y += diff_slope_flat
 	area_2d_detect.position.y -= diff_slope_flat

@@ -16,24 +16,19 @@ func _init() -> void:
 	is_day_sun = false
 	can_choosed_card = false
 	zombie_multy = 10
+	## 波长：原版本关写死 `mZombieCountDown = 750` tick = 7.5 秒（不是通用的 25~31 秒）
+	wave_norm_time_range = Vector2(7.5, 7.5)
 	card_mode = ConstLevelData.E_CardMode.ConveyorBelt
+	## 原版本关传送带只给这 4 种（Challenge.cpp Little Trouble：荷叶 / 坚果 / 豌豆 / 樱桃），
+	## 权重照原版 LilyPad25 / Wallnut15 / Peashooter25 / CherryBomb35
 	conveyor_weights = ResourceCardWeight.create_plant_weights({
-	&"pea_shooter_single": 2,
-	&"cherry_bomb": 1,
-	&"wall_nut": 2,
-	&"snow_pea": 2,
-	&"pea_shooter_double": 2,
-	&"lily_pad": 5,
-	&"squash": 1,
-	&"three_peater": 2,
-	&"jalapeno": 1,
-	&"torch_wood": 2,
-	&"cattail": 1
+		&"lily_pad": 25,
+		&"wall_nut": 15,
+		&"pea_shooter_single": 25,
+		&"cherry_bomb": 35,
 	})
-	conveyor_order = ResourceCardReference.create_plant_order({
-	1: &"lily_pad",
-	5: 44
-	})
+	## 原版无固定出卡顺序：去掉这里曾写的固定序号（其中 44=猫尾，不在上面的 4 种池里）
+	conveyor_order = ResourceCardReference.create_plant_order({})
 
 
 ## 本关专属：所有正常出战僵尸启用迷你规则
@@ -48,17 +43,12 @@ func get_zombie_init_para_extra() -> Dictionary:
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 Little Trouble 白名单（Challenge.cpp：普/路障/橄榄球/潜水）
 	var zombie_list: Array[StringName] = [
-		ZombieIds.JACKSON,
 		ZombieIds.NORM,
 		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
-		ZombieIds.BUCKET,
-		ZombieIds.SCREEN_DOOR,
 		ZombieIds.FOOTBALL,
-		ZombieIds.JACKBOX,
-		ZombieIds.DOLPHINRIDER,
-		ZombieIds.POLE_VAULTER,
+		ZombieIds.SNORKLE,
 	]
 
 	## 展示僵尸
@@ -72,4 +62,5 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20, zombie_list)
+	## 首波 2 秒：原版小僵尸大麻烦 `mZombieCountDown = 200` tick
+	await start_battle(20, zombie_list, 0.0, 2.0)

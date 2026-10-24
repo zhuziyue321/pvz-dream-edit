@@ -71,6 +71,23 @@ func ready_show():
 	bungee_target.visible = false
 	shadow.visible = false
 
+## 被技能召唤（博士的手召唤 / 蹦极闪电战）时的初始化
+##
+## 由 `ZombieManager._initialize_skill_bungi()` 统一调用：管理器只认这个方法，
+## 不认识蹦极的靶子与前摇字段 —— 这样「按类型 cast 成具体僵尸再改字段」只留在僵尸自己身上。
+func apply_skill_summon(target_cell: PlantCell, anchor: Marker2D = null) -> void:
+	plant_cell = target_cell
+	## 博士已经用进入动画表现召唤，跳过靶子预警、入树后立即下降
+	drop_start_delay = 0.0
+	if is_instance_valid(bungee_target):
+		bungee_target.visible = false
+	## 用 `call()` 而不是直接写方法名：`set_bungee_anchor()` 目前没有任何脚本实现，
+	## 直接调用会让 GDScript 静态分析报 "not found in base self"，整个 `Zombie021Bungi`
+	## 解析失败，连带所有探针编译不过。`has_method()` 已经挡住运行时调用，动态派发等价。
+	if is_instance_valid(anchor) and has_method(&"set_bungee_anchor"):
+		call(&"set_bungee_anchor", anchor)
+
+
 ## 偷盗植物,开始起飞
 func raise_start():
 	## 如果没有被摊开,偷盗植物

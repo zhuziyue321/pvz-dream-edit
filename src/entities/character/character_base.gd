@@ -17,6 +17,7 @@ enum E_TimerType{
 	IceFreeze,		## 冰冻停滞
 	Butter,			## 黄油
 	Slow,			## 通用减速（伤害系统的 `EFFECT_SLOW` 效果）
+	Shrink,			## 缩小（缩小紫罗兰）
 }
 ## 减速相关计时器(第一次使用时创建)
 var all_timer:Dictionary[E_TimerType, Timer] = {
@@ -24,7 +25,13 @@ var all_timer:Dictionary[E_TimerType, Timer] = {
 	E_TimerType.IceFreeze:null,
 	E_TimerType.Butter:null,
 	E_TimerType.Slow:null,
+	E_TimerType.Shrink:null,
 }
+
+## 缩小（缩小紫罗兰）：当前是否处于缩小中
+var _is_shrinking := false
+## 缩小前的原始缩放（恢复用；只记第一次，避免重复触发越缩越小）
+var _shrink_origin_scale := Vector2.ONE
 #endregion
 
 #region 基础属性
@@ -52,11 +59,16 @@ var is_zombie_mode:=false
 ##   3. 都不设（-1）→ 子弹沿用自己场景里的 `attack_value`，与没有本字段时行为一致。
 ##
 ## 植物与僵尸共用（植物僵尸 / 投石车僵尸发射的子弹同样读它）；
-## 啃食类持续伤害不走这里（那是 `AttackComponentZombieNorm.init_attack_value_per_min`）。
+## 啃食类持续伤害不走这里（那是 `AttackComponentZombieNorm.init_attack_value_per_sec`，单位 HP/秒）。
 @export var attack_value: int = -1
 
 @export_group("角色速度")
-## 角色速度随机范围
+## 角色速度随机范围（乘在 `ori_speed` / 动画轨道速度上的倍率，`init_random_speed()` 里取一次）
+##
+## 默认 ±10%：**植物**用这个默认值就够了（原版植物的攻速 / 产阳光是定值，这里的随机只是让
+## 同屏多株不同步，视觉上等价）。**僵尸**在原版是 ±23% 的个体差异
+## （`PickRandomSpeed()` 的 `RandRangeFloat(0.23, 0.37)`，均值 0.3 → 0.77~1.23 的相对量），
+## 所以 `zombie_base.tscn` 把本字段覆盖成 `(0.77, 1.23)` —— 改僵尸速度手感改那一处。
 @export var random_speed_range :Vector2 = Vector2(0.9, 1.1)
 ## 角色所在行
 var lane:int = -1
@@ -74,6 +86,11 @@ enum E_Influence_Speed_Factor{
 	EatGarlic,		## 啃食大蒜后短时间停止
 	BungiCarry,		## 被蹦极僵尸吊在绳子上（下落过程中整体静止，落地才恢复）
 	LevelSpeed,		## 关卡全场加速（资源字段 ResourceLevelData.speed_factor_*，见「僵尸快跑」关）
+	Ampliflower,	## 增幅鹅河菊光环（DLC 模组）：给周围 3×3 植物的攻击 / 产阳光提速
+	BloodMoon,		## 血月（月夜屋顶章的关卡事件）：旗间触发，全场僵尸移速暴涨
+	BloodOrange,	## 血橙（DLC 模组的副作用）：没被这一炸炸死的僵尸被加速一段时间
+	## ⚠️ 这两档必须分开：共用一档时，血橙计时结束把自己的那一档设回 1.0，
+	## 会顺带把正在进行的血月加速一起清掉（反之亦然）
 }
 ## 网络实体 id（**稳定标识**，0 = 未分配）
 ##
@@ -96,6 +113,31 @@ var is_hypno:bool = false
 ## 它自己的归属阵营、朝向、表现、死亡计数一律不动。
 ## 谁置位谁负责还原（模组在效果结束时置回 false）。
 var is_enemy_to_all_camps := false
+## 被光照笼罩的**层数**（DLC 的 Lume-shroom 光域；多株光源重叠时叠加，>0 = 正被照到）
+##
+## 为什么放在基类而不是留在模组里：血月管理器（本体）给僵尸上加速时**必须知道**这只僵尸
+## 是不是在光域里 —— 光域里的僵尸不吃血月 / 血橙这类**增益**（wiki：Lume-shroom
+## "Removes the Blood Moon and other buffs from zombies"）。模组只写这个计数，
+## 判定与清理由本体和模组各读一半，两边不需要互相认识。
+## 与 `is_enemy_to_all_camps` 同一类口子：基类只负责**持有**，谁置位谁负责还原
+## （进出光域各调一次；睡着 = 光域熄灭，也要摘）。
+var illuminated_layers := 0
+## 是否正被光照笼罩（`illuminated_layers > 0`）：被照到的僵尸不吃血月 / 血橙的增益
+var is_illuminated: bool:
+	get:
+		return illuminated_layers > 0
+
+
+## 进入一层光域（多株光源重叠就加多层）
+func add_illuminated_layer() -> void:
+	illuminated_layers += 1
+
+
+## 离开一层光域（成对调用，减到 0 为止——底数不会变负）
+func remove_illuminated_layer() -> void:
+	illuminated_layers = maxi(illuminated_layers - 1, 0)
+
+
 ## 模组自定义效果容器：模组可以把任意"原版没有"的持续 / 一次性效果挂到这个角色上，
 ## 键名由模组自行约定（建议用 `mod_id` + 效果名的枚举 / StringName，避免不同模组互相覆盖）。
 ##
@@ -276,6 +318,14 @@ func update_speed_factor(value: float, influent_speed_factor:E_Influence_Speed_F
 	influence_speed_factors[influent_speed_factor] = value
 	signal_update_speed.emit(GlobalUtils.get_dic_product(influence_speed_factors))
 
+
+## 把**某一档**速度因子清回 1.0（= 撤掉这一档的影响）：给「光照清除增益」这类
+## **外部清除**用（见 `illuminated_layers`）。与 `update_speed_factor(1.0, 档位)` 等价，
+## 单开一个名字是为了让调用方一眼看出意图，也免得调用方去猜「该传 1.0 还是传 0.0」。
+## ⚠️ 只清**增益 / 减益那一档**，不动别的档：冰冻 / 黄油 / 关卡加速各有各的档与计时器。
+func clear_speed_factor(influent_speed_factor:E_Influence_Speed_Factor) -> void:
+	update_speed_factor(1.0, influent_speed_factor)
+
 #region 死亡、受击相关
 ## 亡语
 ## U-31：爆炸植物的「死亡引爆」统一下沉到这里——若宿主挂了 `BombComponent`（唯一名 `BombComponent`）
@@ -298,7 +348,6 @@ func character_death():
 	if is_can_death_language:
 		death_language()
 	signal_character_death.emit()
-	#call_deferred("emit_signal", "signal_character_death")
 
 ## 【伤害系统】**统一的伤害入口**：本角色要对谁造成伤害，一律走这里。
 ##
@@ -418,8 +467,8 @@ func character_death_disappear():
 ## [param source_node] 伤害载体（那一发子弹）。可选，但**建议传**：
 ## 有了它，"哪一发打的"才能进 `DamageInfo`，将来做反伤 / 命中统计 / 联机对账才有依据。
 ## [param attacker_node] 发起者（射手）。可选：子弹一般不记录射手，留空即可。
-func be_attacked_bullet(attack_value:int, bullet_mode:ConstDamage.E_DamageMode=ConstDamage.E_DamageMode.Norm, is_drop:bool=true, trigger_be_attack_SFX:=true, source_node:Node=null, attacker_node:Node=null) -> DamageResult:
-	var info := DamageInfo.create(self, attack_value, bullet_mode, ConstDamage.E_DamageCause.Bullet)
+func be_attacked_bullet(damage:int, bullet_mode:ConstDamage.E_DamageMode=ConstDamage.E_DamageMode.Norm, is_drop:bool=true, trigger_be_attack_SFX:=true, source_node:Node=null, attacker_node:Node=null) -> DamageResult:
+	var info := DamageInfo.create(self, damage, bullet_mode, ConstDamage.E_DamageCause.Bullet)
 	info.is_drop_on_death = is_drop
 	info.trigger_sfx = trigger_be_attack_SFX
 	info.source = source_node
@@ -441,8 +490,8 @@ func be_hit_light() -> void:
 	body.body_light()
 
 ## 被锤子攻击(伤害值不生效)
-func be_attacked_hammer(attack_value:int) -> bool:
-	var info := DamageInfo.create(self, attack_value,
+func be_attacked_hammer(damage:int) -> bool:
+	var info := DamageInfo.create(self, damage,
 		ConstDamage.E_DamageMode.Hammer, ConstDamage.E_DamageCause.Hammer)
 	apply_damage(info)
 	body.body_light()
@@ -450,10 +499,10 @@ func be_attacked_hammer(attack_value:int) -> bool:
 
 
 ## 被僵尸啃食
-## attack_value:伤害
+## damage:伤害
 ## attack_zombie:攻击的僵尸
-func be_zombie_eat(attack_value:int, attack_zombie:Zombie000Base):
-	var info := DamageInfo.create(self, attack_value,
+func be_zombie_eat(damage:int, attack_zombie:Zombie000Base):
+	var info := DamageInfo.create(self, damage,
 		ConstDamage.E_DamageMode.Penetration, ConstDamage.E_DamageCause.Eat)
 	## 啃食不吃受击音效（音效在攻击组件的 attack_once() 里播），但要记下是谁啃的
 	info.trigger_sfx = false
@@ -499,7 +548,10 @@ func update_invisible_show(is_invisible_show: bool) -> void:
 	if is_invisible_show:
 		shadow_alpha_before_invisible = shadow.modulate.a
 	body.set_invisible(is_invisible_show)
-	shadow.modulate.a = 0.0 if is_invisible_show else shadow_alpha_before_invisible
+	anim_component.apply_visual({
+		&"kind": AnimComponentBase.VISUAL_SHADOW_ALPHA,
+		&"alpha": 0.0 if is_invisible_show else shadow_alpha_before_invisible,
+	})
 #endregion
 
 #region 速度修改相关
@@ -524,7 +576,12 @@ func _on_slow_timer_timeout() -> void:
 	update_speed_factor(1.0, E_Influence_Speed_Factor.Slow)
 
 ## 被冰冻减速
+##
+## 死亡后不再吃控制：原版 `ApplyChill` / `ApplyIced` 都会先看 `mDead`，尸体不该再被染蓝/减速
+## （与上面 `be_slow()` 的 `is_death` 拦截保持一致，见 docs/参考存档/植物僵尸逻辑对照.md §4.3 #12）
 func be_ice_decelerate(time:float):
+	if is_death:
+		return
 	update_speed_factor(0.5, E_Influence_Speed_Factor.IceDecelerateSpeed)
 	body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color(0.5, 1, 1))
 	if not is_instance_valid(all_timer[E_TimerType.IceDecelerate]):
@@ -539,7 +596,11 @@ func _on_ice_decelerate_timer_timeout() -> void:
 
 ## 被冰冻控制：先结算本次伤害，冰冻只是附加在伤害上的控制效果（寒冰菇 = 伤害 + 冰冻）。[br]
 ## [param damage] 本次伤害，由发动方给出（寒冰菇自己的角色攻击力 `attack_value`）；<=0 表示只冻不打。
+##
+## 死亡后不再吃控制（原版 `ApplyIced` 先看 `mDead`）：尸体不再被冻成冰块、不再补伤害。
 func be_ice_freeze(time:float, new_time_ice_end_decelerate:float, damage:int = 0):
+	if is_death:
+		return
 	if damage > 0:
 		var info := DamageInfo.create(self, damage,
 			ConstDamage.E_DamageMode.Real, ConstDamage.E_DamageCause.Freeze)
@@ -589,6 +650,47 @@ func cancel_ice():
 		all_timer[E_TimerType.IceDecelerate].stop()
 		_on_ice_decelerate_timer_timeout()
 
+#endregion
+
+
+#region 缩小（缩小紫罗兰）
+## 被缩小控制（缩小紫罗兰）：视觉缩小 + 啃食伤害降低，持续 duration 秒后自动恢复。[br]
+## [param duration] 缩小持续时长（单位为游戏秒）[br]
+## [param scale_factor] 缩小比例（<1，如 0.5 = 缩到原来一半）[br]
+## [param damage_factor] 啃咬伤害倍率（<1，如 0.5 = 啃咬伤害减半）
+func be_shrink(duration: float, scale_factor: float, damage_factor: float) -> void:
+	if not is_instance_valid(body):
+		return
+	## 只记第一次的原始缩放：重复触发时保留最初的尺寸，避免越缩越小、恢复不回 1.0
+	if not _is_shrinking:
+		_shrink_origin_scale = body.scale
+		_is_shrinking = true
+	## 视觉缩小（补间收尾；缩放直接作用于 body，不再往别的节点上叠）
+	var tw := create_tween()
+	tw.tween_property(body, "scale",
+		_shrink_origin_scale * Vector2(scale_factor, scale_factor), 0.25)
+	## 啃食伤害降低：对身上每个啃食攻击组件施加因子（普通 / 梯子僵尸都覆盖）
+	_apply_shrink_damage_factor(damage_factor)
+	## 计时恢复（与 ice / butter 同一套 all_timer 复用）
+	if not is_instance_valid(all_timer[E_TimerType.Shrink]):
+		all_timer[E_TimerType.Shrink] = GlobalUtils.create_new_timer_once(self, _on_shrink_timer_timeout)
+	if all_timer[E_TimerType.Shrink].time_left < duration:
+		all_timer[E_TimerType.Shrink].start(duration)
+
+## 缩小计时结束：恢复缩放与啃食伤害
+func _on_shrink_timer_timeout() -> void:
+	_is_shrinking = false
+	if is_instance_valid(body):
+		var tw := create_tween()
+		tw.tween_property(body, "scale", _shrink_origin_scale, 0.25)
+	_apply_shrink_damage_factor(1.0)
+
+## 给身上所有「啃食类」攻击组件设置缩小伤害因子（普通 / 梯子僵尸都走 `update_attack_value`）[br]
+## [param factor] 伤害倍率；1.0 = 恢复
+func _apply_shrink_damage_factor(factor: float) -> void:
+	for child in get_children():
+		if child is AttackComponentZombieNorm and child.has_method("update_attack_value"):
+			child.update_attack_value(factor, AttackComponentZombieNorm.E_AttackValueFactor.Shrink)
 #endregion
 
 

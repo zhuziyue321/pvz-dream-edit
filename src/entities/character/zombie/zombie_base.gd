@@ -115,28 +115,21 @@ enum E_BeAttackStatusZombie{
 #endregion
 
 #region 僵尸动画状态参数
+## ⚠️ 这一组字段**必须留在宿主**：它们是 AnimationTree 的 `advance_expression` 直接读的属性
+## （`zombie_norm.tscn` / `zombie_ladder.tscn` 等 17 个场景、54 处转换，表达式里写的就是
+## `is_attack` / `is_swimming`）。把它们搬进组件后表达式会静默取不到值、动画直接不切。
+## 要迁，先按 `components/anim_component/component_anim_norm.gd:106-113` 记录的步骤把
+## 那条转换的 `advance_expression` 清空，再由脚本 `request_state()` 点名。
 @export_group("动画状态")
-## 默认为移动状态,is_walk由多种状态控制
-@export var is_walk := true
-@export var is_attack := false:
-	set(value):
-		is_attack = value
-		_judge_is_walk()
+## 正在攻击（动画用）
+@export var is_attack := false
+## 正在游泳（动画用）
 @export var is_swimming := false
 ##是否为珊瑚僵尸
 var is_seaweed:=false
-## 父类通用
-#var is_death := false
 
-## 被炸死
-var is_bomb_death := false:
-	set(value):
-		is_bomb_death = value
-		_judge_is_walk()
-
-## is_walk由is_attack 和 is_bomb_death控制
-func _judge_is_walk():
-	is_walk = not is_attack and not is_bomb_death
+## 被炸死（动画用）
+var is_bomb_death := false
 
 #endregion
 
@@ -193,18 +186,34 @@ func init_zombie(zombie_init_para:Dictionary):
 			self.curr_wave = zombie_init_para.get(E_ZInitAttr.CurrWave, -1)
 
 
-## 初始化正常出战角色
-func ready_norm():
-	## 小僵尸大麻烦：先改速度和体型，再走基类初始化（随机速度要用改过的 random_speed_range）
+## 与 `character_init_type` 无关的僵尸初始化（硬约束 1-3：出战 / 展示 / 花园三条分支都会跑到）
+##
+## 展示态（图鉴 / 开局预览）同样需要这一段：头节点（黄油糊脸）、初始受击状态、
+## 热注册防具的装配与装备钩子。以前这些全写在 `ready_norm()` 里，于是
+## `ready_show()` 必须把 `build_runtime_parts()` 再抄一遍，且展示态拿不到前两项。
+func character_ready() -> void:
+	## 小僵尸大麻烦：先改速度和体型，再走 `ready_norm()`（随机速度要用改过的 random_speed_range）
 	if is_mini_zombie:
 		update_mini_zombie()
-	super()
-	## 本体隐形（预览 / 图鉴的展示僵尸走 ready_show，不受影响）
+	## 本体隐形（预览 / 图鉴的展示僵尸同样要隐形）
 	if is_invisible:
 		update_invisible_show(true)
 	##INFO: 检测是否有头节点（黄油糊脸用）
 	head_node = ZombieButterUtil.find_head_node(self)
 	curr_be_attack_status = init_be_attack_status
+	## 攻击的检测组件更新是否可以攻击梯子下的植物，是否忽略梯子
+	attack_component.detect_component.is_attack_ladder_plant = is_ignore_ladder
+	## 运行期热注册的僵尸在这一步把自己的防具挂上来（见 build_runtime_parts），
+	## 挂完立刻走装备钩子，与场景里本来就带着防具的内置僵尸完全一致
+	build_runtime_parts()
+	## 防具存在时的特殊效果（浮空、免疫…）**由防具组件自己定义**，这里只负责在
+	## 所有子节点都 ready 之后触发一次装备钩子（见 ArmorComponent.on_armor_equip）
+	activate_armor_effects()
+
+
+## 初始化正常出战角色
+func ready_norm():
+	super()
 	## 若生成位置在斜面中,生成时修正斜面位置
 	## （关卡之外创建的僵尸 —— 图鉴预览、探针 —— 没有主游戏，这里要挡一下）
 	var main_game := get_main_game()
@@ -212,23 +221,10 @@ func ready_norm():
 		## 获取对应位置的斜面y相对位置
 		var slope_y_first = main_game.main_game_slope.get_all_slope_y(global_position.x)
 		move_y_zombie(slope_y_first)
-	## 僵尸普通攻击组件连接信号
-	#if attack_component is AttackComponentZombieNorm:
-		### 攻击组件是否攻击梯子下僵尸
-		#attack_component.init_attack_component(is_ignore_ladder)
-	## 攻击的检测组件更新是否可以攻击梯子下的植物，是否忽略梯子
-	attack_component.detect_component.is_attack_ladder_plant = is_ignore_ladder
-	## 两栖类僵尸在水路时变化
+	## 两栖类僵尸在水路时变化（依赖 init_zombie 设好的 curr_zombie_row_type —— 只有出战态才有「行」）
 	if Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) == CharacterRegistry.ZombieRowType.Both:
 		if body_change_on_pool != null:
 			zombie_row_type_both_body_update()
-
-	## 运行期热注册的僵尸在这一步把自己的防具挂上来（见 build_runtime_parts），
-	## 挂完立刻走装备钩子，与场景里本来就带着防具的内置僵尸完全一致
-	build_runtime_parts()
-	## 防具存在时的特殊效果（浮空、免疫…）**由防具组件自己定义**，这里只负责在
-	## 所有子节点都 ready 之后触发一次装备钩子（见 ArmorComponent.on_armor_equip）
-	activate_armor_effects()
 
 #region 运行期热注册（防具装配）
 ## 【热注册】装配钩子：本体已就位、组件都已就绪、防具的装备效果还没触发时调用一次。
@@ -378,10 +374,11 @@ func ready_norm_signal_connect():
 	signal_update_speed.connect(attack_component.owner_update_speed)
 
 ## 初始化展示角色
+##
+## 热注册防具的装配与装备钩子已上提到 `character_ready()`，这里**不要**再调
+## `build_runtime_parts()` —— 重复调用会把防具挂两遍。
 func ready_show():
 	super()
-	## 展示态（图鉴 / 开局预览）也要装配：热注册的僵尸在图鉴里得戴着它的防具
-	build_runtime_parts()
 	move_component.disable_component(ComponentNormBase.E_IsEnableFactor.InitType)
 
 ## 改变攻击状态攻击
@@ -405,7 +402,8 @@ func change_is_swimming(value:bool):
 	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsSwimingChange)
 	await get_tree().create_timer(0.2).timeout
 	move_component.update_move_factor(false, MoveComponent.E_MoveFactor.IsSwimingChange)
-	shadow.visible = not value
+	## 影子走表现接口（水里没有影子）
+	anim_component.apply_visual({&"kind": AnimComponentBase.VISUAL_SHADOW_VISIBLE, &"visible": not value})
 
 #region 僵尸受伤、死亡、
 ## 角色死亡
@@ -421,7 +419,9 @@ func _fade_and_remove():
 	tween.tween_property(self, "modulate:a", 0.0, 1.0)  # 1秒内透明度降为0
 	tween.tween_callback(queue_free)  # 动画完成后删除僵尸
 
-## 死亡不消失(海草\TODO:小推车)
+## 死亡不消失（尸体留在场上）
+## 当前只有**海草**走这条路径；**小推车（迷你游戏）将来也该走这里** —— 这是明确的预留需求，不是没接完
+## （原为 TODO，见 docs/TODO清单.md 的 T-05；2026-10-22 澄清后转为正式注释）
 func character_death_not_disappear():
 	hp_component.hp_loss_to_death(false)
 

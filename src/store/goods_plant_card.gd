@@ -60,15 +60,14 @@ func is_on_sale() -> bool:
 	return Global.global_game_state.is_purple_card_can_buy(plant_type)
 
 
-## 刷新商品状态:未上架则隐藏,已拥有则标记为已拥有且不可再购买
+## 刷新商品状态:未上架则下架(保留格位),已购买则标记为已售出且不可再购买
 func _refresh_goods_state() -> void:
 	if not is_on_sale():
-		visible = false
+		set_goods_on_shelf(false)
 		return
-	visible = true
 	if Global.global_game_state.is_plant_unlocked(plant_type):
 		is_have_goods = false
-		is_not_have_goods_label.text = "已拥有"
+	set_goods_on_shelf(true)
 	is_not_have_goods_label.visible = not is_have_goods
 
 
@@ -97,15 +96,6 @@ func _create_icon() -> void:
 	icon_card.cost.visible = icon_card.sun_cost > 0
 
 
-## 递归设置鼠标过滤:Control 的 MOUSE_FILTER_IGNORE 只作用于自己,子节点要逐个设才不挡点击
-## 参数名不叫 mouse_filter: Control 已有同名属性,同名会触发 SHADOWED_VARIABLE_BASE_CLASS 警告
-func _set_mouse_filter_recursive(node: Node, filter: Control.MouseFilter) -> void:
-	if node is Control:
-		node.mouse_filter = filter
-	for child in node.get_children():
-		_set_mouse_filter_recursive(child, filter)
-
-
 ## 取该植物对应的卡片 prefab
 ## 模仿者不在 AllCards 的选卡字典里(原因见 AllCards.imitater_card 的注释),单独取它的卡片
 func _get_card_prefab() -> Card:
@@ -120,8 +110,7 @@ func _get_card_prefab() -> Card:
 ## 获得该商品:解锁该植物
 func get_one_goods():
 	if Global.global_game_state.unlock_plant(plant_type):
-		Global.save_service.save_now()
+		_finish_goods_granted()
 	else:
 		Log.warn("购买植物卡片失败:该植物已经拥有")
-	_refresh_goods_state()
-	judge_can_get_goods()
+		_finish_goods_granted(false)

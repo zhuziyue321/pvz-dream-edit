@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_0_0008"
 	## 本关通关掉落：双发射手（种子包）
 	level_complete_loot = "peashooter_double_seed_packet"
 

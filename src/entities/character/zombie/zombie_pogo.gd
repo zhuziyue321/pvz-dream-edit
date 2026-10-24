@@ -9,7 +9,8 @@ class_name Zombie019Pogo
 @onready var body_correct: Node2D = $Body/BodyCorrect
 
 var tween_pogo:Tween
-@export var time_pogo_once_default:float = 0.7
+## 一次弹跳的时间：原版 `POGO_BOUNCE_TIME = 80` tick @100 Hz = **0.8 秒**（`Zombie.cpp:60`）
+@export var time_pogo_once_default:float = 0.8
 ## 一次弹跳需要的时间
 var time_pogo_once:float = time_pogo_once_default
 ## 上下弹跳的值
@@ -33,13 +34,15 @@ func ready_norm():
 	attack_component.disable_component(ComponentNormBase.E_IsEnableFactor.Character)
 	## 跳跳状态下检测到植物停止移动,弹跳两次后移动
 	detect_component_pogo.signal_can_attack.connect(pogo_ray_enemy)
-	#detect_component_pogo.signal_not_can_attack.connect(func():move_component.update_move_factor.bind(false, MoveComponent.E_MoveFactor.IsCharacter))
-
-func _process(_delta: float) -> void:
-	## 如果是我是僵尸模式
+	## 我是僵尸模式：跳到脑子位置就失去跳跳棒（位置判定下沉到移动组件，不再自己写 `_process`）
 	if is_zombie_mode:
-		if is_pogo and global_position.x < eat_brain_glo_pos_x_in_zombie_mode:
-			loss_iron_item()
+		move_component.watch_position_x(eat_brain_glo_pos_x_in_zombie_mode, _on_reach_eat_brain)
+
+
+## 到达脑子位置
+func _on_reach_eat_brain():
+	if is_pogo:
+		loss_iron_item()
 
 ## 检测到敌人时
 func pogo_ray_enemy():

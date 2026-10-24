@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_0_0007"
 	## 本关通关掉落：大嘴花（种子包）
 	level_complete_loot = "chomper_seed_packet"
 

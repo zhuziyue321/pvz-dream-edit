@@ -48,9 +48,10 @@ const JACKPOT_DIAMOND := 300
 const TWO_SUN := 100
 const TWO_DIAMOND := 100
 
-const SEEDS_ATLAS := preload("res://pak/images/seeds.png")
-const OVERLAY_TEXTURE := preload("res://pak/images/SlotMachine_Overlay.png")
-const CHINESE_FONT := preload("res://assets_custom/fonts/SIMSUN.TTC")
+## 贴图 / 字体统一走 AssetRegistry（缓存）
+var SEEDS_ATLAS: Texture2D = AssetRegistry.get_texture("res://pak/images/seeds.png")
+var OVERLAY_TEXTURE: Texture2D = AssetRegistry.get_texture("res://pak/images/SlotMachine_Overlay.png")
+var CHINESE_FONT: Font = AssetRegistry.get_font("res://assets_custom/fonts/SIMSUN.TTC")
 
 var _mg: MainGameManager
 var _sun_value: int = 0

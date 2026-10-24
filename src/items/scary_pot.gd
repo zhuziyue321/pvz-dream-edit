@@ -1,7 +1,7 @@
 extends MainGameItemBase
 class_name ScaryPot
 
-const SCARY_POT_WATER = preload("res://pak/images/Scary_Pot.png")
+var SCARY_POT_WATER: Texture2D = AssetRegistry.get_texture("res://pak/images/Scary_Pot.png")
 ## 罐子类型（**单个罐子级**：这一个罐子里装的是植物还是僵尸）
 ## ⚠️ 名字和 `ConstLevelData.E_PotMode` 撞车，但**两者不是一回事**（U-11）：
 ## 本枚举是说「罐子里装的是什么」，`E_PotMode` 是说「这一关的罐子怎么生成」。
@@ -168,8 +168,8 @@ func random_res():
 			if p_plant_zombie <=0.5:
 				curr_plant_type = Global.global_read_data.whitelist_plant_types_with_pot.pick_random()
 			else:
-				var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
-				curr_zombie_type = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[curr_zomebi_row_type].pick_random()
+				var random_zombie_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
+				curr_zombie_type = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[random_zombie_row_type].pick_random()
 		E_PotType.Plant:
 			curr_plant_type = Global.global_read_data.whitelist_plant_types_with_pot.pick_random()
 		E_PotType.Zombie:

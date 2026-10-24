@@ -45,30 +45,30 @@ animation = &"SunShroom_idle"
 animation = &"SunShroom_sleep"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wokip"]
-advance_mode = 2
-advance_expression = "is_grow"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_glqr6"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_bkxr5"]
-advance_mode = 2
-advance_expression = "not is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_rx3yf"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_2je2o"]
-advance_mode = 2
-advance_expression = "is_show"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_qum68"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_ebjf4"]
 states/Start/position = Vector2(154, 100)
@@ -97,11 +97,12 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 
 [node name="Plant010SunShroom" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_dqhtu")]
 script = ExtResource("2_qum68")
-time_grow = 100.0
+time_grow = 120.0
 mini_sun_value = 15
 norm_sun_value = 25
 is_grow = false
 plant_type = &"sun_shroom"
+show_anim_state = &"SunShroom_grow"
 node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
 
 [node name="Shadow" parent="." index="0"]

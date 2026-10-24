@@ -37,6 +37,16 @@ static func fade_out_and_free(node:Node, duration := 1.0, fade_node:CanvasItem =
 	return tween
 
 
+## 淡出 + 缩小后删除（掉落物超时消失 / 拾取收尾的公共表现，见 DropItemBase.fade_and_delete）
+static func fade_scale_out_and_free(node:Node2D, duration := 0.5) -> Tween:
+	var tween := node.create_tween()
+	tween.set_parallel()
+	tween.tween_property(node, "modulate:a", 0.0, duration)
+	tween.tween_property(node, "scale", Vector2(0.5, 0.5), duration)
+	tween.chain().tween_callback(node.queue_free)
+	return tween
+
+
 ## 拾取光晕那种「呼吸」缩放，无限循环
 ## [big] / [small] 两端的缩放值；返回 tween（一般不用管，它自己循环）
 static func breath_scale_loop(node:Node2D, big := 1.5, small := 1.0, duration := 1.0) -> Tween:

@@ -98,6 +98,8 @@ func init_zombie_wave_manager(game_para:ResourceLevelData):
 	progress_bar_segment_every_wave = 100.0 / max(1, max_wave_one_round - 1)
 
 	zombie_wave_create_manager.init_zombie_wave_create_manager(game_para)
+	## 波长覆盖：原版把小僵尸大麻烦 / 排山倒海 / 最后防线三关写死 750 tick = 7.5 秒
+	zombie_wave_refresh_manager.apply_wave_norm_time_range(game_para.wave_norm_time_range)
 
 ## 开战前改写本关波数：**关卡流程的「开战」事件带 max_wave 时走这里**
 ## （见 LevelTimelineEventStartBattle._apply_battle_para）

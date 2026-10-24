@@ -50,30 +50,30 @@ animation = &"SeaShroom_sleep"
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_byi1l"]
-advance_mode = 2
-advance_expression = "not is_idle"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ody2g"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "not is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_8cpqx"]
-advance_mode = 2
-advance_expression = "is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_ai3ac"]
-advance_mode = 2
-advance_expression = "not is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_y3aiw"]
-advance_mode = 2
-advance_expression = "is_garden_aquarium"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_t37yi"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_sleeping"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_orguw"]
 states/SeaShroom_idle/node = SubResource("AnimationNodeAnimation_prm86")
@@ -110,6 +110,7 @@ size = Vector2(249, 5)
 [node name="Plant025SeaShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_trumw")]
 script = ExtResource("2_y3aiw")
 plant_type = &"sea_shroom"
+norm_anim_state = &"SeaShroom_sleep"
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent")]
 
 [node name="Shadow" parent="." index="0"]

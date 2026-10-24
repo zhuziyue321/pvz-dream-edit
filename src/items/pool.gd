@@ -6,12 +6,13 @@ class_name Pool
 @onready var pool_base: Sprite2D = $PoolBase
 @onready var pool: Sprite2D = $Pool
 ## 泳池白天图片（已用 tools/merge_alpha.ps1 把 pool_base_.png 蒙版烘焙进 alpha 通道）
-const POOL_BASE = preload("res://pak/images/pool_base.png")
-const POOL = preload("res://pak/images/pool.jpg")
+## 贴图走 AssetRegistry：进泳池 / 浓雾关时加载，之后复用缓存
+var POOL_BASE: Texture2D = AssetRegistry.get_texture("res://assets_custom/image/background/pool_base.png")
+var POOL: Texture2D = AssetRegistry.get_texture("res://pak/images/pool.jpg")
 
 ## 泳池黑夜图片（夜间底图复用同一张 pool_base_.png 蒙版烘焙）
-const POOL_BASE_NIGHT = preload("res://pak/images/pool_base_night.png")
-const POOL_NIGHT = preload("res://pak/images/pool_night.jpg")
+var POOL_BASE_NIGHT: Texture2D = AssetRegistry.get_texture("res://assets_custom/image/background/pool_base_night.png")
+var POOL_NIGHT: Texture2D = AssetRegistry.get_texture("res://pak/images/pool_night.jpg")
 
 
 func init_pool(game_para:ResourceLevelData):

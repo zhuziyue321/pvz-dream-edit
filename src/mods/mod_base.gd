@@ -13,6 +13,8 @@ extends RefCounted
 ##                                 （**要改关卡数据就只能在这里改**，见该方法的注释）
 ##   `install_to_main_game(mg)`  —— 每局主游戏 `init_manager()` 里、`HandManager` 注册组件
 ##                                 之前调一次（要加手持物 / 卡槽按钮就在这里加）
+##   `on_session_reloaded()`    —— 全局存档重读完（启动 / 换用户）之后调一次：存档会覆盖
+##                                 `curr_plant` 等全局状态，模组写进去的东西要在这里补
 ##   `create_detail_control()`  —— 模组页面选中本模组时调一次：**右半边的界面**（显示什么、
 ##                                 能改什么全由模组决定，玩法相关的界面都写在这）
 ##   `uninstall()`              —— 目前只手动调用：运行期关掉开关时，新的主游戏不再安装
@@ -120,6 +122,16 @@ func on_level_para_ready(_main_game: MainGameManager) -> void:
 ## 调用时机见 `MainGameManager.init_manager()`（排在 `hand_manager.init_manager()` 之前，
 ## 所以这里加进 `HandManager` 的手持物组件能被正常登记）
 func install_to_main_game(_main_game: MainGameManager) -> void:
+	pass
+
+
+## 全局存档刚被重读过（启动 / 换用户走 `Global.reload_session_for_current_user()`）：
+## 存档会覆盖全局状态（`curr_plant` / `selected_cards` …），模组在 `install()` 里
+## 往这些状态上写过的东西要在这里补一遍。调用点在读档之后。
+##
+## 与 `install()` 的区别：`install()` 一局只跑一次；换用户 / 重进游戏时存档被重读，
+## 而模组并没有被卸载（开关没变）—— 只靠 `install()` 补不回来。
+func on_session_reloaded() -> void:
 	pass
 
 

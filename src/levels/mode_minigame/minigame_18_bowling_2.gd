@@ -75,4 +75,6 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20, zombie_list)
+	## 开战（原版 WALLNUT_BOWLING_2 = 30 波，Board.cpp 双仓一致；此前误写 20）
+	## 首波 2 秒：原版坚果保龄球 2 `mZombieCountDown = 200` tick
+	await start_battle(30, zombie_list, 0.0, 2.0)

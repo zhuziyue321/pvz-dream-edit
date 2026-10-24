@@ -109,14 +109,14 @@ func _can_receive_damage() -> bool:
 
 
 ## 所有普通与特殊植物伤害共用的最后检查，防止动画关键帧或旧碰撞结果绕过受击窗口。[br]
-## [param attack_value] 本次伤害；[param bullet_mode] 伤害类型。[br]
+## [param damage] 本次伤害；[param bullet_mode] 伤害类型。[br]
 ## [param is_drop] 是否允许掉落表现；[param trigger_be_attack_SFX] 是否播放受击音效。
 ## 致死伤害仅通过血量组件启动僵王死亡状态机，不套用普通僵尸的直接删除逻辑。
-func be_attacked_bullet(attack_value: int, bullet_mode: ConstDamage.E_DamageMode = ConstDamage.E_DamageMode.Norm, is_drop: bool = true, trigger_be_attack_SFX := true, source_node: Node = null, attacker_node: Node = null) -> DamageResult:
+func be_attacked_bullet(damage: int, bullet_mode: ConstDamage.E_DamageMode = ConstDamage.E_DamageMode.Norm, is_drop: bool = true, trigger_be_attack_SFX := true, source_node: Node = null, attacker_node: Node = null) -> DamageResult:
 	## 受击窗口没开时整次伤害丢弃（含伤害事件），与"打到但被免疫"区分开：这里连管线都不进
 	if not _can_receive_damage():
 		return null
-	return super.be_attacked_bullet(attack_value, bullet_mode, is_drop, trigger_be_attack_SFX, source_node, attacker_node)
+	return super.be_attacked_bullet(damage, bullet_mode, is_drop, trigger_be_attack_SFX, source_node, attacker_node)
 
 
 ## 先发出原有死亡信号供管理器扣数，再关闭受击；重复调用不重复触发亡语或计数。
@@ -191,15 +191,15 @@ func be_ice_freeze(time: float, new_time_ice_end_decelerate: float, damage: int 
 
 
 ## 任意行的火爆辣椒均可命中；受击窗口在此检查，通过后先解除冰冻和减速，再扣血。[br]
-## [param attack_value] 本次辣椒伤害；致死时由血量组件触发僵王死亡流程，不直接删除或播放普通僵尸灰烬。
-func be_jalapeno(attack_value: int) -> void:
+## [param damage] 本次辣椒伤害；致死时由血量组件触发僵王死亡流程，不直接删除或播放普通僵尸灰烬。
+func be_jalapeno(damage: int) -> void:
 	if not _can_receive_damage():
 		return
 	# 先解除控制再结算伤害，避免解冻回调覆盖随后启动的死亡演出速度。
 	cancel_ice()
 	## 辣椒是「灼烧」语义：走伤害管线而不是直接调血量组件，
 	## 这样修饰器与伤害统计对僵王同样生效（见 docs/参考存档/伤害系统.md）
-	var info := DamageInfo.create(self, attack_value,
+	var info := DamageInfo.create(self, damage,
 		ConstDamage.E_DamageMode.Penetration, ConstDamage.E_DamageCause.Burn)
 	info.is_drop_on_death = false
 	info.trigger_sfx = false

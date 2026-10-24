@@ -1229,7 +1229,7 @@ size = Vector2(1, 5)
 [node name="Zombie019Pogo" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_8oflg")]
 script = ExtResource("2_7w2na")
 eat_brain_glo_pos_x_in_zombie_mode = 50.0
-time_pogo_once_default = 0.7
+time_pogo_once_default = 0.8
 pogo_y_defalut = 30.0
 is_pogo = true
 zombie_type = &"pogo"
@@ -1576,7 +1576,7 @@ libraries = {
 
 [node name="MoveComponent" parent="." index="7"]
 move_mode = 1
-ori_speed = 30.0
+ori_speed = 45.0
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." index="11"]
 libraries = {

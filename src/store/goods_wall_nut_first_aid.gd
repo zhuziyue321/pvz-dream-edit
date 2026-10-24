@@ -16,12 +16,14 @@ func _ready() -> void:
 	judge_can_get_goods()
 
 
-## 刷新商品状态:没通关冒险模式不上架,买过就是"已拥有"(原版一次性买断)
+## 刷新商品状态:没通关冒险模式不上架(保留格位),买过就是"已售出"(原版一次性买断)
 func _refresh_goods_state() -> void:
-	visible = is_on_sale()
+	if not is_on_sale():
+		set_goods_on_shelf(false)
+		return
 	if Global.global_game_state.is_wall_nut_first_aid_owned():
 		is_have_goods = false
-		is_not_have_goods_label.text = "已拥有"
+	set_goods_on_shelf(true)
 	is_not_have_goods_label.visible = not is_have_goods
 
 
@@ -42,8 +44,9 @@ func _create_dialog_detail() -> CrazyDaveDialogDetailResource:
 ## 获得该商品:买断坚果包扎术
 func get_one_goods():
 	if Global.global_game_state.buy_wall_nut_first_aid():
-		Global.save_service.save_now()
+		_finish_goods_granted()
+		## 原版买完立刻让戴夫念 CRAZY_DAVE_3400(SetBubbleText(3400, 800, false))
+		request_dave_text.emit("想让坚果得到治疗，很简单，在已经受伤的坚果上再种一个新的！")
 	else:
 		Log.warn("购买坚果包扎术失败:已经买过")
-	_refresh_goods_state()
-	judge_can_get_goods()
+		_finish_goods_granted(false)

@@ -15,19 +15,30 @@ enum GameBg {
 	Woods, ## 郊外营地(DLC 版第 7 章 Woods：前院几何 + 森林营地底图,见 docs/参考存档/地图实现.md §2.3.3)
 }
 
-## 背景图
+## 背景图**路径**（加载与缓存交给 AssetRegistry，见 get_game_bg_texture）
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Night_Roof —— 僵王关所在场景是独立的
 ## 「Night Roof(夜屋顶)」,与白天 Roof 是同一张屋顶、只是夜色底图,故单独一张 background6boss)
 const GameBgTextureMap: Dictionary = {
-	GameBg.FrontDay: preload("res://pak/images/background1.jpg"),
-	GameBg.FrontNight: preload("res://pak/images/background2.jpg"),
-	GameBg.Pool: preload("res://pak/images/background3.jpg"),
-	GameBg.Fog: preload("res://pak/images/background4.jpg"),
-	GameBg.Roof: preload("res://pak/images/background5.jpg"),
-	GameBg.Boss: preload("res://pak/images/background6boss.jpg"),
-	GameBg.MoonRoof: preload("res://pak/images/background6moon.png"),
-	GameBg.Woods: preload("res://pak/images/background7woods.png"),
+	GameBg.FrontDay: "res://pak/images/background1.jpg",
+	GameBg.FrontNight: "res://pak/images/background2.jpg",
+	GameBg.Pool: "res://pak/images/background3.jpg",
+	GameBg.Fog: "res://pak/images/background4.jpg",
+	GameBg.Roof: "res://pak/images/background5.jpg",
+	GameBg.Boss: "res://pak/images/background6boss.jpg",
+	## 月夜屋顶（Moon）的**常驻**外观是月夜那幅，与僵王关同一张 —— DLC 的
+	## `background6moon.png`（紫红夜空，id BACKGROUND_BLOODMOON）是**血月专用**的，
+	## 由 `main_game_bg_moonroof.gd` 在血月期间换上来，平时不能拿它当底图
+	## （否则玩家一进关就是紫红一片，视觉上像是血月已经开了）
+	GameBg.MoonRoof: "res://pak/images/background6boss.jpg",
+	GameBg.Woods: "res://pak/images/background7woods.png",
 }
+
+## 取某张背景的贴图（没登记返回 null，调用方判空）
+static func get_game_bg_texture(bg: GameBg) -> Texture2D:
+	var path: String = GameBgTextureMap.get(bg, "")
+	if path == "":
+		return null
+	return AssetRegistry.get_texture(path)
 #endregion
 
 #region 音乐
@@ -71,6 +82,18 @@ enum E_MonsterMode {
 	Null, ## 不出怪，测试使用
 	Norm, ## 正常出怪模式
 	HammerZombie, ## 锤僵尸出怪模式
+}
+
+## 生存模式难度（原版 Challenge::InitZombieWaves 的生存分支按档位决定出怪与旗数）
+## ⚠️ 只描述「出怪规则」，旗数/轮次仍由关卡脚本的 game_round + 每轮波数给出：
+##   Normal  = 5 旗（每 stage 10 波，一 stage 一旗）
+##   Hard    = 10 旗（每 stage 20 波，一 stage 两旗）
+##   Endless = 无限 stage（game_round 写 -1）
+enum E_SurvivalDifficulty {
+	None, ## 不是生存模式
+	Normal, ## 普通：5 旗
+	Hard, ## 困难：10 旗
+	Endless, ## 无尽：泳池地图，轮次无上限
 }
 #endregion
 

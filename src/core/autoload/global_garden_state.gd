@@ -11,14 +11,22 @@ extends RefCounted
 
 var state: GlobalGameState
 
-## 一株已存档花园植物里「必须是 int」的字段（枚举 / 计数）
-## 其余字段各就各位：`curr_plant_type` 是 id，`direction_x` 本来就是 float
+## 一株已存档花园植物里「必须是 int」的字段（枚举 / 计数 / 时间戳）
+## 其余字段各就各位：`curr_plant_type` / `curr_plant_species` 是 id，`direction_x` / `launch_counter` 是 float
 const GARDEN_PLANT_CELL_INT_KEYS: Array[String] = [
-	"curr_growth_stage",		## GardenManager.E_GrowthStage
-	"curr_need_item",			## GardenManager.E_NeedItem
+	"curr_growth_stage",		## GardenManager.E_GrowthStage（旧存档是 5 阶，见 _normalize_one_garden_plant_cell）
+	"times_fed",				## 已浇水次数（原版 mTimesFed）
+	"feedings_per_grow",		## 长一阶要浇几次水（原版 mFeedingsPerGrow）
+	"daily_need_item",			## 满级每日需求（原版 mPlantNeed）
+	"last_watered_time",		## 原版 mLastWateredTime
+	"last_need_fulfilled_time",	## 原版 mLastNeedFulfilledTime
+	"last_fertilized_time",		## 原版 mLastFertilizedTime
+	"last_chocolate_time",		## 原版 mLastChocolateTime
+	"curr_plant_condition",
+	## 老键：只做 int 归一化，运行期由 GardenComponent 兜底映射到新键
+	"curr_need_item",
 	"curr_water_time",
 	"max_water_time",
-	"curr_plant_condition",
 ]
 
 func _init(p_state: GlobalGameState) -> void:
@@ -183,9 +191,17 @@ static func _normalize_one_garden_plant_cell(cell_data: Dictionary) -> void:
 	if not cell_data.has("curr_plant_type"):
 		return
 	cell_data["curr_plant_type"] = PlantIds.from_legacy(cell_data["curr_plant_type"])
+	## 物种（原版 PottedPlant::mSeedType）：老存档没有这个键，运行期会兜底随机
+	if cell_data.has("curr_plant_species"):
+		cell_data["curr_plant_species"] = PlantIds.from_legacy(cell_data["curr_plant_species"])
 	for int_key in GARDEN_PLANT_CELL_INT_KEYS:
 		if cell_data.has(int_key):
 			cell_data[int_key] = int(cell_data[int_key])
+	## 旧成长枚举是 5 阶（Sprout/Small/Medium/Large/Perfect），原版只有 4 阶：
+	## Large(3) / Perfect(4) 一律并到 Full(3)，免得读到越界阶数画不出来
+	if cell_data.has("curr_growth_stage"):
+		cell_data["curr_growth_stage"] = clampi(
+			int(cell_data["curr_growth_stage"]), 0, GardenManager.E_GrowthStage.Full)
 
 
 ## 该花园工具现在能不能用:买断型 = 已买,消耗型 = 还有库存
@@ -197,16 +213,18 @@ func is_garden_tool_available(tool_type: GardenManager.E_GardenTool) -> bool:
 #endregion
 
 ## 禅境花园是否还有空位(原版: 花园满了就不卖金盏花幼苗,卖掉植物后才恢复)
-## 未记录过的页视为全空(玩家还没进去摆过植物)
+## 口径对齐原版 IsZenGardenFull：**只统计主花园（GARDEN_MAIN = 阳光房）**的格数，
+## 蘑菇园 / 水族馆里空着不算"还有位置"（新植物本来就只会摆进阳光房）
+## 未记录过的页视为全空（玩家还没进去摆过植物）
 func has_empty_garden_cell() -> bool:
-	for bg_type in get_owned_garden_bg_types():
-		var cell_num := GardenManager.get_plant_cell_num_per_page(bg_type)
-		var bg_data: Dictionary = state.garden_data.get(
-			GardenManager.make_bg_save_key(int(bg_type)), {})
-		for page in range(get_garden_bg_page_num(bg_type)):
-			var page_data: Dictionary = bg_data.get(GardenManager.make_page_save_key(page), {})
-			for i in range(cell_num):
-				if page_data.get(GardenManager.make_cell_save_key(i), {}).is_empty():
-					return true
+	var bg_type := GardenManager.E_GardenBgType.GreenHouse
+	var cell_num := GardenManager.get_plant_cell_num_per_page(bg_type)
+	var bg_data: Dictionary = state.garden_data.get(
+		GardenManager.make_bg_save_key(int(bg_type)), {})
+	for page in range(maxi(get_garden_bg_page_num(bg_type), 1)):
+		var page_data: Dictionary = bg_data.get(GardenManager.make_page_save_key(page), {})
+		for i in range(cell_num):
+			if page_data.get(GardenManager.make_cell_save_key(i), {}).is_empty():
+				return true
 	return false
 #endregion

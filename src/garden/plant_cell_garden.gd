@@ -61,13 +61,18 @@ func sprout_up_new_plant():
 		glove.update_shadow_plant_cell(curr_plant_cell_data)
 
 ## 初始化新植物(发芽植物)
-func init_new_plant_cell():
-	_add_new_plant({})
+## species = 这株植物长大以后是哪个物种（原版 PottedPlant::mSeedType，入手即定）。
+## 发芽期仍画通用幼苗，物种只存进数据；苗→小时由 GardenComponent.up_growth_stage 换成它。
+func init_new_plant_cell(species: StringName = PlantIds.NULL):
+	_add_new_plant({
+		"curr_plant_type": PlantIds.SPROUT,
+		"curr_plant_species": species,
+		"curr_growth_stage": GardenManager.E_GrowthStage.Sprout,
+	})
 
 ## 增加新植物
 func _add_new_plant(curr_plant_cell_data:Dictionary={}):
 	## 获取植物种植数据
-	#var curr_plant_type: StringName
 	var curr_plant_place:CharacterRegistry.PlacePlantInCell
 	var curr_plant_condition:int
 	## 如果为空,种植发芽植物
@@ -80,8 +85,6 @@ func _add_new_plant(curr_plant_cell_data:Dictionary={}):
 	else:
 		## 存档里的植物类型可能是老版本的数字编号(也可能 JSON 读回来成了 float):统一转成 id
 		curr_plant_type = PlantIds.from_legacy(curr_plant_cell_data["curr_plant_type"])
-		### 植物
-		#var curr_plant:Plant000Base = Global.character_registry.get_plant_info(curr_plant_type, CharacterRegistry.PlantInfoAttribute.PlantScenes).instantiate()
 		## 植物种植条件
 		var curr_plant_new_plant_condition:ResourcePlantCondition = Global.character_registry.get_plant_info(curr_plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 		## 认不出来的植物(老存档编号缺 migration / 模组植物没装):留个空格子,别往下游传 null 炸掉

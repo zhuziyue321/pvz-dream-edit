@@ -6,6 +6,7 @@ extends LevelScriptBase
 
 
 func _init() -> void:
+	save_key = "101_3_0038"
 	## 场景：泳池·浓雾 —— 槽位 / 底图 / BGM / 雾 / 昼夜 / 天降阳光全由场景脚本给出
 	scene_name = SceneSettingRegistry.SCENE_FOG
 	## 本关通关掉落：磁力菇（种子包）

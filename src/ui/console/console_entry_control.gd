@@ -27,7 +27,9 @@ const BUTTON_FONT_COLOR := Color(0, 1, 0, 1)
 const BUTTON_DISABLED_FONT_COLOR := Color(0, 0.5, 0, 1)
 
 ## 输入框样式：与「输入玩家名称」输入框一致（棕底 + 黄边 + 绿字）
-const INPUT_FONT := preload("res://assets_custom/fonts/方正少儿_GBK.ttf")
+## 字体走 AssetRegistry（缓存，不会每次开控制台重新读盘）
+## ★ 是 `static var`：`_apply_input_style()` 是 static 函数，取不到实例成员
+static var INPUT_FONT: Font = AssetRegistry.get_font("res://assets_custom/fonts/方正少儿_GBK.ttf")
 const INPUT_FONT_COLOR := Color(0, 1, 0.1882353, 1)
 
 

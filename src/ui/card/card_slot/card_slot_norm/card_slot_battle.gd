@@ -82,8 +82,8 @@ func set_cards(references: Array[ResourceCardReference]) -> void:
 			if card == null:
 				continue
 		new_cards.append(card)
-	for card in old_cards:
-		_release_card(card)
+	for old_card in old_cards:
+		_release_card(old_card)
 
 	curr_cards = new_cards
 	## 卡槽不够就补占位（主机那一侧可能已经买过卡槽扩充）
@@ -168,11 +168,11 @@ func judge_disappear_add_card_bar():
 	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 		if Global.config_service.disappear_spare_card_Placeholder:
 			if curr_cards.size() < cards_placeholder.size():
-				for i in range(curr_cards.size(), cards_placeholder.size()):
-					cards_placeholder[i].visible = false
+				for hide_index in range(curr_cards.size(), cards_placeholder.size()):
+					cards_placeholder[hide_index].visible = false
 		else:
-			for i in range(cards_placeholder.size()):
-				cards_placeholder[i].visible = true
+			for show_index in range(cards_placeholder.size()):
+				cards_placeholder[show_index].visible = true
 	else:
 		for i in range(cards_placeholder.size()):
 			cards_placeholder[i].visible = true

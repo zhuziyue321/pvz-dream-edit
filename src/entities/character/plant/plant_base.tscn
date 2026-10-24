@@ -256,12 +256,6 @@ unique_name_in_owner = true
 z_index = 1
 script = ExtResource("7_at3ho")
 
-[node name="NeedTimer" type="Timer" parent="GardenComponent" index="0"]
-one_shot = true
-
-[node name="CreateCoinTimer" type="Timer" parent="GardenComponent" index="1"]
-one_shot = true
-
 [node name="BeAttackStatusComponentPlant" type="Node2D" parent="." index="7"]
 unique_name_in_owner = true
 script = ExtResource("8_bas01")
@@ -283,5 +277,3 @@ shape = SubResource("RectangleShape2D_bie68")
 collision_layer = 256
 
 [connection signal="timeout" from="BlinkComponent/BlinkTimer" to="BlinkComponent" method="_on_blink_timer_timeout"]
-[connection signal="timeout" from="GardenComponent/NeedTimer" to="GardenComponent" method="_on_need_timer_timeout"]
-[connection signal="timeout" from="GardenComponent/CreateCoinTimer" to="GardenComponent" method="_on_coin_timer_timeout"]

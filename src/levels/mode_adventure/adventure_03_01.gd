@@ -10,6 +10,7 @@ const DAVE_OPENING := preload("res://data/dave/dialog/adventure_03_01_opening.tr
 
 
 func _init() -> void:
+	save_key = "101_2_0021"
 	game_sences = MainSceneRegistry.MainScenes.MainGameBack
 	game_BG = ConstLevelData.GameBg.Pool
 	game_BGM = ConstLevelData.GameBGM.Pool

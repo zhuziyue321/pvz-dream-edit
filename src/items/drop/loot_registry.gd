@@ -33,14 +33,15 @@ const CAR_KEYS := "car_keys"
 ## 禅境花园的洒水壶（冒险 5-4，贴图类）
 const WATERING_CAN := "watering_can"
 
-## 名字 -> 贴图（res:// 绝对路径，硬约束 §1-5）
+## 名字 -> 贴图**路径**（res:// 绝对路径，硬约束 §1-5）
+## ★ 存路径不存 preload：加载与缓存统一交给 `AssetRegistry`（首次取用时才真正加载）。
 const TEXTURE_MAP := {
-	TROPHY: preload("res://pak/images/trophy_hi_res.png"),
-	TACO: preload("res://pak/images/Taco.png"),
-	SHOVEL: preload("res://pak/images/Shovel.png"),
-	ALMANAC: preload("res://pak/images/Almanac.png"),
-	CAR_KEYS: preload("res://pak/images/CarKeys.png"),
-	WATERING_CAN: preload("res://pak/images/WateringCan.png"),
+	TROPHY: "res://pak/images/trophy_hi_res.png",
+	TACO: "res://pak/images/Taco.png",
+	SHOVEL: "res://pak/images/Shovel.png",
+	ALMANAC: "res://pak/images/Almanac.png",
+	CAR_KEYS: "res://pak/images/CarKeys.png",
+	WATERING_CAN: "res://pak/images/WateringCan.png",
 }
 
 ## 名字 -> 点开时弹的提示文本（种子包类不写：提示是新植物那句，由植物中文名现拼）
@@ -49,7 +50,9 @@ const TIP_MAP := {
 	ALMANAC: "你发现了大图鉴！记载所有你遇到的植物和僵尸。",
 	CAR_KEYS: "你找到了戴夫的车钥匙，商店解锁！",
 	TACO: "你找到了戴夫的玉米卷，商店上架了新商品！",
-	WATERING_CAN: "你发现了个洒水壶！用它给花园里的植物浇水。",
+	## 原版 [FOUND_WATERING_CAN] + [WATERING_CAN_DESCRIPTION]：5-4 通完同时解锁花园，
+	## 所以"现在你可以玩花园模式了"这句站得住（花园门槛见 ConstUnlockLevel.GARDEN_UNLOCK_ADVENTURE_LEVEL）
+	WATERING_CAN: "你发现了个洒水壶！现在你可以玩花园模式了！",
 }
 
 ## 名字 -> 点开音效（不配就用掉落物自带的那个）
@@ -111,7 +114,10 @@ static func get_plant_type(loot_name: String) -> StringName:
 
 ## 战利品的贴图；名字没登记 / 是种子包类时返回 null
 static func get_texture(loot_name: String) -> Texture2D:
-	return TEXTURE_MAP.get(loot_name, null) as Texture2D
+	var path: String = TEXTURE_MAP.get(loot_name, "")
+	if path == "":
+		return null
+	return AssetRegistry.get_texture(path)
 
 
 ## 战利品点开时弹的提示文本，没配返回空串（种子包类由调用方用植物名现拼）

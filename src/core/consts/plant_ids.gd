@@ -90,7 +90,7 @@ const INVISIBLE := &"invisible_plant"
 
 #region 特殊段
 const PEA_SHOOTER_DOUBLE_REVERSE := &"pea_shooter_double_reverse"	## 反向双发射手（P049）
-const WATER_BOWL := &"water_bowl"						## 水盆（P050，**空槽位**：场景/数据/卡片由 `water_bowl` 模组运行期注入）
+const WATER_BOWL := &"water_bowl"						## 水盆（P050，**空槽位**：场景/数据/卡片由 `dlc` 模组运行期注入）
 const IMITATER := &"imitater"							## 模仿者（P999）
 const SPROUT := &"sprout"							## 萌芽（P1000）
 const WALL_NUT_BOWLING := &"wall_nut_bowling"				## 保龄球坚果（P1001）
@@ -110,6 +110,13 @@ const ALL: Array[StringName] = [
 	CATTAIL, WINTER_MELON, GOLD_MAGNET, SPIKE_ROCK, COB_CANNON,
 	PEA_SHOOTER_DOUBLE_REVERSE, WATER_BOWL,
 	IMITATER, SPROUT, WALL_NUT_BOWLING, WALL_NUT_BOWLING_BOMB, WALL_NUT_BOWLING_BIG,
+]
+
+## 夜行植物（原版 Plant::IsNocturnal）：放在主花园(阳光房)里不需要任何照顾，
+## 只有翻到蘑菇园才正常生长（见 GardenComponent.get_plants_need / 睡眠组件）
+const NOCTURNAL: Array[StringName] = [
+	PUFF_SHROOM, SUN_SHROOM, FUME_SHROOM, HYPNO_SHROOM, SCAREDY_SHROOM,
+	ICE_SHROOM, DOOM_SHROOM, SEA_SHROOM, MAGNET_SHROOM, GLOOM_SHROOM,
 ]
 
 

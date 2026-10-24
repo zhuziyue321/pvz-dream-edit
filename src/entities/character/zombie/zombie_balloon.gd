@@ -10,14 +10,18 @@ class_name Zombie017Balloon
 func ready_norm():
 	super()
 	hurt_box_component.position.y -= 20
-
-func _process(_delta: float) -> void:
-	## 如果是我是僵尸模式
+	## 我是僵尸模式：飘到门框位置就挤破气球（位置判定下沉到移动组件，不再自己写 `_process`）
 	if is_zombie_mode:
-		if not is_pop and global_position.x < balloon_pop_glo_pos_x_in_zombie_mode:
-			## 气球（防具）被门框挤破：走伤害管线把这一层防具打掉，
-			## 否则「防具破了」的信号不发，落地表现与攻击解禁都不会触发
-			break_armor(get_armor(ConstArmor.E_ArmorType.Balloon), true, true, true)
+		move_component.watch_position_x(balloon_pop_glo_pos_x_in_zombie_mode, _on_reach_balloon_pop)
+
+
+## 到达气球破裂位置
+func _on_reach_balloon_pop():
+	if is_pop:
+		return
+	## 气球（防具）被门框挤破：走伤害管线把这一层防具打掉，
+	## 否则「防具破了」的信号不发，落地表现与攻击解禁都不会触发
+	break_armor(get_armor(ConstArmor.E_ArmorType.Balloon), true, true, true)
 
 ## 气球破裂落地结束，可以移动（动画调用）
 func balloon_pop_end():

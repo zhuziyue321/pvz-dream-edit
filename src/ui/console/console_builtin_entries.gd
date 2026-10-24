@@ -17,8 +17,6 @@ const CATEGORY_AUTO := "自动"
 const CATEGORY_DISPLAY := "显示"
 ## 调试类
 const CATEGORY_DEBUG := "调试"
-## 「调试模式」开关的持久化键(落在 ConfigService 的控制台通用键值区,不用给它加字段)
-const DEBUG_MODE_KEY := "debug_mode"
 
 
 ## 登记全部内置条目（[param registry] 是 `ConsoleRegistry`，这里刻意不写类型避免循环引用）
@@ -117,19 +115,6 @@ static func _register_debug_entries(registry) -> void:
 		.set_order(10)
 		.bind(func() -> bool: return Global.config_service.open_all_level,
 			func(value: bool) -> void: Global.config_service.open_all_level = value))
-
-	_add(registry, ConsoleEntry.create_toggle(&"debug_mode", "调试模式")
-		.set_tooltip("把三种保龄球（坚果 / 爆炸坚果 / 巨型坚果墙）和反向双发加进可选植物，" +
-			"保龄球种下就滚出去一颗（分别在撞击点炸开 / 扫右侧一整行），反向双发朝左边打豌豆；" +
-			"它们排在选卡界面第 2 页的头四张。" +
-			"同时开放僵尸卡片（26 张僵尸在第 3 页、僵王博士在第 4 页，可在关卡里直接放下僵尸）；" +
-			"下一次选卡生效")
-		.set_category(CATEGORY_DEBUG)
-		.set_order(20)
-		.bind(func() -> bool: return Global.config_service.get_console_value(DEBUG_MODE_KEY, false),
-			func(value: bool) -> void:
-				Global.config_service.set_console_value(DEBUG_MODE_KEY, value)
-				Global.global_game_state.apply_debug_mode(value)))
 #endregion
 
 

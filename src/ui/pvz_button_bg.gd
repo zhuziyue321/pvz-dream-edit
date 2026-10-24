@@ -17,14 +17,14 @@ class_name PVZButtonBG
 const CAP_LEFT_WIDTH := 36.0
 const CAP_RIGHT_WIDTH := 35.0
 
-## 常驻三件套
-const TEX_LEFT := preload("res://pak/images/button_left.png")
-const TEX_MIDDLE := preload("res://pak/images/button_middle.png")
-const TEX_RIGHT := preload("res://pak/images/button_right.png")
+## 常驻三件套（贴图走 AssetRegistry，缓存复用）
+var TEX_LEFT: Texture2D = AssetRegistry.get_texture("res://pak/images/button_left.png")
+var TEX_MIDDLE: Texture2D = AssetRegistry.get_texture("res://pak/images/button_middle.png")
+var TEX_RIGHT: Texture2D = AssetRegistry.get_texture("res://pak/images/button_right.png")
 ## 按下态三件套
-const TEX_DOWN_LEFT := preload("res://pak/images/button_down_left.png")
-const TEX_DOWN_MIDDLE := preload("res://pak/images/button_down_middle.png")
-const TEX_DOWN_RIGHT := preload("res://pak/images/button_down_right.png")
+var TEX_DOWN_LEFT: Texture2D = AssetRegistry.get_texture("res://pak/images/button_down_left.png")
+var TEX_DOWN_MIDDLE: Texture2D = AssetRegistry.get_texture("res://pak/images/button_down_middle.png")
+var TEX_DOWN_RIGHT: Texture2D = AssetRegistry.get_texture("res://pak/images/button_down_right.png")
 
 var _pressed: bool = false
 

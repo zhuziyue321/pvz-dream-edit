@@ -12,10 +12,13 @@ class_name LevelTimelineEventStartBattle
 ##   max_wave —— 本段波数，> 0 时改写关卡数据上的 max_wave；-1 = 沿用关卡数据
 ##   zombie_refresh_types —— 本段出怪表，非空时改写关卡数据上的出怪表；空 = 沿用关卡数据
 ##               （关卡脚本里 `await start_battle(10, [1])` 就把这两条一并带过来）
+##   first_wave_delay —— 本段首波延迟秒数，>= 0 时改写关卡数据上的 first_wave_delay；
+##               -1 = 沿用关卡数据（默认 18 秒 = 原版 `ZOMBIE_COUNTDOWN_FIRST_WAVE`）
 
 @export var timeout: float = 0.0
 @export var max_wave: int = -1
 @export var zombie_refresh_types: Array[StringName] = []
+@export var first_wave_delay: float = -1.0
 
 
 func run(main_game: MainGameManager) -> void:
@@ -46,6 +49,10 @@ func _apply_battle_para(main_game: MainGameManager) -> void:
 		var zombie_manager := main_game.zombie_manager
 		if is_instance_valid(zombie_manager) and is_instance_valid(zombie_manager.zombie_wave_manager):
 			zombie_manager.zombie_wave_manager.apply_max_wave(max_wave)
+	## 首波延迟：`ZombieManager.start_game()` 是在后面的 `main_game_start()` 里现读关卡数据的，
+	## 所以这里改数据就够，不用再往管理器里同步一份
+	if first_wave_delay >= 0.0:
+		para.first_wave_delay = first_wave_delay
 	main_game.apply_level_zombie_refresh_types(zombie_refresh_types)
 
 

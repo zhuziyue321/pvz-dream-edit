@@ -11,7 +11,7 @@ extends LevelScriptBase
 ## `create_temp_card()` / `add_card_front_node()` 这类不带玩法判断的接口，不认识种子雨。
 
 ## 天降种子卡的发卡器：按定时器生成临时卡片（通用卡槽，参数由关卡数据喂进去）
-const SEED_RAIN_SLOT := preload("res://src/ui/card/card_slot/card_slot_seed_rain.tscn")
+var SEED_RAIN_SLOT := AssetRegistry.get_scene("res://src/ui/card/card_slot/card_slot_seed_rain.tscn")
 
 ## 运行期：本关的天降种子卡槽（多轮关卡每轮都跑一遍 run_flow，卡槽只建一次）
 var seed_rain_slot: CardSlotSeedRain
@@ -49,18 +49,17 @@ func _init() -> void:
 
 
 func run_flow(mg: MainGameManager) -> void:
-	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 RAINING_SEEDS 白名单（Challenge.cpp：普/路障/铁桶/铁门/
+	## 橄榄球/读报/玩偶匣；蹦极僵尸在本仓库走 is_bungi 单独控制、不进出怪表，本关不启用）
+	## —— 此前误用舞王顶替读报，还加了撑杆×2 与海豚
 	var zombie_list: Array[StringName] = [
-		ZombieIds.JACKSON,
 		ZombieIds.NORM,
 		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
 		ZombieIds.BUCKET,
 		ZombieIds.SCREEN_DOOR,
 		ZombieIds.FOOTBALL,
+		ZombieIds.PAPER,
 		ZombieIds.JACKBOX,
-		ZombieIds.DOLPHINRIDER,
-		ZombieIds.POLE_VAULTER,
 	]
 
 	## 展示僵尸
@@ -75,8 +74,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await ready_set_plant()
 	## 天降种子卡：本关专属，开战起、打完停
 	_start_seed_rain(mg)
-	## 开战
-	await start_battle(-1, zombie_list)
+	## 开战（原版 It's Raining Seeds = 40 波 / 4 旗，撑过即胜；此前误写 -1 无限波，等于没有通关条件）
+	await start_battle(40, zombie_list)
 	_pause_seed_rain()
 
 

@@ -6,7 +6,7 @@ class_name User
 ## (解锁显示 / 置灰、花园状态图标)必须靠这个信号重算,否则会沿用上一个用户的存档。
 signal user_session_switched
 
-const ONE_USER_BUTTON = preload("res://src/menus/start_menu/one_user_button.tscn")
+var ONE_USER_BUTTON = AssetRegistry.get_scene("res://src/menus/start_menu/one_user_button.tscn")
 
 @onready var v_box_container: VBoxContainer = $Panel/PanelContainer/ScrollContainer/VBoxContainer
 @onready var button_create: Button = $Panel/PanelContainer/ScrollContainer/VBoxContainer/ButtonCreate

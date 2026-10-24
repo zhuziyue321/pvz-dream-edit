@@ -8,15 +8,105 @@ class_name Plant022Caltrop
 @export var is_attack:=false
 var is_flattened := false
 
+## 一轮攻击的周期（秒）：原版 `UpdateSpikeweed()` 固定把 `mStateCountdown` 设成 100 tick
+## = **1 秒**，与动画长度无关（`Plant.cpp:1277`）。
+const ATTACK_PERIOD := 1.0
+## 一轮内的结算时刻（秒）：地刺在第 75 tick（0.25 秒）结算一次（`Plant.cpp:1297`）
+@export var attack_hit_times: Array[float] = [0.25]
+
+## 周期计时器
+var _cycle_timer: Timer
+## 一轮内的结算计时器（每个时刻一个）
+var _hit_timers: Array[Timer] = []
+
+
+func ready_norm():
+	super()
+	_setup_attack_timers()
+
+
+## 按原版 tick 口径搭计时器：动画只负责表现，结算时刻由这里排
+func _setup_attack_timers() -> void:
+	_cycle_timer = Timer.new()
+	_cycle_timer.one_shot = false
+	_cycle_timer.wait_time = ATTACK_PERIOD
+	_cycle_timer.timeout.connect(_on_cycle_timeout)
+	add_child(_cycle_timer)
+
+	for hit_time: float in attack_hit_times:
+		var hit_timer := Timer.new()
+		hit_timer.one_shot = true
+		hit_timer.wait_time = hit_time
+		hit_timer.timeout.connect(_deal_damage)
+		add_child(hit_timer)
+		_hit_timers.append(hit_timer)
+
 
 ## 初始化正常出战角色信号连接
+##
+## ★ 动画状态由本脚本**点名**（这是"单人由植物代码控制动画"的试点）：
+##   该植物动画树里 `Caltrop_idle ↔ BlendTree` 两条转换的 `advance_expression` 已清空
+##   （见 `plant_caltrop.tscn`），不再由动画树自己读 `is_attack` 推导。
+##   状态名就是动画树里状态名，写错会在 `request_state()` 里打 WARN，而不是静默不动。
 func ready_norm_signal_connect():
 	super()
-	detect_component.signal_can_attack.connect(func():is_attack = true)
-	detect_component.signal_not_can_attack.connect(func():is_attack = false)
+	detect_component.signal_can_attack.connect(_on_can_attack)
+	detect_component.signal_not_can_attack.connect(_on_not_can_attack)
 
-## 攻击一次
-func _attack_once():
+
+## 检测到可攻击目标：播扎击（`is_attack` 保留给外部查询与旧逻辑兼容）
+func _on_can_attack():
+	if is_attack:
+		return
+	is_attack = true
+	request_anim_state(&"BlendTree")
+	_start_attack_cycle()
+
+
+## 没有可攻击目标：回到待机
+func _on_not_can_attack():
+	is_attack = false
+	_stop_attack_cycle()
+	request_anim_state(&"Caltrop_idle")
+
+
+## 开一轮：周期计时 + 本轮每一拍的结算计时同时起步
+func _start_attack_cycle() -> void:
+	if not is_instance_valid(_cycle_timer):
+		return
+	_cycle_timer.start()
+	_restart_hit_timers()
+
+
+## 停一轮（没有目标 / 植物不在战斗场景时）
+func _stop_attack_cycle() -> void:
+	if is_instance_valid(_cycle_timer):
+		_cycle_timer.stop()
+	for hit_timer: Timer in _hit_timers:
+		hit_timer.stop()
+
+
+## 一轮到点：重开本轮结算
+func _on_cycle_timeout() -> void:
+	if not is_attack:
+		return
+	_restart_hit_timers()
+
+
+func _restart_hit_timers() -> void:
+	for hit_timer: Timer in _hit_timers:
+		hit_timer.start()
+
+
+## 动画方法轨的调用点：**只做表现，不结算**。
+## 结算时机由 `_deal_damage()` 按原版 tick 口径排（原版同样把动画和结算拆开），
+## 这里留空是为了让一轮不被结算两次。
+func _attack_once() -> void:
+	pass
+
+
+## 结算一拍：扎当前检测框里所有能扎的敌人
+func _deal_damage():
 	SoundManager.play_character_SFX("Throw")
 	var all_enemy_can_be_attacked = detect_component.get_all_enemy_can_be_attacked()
 	for i in range(all_enemy_can_be_attacked.size() - 1, -1, -1):

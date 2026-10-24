@@ -57,7 +57,7 @@ const TREE_OF_WISDOM_HEIGHT_KEY := "tree_of_wisdom_height"
 ## 花园工具类商品售价
 ## 数据来源: PVZ Wiki(https://plantsvszombies.wiki.gg/wiki/Crazy_Dave%27s_Twiddydinkies)
 ## 口径: 原版一代 PC
-##   黄金水壶 $10000(一次浇 4 株)、留声机 $15000、园艺手套 $1000:买断型,买一次即"已拥有"
+##   黄金水壶 $10000(矩形范围一次浇范围内全部,原版 IsPlantInGoldWateringCanRange)、留声机 $15000、园艺手套 $1000:买断型,买一次即"已拥有"
 ##   肥料 $750 / 5 个、杀虫剂 $1000 / 5 个:消耗型,用完可以再买,持有上限 TOOL_MAX_OWN_NUM
 const GOLD_WATERING_CAN_PRICE := 10000
 const PHONOGRAPH_PRICE := 15000
@@ -158,16 +158,30 @@ const SHOP_ROW_SLOT_NUM := 4
 ## 货架一页摆几格商品:一页 SHOP_PAGE_SLOT_NUM 格,分两行摆(每行 SHOP_ROW_SLOT_NUM 格)
 const SHOP_PAGE_SLOT_NUM := SHOP_ROW_SLOT_NUM * 2
 
+## 售罄 / 暂不出售 的标签文案(原版 SOLD_OUT / COMING_SOON,文案取 data/strings/lawn_strings.txt)
+const TEXT_SOLD_OUT := "已售出"
+const TEXT_COMING_SOON := "即将推出"
+
+## 独轮车(Wheel Barrow)售价
+## 原版 $20,项目金币口径 ×10 = $200;买下后什么都不发生(原版 Zen Garden 没有实装用独轮车搬花盆)
+## 上架条件见 GoodsWheelBarrow:买了蘑菇园或水族馆之后才不再 Coming Soon
+const WHEEL_BARROW_PRICE := 200
+
 ## 货架每一页上架所需的冒险模式关卡序号(下标 = StoreManager 的页序)
 ## 商店一开始只有第一页,随进度往后加页:
 ##   3-4(24 商店解锁): 第一页 —— 道具一行 + 第一批紫卡一行
 ##   5-1(41): 第二页 —— 第二批紫卡一行 + 模仿者一行
-##   5-5(45 花园解锁): 第三页(花园工具)与第四页(禅境花园、蜗牛、智慧树、树肥料、巧克力)
+##   5-4(44 花园解锁): 第三页(花园工具)
+##   通关冒险(50): 第四页(禅境花园、蜗牛、智慧树、树肥料) —— 原版 ZEN2 页需通关冒险才显示
+##
+## 与原版 IsPageShown 的对应关系(原版读 mLevel = 下一关序号,这里读已通关序号,差 1 是常态):
+##   原版 `mLevel >= 42` = 通完 5-1 = 本表 41;`mLevel >= 45` = 通完 5-4 = 本表 44;
+##   ZEN2 页原版要求 HasFinishedAdventure = 本表 50。
 const PAGE_SHOP_LEVEL: Array[int] = [
 	ConstUnlockLevel.SHOP_UNLOCK_ADVENTURE_LEVEL,
 	ConstUnlockLevel.SHOP_EXPAND_SECOND_ADVENTURE_LEVEL,
 	ConstUnlockLevel.GARDEN_UNLOCK_ADVENTURE_LEVEL,
-	ConstUnlockLevel.GARDEN_UNLOCK_ADVENTURE_LEVEL,
+	ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL,
 ]
 
 ## 第 page_index 页上架所需的冒险模式关卡序号;页数越界时返回一个不可达的关卡序号(= 永不上架)

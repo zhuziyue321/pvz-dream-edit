@@ -2,13 +2,16 @@ extends Node
 class_name GlobalGameState
 
 const DEFAULT_COIN_VALUE: int = 0
-const DEFAULT_CURR_NUM_NEW_GARDEN_PLANT: int = 3
+## 首次进花园的植物由 GardenManager 发（原版戴夫送 2 株金盏花），默认不再预置随机幼苗
+const DEFAULT_CURR_NUM_NEW_GARDEN_PLANT: int = 0
 const DEFAULT_CARD_SLOT_UPGRADE_NUM: int = 0
 const DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN: bool = false
 const DEFAULT_IS_POOL_CLEANER_BOUGHT: bool = false
 const DEFAULT_IS_ROOF_CLEANER_BOUGHT: bool = false
 ## 坚果包扎术是否已购买(商店 $2000 买断,永久生效,见 ConstShop.WALL_NUT_FIRST_AID_PRICE)
 const DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT: bool = false
+## 独轮车是否已购买(原版 $20 的摆设:买下什么都不发生,记下来只为了货架显示 Sold Out)
+const DEFAULT_IS_WHEEL_BARROW_BOUGHT: bool = false
 ## 钉耙剩余可用关数:0 = 手上没有钉耙(买一次 3 关,见 ConstShop.RAKE_USE_NUM_PER_BUY)
 const DEFAULT_RAKE_USE_NUM: int = 0
 ## 花园背景页数:num_bg_page_<背景枚举值>
@@ -52,6 +55,44 @@ var coin_value: int = DEFAULT_COIN_VALUE:
 		coin_value_changed.emit(coin_value)
 
 var curr_num_new_garden_plant: int = DEFAULT_CURR_NUM_NEW_GARDEN_PLANT
+## 待放置花园植物的**物种队列**（与 curr_num_new_garden_plant 一一对应）：
+## 原版每一盆植物在入手那一刻就定好了 mSeedType（商店金盏花 / 关卡礼包各按自己的来源定种），
+## 发芽期画的是通用幼苗，长大后才换成那个物种 —— 这里用队列把"入手时定种"落进存档。
+## 老存档没有这个键时为空，放置时兜底随机（见 pop_new_garden_plant_species）
+var curr_new_garden_plant_types: Array[StringName] = []
+
+
+## 新增一株待放置的花园植物（原版 AddPottedPlant）
+func add_new_garden_plant(species: StringName = PlantIds.NULL) -> void:
+	curr_num_new_garden_plant += 1
+	curr_new_garden_plant_types.append(species)
+
+
+## 取出一株待放置植物的物种；队列空（老存档 / 手动改档）时随机一株
+func pop_new_garden_plant_species() -> StringName:
+	if curr_new_garden_plant_types.is_empty():
+		return pick_random_garden_plant_species()
+	return curr_new_garden_plant_types.pop_front()
+
+
+## 随机一个花园植物物种（原版 PickRandomSeedType：40 种里排除金盏花 / 花盆）
+## 这里额外排除只由代码创建的工具植物，以及没登记场景的 id
+func pick_random_garden_plant_species() -> StringName:
+	var pool: Array[StringName] = []
+	for species in PlantIds.ALL:
+		if species == PlantIds.MARI_GOLD or species == PlantIds.FLOWER_POT \
+				or species == PlantIds.SPROUT or species == PlantIds.IMITATER \
+				or species == PlantIds.WATER_BOWL:
+			continue
+		if Global.character_registry == null:
+			continue
+		if Global.character_registry.get_plant_info(
+				species, CharacterRegistry.PlantInfoAttribute.PlantScenes) == null:
+			continue
+		pool.append(species)
+	if pool.is_empty():
+		return PlantIds.MARI_GOLD
+	return pool.pick_random()
 ## 商店购买的卡槽扩充次数(存档的出战卡槽数 = 基准 + 该值,上限 ConstShop.MAX_CARD_SLOT_NUM)
 var card_slot_upgrade_num: int = DEFAULT_CARD_SLOT_UPGRADE_NUM
 ## 商店购买的水路小推车(泳池清洁车)是否已购买(原版 $1000,买一次永久生效)
@@ -62,8 +103,13 @@ var is_roof_cleaner_bought: bool = DEFAULT_IS_ROOF_CLEANER_BOUGHT
 var rake_use_num: int = DEFAULT_RAKE_USE_NUM
 ## 坚果包扎术是否已购买(商店 $2000 买断,永久生效:关卡里可往受损坚果上补种,见 PlantCell.get_first_aid_plant)
 var is_wall_nut_first_aid_bought: bool = DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT
+## 独轮车是否已购买(原版 $20 的摆设,买下不产生任何效果,见 ConstShop.WHEEL_BARROW_PRICE)
+var is_wheel_barrow_bought: bool = DEFAULT_IS_WHEEL_BARROW_BOUGHT
 ## 「第一次掉落钱」的提示是否已经弹过(全局只弹一次,弹完即落存档,见 MainGameManager._on_first_coin_drop)
 var is_first_coin_advice_shown: bool = DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN
+## 僵尸卡片是否被**运行期**打开（模组口子，见 `set_runtime_zombie_card_enabled()`；
+## 本体自己从不置真，也不随存档走）
+var _runtime_zombie_card_enabled: bool = false
 var garden_data: Dictionary = DEFAULT_GARDEN_DATA.duplicate(true)
 var curr_all_level_state_data: Dictionary = DEFAULT_CURR_ALL_LEVEL_STATE_DATA.duplicate(true)
 ## 冒险模式周目(1 = 首周目): 通关 5-10 后 +1,之后从 1-1 重打一轮(见 advance_adventure_round)
@@ -85,11 +131,13 @@ var curr_plant :Array[StringName]= ConstPlantUnlock.INIT_PLANT_TYPES.duplicate()
 func reset_to_defaults() -> void:
 	coin_value = DEFAULT_COIN_VALUE
 	curr_num_new_garden_plant = DEFAULT_CURR_NUM_NEW_GARDEN_PLANT
+	curr_new_garden_plant_types.clear()
 	card_slot_upgrade_num = DEFAULT_CARD_SLOT_UPGRADE_NUM
 	is_pool_cleaner_bought = DEFAULT_IS_POOL_CLEANER_BOUGHT
 	is_roof_cleaner_bought = DEFAULT_IS_ROOF_CLEANER_BOUGHT
 	rake_use_num = DEFAULT_RAKE_USE_NUM
 	is_wall_nut_first_aid_bought = DEFAULT_IS_WALL_NUT_FIRST_AID_BOUGHT
+	is_wheel_barrow_bought = DEFAULT_IS_WHEEL_BARROW_BOUGHT
 	is_first_coin_advice_shown = DEFAULT_IS_FIRST_COIN_ADVICE_SHOWN
 	garden_data = DEFAULT_GARDEN_DATA.duplicate(true)
 	curr_all_level_state_data = DEFAULT_CURR_ALL_LEVEL_STATE_DATA.duplicate(true)
@@ -132,32 +180,35 @@ func unlock_plants(plant_types:Array) -> Array[StringName]:
 			new_unlock.append(PlantIds.from_legacy(plant_type))
 	return new_unlock
 
-## 控制台「调试模式」的总开关,开通后才能拿到的植物见 ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES
+## 僵尸卡片（含僵王卡）当前是否可用：总开关打开，或被**运行期**打开
 ##
-## 为什么不随存档走:开关本身落在 ConfigService 的控制台通用键值区(
-## `ConsoleBuiltinEntries.DEBUG_MODE_KEY`),不和账号存档一条线 —— 所以每次读档把 curr_plant
-## 覆盖之后都要按开关再同步一次(同步入口 Global.reload_session_for_current_user)。
-var is_debug_mode := false
-
-## 切换调试模式:[param value] 为 true 时把调试植物并进已解锁植物,false 时按同一份名单撤掉
-func apply_debug_mode(value: bool) -> void:
-	is_debug_mode = value
-	_sync_debug_mode_plants()
-	_sync_debug_mode_zombie_cards()
-
-## 僵尸卡片（含僵王卡）当前是否可用:总开关打开,或控制台「调试模式」打开
-##
-## ★ 这是僵尸卡片唯一的判据,三处入口都问它:待选卡槽生成僵尸卡页 / 关卡预选僵尸卡 /
+## ★ 这是僵尸卡片唯一的判据，三处入口都问它：待选卡槽生成僵尸卡页 / 关卡预选僵尸卡 /
 ## 「重选上次卡片」恢复僵尸卡 —— 别在调用点直接读 ConstFeatureSwitch.ZOMBIE_CARD_ENABLED。
-## 调试模式这条通道同时让解谜「我是僵尸」关卡恢复可用(它们靠预选僵尸卡开局)。
+##
+## 原版没有「在关卡里直接放下僵尸」这个功能，所以「运行期打开」是留给**模组**的口子
+## （见 `set_runtime_zombie_card_enabled()`）：本体自己从不置真。
 func is_zombie_card_enabled() -> bool:
-	return ConstFeatureSwitch.ZOMBIE_CARD_ENABLED or is_debug_mode
+	return ConstFeatureSwitch.ZOMBIE_CARD_ENABLED or _runtime_zombie_card_enabled
+
+## 运行期开关（模组用）：开放僵尸卡片；关掉时顺手清掉「上次选卡」里的僵尸条目
+##
+## ⚠️ 它不随存档走：模组开 / 关时自己调一次，读档覆盖 `selected_cards` 后由模组的
+## `on_session_reloaded()` 再补一次（见 `ModBase.on_session_reloaded()`）。
+func set_runtime_zombie_card_enabled(value: bool) -> void:
+	if _runtime_zombie_card_enabled == value:
+		return
+	_runtime_zombie_card_enabled = value
+	_sync_runtime_zombie_cards()
+
+## 是否被运行期打开（模组自检用；业务侧一律问 `is_zombie_card_enabled()`）
+func is_runtime_zombie_card_enabled() -> bool:
+	return _runtime_zombie_card_enabled
 
 ## 僵尸卡片关掉时,把「上次选卡」里的僵尸 / 僵王条目一并清掉
 ## 为什么必须连这里一起清:「重选上次卡片」照存档条目直接点待选卡位(见 CardSlotNorm),
-## 调试模式关掉后待选区根本没有僵尸容器,条目留着会索引到不存在的卡位。
+## 僵尸卡关掉后待选区根本没有僵尸容器,条目留着会索引到不存在的卡位。
 ## 总开关打开时僵尸卡始终可用,不做清理。
-func _sync_debug_mode_zombie_cards() -> void:
+func _sync_runtime_zombie_cards() -> void:
 	if is_zombie_card_enabled():
 		return
 	for i in range(selected_cards.size() - 1, -1, -1):
@@ -168,24 +219,9 @@ func _sync_debug_mode_zombie_cards() -> void:
 			or card_type == ResourceCardReference.CardType.ZombieBoss:
 			selected_cards.remove_at(i)
 
-## 按当前 is_debug_mode 同步「只有调试模式才有的植物」
-## 关掉时必须真的从 curr_plant 里删:读档会按存档记录重建那份列表(见 SaveService._build_curr_plant),
-## 只把开关置 false 的话,上一次开调试写进存档的植物下次读档又会回来。
-func _sync_debug_mode_plants() -> void:
-	if is_debug_mode:
-		unlock_plants(ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES)
-		## ★ 解锁 ≠ 可选:这四株属于「追加类」植物,光解锁不会进选卡界面 ——
-		## 还要进一次「可选植物列表」才进(见 AllCards.add_selectable_plant)
-		for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
-			AllCards.add_selectable_plant(plant_type)
-		return
-	for plant_type: StringName in ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES:
-		AllCards.remove_selectable_plant(plant_type)
-		lock_plant(plant_type)
-
 ## 从「上次选卡」里摘掉一株已不可选的植物
 ## 为什么必须连这里一起清:「重选上次卡片」是照存档条目直接点待选卡位的(
-## 见 CardSlotNorm._on_re_card_button_pressed),卡片容器在关掉调试模式 / 卸掉模组后已经不在了,
+## 见 CardSlotNorm._on_re_card_button_pressed),卡片容器在植物被撤销解锁 / 卸掉模组后已经不在了,
 ## 条目留着就会点到一个不存在的卡位。
 func _remove_plant_from_selected_cards(plant_type: StringName) -> void:
 	for i in range(selected_cards.size() - 1, -1, -1):
@@ -409,7 +445,7 @@ func is_shovel_unlocked() -> bool:
 func is_almanac_unlocked() -> bool:
 	return ConstUnlockLevel.is_almanac_unlocked(get_max_success_adventure_level())
 
-## 花园是否已解锁(通关 5-5 后戴夫把禅境花园交给玩家,在此之前拿不到任何花园植物)
+## 花园是否已解锁(通完 5-4 后戴夫把禅境花园交给玩家,在此之前拿不到任何花园植物)
 func is_garden_unlocked() -> bool:
 	return ConstUnlockLevel.is_garden_unlocked(get_max_success_adventure_level())
 #endregion
@@ -475,6 +511,19 @@ func buy_wall_nut_first_aid() -> bool:
 	if is_wall_nut_first_aid_bought:
 		return false
 	is_wall_nut_first_aid_bought = true
+	return true
+#endregion
+
+#region 独轮车
+## 独轮车是否已购买(原版一次性商品:买完即 Sold Out,本身没有任何功能)
+func is_wheel_barrow_owned() -> bool:
+	return is_wheel_barrow_bought
+
+## 购买独轮车,已经买过返回 false
+func buy_wheel_barrow() -> bool:
+	if is_wheel_barrow_bought:
+		return false
+	is_wheel_barrow_bought = true
 	return true
 #endregion
 
@@ -629,6 +678,9 @@ func unlock_all_shop_goods() -> int:
 		rake_use_num = ConstShop.RAKE_USE_NUM_PER_BUY
 	## 坚果包扎术
 	if buy_wall_nut_first_aid():
+		goods_num += 1
+	## 独轮车（原版 $20 的摆设，买完 Sold Out，本身没有功能）
+	if buy_wheel_barrow():
 		goods_num += 1
 	## 紫卡与模仿者：直接进已解锁植物（再到货架上看到就是"已拥有"）
 	goods_num += unlock_plants(ConstPlantUnlock.get_all_shop_plant_types()).size()

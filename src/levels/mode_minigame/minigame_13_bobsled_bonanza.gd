@@ -51,8 +51,6 @@ func _init() -> void:
 	## 场景曲：本关是泳池 → 泳池曲 Watery Graves
 	game_BGM = ConstLevelData.GameBGM.Pool
 	zombie_multy = 3
-	## 原版本关的超长开场：摆完植物要等 45 秒才来第一波（仅次于「蹦蹦舞会」的 55 秒）
-	first_wave_delay = 45.0
 
 
 #region 开局冰道（本关专属地形，硬约束 §1-8：不进游戏本体）
@@ -96,12 +94,11 @@ func before_wave_spawn(create_manager: ZombieWaveCreateManager, _wave: int, _is_
 @warning_ignore("unused_parameter")
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
+	## 出怪表：对齐原版 BOBSLED_BONANZA 白名单（Challenge.cpp：只有洗冰车 / 雪橇队；
+	## 融冰后散架的普僵由雪橇队自身变成，不是独立刷出的普僵）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.ZAMBONI,
 		ZombieIds.BOBSLED,
-		ZombieIds.NORM,
-		ZombieIds.CONE,
-		ZombieIds.BUCKET,
 	]
 
 	## 展示僵尸
@@ -115,4 +112,6 @@ func run_flow(mg: MainGameManager) -> void:
 	##  想在冰面上种得先拿火爆辣椒融冰）
 	await ready_set_plant()
 	## 开战（原版 Four flags = 40 波）
-	await start_battle(40, zombie_list)
+	## 首波 45 秒：原版 `GAMEMODE_CHALLENGE_BOBSLED_BONANZA` → `mZombieCountDown = 4500` tick
+	## （本关超长开场，仅次于蹦蹦舞会的 55 秒）
+	await start_battle(40, zombie_list, 0.0, 45.0)

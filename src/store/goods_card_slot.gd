@@ -13,6 +13,12 @@ class_name GoodsCardSlot
 ## 买哪一档就念哪一句,只能运行期生成,场景里配的静态台词不适用
 const TEXT_CARD_SLOT := "增加的卡片槽，将让你在每关可选%d种植物！"
 
+## 商品图标上的槽数文字(原版 [STORE_UPGRADE_SLOTS] "{SLOTS}\n卡片槽"，见 lawn_strings.txt)
+const TEXT_SLOT_ON_ICON := "%d\n卡片槽"
+
+## 商品图标上的槽数文字节点(场景里配在 StoreIcon 上；没有这个节点时只跳过文字)
+@onready var slot_count_label: Label = get_node_or_null("SlotCountLabel") as Label
+
 
 func _ready() -> void:
 	dialog_detail = _create_dialog_detail()
@@ -21,14 +27,25 @@ func _ready() -> void:
 	judge_can_get_goods()
 
 
-## 刷新商品状态:按当前已购买次数取价,已达卡槽上限则标记为已满级且不可再购买
+## 刷新商品状态:按当前已购买次数取价,已达卡槽上限则标记为已售出且不可再购买
 func _refresh_goods_state() -> void:
 	price = maxi(0, ConstShop.get_card_slot_upgrade_price(Global.global_game_state.get_card_slot_upgrade_num()))
 	price_tag_label.text = "$" + GlobalUtils.format_number_with_commas(price)
 	if Global.global_game_state.is_card_slot_upgrade_max():
 		is_have_goods = false
-		is_not_have_goods_label.text = "已满级"
+	else:
+		is_have_goods = true
 	is_not_have_goods_label.visible = not is_have_goods
+	_update_slot_count_label()
+
+
+## 刷新图标上的槽数:原版画的是"买下之后能有几个槽"(purchases + 7)
+func _update_slot_count_label() -> void:
+	if slot_count_label == null:
+		return
+	var next_slot_num: int = mini(Global.global_game_state.get_card_slot_num() + 1,
+		ConstShop.MAX_CARD_SLOT_NUM)
+	slot_count_label.text = TEXT_SLOT_ON_ICON % next_slot_num
 
 
 ## 生成当前档位的戴夫对话:目标是"买到第几个卡槽"
@@ -42,8 +59,11 @@ func _create_dialog_detail() -> CrazyDaveDialogDetailResource:
 
 
 ## 获得该商品:购买一次卡槽扩充
+## 注意：这里**不用**基类 `_finish_goods_granted()` —— 收尾中间要重建戴夫台词（档位变了），
+## 顺序是「落盘 → 刷新售罄态 → 换台词 → 重判能否购买」，插不进那个模板。
 func get_one_goods():
-	if Global.global_game_state.add_card_slot_upgrade():
+	var is_success: bool = Global.global_game_state.add_card_slot_upgrade()
+	if is_success:
 		Global.save_service.save_now()
 	else:
 		Log.warn("购买卡槽扩充失败:已达卡槽上限")
@@ -51,3 +71,7 @@ func get_one_goods():
 	## 档位变了,台词跟着换到下一档(7 槽 -> 8 槽),再刷买得起买不起
 	dialog_detail = _create_dialog_detail()
 	judge_can_get_goods()
+	## 原版买完弹「更多卡片槽！」(MORE_SLOTS / NOW_YOU_CAN_CHOOSE_X_SEEDS)
+	if is_success:
+		request_message.emit("更多卡片槽！",
+			"现在你可以在每个关卡选择%d植物种子了！" % Global.global_game_state.get_card_slot_num())

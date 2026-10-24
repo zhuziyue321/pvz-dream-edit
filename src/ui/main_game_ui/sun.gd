@@ -1,109 +1,108 @@
-extends Node2D
+extends DropItemBase
 class_name Sun
+## 阳光（天降 / 向日葵产 / 小游戏掉…）
+##
+## 生到死那套公共骨架（编号 / 点击 / 超时淡出）在 `DropItemBase`；
+## **生成**统一走 `SunSpawner`（七个生成点以前各抄了一遍"弹起来再落下"）。
+##
+## 与钱那类的两点不同：
+##   · 下落那一段不叫"抛物线"：天降是匀速、生成点是弹起再落下，都由 `SunSpawner` 驱动
+##     （所以 has_launch_animation() = false，落地回调挂在 `on_sun_tween_finished()` 上）
+##   · 自动收集看的是 `auto_collect_sun` 而不是金币那个开关（见 `on_sun_tween_finished`）
 
+## 这一颗的价值
 @export var sun_value := 25
 
-## 阳光存在时间
-@export var exist_time:float = 10.0
-var collected := false  # 是否已被点击收集
-## 生产阳光移动的tween
-var spawn_sun_tween:Tween
+## 缩放基准：25 价值的阳光 = 原尺寸（以前这个 /25.0 写在 `_sun_scale()` 里）
+const BASE_SUN_VALUE := 25.0
 
-## 实体编号（与角色共用同一个分配器，全场唯一）
-##
-## 为什么要有：`get_instance_id()` 是进程内的，换个进程就对不上，也没法写进网络包。
-## 联机要说清"哪一颗阳光"时，必须有两端一致的编号；单机不涉及，行为不变。
-## 由主机下发生成的那一颗，入树之前先调 `assign_entity_id()`，这里就不再自动分配。
-var entity_id:int = 0
-## 这一颗从哪儿掉到哪儿（由生成方写入；联机下发时要带着这个落点，两端才落在同一处）
-var spawn_target:Vector2 = Vector2.ZERO
-## 掉这一趟用了多少秒（由生成方写入；联机下发时带着，两端的下落动画才一样快）
+## 生产阳光移动的 tween（由 SunSpawner 起，拾取时要打断）
+var spawn_sun_tween:Tween
+## 掉这一趟用了多少秒（由 SunSpawner 写入；联机下发时带着，两端的下落动画才一样快）
 var spawn_fall:float = 0.0
+
+
+func drop_ready() -> void:
+	_sun_scale(sun_value)
+
+
+## 下落那一段由 SunSpawner 驱动（天降 / 弹起都是），不归基类的抛物线管
+func has_launch_animation() -> bool:
+	return false
+
+
+## 自动收集看的是阳光自己的开关，且要等落地（见 `on_sun_tween_finished`）
+func should_auto_pick_on_landed() -> bool:
+	return false
+
+
+func get_player_action() -> int:
+	return GlobalUtils.E_PlayerAction.PickSun
 
 
 ## 记下**"弹起来再落下"**这一趟的落点与用时
 ##
-## 四处生成点用同一套表现（向日葵产、禅境花园的宠物、宝石迷阵、锤子小游戏）：
-## 先弹起 `rise`，再落下 `fall`，横向随机偏 `offset_x`，全程 `duration` 秒。
-## 落点 = 起点 + (offset_x, rise + fall) —— 把这几个数收在这里，
-## 免得四处各抄一遍"净位移是 +30、用时 0.9 秒"，改一个忘三个。
+## 生成点只管说清偏移，净位移是 `rise + fall`、用时 `duration` —— 把这几个数收在这里，
+## 免得七个生成点各抄一遍"净位移是 +30、用时 0.9 秒"，改一个忘六个。
+## 天降那一趟由 `SunSpawner.fall_from_sky()` 直接写 `spawn_target` / `spawn_fall`。
 func mark_pop_up(offset_x: float, rise: float = -15.0, fall: float = 45.0, duration: float = 0.9) -> void:
 	spawn_target = position + Vector2(offset_x, rise + fall)
 	spawn_fall = duration
 
-func _ready() -> void:
-	if entity_id == 0:
-		entity_id = Character000Base.take_next_entity_id()
-	_sun_scale(sun_value)
-	## 启动一个10秒定时器
-	await get_tree().create_timer(exist_time, false).timeout
-
-	# 如果还没被点击收集，自动销毁
-	if not collected and is_instance_valid(self):
-		_start_fade_out()
 
 func init_sun(curr_sun_value:int, pos:Vector2):
 	sun_value = curr_sun_value
 	position = pos
 
+
 func _sun_scale(new_sun_value:int):
-	var new_scale = new_sun_value/25.0
+	var new_scale = float(new_sun_value) / BASE_SUN_VALUE
 	scale = Vector2(new_scale,new_scale)
-
-## 指定实体编号：客户端收到主机的生成消息后、入树之前调用（`_ready()` 会跳过自动分配）
-func assign_entity_id(new_id: int) -> void:
-	entity_id = new_id
-
-
-func _on_button_pressed() -> void:
-	## 统一先过玩家操作上报口：被接管时（联机客户端）这一下只是**请求**，本地不动
-	## （见 `GlobalUtils.submit_player_action`）
-	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.PickSun, [self]):
-		return
-	collect()
 
 
 ## 把这一颗收走（拾取的公共入口：按钮 / 自动收集 / 联机重放都走这里，**不过闸门**）
-func collect() -> void:
-	if spawn_sun_tween:
-		spawn_sun_tween.kill()
-
-	if collected:
-		return  # 防止重复点击
-
-	collected = true  # 设置已被收集
-	var target_position = Vector2()
+func pick() -> void:
+	if spawn_sun_tween != null:
+		if spawn_sun_tween.is_valid():
+			spawn_sun_tween.kill()
+		spawn_sun_tween = null
+	kill_launch_tween()
+	if is_opened:
+		return
+	is_opened = true
 	SoundManager.play_other_SFX("points")
+	## 收走了就不能再点
+	var button := get_pick_button()
+	if button != null:
+		button.queue_free()
+	var target_position = Vector2()
 	if is_instance_valid(GameContext.curr_main_game):
 		if is_instance_valid(GameContext.curr_main_game.marker_2d_sun_target):
 			## 出战卡槽在canvaslayer中，位置和摄像头位置有偏移
-			target_position = GameContext.curr_main_game.marker_2d_sun_target.global_position + GameContext.curr_main_game.camera_2d.global_position
+			target_position = GameContext.curr_main_game.marker_2d_sun_target.global_position \
+				+ GameContext.curr_main_game.camera_2d.global_position
 		else:
 			target_position = GameContext.curr_main_game.marker_2d_sun_target_default.global_position
-
 		EventBus.push_event(ConstEventName.ADD_SUN_VALUE, [sun_value])
-
-	var tween:Tween = get_tree().create_tween()
-	# 将节点从当前位置移动到(100, 200)，耗时0.5秒
-	tween.tween_property(self, "global_position", target_position, 0.3).set_ease(Tween.EASE_OUT)
-	$Button.queue_free()
-	await tween.finished
-	## 到达位置，变透明
-	tween = create_tween()
-	tween.set_parallel()
-	tween.tween_property(self, "modulate:a", 0, 0.5)
-	await tween.finished
-	queue_free()
+	fly_to_target(target_position, Callable(), 0.3)
 
 
-func _start_fade_out() -> void:
-	var tween = get_tree().create_tween()
-	tween.tween_property(self, "modulate:a", 0.0, 1.0)  # 🌫️ 1秒淡出
-	tween.finished.connect(func():
-		if not collected and is_instance_valid(self):
-			self.queue_free()
-	)
+## 老名字的入口（联机重放在调）：一律走 `pick()`
+func collect() -> void:
+	pick()
 
+
+## 老名字的入口（按钮按下 / 探针直接点阳光时调）：走 `request_pick()` —— 玩家点的那一下要过上报口
+func _on_button_pressed() -> void:
+	request_pick()
+
+
+## 落地那一刻（由 SunSpawner 的 tween finished 调）：开了自动收集阳光就当场收走
 func on_sun_tween_finished():
 	if Global.config_service.auto_collect_sun:
-		_on_button_pressed()
+		request_pick()
+
+
+## 超时消失：阳光淡得比掉落物慢一点（1 秒），与旧实现同一步伐
+func fade_and_delete(_fade_duration := 1.0) -> void:
+	super.fade_and_delete(1.0)

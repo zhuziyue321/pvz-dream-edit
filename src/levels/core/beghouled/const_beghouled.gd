@@ -4,7 +4,7 @@ class_name ConstBeghouled
 ##
 ## 数据来源: Plants vs Zombies Wiki(https://plantsvszombies.wiki.gg/wiki/Beghouled) —— 一代原版口径：
 ##   夜间前院、开局草坪已铺满植物（僵尸入场那一列留空）、植物不能铲、
-##   完成 **75 次配对** 通关、3 连 25 阳光 / 4 连 50 / 5 连及以上 100、
+##   完成 **75 次配对** 通关、3 连 25 阳光 / 4 连 50 / 5 连 125 阳光、
 ##   升级 豌豆射手→双重射手 1000、小喷菇→大喷菇 500、坚果→高坚果 250、
 ##   植物被啃掉留弹坑、花 200 阳光填坑、没有小推车（一只僵尸进屋即输）
 ##
@@ -13,15 +13,12 @@ class_name ConstBeghouled
 ## 通关所需配对次数
 const TARGET_MATCH_NUM := 75
 
-## 一条连线长度 → 阳光奖励；超过表内长度（5 连及以上）一律按 SUN_CHAIN_MAX 给
-const SUN_BY_CHAIN_LEN := {
-	3: 25,
-	4: 50,
-}
-## 长连线的阳光奖励上限
-const SUN_CHAIN_MAX := 100
 ## 一颗掉落阳光的面值：奖励 50 / 100 时按它拆成多颗一起掉（Sun 按面值缩放，单颗 100 的贴图会过大）
 const SUN_UNIT_VALUE := 25
+## 一次结算最多掉几颗阳光（原版 `BeghouledScore()` 把 `aNumSuns` 钳在 1..5）
+const MAX_SUNS_PER_MATCH := 5
+## 长连线的阳光奖励上限（原版 5 连 = 5 颗 = 125）
+const SUN_CHAIN_MAX := MAX_SUNS_PER_MATCH * SUN_UNIT_VALUE
 
 ## 三消棋盘上的基础植物（原版六种，见 wiki「The six plants are all different colors」；
 ## 策略段提到的植物即这六种：豌豆射手 / 坚果 / 寒冰射手 / 小喷菇 / 星星果 / 磁力菇）
@@ -65,8 +62,9 @@ const CRATER_FILL_SUN := 200
 ## 刷新 / 填坑两张自定义种子包的整卡贴图：从 seeds.png 裁出来的专用卡面（50×70 整张，
 ## 图案已画好，直接当卡面用，**不再往上叠任何东西**）
 ## 僵尸迷阵（迷你 05）与僵尸迷阵 旋风（迷你 09）的卡槽第 4 / 第 5 格共用这两张
-const PACKET_REFRESH_TEXTURE: Texture2D = preload("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Refresh.png")
-const PACKET_FILL_TEXTURE: Texture2D = preload("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Fill.png")
+## ★ static：本类只按类名访问（没有实例），非 static 成员取不到
+static var PACKET_REFRESH_TEXTURE: Texture2D = AssetRegistry.get_texture("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Refresh.png")
+static var PACKET_FILL_TEXTURE: Texture2D = AssetRegistry.get_texture("res://assets_custom/image/ui/ui_card/SeedPacket_Beghouled_Fill.png")
 
 ## 死局提示：原版刷新前没有文案，这里为了让玩家明白「为什么盘面突然变了」，
 ## 提示出现后停留 NO_MOVE_TIP_WAIT 秒再刷新整盘（自定义，非 wiki 口径）
@@ -77,11 +75,22 @@ const NO_MOVE_TIP_WAIT := 4.0
 ## 棋盘最右侧留空的列数（原版：僵尸入场那一列是空的，见 wiki「a lone empty column」）
 const EMPTY_COL_NUM_ON_RIGHT := 1
 
-## 按连线长度取阳光奖励（一次交换造成多组连线时各组奖励累加，见 wiki「Multiple matches ... more sun」）
-static func get_sun_by_chain_len(chain_len: int) -> int:
+## 按「连线长度 + 本次移动内已结算的连线组数」取阳光奖励
+##
+## 原版口径（`Challenge::BeghouledScore()`）：
+##   `aNumSuns = theNumPlants - 2 + mBeghouledMatchesThisMove`（5 连及以上再 `+2`），再 `clamp(1, 5)`；
+##   `mBeghouledMatchesThisMove` **每结算一组 +1、一次移动结束归零**。
+## 即：3 连 = 1 颗、4 连 = 2 颗、5 连及以上 = 5 颗；同一次交换（含级联消）里
+## 第 2 组起每组再 +1 颗，封顶仍 5 颗 —— 这就是 wiki 说的「Multiple matches ... more sun」。
+##
+## [param matches_this_move] 本次移动里**已经结算过**的连线组数（第一组传 0）
+static func get_sun_by_chain_len(chain_len: int, matches_this_move: int = 0) -> int:
+	var sun_num := chain_len - 2
 	if chain_len >= 5:
-		return SUN_CHAIN_MAX
-	return int(SUN_BY_CHAIN_LEN.get(chain_len, 0))
+		sun_num += 2
+	sun_num += matches_this_move
+	sun_num = clampi(sun_num, 1, MAX_SUNS_PER_MATCH)
+	return sun_num * SUN_UNIT_VALUE
 
 
 ## 把自定义种子包的卡面**整张**换成给定贴图（seeds.png 裁出的 50×70 整卡图，

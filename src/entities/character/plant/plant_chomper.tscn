@@ -63,27 +63,27 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_pdf5d"]
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "not is_chewing"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_5jwl4"]
 switch_mode = 2
 advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_wt05k"]
-advance_mode = 2
-advance_expression = "is_bite"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_vl70c"]
 xfade_time = 0.2
 switch_mode = 2
-advance_mode = 2
-advance_expression = "not is_chewing"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_3acb7"]
 switch_mode = 2
-advance_mode = 2
-advance_expression = "is_chewing"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_r7nim"]
 states/Bite/node = SubResource("AnimationNodeBlendTree_tovg4")

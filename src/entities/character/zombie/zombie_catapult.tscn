@@ -1952,7 +1952,7 @@ libraries = {
 [node name="AttackComponent" parent="." index="6" node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("60_5b35i")
 attack_para = &"parameters/StateMachine/BlendTree/OneShot/request"
-attack_cd = 4.0
+attack_cd = 3.0
 attack_bullet_type = &"basketball"
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
 attack_sfx = &"basketball"

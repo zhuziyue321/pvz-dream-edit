@@ -208,70 +208,118 @@ func create_static_preview(reference: ResourceCardReference) -> Node2D:
 ## ⚠️ 僵王在**战斗层**仍不是普通僵尸（卡牌类型还是 `CardType.ZombieBoss`、
 ## 落地走 `ZombieManager.try_create_boss_from_card()`）；这里只是在**选卡 / 卡牌层**按普通僵尸排。
 #region 可选植物列表
-## 是否属于「追加在普通植物后面」的那两类植物：**调试模式专属** 或 **模组新增**
+## 是否属于「追加在普通植物后面」的那两类植物：**运行期开关解锁的** 或 **模组新增**
 ##
 ## ★ 本体只认这两类「不是原版流程能拿到的植物」，一个模组名字都不认识 ——
 ##   模组新增的判据是「运行期注册的」（见 `CharacterRegistry.is_runtime_plant`）。
+## ⚠️ 运行期解锁那四株**只解锁、不登记任何选卡页**（见 `_plant_choose_pages`），
+##   所以这个判据现在对它们只剩一个作用：别把它们当原版常规植物排进第 1 页。
 static func is_appended_plant(plant_type: StringName) -> bool:
-	## 调试模式专属：三种保龄球 + 反向双发（见 ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES）
-	if ConstPlantUnlock.DEBUG_MODE_PLANT_TYPES.has(plant_type):
+	## 原版流程拿不到的：三种保龄球 + 反向双发（见 ConstPlantUnlock.APPENDED_PLANT_TYPES）
+	if ConstPlantUnlock.APPENDED_PLANT_TYPES.has(plant_type):
 		return true
 	## 模组新增：本体不认识任何一个模组，只认「运行期注册的」这一类
 	## （见 CharacterRegistry.register_runtime_plant_recipe / is_runtime_plant）
 	return Global.character_registry.is_runtime_plant(plant_type)
 
 
-## 显式登记进「可选植物列表」的追加类植物（按登记顺序排在列表末尾）
+## 模组登记的选卡页：句柄 → 一页的格位列表（按格位顺序，`PlantIds.NULL` = 空一格）
 ##
 ## ★ 「注册了」不等于「可选」：热注册一株植物（`CharacterRegistry`）只是让它存在，
-##   想让它在选卡界面里被挑到，还得往这张列表追加一项 —— 见 `add_selectable_plant()`。
+##   想让它在选卡界面里被挑到，还得把它落到某一页的某一格上 —— 见 `register_plant_choose_page()`。
 ##   以前「注册 + 解锁」就等于可选，于是「只给关卡脚本 / 传送带发货、不该让玩家挑」的植物
-##   也会一起挤进待选区；这道门禁把两件事分开（判据的唯一来源就是这一份）。
-##   · 调试模式专属四株：`GlobalGameState._sync_debug_mode_plants()` 开关时增 / 摘；
-##   · 模组新增的：装的时候由模组自己说（`PlantRuntimeKit.make_selectable()`），卸的时候 Kit 摘掉。
-var _appended_selectable_plants: Array[StringName] = []
-
-
-## 把一株追加类植物登记进「可选植物列表」末尾（= 它进选卡界面）
+##   也会一起挤进待选区；这道门禁把两件事分开（判据的唯一来源就是这几页 + 原版常规植物）。
+##   · 运行期解锁的四株（`ConstPlantUnlock.APPENDED_PLANT_TYPES`）：解锁方只把它们并进
+##     已解锁名单，**不登记**任何一页 —— 所以选卡界面里没有它们的卡位；
+##   · 模组新增的：装的时候由模组自己登记（`register_plant_choose_page()`），卸的时候自己撤。
 ##
-## [return] 本次是否真的追加了（类型非法 / 已经在列表里返回 false）
-func add_selectable_plant(plant_type: StringName) -> bool:
-	if plant_type == PlantIds.NULL:
-		Log.error("AllCards：可选植物列表不接受空类型")
-		return false
-	if _appended_selectable_plants.has(plant_type):
-		return false
-	_appended_selectable_plants.append(plant_type)
+## ★ 为什么按页登记（而不是按株追加）：一页的排版（谁在第几格、空几格、一页放几张）
+##   是模组自己的事，本体不该替它把卡片塞进「原版植物后面的连续格位」——
+##   以前那样每多一株就往后挤，多一株就凭空多一页。
+var _plant_choose_pages: Dictionary[int, Array] = {}
+## 页的登记顺序（= 它们接在原版植物页后面的先后）
+var _plant_choose_page_order: Array[int] = []
+## 下一个页句柄：只增不减，撤销后不复用，免得旧句柄把后登记的一页撤掉
+var _next_plant_choose_page_handle := 0
+
+
+## 登记一页选卡（模组侧的唯一入口）：这一页就是模组自己排好的版
+##
+## [param plant_types] **按格位顺序**列出本页要出现的植物；`PlantIds.NULL` 表示这一格留空。
+##   每页格数以待选卡槽的网格模板为准（当前 48 格）：超过一页的条目顺延到你这一页的下一页。
+##   排版完全由调用方决定 —— 本体不重排、不补齐、不插到别的页里；页序 = 登记顺序，接在原版植物页之后。
+## [return] 页句柄（>= 0），关模组时凭它 `unregister_plant_choose_page()`；登记失败返回 -1
+##   （空页 / 有类型没有卡位 / 同页里同一株登记了两次）。
+##
+## ⚠️ 调用时机排在 `PlantRuntimeKit.install()` 之后：卡要先插进源目录（`rebuild()`），
+##   这里才校验得到卡位。
+func register_plant_choose_page(plant_types: Array[StringName]) -> int:
+	if plant_types.is_empty():
+		Log.error("AllCards：选卡页不能是空的")
+		return -1
+	var seen: Dictionary[StringName, bool] = {}
+	var entries: Array[StringName] = []
+	for plant_type: StringName in plant_types:
+		if plant_type == PlantIds.NULL:
+			entries.append(PlantIds.NULL)
+			continue
+		if not all_plant_card_prefabs.has(plant_type):
+			Log.error("AllCards：选卡页里的 %s 没有卡位（先装植物，再登记页）" % plant_type)
+			return -1
+		if seen.has(plant_type):
+			Log.error("AllCards：选卡页里 %s 登记了两次（同一张卡只能占一格）" % plant_type)
+			return -1
+		seen[plant_type] = true
+		entries.append(plant_type)
+	var handle := _next_plant_choose_page_handle
+	_next_plant_choose_page_handle += 1
+	_plant_choose_pages[handle] = entries
+	_plant_choose_page_order.append(handle)
 	_invalidate_seed_chooser_catalog()
-	Log.info("AllCards：可选植物列表追加 %s" % plant_type)
-	return true
+	Log.info("AllCards：登记选卡页 #%d（%d 格）" % [handle, entries.size()])
+	return handle
 
 
-## 从「可选植物列表」里摘掉一株（关模组 / 关调试模式）：摘掉后它不再进选卡界面
-func remove_selectable_plant(plant_type: StringName) -> void:
-	if not _appended_selectable_plants.has(plant_type):
+## 撤掉一页选卡（关模组时调）；句柄不认识时什么都不做
+func unregister_plant_choose_page(handle: int) -> void:
+	if not _plant_choose_pages.has(handle):
 		return
-	_appended_selectable_plants.erase(plant_type)
+	_plant_choose_pages.erase(handle)
+	_plant_choose_page_order.erase(handle)
 	_invalidate_seed_chooser_catalog()
+	Log.info("AllCards：撤销选卡页 #%d" % handle)
 
 
-## 这株植物现在是不是可选的（在「可选植物列表」里）
+## 当前登记了哪些页（按登记顺序抄一份；探针 / 调试用）
+func get_registered_plant_choose_pages() -> Array[Array]:
+	var pages: Array[Array] = []
+	for handle: int in _plant_choose_page_order:
+		var entries: Array = _plant_choose_pages.get(handle, [])
+		pages.append(entries.duplicate())
+	return pages
+
+
+## 这株植物现在是不是可选的：原版常规植物默认可选，其余必须登记在某一页里
 ##
-## ⚠️ 原位替换的副本**不在这里**判 true：它自己没登记进追加项，出场只是「替原植物占那一格」
+## ⚠️ 原位替换的副本**不在这里**判 true：它自己没被登记，出场只是「替原植物占那一格」
 ## （见 `set_plant_choose_replacement()`）；要问「它现在会不会出现在列表里」问
 ## `get_plant_types_in_choose_order().has(...)`。
 func is_selectable_plant(plant_type: StringName) -> bool:
-	if _appended_selectable_plants.has(plant_type):
+	if all_plant_card_prefabs.has(plant_type) and not is_appended_plant(plant_type):
 		return true
-	return all_plant_card_prefabs.has(plant_type) and not is_appended_plant(plant_type)
+	for handle: int in _plant_choose_page_order:
+		var entries: Array = _plant_choose_pages.get(handle, [])
+		if entries.has(plant_type):
+			return true
+	return false
 
 
 ## 选卡列表的「原位替换」表：key = 被顶掉的植物（通常是原版），value = 顶替它出场的副本
 ##
-## ★ 与 `add_selectable_plant()` 的分工：追加是**多占一格**（排在列表末尾），
+## ★ 与 `register_plant_choose_page()` 的分工：登记页是**自己占一整页**（格位由模组排），
 ##   替换是**占原来那一株的格子**（原植物本尊从选卡列表里消失，副本顶上）。
 ##   给「同一个东西换皮 / 换数值」的副本用（例：明日方舟模组的植物精英化）——
-##   否则每种副本都会在列表末尾多一张卡，待选区凭空多出一整页、原植物那一格还留着窟窿。
+##   否则每种副本都会多占一格，原植物那一格还留着窟窿。
 ## 只管**选卡列表里的位置**：副本自己仍是运行期植物（注册 / 插卡 / 解锁照旧，不必自己撤表）。
 ## 表可以按关卡增删（`set_...` / `clear_plant_choose_replacement()`），典型用法见 `arknights_mod.gd`。
 var _plant_choose_replacements: Dictionary[StringName, StringName] = {}
@@ -304,16 +352,17 @@ func get_plant_choose_replacement(original: StringName) -> StringName:
 	return _plant_choose_replacements.get(original, PlantIds.NULL)
 
 
-## **可选植物列表**：待选区（选卡界面）与图鉴扩展页共用的那一份，顺序就是它们落位的先后
+## **可选植物列表**（摊平版）：待选区（选卡界面）与图鉴扩展页共用的那一份，顺序就是它们落位的先后
 ##
 ## 内容 = **原版常规植物**（卡片源目录里的全部，顺序固定，不需要谁去登记）
-##      + **显式追加项**（`add_selectable_plant()` 登记过的调试模式专属 / 模组新增植物，一律排在最后）。
+##      + **模组登记的页**（`register_plant_choose_page()`，按登记顺序接在后面，页内格位顺序照登记）。
 ## 玩家真正能在待选区挑到的仍是这份列表 ∩ 已解锁名单（`GlobalGameState.curr_plant`，
-## 由 `CardSlotCandidate` 点亮）—— 所以「注册了但没登记进列表」的植物既是造不出卡位、
+## 由 `CardSlotCandidate` 点亮）—— 所以「注册了但没登记进任何一页」的植物既是造不出卡位、
 ## 也不会被点亮，等于不存在。
 ##
 ## **原位替换**（`set_plant_choose_replacement()`）：表里登记过的原植物**不进列表**，
 ## 由它的副本占那一格 —— 副本因此不再按追加项排到末尾（位置与列表长度都跟原版一致）。
+## 替换**只作用于原版常规植物那几页**：模组登记的页里写的是哪张卡就出哪张卡（模组自己排的版）。
 ##
 ## 为什么不能直接照 `all_plant_card_prefabs` 的顺序用：那个顺序就是卡片源目录里的节点顺序，
 ## 卡的编号（`card_id`）按节点顺序算（见 `rebuild()`），往中间插一张卡会让后面每一株的编号挪一格 ——
@@ -321,28 +370,44 @@ func get_plant_choose_replacement(original: StringName) -> StringName:
 ## 本体不认识任何一个模组、也没法要求它一定插在末尾，所以顺序在**消费侧**显式排一次。
 func get_plant_types_in_choose_order() -> Array[StringName]:
 	var plant_types: Array[StringName] = []
-	## 已经输出过的那几株（副本只占一格；追加段里不再重复）
 	var emitted: Dictionary[StringName, bool] = {}
+	_append_base_plant_types(plant_types, emitted)
+	for handle: int in _plant_choose_page_order:
+		for plant_type: StringName in _plant_choose_pages.get(handle, []):
+			## 空位：模组排版本就允许留空格
+			if plant_type == PlantIds.NULL:
+				continue
+			## 卡已经不在目录里了（模组卸了 / 类型写错了）：跳过，这一格留空
+			if not all_plant_card_prefabs.has(plant_type):
+				continue
+			## 模组页里的卡片**照登记时写的那张出**（不走原位替换：版是模组自己排的）
+			_append_page_choose_slot(plant_types, emitted, plant_type)
+	return plant_types
+
+
+## 把模组页里的一格写进 [param plant_types]（不走原位替换，见 `get_plant_types_in_choose_order`）
+func _append_page_choose_slot(plant_types: Array[StringName],
+		emitted: Dictionary[StringName, bool], plant_type: StringName) -> void:
+	if emitted.has(plant_type):
+		return
+	plant_types.append(plant_type)
+	emitted[plant_type] = true
+
+
+## 原版常规植物那一串（不含追加类，替换表照常生效）—— 摊平列表与数据层快照共用
+func _append_base_plant_types(plant_types: Array[StringName],
+		emitted: Dictionary[StringName, bool]) -> void:
 	for plant_type: StringName in all_plant_card_prefabs:
-		## 追加类（调试专属 / 模组新增）不在这里收：它们要显式登记过才算可选
+		## 追加类（调试专属 / 模组新增）不在这里收：它们要显式登记进某一页才算可选
 		if is_appended_plant(plant_type):
 			continue
 		_append_choose_slot(plant_types, emitted, plant_type)
-	for plant_type: StringName in _appended_selectable_plants:
-		## 卡已经不在目录里了（模组卸了 / 类型写错了）：跳过，免得消费侧取不到卡
-		## （`PlantRuntimeKit._remove_card()` 摘卡后这一项就自动失效，不必等它来摘）
-		if not all_plant_card_prefabs.has(plant_type):
-			continue
-		_append_choose_slot(plant_types, emitted, plant_type)
-	return plant_types
 
 
 ## 把「某一株植物在选卡列表里的那一格」写进 [param plant_types]：
 ## 有原位替换就换成副本（原植物本尊不进列表），否则照旧写它自己。
 ##
-## [param emitted] 记「已经占过格子的类型」—— 副本顶替出场后，它自己在
-## 追加段（`_appended_selectable_plants`）里再被遍历到时不会再占一格；
-## 调试模式专属植物（反向双发等）本身就在追加段，同样按原位替换换掉。
+## [param emitted] 记「已经占过格子的类型」—— 副本顶替出场后，它自己后面再被遍历到时不会再占一格。
 ## ⚠️ 副本的卡没了（模组卸了 / 登记失败）就照旧输出原植物，不让这一格凭空消失。
 func _append_choose_slot(plant_types: Array[StringName],
 		emitted: Dictionary[StringName, bool], plant_type: StringName) -> void:
@@ -391,7 +456,7 @@ func get_references(card_type: ResourceCardReference.CardType) -> Array[Resource
 #region 选卡候选卡池快照（跨关卡持久）
 ## 当前快照；为 null 或版本不一致时在 `get_seed_chooser_catalog()` 里重建
 var _seed_chooser_catalog: CardSeedChooserCatalog = null
-## 卡池内容版本：顺序 / 追加项 / 原位替换 / 敌方卡有一处变化就 +1
+## 卡池内容版本：登记页 / 原位替换 / 卡目录有一处变化就 +1
 var _seed_chooser_catalog_version := 0
 ## 上次生成快照时「敌方页开关」的值：调试模式开关会让页的构成变化，也要重建
 var _seed_chooser_catalog_zombie_page := false
@@ -401,7 +466,7 @@ var _seed_chooser_catalog_zombie_page := false
 ##
 ## 待选卡槽只拿这份快照排页 / 按顺序造卡位，不再自己现场算顺序：
 ## 第一次查询时建好并常驻在 autoload 里，之后换关直接返回同一个对象；
-## 卡池真的变了（`rebuild()`、追加 / 原位替换、调试模式开关）才重建一次。
+## 卡池真的变了（`rebuild()`、登记页 / 原位替换、调试模式开关）才重建一次。
 func get_seed_chooser_catalog() -> CardSeedChooserCatalog:
 	var zombie_page: bool = Global.global_game_state.is_zombie_card_enabled()
 	if _seed_chooser_catalog == null \
@@ -412,22 +477,43 @@ func get_seed_chooser_catalog() -> CardSeedChooserCatalog:
 
 
 ## 按当前目录内容生成一份新快照（条目仍指向源卡节点，不做副本）
+##
+## 分两块交给 UI：原版常规植物是一串连续列表（由 UI 按每页格数切页），
+## 模组登记的页则**保留格位**（`null` = 空一格），UI 原样照搬、不重排。
 func _build_seed_chooser_catalog(zombie_page: bool) -> CardSeedChooserCatalog:
 	var catalog := CardSeedChooserCatalog.new()
 	catalog.version = _seed_chooser_catalog_version
 	catalog.has_enemy_page = zombie_page
-	for plant_type: StringName in get_plant_types_in_choose_order():
+	## 已经输出过的卡：同一张卡只能有一个卡位（容器 / 禁选 / 预选都按 card_id 找它）
+	var emitted: Dictionary[StringName, bool] = {}
+	var base_types: Array[StringName] = []
+	_append_base_plant_types(base_types, emitted)
+	for plant_type: StringName in base_types:
 		var plant_card: Card = all_plant_card_prefabs.get(plant_type)
 		if plant_card == null:
 			continue
 		catalog.plants.append(plant_card)
+	for handle: int in _plant_choose_page_order:
+		var entries: Array = _plant_choose_pages.get(handle, [])
+		var page_cards: Array[Card] = []
+		page_cards.resize(entries.size())
+		for slot_index: int in entries.size():
+			var plant_type: StringName = entries[slot_index]
+			if plant_type == PlantIds.NULL or not all_plant_card_prefabs.has(plant_type):
+				continue
+			## 这一张已经在原版页或前面某一页出现过：这一格留空（同一张卡不占两格）
+			if emitted.has(plant_type):
+				continue
+			emitted[plant_type] = true
+			page_cards[slot_index] = all_plant_card_prefabs[plant_type]
+		catalog.plant_pages.append(page_cards)
 	if zombie_page:
 		catalog.enemies = get_enemy_cards_in_choose_order()
 	_seed_chooser_catalog_zombie_page = zombie_page
 	return catalog
 
 
-## 卡池内容变了：让下次查询重建快照（调用点见 rebuild / 追加 / 原位替换那几个口子）
+## 卡池内容变了：让下次查询重建快照（调用点见 rebuild / 登记页 / 原位替换那几个口子）
 func _invalidate_seed_chooser_catalog() -> void:
 	_seed_chooser_catalog_version += 1
 #endregion

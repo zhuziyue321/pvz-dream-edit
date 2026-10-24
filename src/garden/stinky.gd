@@ -12,7 +12,12 @@ class_name Stinky
 ## 播放速度读 parameters/TimeScale/scale(见 stinky.tscn 的 BlendTree)
 
 ## 爬行速度(像素/秒)
-const CRAWL_SPEED := 26.0
+## 原版由 reanim 的 `_ground` 轨道推导：`GetTrackVelocity("_ground") * 15`
+## （`Reanimator::GetTrackVelocity` = 单帧位移 * SECONDS_PER_UPDATE(0.01) * mAnimRate(6)）。
+## 实测 `pak/reanim/Stinky.reanim` 的 `_ground` 轨道：12 帧（fps 12）从 x=-23.2 走到 -18.9，
+## 平均单帧位移 4.3/12 = 0.358 px ⇒ 0.358 * 0.01 * 6 * 15 = 0.322 px/update，
+## 按原版 100 次/秒的更新率 → 约 32.2 像素/秒
+const CRAWL_SPEED := 32.2
 ## 吃了巧克力后的速度倍率
 const CHOCOLATE_SPEED_SCALE := 2.0
 ## 盯上钱之后的速度倍率:爬过去捡钱比闲逛快,不然钱只存在 10 秒,慢吞吞根本追不上
@@ -21,9 +26,10 @@ const CHOCOLATE_SPEED_SCALE := 2.0
 ## 吃了巧克力再翻倍到 156 像素/秒,够在钱消失前爬到
 const CHASE_SPEED_SCALE := 3.0
 ## 一次能醒多久(秒),到点重新睡着
-const WAKE_TIME := 60.0
-## 一块巧克力的加速时长(秒):吃完撑满一轮再睡
-const CHOCOLATE_TIME := 60.0
+## 原版 ShouldStinkyBeAwake 是"距上次点醒 < 180 秒",这里用倒计时表达同一件事
+const WAKE_TIME := 180.0
+## 一块巧克力的加速时长(秒):原版 IsStinkyHighOnChocolate 是 3600 秒(1 小时)
+const CHOCOLATE_TIME := 3600.0
 ## 转向动画时长(与 animation/garden/stinky/stinky_turn.tres 的 length 一致)
 const TURN_ANIM_TIME := 0.583333
 ## 爬到离钱这么近就算"到旁边了",顺手捡走(二维距离,像素)
@@ -62,6 +68,9 @@ var chocolate_time_left := 0.0
 
 ## 花园里掉钱的父节点(GardenManager 注入,见 GardenManager._init_stinky)
 var drop_coin_parent: Node2D
+## 当前页的植物格子(GardenManager 注入):没钱可捡时按原版 StinkyPickGoal 的权重漫游
+## —— 有植物的格子权重 2000-|Δy|,空格子权重 1
+var plant_cells: Array = []
 
 ## 当前锁定的钱:盯上最近的一枚就一直爬向它,
 ## 直到捡到手 / 钱自己消失 / 掉到爬不到的地方才换下一枚(见 _update_target_coin)
@@ -75,6 +84,9 @@ var _idle_turn_cd := 0.0
 var _target_y := 0.0
 var _wander_y_cd := 0.0
 var _is_turning := false
+## 上一次锁定的目标位置（原版 StinkyPickGoal 的 mGoalX / mGoalY，用于"别来回改主意"的 -20 权重）
+var _last_goal_pos := Vector2.ZERO
+var _has_last_goal := false
 
 @onready var body: Node2D = $Body
 @onready var anim_tree: AnimationTree = $AnimationTree
@@ -168,6 +180,9 @@ func _update_target_coin(delta: float) -> void:
 		return
 	_find_coin_cd = FIND_COIN_CD
 	target_coin = _find_nearest_coin()
+	if target_coin != null:
+		_last_goal_pos = target_coin.global_position
+		_has_last_goal = true
 
 
 ## 锁着的这枚钱还追不追得:被捡走了 / 节点没了 / 掉到爬不到的地方都算失效
@@ -185,8 +200,21 @@ func _find_nearest_coin() -> Coin:
 		var coin := child as Coin
 		if coin == null or coin.is_get or not _is_coin_reachable(coin):
 			continue
-		## 比的是"要爬多远":到落脚点的二维距离,谁的爬过去最快就先捡谁
+		## 比的是"要爬多远":到落脚点的二维距离,谁的爬过去最快就先捡谁。
+		## 原版 StinkyPickGoal 的三条权重减免(权重越小越优先)全都叠在距离上:
+		##   ① 金币 -40 / 钻石 -80（贵重币先捡）
+		##   ② 离"上一次的目标"不到 5 像素 -20（别在相邻两枚之间来回改主意）
+		##   ③ 快到消失时间的币再加权（原版 mDisappearCounter 的 0~-40 线性段）
 		var distance := global_position.distance_to(_get_coin_stand_pos(coin))
+		if coin.drop_kind == ItemRegistry.E_DropKind.Gold:
+			distance -= 40.0
+		elif coin.drop_kind == ItemRegistry.E_DropKind.Diamond:
+			distance -= 80.0
+		if _has_last_goal and coin.global_position.distance_to(_last_goal_pos) < 5.0:
+			distance -= 20.0
+		var exist_ratio := clampf(coin.get_exist_seconds() / maxf(coin.auto_free_time, 0.001), 0.0, 1.0)
+		if exist_ratio > 0.5:
+			distance -= 40.0 * (exist_ratio - 0.5) / 0.5
 		if distance < nearest_distance:
 			nearest = coin
 			nearest_distance = distance
@@ -226,7 +254,7 @@ func _move(delta: float) -> void:
 		_wander_y_cd -= delta
 		if _wander_y_cd <= 0.0:
 			_wander_y_cd = randf_range(WANDER_Y_CD * 0.5, WANDER_Y_CD)
-			_target_y = randf_range(move_range.position.y, move_range.position.y + move_range.size.y)
+			_target_y = _pick_wander_target_y()
 		global_position.y = move_toward(
 			global_position.y, _target_y, WANDER_Y_SPEED * get_speed_scale() * delta)
 	global_position = _clamp_in_move_range(global_position)
@@ -290,6 +318,31 @@ func _try_pick_coin() -> void:
 ## 要爬过去的位置:钱可能掉在爬行范围外(半空 / 角落),落脚点取钳进范围后离它最近的点
 func _get_coin_stand_pos(coin: Coin) -> Vector2:
 	return _clamp_in_move_range(coin.global_position)
+
+
+## 没钱可捡时挑一个纵向落脚点(原版 StinkyPickGoal 的权重网格):
+## 有植物的格子权重 = 2000 - |格子 y - 当前 y|(越近越容易挑中),空格子权重 1
+func _pick_wander_target_y() -> float:
+	var fallback := randf_range(move_range.position.y, move_range.position.y + move_range.size.y)
+	if plant_cells.is_empty():
+		return fallback
+	var weights: Array[float] = []
+	var total := 0.0
+	for cell in plant_cells:
+		var weight := 1.0
+		if is_instance_valid(cell) and cell.plant_in_cell != null:
+			weight = maxf(2000.0 - absf(cell.global_position.y - global_position.y), 1.0)
+		weights.append(weight)
+		total += weight
+	if total <= 0.0:
+		return fallback
+	var pick := randf() * total
+	for i in range(plant_cells.size()):
+		pick -= weights[i]
+		if pick <= 0.0 and is_instance_valid(plant_cells[i]):
+			## 原版目标点是格子像素 y + 80(蜗牛站在格子前方)
+			return plant_cells[i].global_position.y + 80.0
+	return fallback
 
 
 ## 进场景时的出生点:屏幕水平正中、竖直中心往下 SPAWN_OFFSET_Y 像素

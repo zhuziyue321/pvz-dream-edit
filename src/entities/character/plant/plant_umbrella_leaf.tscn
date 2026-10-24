@@ -31,8 +31,8 @@ advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_f4cmm"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_activate_umbrella"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xi1k3"]
 switch_mode = 2

@@ -96,8 +96,8 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_2djsr"]
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "is_rise"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_mlldu"]
 switch_mode = 2
@@ -106,8 +106,8 @@ advance_mode = 2
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_xyl7h"]
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "not is_rise"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_cbv5h"]
 switch_mode = 2

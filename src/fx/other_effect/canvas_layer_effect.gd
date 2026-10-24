@@ -21,6 +21,13 @@ var all_ori_color:Dictionary[E_CanvasLayerEffectType,Color]
 func _ready() -> void:
 	for i in all_panel_effect.keys():
 		all_ori_color[i] = all_panel_effect[i].modulate
+		## 进关必须是「没染色」的：alpha 一律归零（颜色留着，tween 只动 alpha）。
+		## 不这么做的话，编辑器里手滑改过 alpha、或上一局血月没淡完就退了关卡，
+		## 玩家一进关就满屏红 —— 视觉上像是血月已经在生效（血月其实还没触发）
+		all_panel_effect[i].modulate.a = 0.0
+	## 整层平时是藏着的：这一层盖在最上面（layer 30），可见时会把三个 Panel 全画出来，
+	## 谁在场景里把手滑的 alpha 落上去都会直接盖到玩家脸上
+	visible = false
 	## 注册事件总线
 	EventBus.subscribe(ConstEventName.CANVAS_LAYER_EFFECT_ONCE, canvas_layer_effect_once)
 	EventBus.subscribe(ConstEventName.CANVAS_LAYER_EFFECT_FADE, canvas_layer_effect_fade)

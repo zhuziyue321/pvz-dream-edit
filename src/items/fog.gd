@@ -1,8 +1,6 @@
 extends Node2D
 class_name Fog
 ## 目前动态雾只接受8个驱散雾的area2d,如果要增加，需要更改fog的着色器脚本
-## 是否为静态雾（原版雾）,使用Global.fog_is_static
-#@export var is_static_fog := true
 ## 清除雾的Area2d
 var fog_clearers:Array[Area2D] = []
 ## 是否正在移动，如果正在移动需要每帧更新fog

@@ -21,7 +21,8 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.Null
 	is_shovel = false
 	is_lawn_mover = false
-	start_sun = 2000
+	## 原版起始阳光 = 50（此前误配成 2000，给多了 40 倍本钱）；余额达 2000 即胜（见 UI 的累计口径）
+	start_sun = 50
 	camera_init_x = MainGameCamera.CAM_POS_ORI.x
 
 

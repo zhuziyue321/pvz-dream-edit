@@ -21,5 +21,8 @@ func ready_norm_signal_connect():
 	signal_update_speed.connect(attack_component.owner_update_speed)
 
 ## 害怕组件信号发射改变植物害怕状态
+##
+## ★ 动画状态由本脚本点名（两条转换已改为手动 travel，见 `plant_scaredy_shroom.tscn`）
 func change_is_scared(curr_is_scared:bool):
 	self.is_scared = curr_is_scared
+	request_anim_state(&"ScaredyShroom_scared" if curr_is_scared else &"ScaredyShroom_grow")

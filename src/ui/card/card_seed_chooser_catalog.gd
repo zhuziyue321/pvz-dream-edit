@@ -12,8 +12,10 @@ class_name CardSeedChooserCatalog
 ## 存的是 `AllCards` 源目录里的**源卡节点**（autoload 常驻、跨关卡有效），不是副本：
 ## 副本与待选容器由 `SceneRegistry` 的候选容器池跨关卡复用，见 `docs/参考存档/卡片与选卡流程.md`。
 
-## 植物候选，顺序 = `AllCards.get_plant_types_in_choose_order()`
+## 原版常规植物候选（顺序固定；消费侧按每页格数连续切页）
 var plants: Array[Card] = []
+## 模组登记的选卡页，每项 = 一页的格位列表（`null` = 空一格；顺序与格位都由模组排好，消费侧照搬）
+var plant_pages: Array[Array] = []
 ## 敌方候选（普通僵尸在前、僵王紧接其后）；没有敌方页时为空
 var enemies: Array[Card] = []
 ## 本快照是否包含敌方页（= 生成时 `GlobalGameState.is_zombie_card_enabled()`）

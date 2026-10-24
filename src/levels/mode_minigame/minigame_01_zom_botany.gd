@@ -25,6 +25,9 @@ func _init() -> void:
 	## ⚠️ wiki 音乐页写的 "Most of the Mini-games … feature the track Loonboon" 与实机不符，以实机为准
 	game_BGM = ConstLevelData.GameBGM.FrontDay
 	zombie_multy = 10
+	## 原版这两关旗帜波不补「旗子僵尸 + 一批普僵」（Board.cpp 对 WAR_AND_PEAS / _2 特判），
+	## 整关只有出怪表里的植物僵尸；点数残差也不再补普僵
+	spawn_plain_zombie_extra = false
 	## 原版是自由选卡，卡槽模式保持默认 Norm：
 	## 写成 Null 会被 _apply_card_mode_constraints() 压成 can_choosed_card = false，
 	## 而关卡又没有预选卡 —— 结果是一张植物都带不进去，这关直接没法打
@@ -36,7 +39,7 @@ func _init() -> void:
 func run_flow(mg: MainGameManager) -> void:
 	## 出怪表：本关多处要用同一份，抽成变量避免重复写
 	## 原版口径：只出豌豆僵尸 + 坚果僵尸两只植物僵尸，不出普僵
-	## （旗帜波仍会由波次管理器补旗子僵尸 + 普僵，那是本体波次逻辑，不是本关出怪表）
+	## （旗帜波也不补旗子僵尸 / 普僵 —— 原版对这两关特判，见 `_init()` 的 spawn_plain_zombie_extra）
 	var zombie_list: Array[StringName] = [
 		ZombieIds.PEA_SHOOTER_ZOMBIE,
 		ZombieIds.WALL_NUT_ZOMBIE,

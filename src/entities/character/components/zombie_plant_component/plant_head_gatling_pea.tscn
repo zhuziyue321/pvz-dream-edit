@@ -1,0 +1,123 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Animation" path="res://animation/character/plant/gatling_pea/gatling_pea_head_idle.tres" id="1_idle"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_head.png" id="2_face"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_mouth.png" id="3_mouth"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_barrel.png" id="4_barrel"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_mouth_overlay.png" id="5_overlay"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_helmet.png" id="6_helmet"]
+[ext_resource type="Texture2D" path="res://pak/reanim/GatlingPea_blink1.png" id="7_blink"]
+[ext_resource type="Texture2D" path="res://pak/reanim/PeaShooter_eyebrow.png" id="8_brow"]
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_head"]
+_data = {
+&"Head_Idle": ExtResource("1_idle")
+}
+
+[node name="PlantHead" type="Node2D"]
+
+[node name="Body" type="Node2D" parent="."]
+
+[node name="BodyCorrect" type="Node2D" parent="Body"]
+
+[node name="Anim_idle" type="Sprite2D" parent="Body/BodyCorrect"]
+position = Vector2(38.359974, 45.160133)
+centered = false
+
+[node name="HeadCorrect" type="Node2D" parent="Body/BodyCorrect/Anim_idle"]
+position = Vector2(-36.1049, -48.5013)
+
+[node name="Anim_shooting" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+visible = false
+self_modulate = Color(0, 0, 0, 1)
+scale = Vector2(0.00001, 0.00001)
+centered = false
+
+[node name="Anim_head_idle" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+centered = false
+
+[node name="Anim_face" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(19.319992, 14.380127)
+scale = Vector2(0.555, 0.54939824)
+texture = ExtResource("2_face")
+centered = false
+
+[node name="GatlingPea_mouth" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(49.580006, 11.600119)
+rotation = 0.067027435
+scale = Vector2(0.55820036, 0.546998)
+skew = -0.067027435
+texture = ExtResource("3_mouth")
+centered = false
+
+[node name="GatlingPea_barrel3" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(58.3, 18.480125)
+rotation = 0.027928364
+scale = Vector2(0.5508001, 0.55)
+skew = -0.027928364
+texture = ExtResource("4_barrel")
+centered = false
+
+[node name="GatlingPea_barrel4" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(56, 24.480125)
+rotation = 0.027928364
+scale = Vector2(0.5508001, 0.55)
+skew = -0.027928364
+texture = ExtResource("4_barrel")
+centered = false
+
+[node name="GatlingPea_barrel2" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(56.1, 12.600119)
+rotation = 0.027928364
+scale = Vector2(0.5508001, 0.55)
+skew = -0.027928364
+texture = ExtResource("4_barrel")
+centered = false
+
+[node name="GatlingPea_barrel1" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(53.1, 18.520111)
+rotation = 0.027928364
+scale = Vector2(0.5508001, 0.55)
+skew = -0.027928364
+texture = ExtResource("4_barrel")
+centered = false
+
+[node name="GatlingPea_mouth_overlay" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(49.319992, 11.520111)
+rotation = 0.067027435
+scale = Vector2(0.55820036, 0.546998)
+skew = -0.067027435
+texture = ExtResource("5_overlay")
+centered = false
+
+[node name="Idle_shoot_blink" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+visible = false
+self_modulate = Color(0, 0, 0, 1)
+scale = Vector2(0.00001, 0.00001)
+centered = false
+
+[node name="Anim_blink" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+visible = false
+position = Vector2(-9.70314, -23.1875)
+scale = Vector2(0.555, 0.555)
+texture = ExtResource("7_blink")
+centered = false
+
+[node name="PeaShooter_eyebrow" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(35, 17.380087)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("8_brow")
+centered = false
+
+[node name="GatlingPea_helmet" type="Sprite2D" parent="Body/BodyCorrect/Anim_idle/HeadCorrect"]
+position = Vector2(10.219992, 2.2600555)
+rotation = 0.06667186
+scale = Vector2(0.59640026, 0.58559936)
+skew = 0.030717617
+texture = ExtResource("6_helmet")
+centered = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_head")
+}

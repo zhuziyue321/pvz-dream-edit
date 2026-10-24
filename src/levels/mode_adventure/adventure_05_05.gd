@@ -38,6 +38,7 @@ func create_wave_zombies(
 
 
 func _init() -> void:
+	save_key = "101_4_0045"
 	game_sences = MainSceneRegistry.MainScenes.MainGameRoof
 	game_BG = ConstLevelData.GameBg.Roof
 	game_BGM = ConstLevelData.GameBGM.Roof
@@ -80,7 +81,8 @@ func run_flow(mg: MainGameManager) -> void:
 	await init_lawn_mover()
 	await ready_set_plant()
 	## 开战
-	await start_battle(20, zombie_list)
+	## 首波 2 秒：原版蹦极闪电战 `mZombieCountDown = 200` tick
+	await start_battle(20, zombie_list, 0.0, 2.0)
 	## 通关掉落：首次通关掉本关奖励（见 _init 里的 level_complete_loot），已通关过只出奖杯
 	if is_curr_level_success():
 		win_with_trophy_only()

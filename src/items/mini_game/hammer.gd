@@ -76,31 +76,14 @@ func hammer_once():
 
 	hammer_zombie()
 
-## 创建阳光
+## 创建阳光（锤出来的那颗：与向日葵吐的同一套「弹起来再落下」，见 `SunSpawner.pop_up`）
 func spawn_sun(create_global_position:Vector2):
-	var new_sun = SceneRegistry.SUN.instantiate()
-	if new_sun is Sun:
-
-		new_sun.init_sun(sun_value, GameContext.curr_main_game.suns.to_local(create_global_position))
-		GameContext.curr_main_game.suns.add_child(new_sun)
-
-		var offset_x := randf_range(-30, 30)
-		## 记下落点与用时并广播"多了一颗"（联机：主机把这一颗下发，客户端不再自己长）
-		new_sun.mark_pop_up(offset_x)
-		EventBus.push_event(ConstEventName.SUN_SPAWNED, [new_sun])
-
-		## 控制阳光下落
-		var tween = create_tween()
-
-		var center_y : float = -15
-		var target_y : float = 45
-		tween.tween_property(new_sun, "position:y", center_y, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(new_sun, "position:y", target_y, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-
-		var tween2 = create_tween()
-		tween2.tween_property(new_sun, "position:x", offset_x, 0.9).as_relative()
-
-		tween2.finished.connect(new_sun.on_sun_tween_finished)
+	if not is_instance_valid(GameContext.curr_main_game):
+		return
+	var suns := GameContext.curr_main_game.suns
+	if suns == null or not is_instance_valid(suns):
+		return
+	SunSpawner.pop_up(suns, suns.to_local(create_global_position), sun_value)
 
 ## 对僵尸造成锤子伤害
 func hammer_zombie():

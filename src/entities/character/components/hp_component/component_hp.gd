@@ -98,7 +98,7 @@ func clear_all_hp() -> int:
 	return curr_hp
 
 
-## **结算层**：把一次伤害真正扣到血量上（植物只有本体血；僵尸子类里防具已在 ② 吸收完，
+## 结算层：把一次伤害真正扣到血量上（植物只有本体血；僵尸子类里防具已在 ② 吸收完，
 ## 这里只把剩下的 `info.amount` 打本体）。
 ##
 ## ⚠️ 这是**管线的末端**，不是给业务代码直接调的入口 ——
@@ -122,7 +122,34 @@ func hp_loss(info: DamageInfo) -> int:
 	return curr_hp
 
 
-## **发起层**：直接把血清空（铲子铲除 / 死亡消失 / 关卡脚本强制致死一类）。
+## 治疗：把血量往上加（不超过 `max_hp`），并将事件推给外观侧。
+##
+## 与 `hp_loss()` 对称，但**不走伤害管线** —— 它不是"负向伤害"，而是血量上限内的恢复。
+## 真正该走伤害系统的只有"造成伤害"（那里有修饰器 / 免疫 / 联机一致性那一套），
+## 加血没有这些争议点，按语义入口直接结算即可。
+##
+## 回血的两条链路都照旧发 `signal_hp_loss`：
+##   · 坚果 / 南瓜头的 `HpStageChangeComponent.judge_body_change()` 靠它补完外观复原
+##     （裂纹 / 掉手的精灵在 `reset_hp_stage()` 里显式退回，见 `Plant000Base.be_first_aid_heal()`）；
+##   · 存档读档 / 联机快照重放的那几处也读这个信号。
+##
+## [param amount] 治疗量（会被夹到 `max_hp - curr_hp`）
+## [return] 本次实际加上的血量（已满血 / 量为负时返回 0）
+func hp_heal(amount: int) -> int:
+	if amount <= 0 or is_death:
+		return 0
+	var before := curr_hp
+	curr_hp = mini(before + amount, max_hp)
+	var healed := curr_hp - before
+	if healed <= 0:
+		return 0
+	## 回血量不走掉落判定（`is_drop` 语义属于"被打掉"，回血恒 false）
+	signal_hp_loss.emit(curr_hp, false)
+	return healed
+
+
+
+## 发起层：直接把血清空（铲子铲除 / 死亡消失 / 关卡脚本强制致死一类）。
 ##
 ## 走 `DamageSystem` 而不是自己扣：这条路径同样是"一次伤害"，将来要免疫 / 统计照样该经过它。
 ## [param is_drop] 是否有掉落

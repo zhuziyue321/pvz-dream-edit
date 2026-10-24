@@ -172,7 +172,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm5.png" id="169_qvmtp"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm6.png" id="170_2xpbq"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_arm7.png" id="171_aglxf"]
-[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets_custom/reanim/Tanglekelp_arm 8.png" id="172_pk4u5"]
+[ext_resource type="Texture2D" uid="uid://ulvunu6chx1n" path="res://assets_custom/reanim/Tanglekelp_arm8.png" id="172_pk4u5"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Tanglekelp_blink1.png" id="173_3lhqb"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_stem.png" id="174_q0gty"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Jalapeno_body.png" id="175_03qhc"]

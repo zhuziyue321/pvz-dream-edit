@@ -6,7 +6,7 @@ class_name PlantCellManager
 @onready var bush_manager: BushManager = $BushManager
 
 ## 格子场景，按地图数据实例化
-const PLANT_CELL_SCENE = preload("res://src/ui/plant_cell.tscn")
+var PLANT_CELL_SCENE = AssetRegistry.get_scene("res://src/ui/plant_cell.tscn")
 
 ## PlantCellManager初始化
 ## 二维数组，保存每个植物格子节点
@@ -398,13 +398,15 @@ func clear_all_plant_cell_data():
 			plant_cell.clear_data_plant_cell()
 
 ## 植物格子管理器读档
+##
+## ⚠️ 这里曾经有一份「先 `clear_all_plant_cell_data()` 再等两帧」的补丁，后来整段被注释掉了，
+## 原注释写的是「若是等待一帧，一局游戏多次读档测试时稳定触发某次植物未删除，不知道为什么」。
+## **现状（2026-10-22 用探针确认）**：`test/scenarios/probe_reload_plant_cells.gd` 在同一局里连续
+## 读档 3 次，场上植物数恒为期望值（无残留、无丢失）⇒ 那份补丁当前**不需要**。
+## 探针只覆盖「普通植物 × 前院白天」；将来若出现「读档后植物多出来 / 少掉」，
+## 先跑那条探针定位，再回来看这里要不要恢复 clear + 等帧 —— 别把这段说明当垃圾删掉，
+## 它是这个问题唯一的线索（TODO 的 L-27）。
 func load_game_data_plant_cell_manager(save_game_data_plant_cell_manager:ResourceSaveGamePlantCellManager):
-	#clear_all_plant_cell_data()
-	### INFO: 等待两帧,queue_free()删除后
-	### 若是等待一帧,一局游戏多次读档测试时稳定触发某次植物未删除,不知道为什么
-	#await get_tree().process_frame
-	#await get_tree().process_frame
-
 	for save_game_data_plant_cell:ResourceSaveGamePlantCell in save_game_data_plant_cell_manager.all_plant_cells_datas:
 		var plant_cell:PlantCell = all_plant_cells[save_game_data_plant_cell.row_col.x][save_game_data_plant_cell.row_col.y]
 		plant_cell.load_game_data_plant_cell(save_game_data_plant_cell)

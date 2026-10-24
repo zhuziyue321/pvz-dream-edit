@@ -27,7 +27,7 @@ extends LevelScriptBase
 
 ## 绘制层：给轮廓点各摆一棵半透明不动的杨桃虚影（通用组件，不含任何玩法规则）
 ## 只被本关用，所以跟本关脚本放在同一个目录（关卡侧），不进 src/items/
-const CELL_STAR_OVERLAY = preload("res://src/levels/mode_minigame/minigame_07_seeing_stars_cell_star_overlay.tscn")
+var CELL_STAR_OVERLAY = AssetRegistry.get_scene("res://src/levels/mode_minigame/minigame_07_seeing_stars_cell_star_overlay.tscn")
 ## 虚影定格在杨桃 idle 动画的第 0 帧（动画名见 plant_star_fruit.tscn 的 AnimationLibrary）
 const STAR_FRUIT_IDLE_ANIM := &"StarFruit_idle"
 
@@ -81,11 +81,10 @@ func _init() -> void:
 	zombie_multy = 2
 	## 4 面旗帜 = 40 波（进度条上的旗帜数 = max_wave / 10，见 ZombieWaveManager.get_flag_num）
 	max_wave = MAX_FLAG * WAVE_EVERY_FLAG
-	## 出怪表：预览僵尸和开战共用同一份（也在 _init 里给，开战不走 start_battle 预制体）
+	## 出怪表：对齐原版 SEEING_STARS（Challenge.cpp 无专属分支，落默认白名单 = 普/路障/铁桶）
 	zombie_refresh_types.assign([
 		ZombieIds.NORM,
 		ZombieIds.CONE,
-		ZombieIds.POLE_VAULTER,
 		ZombieIds.BUCKET,
 	])
 	## 杨桃是通关必需品：预选进卡槽，玩家在选卡界面摘不掉

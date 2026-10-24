@@ -13,16 +13,16 @@ func component_ready() -> void:
 		add_child(can_attack_status_component)
 	can_attack_status_component.can_attack_zombie_status = 1
 
-## 攻击间隔后触发执行攻击
+## 攻击间隔后触发执行攻击（仙人掌起 / 落两套 OneShot，都走组件的统一入口）
 func _on_bullet_attack_cd_timer_timeout() -> void:
 	if is_rise:
-		animation_tree.set("parameters/StateMachine/BlendTree 2/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		request_one_shot(&"parameters/StateMachine/BlendTree 2/OneShot/request")
 	else:
-		animation_tree.set("parameters/StateMachine/BlendTree/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		request_one_shot(&"parameters/StateMachine/BlendTree/OneShot/request")
 
 func set_cancel_attack():
-	animation_tree.set("parameters/StateMachine/BlendTree/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
-	animation_tree.set("parameters/StateMachine/BlendTree 2/OneShot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FADE_OUT)
+	cancel_one_shot(&"parameters/StateMachine/BlendTree/OneShot/request")
+	cancel_one_shot(&"parameters/StateMachine/BlendTree 2/OneShot/request")
 
 ## 当仙人掌起落时
 func on_cactus_update_is_rise(value:bool):

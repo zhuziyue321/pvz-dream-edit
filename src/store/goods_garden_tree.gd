@@ -35,8 +35,9 @@ func _refresh_goods_state() -> void:
 
 ## 获得该商品的作用，子类重写
 ## 买下后:解锁花园里的智慧树页 + 拿到戴夫白送的树肥料(见 ConstTreeOfWisdom.TREE_FOOD_START_NUM)
+## 随后按原版弹「拜访智慧树？」(VISIT_TREE_HEADER / VISIT_TREE_BODY)，选「是」由 StoreManager
+## 把玩家送进花园的智慧树页(原版 PurchaseItem 里 mGoToTreeNow 跳 GAMEMODE_TREE_OF_WISDOM)
 func get_one_goods():
 	Global.global_game_state.buy_tree_of_wisdom()
-	Global.save_service.save_now()
-	_refresh_goods_state()
-	judge_can_get_goods()
+	_finish_goods_granted()
+	request_confirm.emit("拜访智慧树？", "现在想要拜访智慧树吗？")

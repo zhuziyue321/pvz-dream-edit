@@ -55,6 +55,14 @@ var _previous_ground_global_x:float
 enum WalkingStatus {start, walking, end}
 var walking_status := WalkingStatus.end
 
+## Ground 模式的**位移倍率**（默认 1.0）：动画照原速播，只放大 / 缩小本体位移
+##
+## Ground 模式的位移完全由动画里 `_ground` 标记的 x 轨道反推 —— 动画节奏就是速度，
+## `update_only_move_speed()` 对它无效。需要「动画没那么快、人却要跑得更快」时用它补差：
+## 原版读报僵尸暴走动画只快 ~1.7 倍、移速却是普僵的 3 倍。别去改 AnimationTree 的
+## TimeScale —— 那会把吃植物动画一起放大。
+@export var ground_speed_scale:float = 1.0
+
 ## 是否移动
 var is_move := true
 
@@ -78,13 +86,68 @@ enum E_MoveFactor{
 
 signal signal_move_body_y(move_y_value:float)
 
+## 本体 x 发生位移（每帧移动后发一次；`delta_x` = 本帧位移，向左为负）
+##
+## 给「冰道扩张 / 尾迹」这类要跟着本体走的表现用 —— 替代各自的 `_process` 比较上一帧坐标。
+signal signal_body_x_moved(delta_x: float)
+
+## 位置到达监听表，见 `watch_position_x()`
+var _position_watches: Array[Dictionary] = []
+## 上一帧的本体全局 x
+var _last_global_x: float
+## 是否已记录过上一帧 x（首帧只记录、不发信号）
+var _has_last_global_x := false
+
 func component_ready() -> void:
 	curr_speed = ori_speed
+	_last_global_x = owner_zombie.global_position.x
+	_has_last_global_x = true
+
+
+## 监听「本体 x 越过 [param target_x]」，命中后回调一次并自动注销
+##
+## 替代僵尸子类自写 `_process` 比较坐标（矿工 / 投石车 / 气球 / 跳跳）。
+## [param direction] -1：向左越过（`x <= target_x`）；1：向右越过（`x >= target_x`）
+func watch_position_x(target_x: float, on_reach: Callable, direction: int = -1) -> void:
+	if not on_reach.is_valid():
+		return
+	_position_watches.append({&"x": target_x, &"cb": on_reach, &"dir": direction})
+	## 组件被禁用时 `_process` 不会跑，这里兜一下：有监听就要有帧
+	set_process(true)
+
+
+## 撤销全部位置监听
+func clear_position_watches() -> void:
+	_position_watches.clear()
+
+
+## 每帧移动后统一做两件事：发 x 位移信号、检查位置监听
+func _check_body_x_moved() -> void:
+	var curr_x: float = owner_zombie.global_position.x
+	if _has_last_global_x:
+		var delta_x := curr_x - _last_global_x
+		if not is_zero_approx(delta_x):
+			signal_body_x_moved.emit(delta_x)
+			if not _position_watches.is_empty():
+				var pending: Array[Dictionary] = []
+				for watch in _position_watches:
+					var reached: bool = curr_x <= watch[&"x"] if int(watch[&"dir"]) < 0 else curr_x >= watch[&"x"]
+					if reached:
+						(watch[&"cb"] as Callable).call()
+					else:
+						pending.append(watch)
+				_position_watches = pending
+	_last_global_x = curr_x
+	_has_last_global_x = true
 
 ## 根据角色速度修改移动速度
 func owner_update_speed(speed_product:float):
 	curr_speed = ori_speed * speed_product * curr_speed_move
 	curr_speed_product = speed_product
+
+## 设置 Ground 模式位移倍率（1.0 = 完全跟着动画走）
+func set_ground_speed_scale(scale_value: float) -> void:
+	ground_speed_scale = maxf(scale_value, 0.0)
 
 ## 角色速度不变的情况下,只修改移动速度,(跳跳僵尸使用)
 func update_only_move_speed(new_speed_move:float=1):
@@ -128,13 +191,18 @@ func _process(delta: float) -> void:
 				owner_zombie.position.x -= move_x
 
 				move_y_correct(move_x)
+	## 移动之后统一处理「x 位移信号 + 位置到达监听」（含本帧未移动的情况）
+	_check_body_x_moved()
 
 func _walk():
 	# 计算ground的全局坐标变化量
 	var ground_global_offset = _ground.global_position.x - _previous_ground_global_x
+	# ground_speed_scale 只放大位移，不动动画（倍率 = 1 时与原来完全等价）
+	ground_global_offset *= ground_speed_scale
 	# 反向调整zombie的position.x以抵消ground的移动
 	owner_zombie.position.x -= ground_global_offset
-	# 更新记录值
+	# 更新记录值：必须在移动**之后**读 —— `_ground` 的全局坐标跟着本体重算，
+	# 先记后移会让下一帧的差额里混进本帧位移，1.0 以外倍率会自我放大（实测会把僵尸弹飞）
 	_previous_ground_global_x = _ground.global_position.x
 	move_y_correct(ground_global_offset)
 
@@ -171,10 +239,12 @@ func move_y_correct_ladder_down(delta: float):
 	body.position.y +=  y_value_correct_ladder
 
 ## 开始爬梯子
+## 已在爬梯状态时直接忽略，这是**正常情况**：僵尸身上有多个受击 Area，
+## 梯子的检测区会对同一只僵尸多次触发（`Ladder._on_area_2d_area_entered`），
+## 所以这里不能报错刷屏，也不能重置已累计的爬升偏移（见下方三个字段的重置）。
 func start_ladder():
 	if ladder_state != E_LadderState.None:
-		#Log.error("正在爬梯子,无法继续爬梯子")
-		pass
+		return
 	else:
 		x_on_ladder = 0
 		sum_y_value_correct_ladder_up = 0
@@ -191,10 +261,6 @@ func _walking_end():
 @warning_ignore("unused_parameter")
 func _on_animation_finished(anim_name: StringName) -> void:
 	_walking_end()
-
-### 动画开始时
-#func _on_animation_tree_animation_started(anim_name: StringName) -> void:
-	#_walking_start()
 
 
 ## 启用组件

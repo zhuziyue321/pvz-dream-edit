@@ -36,7 +36,7 @@ class_name ZombieRuntimeKit
 ## `CharacterShowFactory` ｜ `AnimationFrameUtil` ｜ `AllCards`
 
 ## 卡片模板：运行期插进 `AllCards` 的源目录
-const CARD_SCENE := preload("res://src/ui/card/card.tscn")
+var CARD_SCENE := AssetRegistry.get_scene("res://src/ui/card/card.tscn")
 
 ## 卡面取僵尸身上哪一枝：**只留 `Body`**（与 `all_cards.tscn` 里那 27 张手摆卡面同一口径 ——
 ## 那批卡面就是 `CharacterStatic → ZombieXXX → Body → …` 一棵纯精灵树，血条 / 组件容器都在外面）

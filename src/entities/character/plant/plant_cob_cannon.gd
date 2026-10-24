@@ -16,8 +16,9 @@ var plant_cell_next:PlantCell
 ## 目标位置
 var attack_target_global_pos:Vector2
 
-## 充能cd
-@export var charge_cd:float = 35
+## 充能cd（发射后重新装填的时间）：原版发射动画结束后 `STATE_COBCANNON_ARMING`
+## `mStateCountdown = 3000` tick @100 Hz = **30 秒**，随后才播充能动画（`Plant.cpp:3404`）
+@export var charge_cd:float = 30
 var charge_cd_timer:Timer
 
 @export_group("动画状态")
@@ -67,8 +68,12 @@ func cob_cannon_bright_dark():
 	tween.tween_property(cob_cannon_cob, "modulate", bright_modulate, 0.5)
 
 
+## 充能计时结束：播充能动画
+##
+## ★ 动画状态由本脚本点名（该转换已改为手动 travel，见 `plant_cob_cannon.tscn`）
 func _on_charge_cd_timer_timeout():
 	is_charge = true
+	request_anim_state(&"CobCannon_charge")
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
@@ -81,6 +86,8 @@ func attack_start(target_global_pos:Vector2):
 	is_bullet = false
 	is_attack = true
 	is_charge = false
+	## ★ 动画状态由本脚本点名（开火那条转换已改为手动 travel）
+	request_anim_state(&"CobCannon_shooting")
 	charge_cd_timer.start()
 
 ## 发射子弹

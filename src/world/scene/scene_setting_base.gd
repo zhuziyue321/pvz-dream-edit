@@ -39,3 +39,19 @@ class_name SceneSettingBase
 @export var is_day: bool = true
 ## 是否天降阳光
 @export var is_day_sun: bool = true
+## 是否有血月（DLC 版 Moon 章的关卡级 gimmick）：全场僵尸大幅加速 + 画面变红。
+## 数据来源：https://pvz-dlc-edition.fandom.com/wiki/Moon
+## （"Between or during each flag, the Blood Moon event occurs, giving zombies a significant boost in speed"）
+## ⚠️ 世界不限 Moon：DLC 的活动关 Sanguine Sanctuary / Monster Mash 把同一套 gimmick
+## 放在 **Night** 上，所以这里是场景开关而不是 Moon 专属（Night 场景想开就自己给 true）。
+## 触发节奏 / 时长 / 强度一律在 `blood_moon_manager.gd`，这里只管"开不开"。
+@export var is_blood_moon: bool = false
+## 血月是否**常驻**：开战即挂上、整关不退（没有"升起 / 落下"，也不走 15 秒计时器）。
+## 出处：DLC  Halloween 活动关 Hemophilia —— "It is a Last Stand level, but with
+## permanent Blood Moon effect"（<https://pvz-dlc-edition.fandom.com/wiki/Hemophilia>）。
+## 只有 `is_blood_moon` 为 true 时才有意义
+@export var is_blood_moon_permanent: bool = false
+## 本场景是否有**专属的血月底图**：有（月夜屋顶）= 血月时换底图；没有（Night 那类）
+## = 退而求其次把底图染红（见 `blood_moon_manager.gd` 的 `BG_TINT`）。
+## DLC 只给月夜屋顶画了血月那幅（`BACKGROUND_BLOODMOON`），别的世界没有对应美术
+@export var is_blood_moon_bg_art: bool = false

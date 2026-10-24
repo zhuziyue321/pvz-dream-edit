@@ -5,7 +5,6 @@ class_name WheelBarrow
 
 var is_have_plant := false
 @onready var plant_cell_garden: PlantCellGarden = $PlantCellGarden
-#@onready var body: Node2D = $Body
 var choosed_plant_data := {}
 
 var garden_manager:GardenManager

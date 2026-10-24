@@ -61,7 +61,6 @@ func set_light_level(value: int) -> void:
 
 @export_group("当前格子的条件")
 @export_subgroup("植物种植")
-#@export_flags("1 无", "2 草地", "4 花盆", "8 水", "16 睡莲", "32 屋顶/裸地")
 var ori_condition:int = 3
 ## 植物种植地形条件（满足一个即可），默认（无1 + 草地2 = 3）
 var curr_condition:int = 3
@@ -113,7 +112,6 @@ var plant_postion_node_ori_global_position:Dictionary =  {}
 @export_subgroup("特殊状态，特殊状态下无法种植")
 ## 是否可以种植普通植物
 @export var can_common_plant := true
-#var is_can_common_plant
 enum E_SpecialStatePlant {
 	IsTombstone,	# 墓碑
 	IsCrater,		# 坑洞
@@ -243,7 +241,6 @@ func create_plant(plant_type: StringName, is_imitater:=false, is_plant_start_eff
 			var pre_plant := get_plant(condition_pre_plant.place_plant_in_cell)
 			if is_instance_valid(pre_plant):
 				pre_plant.character_death_disappear()
-				#await get_tree().process_frame
 		else:
 			## 非紫卡 如果该位置已经存在植物,返回
 			var exist_plant := get_plant(plant_condition.place_plant_in_cell)
@@ -770,7 +767,7 @@ func set_forbidden_plant_types(types: Array[StringName]) -> void:
 
 #region 罐子
 var pot:ScaryPot
-const SCARY_POT = preload("res://src/items/scary_pot.tscn")
+var SCARY_POT = AssetRegistry.get_scene("res://src/items/scary_pot.tscn")
 
 ## 生成一个罐子
 func create_pot(pot_para:Dictionary) -> ScaryPot:
@@ -868,11 +865,6 @@ func get_curr_plant_num()->int:
 		curr_plant_num += 1
 	return curr_plant_num
 
-## 鼠标移动检测
-#func _input(event):
-	#if event is InputEventMouseMotion:
-		#_check_mouse_panel_region(event.position)
-#
 ## 根据鼠标在当前格子中的位置，返回应该被铲除的植物
 func get_plant_place_from_mouse_pos():
 	var local_pos = button.get_local_mouse_position()

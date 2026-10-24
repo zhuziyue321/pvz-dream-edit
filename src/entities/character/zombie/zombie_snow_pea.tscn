@@ -20,6 +20,7 @@ max_hp = 300
 script = ExtResource("4_atk")
 attack_cd = 1.5
 attack_bullet_type = &"pea_snow"
+shoot_from_head_track = true
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2D")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="1"]
@@ -34,7 +35,7 @@ position = Vector2(0, 0)
 shape = SubResource("RectangleShape2D_zomray")
 
 [node name="Marker2D" type="Marker2D" parent="Body/BodyCorrect" index="25"]
-position = Vector2(0, -38)
+position = Vector2(1.9, 17.96)
 
 [node name="ZombiePlantComponent" type="Node2D" parent="." index="13"]
 script = ExtResource("2_plant")

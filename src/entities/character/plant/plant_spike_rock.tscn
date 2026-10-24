@@ -32,15 +32,15 @@ advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_de10u"]
 xfade_time = 0.2
-advance_mode = 2
-advance_expression = "is_attack"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_4ao8q"]
 xfade_time = 0.2
 break_loop_at_end = true
 switch_mode = 2
-advance_mode = 2
-advance_expression = "not is_attack"
+advance_mode = 1
+advance_condition = &"__manual_travel"
 
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_g434o"]
 states/SpikeRock_attack/node = SubResource("AnimationNodeAnimation_r7ija")

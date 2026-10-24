@@ -4,12 +4,9 @@ class_name DropItemManager
 ## 主游戏场景和花园场景使用
 
 ## 战利品的**种类**（联机下发要说清"掉了哪一件"，见 `create_drop_of_kind`）
-enum E_DropKind{
-	Silver,		## 银币
-	Gold,		## 金币
-	Diamond,	## 钻石
-	Chocolate,	## 巧克力
-}
+## ⚠️ 定义已经搬到 `ItemRegistry.E_DropKind`（硬约束 §1-4：类型映射一律走注册表），
+## 这里留一个同名的转发常量：老代码 / 联机模组都写的是 `DropItemManager.E_DropKind`。
+const E_DropKind := ItemRegistry.E_DropKind
 
 ## 解锁道具未被点击时的存在秒数（提示文本比花园植物长，给足阅读时间）
 const UNLOCK_DROP_EXIST_TIME := 15.0
@@ -40,9 +37,34 @@ func init_manager() -> void:
 
 ## 吸金磁 吸引金币一次
 func gold_magnet_attract_once(target_pos:Vector2):
-	for c in dim_coin.all_drop_coin_parent.get_children():
+	var coin_parent := dim_coin.get_drop_parent()
+	if coin_parent == null or not is_instance_valid(coin_parent):
+		return
+	for c in coin_parent.get_children():
 		if c is Coin:
 			c.be_attract_gold_magnet(target_pos)
+
+
+## **清空场上所有掉落物与阳光**（多轮关卡切轮 / 退出关卡时调，见 `MainGameManager`）
+##
+## 以前没人管这件事：切轮只重置卡槽、背景、僵尸，上一轮没被点掉的钱和阳光原样留在场上，
+## 新一轮开局时它们还在（而且定时器已经跑了一半，点一下入账的还是上一轮的钱）。
+## 结算线上的掉落物不在考虑范围内 —— 那一步之后马上切场景，走不到切轮。
+func clear_all_drops() -> void:
+	_clear_drop_parent(dim_coin.get_drop_parent())
+	_clear_drop_parent(dim_chocolate.get_drop_parent())
+	_clear_drop_parent(dim_seed_packet.get_drop_parent())
+	_clear_drop_parent(dim_garden_plant.get_drop_parent())
+	if is_instance_valid(main_game) and is_instance_valid(main_game.suns):
+		_clear_drop_parent(main_game.suns)
+
+
+func _clear_drop_parent(parent: Node2D) -> void:
+	if parent == null or not is_instance_valid(parent):
+		return
+	for child in parent.get_children():
+		if is_instance_valid(child):
+			child.queue_free()
 
 
 ## 掉落关卡中途的解锁道具（原版：冒险 3-2 掉礼物盒解锁迷你游戏）
@@ -69,39 +91,36 @@ func create_chocolate(drop_global_position: Vector2) -> Node2D:
 ## 单机没人调（照旧走随机那条）；联机客户端照主机下发的数据重建掉落物时用它
 ## （"掉不掉、掉哪一种"是战斗逻辑，客户端不该自己判，见 `GlobalUtils.drop_gate`）。
 func create_drop_of_kind(kind: int, drop_entity_id: int, from_pos: Vector2, to_pos: Vector2) -> Node2D:
-	var relative_target := to_pos - from_pos
-	match kind:
-		E_DropKind.Silver, E_DropKind.Gold, E_DropKind.Diamond:
-			if dim_coin == null or dim_coin.all_drop_coin_parent == null:
-				return null
-			if not is_instance_valid(dim_coin.coin_bank_label):
-				return null
-			var scene: PackedScene = SceneRegistry.COIN_SILVER
-			if kind == E_DropKind.Gold:
-				scene = SceneRegistry.COIN_GOLD
-			elif kind == E_DropKind.Diamond:
-				scene = SceneRegistry.COIN_DIAMOND
-			var coin: Coin = scene.instantiate()
-			## 编号在入树**之前**塞进去：`_ready()` 看到非 0 就不再自己分配，两端才是同一枚
-			coin.assign_entity_id(drop_entity_id)
-			coin.drop_kind = kind
-			dim_coin.all_drop_coin_parent.add_child(coin)
-			coin.setup(dim_coin.coin_bank_label.marker_2d_coin_target.global_position)
-			coin.global_position = from_pos
-			coin.spawn_target = to_pos
-			coin.launch(relative_target)
-			return coin
-		E_DropKind.Chocolate:
-			if dim_chocolate == null or dim_chocolate.all_drop_chocolate_parent == null:
-				return null
-			var chocolate: ChocolateDrop = SceneRegistry.CHOCOLATE_DROP.instantiate()
-			chocolate.assign_entity_id(drop_entity_id)
-			chocolate.drop_kind = kind
-			dim_chocolate.all_drop_chocolate_parent.add_child(chocolate)
-			chocolate.global_position = from_pos
-			chocolate.spawn_target = to_pos
-			chocolate.launch(relative_target)
-			return chocolate
+	var dim := _dim_of_kind(kind)
+	if dim == null:
+		Log.error("按编号重建掉落物，但这一类没有登记：" + str(kind))
+		return null
+	## 钱要飞向钱袋，没有钱袋就没有落点（见 Coin.setup）
+	if ItemRegistry.is_coin_kind(kind) \
+			and (dim_coin == null or not is_instance_valid(dim_coin.coin_bank_label)):
+		return null
+	var new_drop := dim.create_drop(ItemRegistry.get_drop_scene(kind))
+	if new_drop == null:
+		return null
+	## 编号在入树**之前**塞进去：`_ready()` 看到非 0 就不再自己分配，两端才是同一枚
+	new_drop.assign_entity_id(drop_entity_id)
+	new_drop.drop_kind = kind
+	if not dim.add_drop(new_drop):
+		return null
+	if new_drop is Coin:
+		(new_drop as Coin).setup(dim_coin.coin_bank_label.marker_2d_coin_target.global_position)
+	new_drop.global_position = from_pos
+	## 落点由 launch 自己算（= 起点 + 相对偏移 = to_pos），两端落在同一处
+	new_drop.launch(to_pos - from_pos)
+	return new_drop
+
+
+## 这一类归哪个子管理器管（加一种掉落物时：ItemRegistry 加一行场景、这里挂一个 DIM）
+func _dim_of_kind(kind: int) -> DIM_Base:
+	if ItemRegistry.is_coin_kind(kind):
+		return dim_coin
+	if kind == ItemRegistry.E_DropKind.Chocolate:
+		return dim_chocolate
 	return null
 
 
@@ -115,11 +134,30 @@ func create_unlock_drop_on_level_complete(drop_global_position:Vector2) -> Prese
 	return new_drop
 
 
+## 关卡结算奖项里"一盆花园植物"的概率（原版 Challenge.cpp：aHit = Rand(100)，aHit < 15）
+const GARDEN_PLANT_AWARD_RATE := 0.15
+
+
+## 关卡结算时按原版概率掉一个花园植物礼包
+## 条件对齐原版 CanDropPottedPlantLoot：已通关冒险模式 + 花园（主花园）还有空位。
+## 返回 null 表示这次没掉（概率没中 / 条件不满足），调用方不需要处理
+func try_drop_garden_plant_award(drop_global_position: Vector2) -> Present:
+	if dim_garden_plant == null:
+		return null
+	if not Goods.is_adventure_finished():
+		return null
+	if not Global.global_game_state.has_empty_garden_cell():
+		return null
+	if randf() >= GARDEN_PLANT_AWARD_RATE:
+		return null
+	return dim_garden_plant.create_garden_plant(get_clamp_drop_position(drop_global_position))
+
+
 ## 实例化一个解锁类礼包（is_garden_plant = false：不计入花园植物数量、不写存档）
 ## 提示文本、贴图优先用传进来的（冒险模式通关奖励），没传则取关卡数据的
 ## drop_unlock_tip / drop_unlock_icon，位置收进可视范围
 func create_unlock_drop_present(drop_global_position:Vector2, tip_text := "", icon_texture: Texture2D = null) -> Present:
-	if dim_garden_plant == null or dim_garden_plant.all_drop_garden_plant_parent == null:
+	if dim_garden_plant == null:
 		return null
 	if tip_text.is_empty() and game_para != null:
 		tip_text = game_para.drop_unlock_tip
@@ -128,14 +166,17 @@ func create_unlock_drop_present(drop_global_position:Vector2, tip_text := "", ic
 		Log.warn("关卡配置了掉落解锁道具，但没有填写 drop_unlock_tip，已跳过")
 		return null
 
-	var new_drop:Present = SceneRegistry.PRESENT.instantiate()
+	var new_drop := dim_garden_plant.create_drop(SceneRegistry.PRESENT) as Present
+	if new_drop == null:
+		return null
+	## 存在时长要在入树之前给（_ready 里就按它起定时器），贴图由 setter 自己应用
 	new_drop.is_garden_plant = false
 	new_drop.auto_free_time = UNLOCK_DROP_EXIST_TIME
 	new_drop.tip_show_time = UNLOCK_DROP_TIP_TIME
 	new_drop.open_tip_text = tip_text
 	new_drop.icon_texture = icon_texture
-
-	dim_garden_plant.all_drop_garden_plant_parent.add_child(new_drop)
+	if not dim_garden_plant.add_drop(new_drop):
+		return null
 	new_drop.global_position = get_clamp_drop_position(drop_global_position)
 	SoundManager.play_other_SFX("chime")
 	return new_drop
@@ -185,9 +226,10 @@ func _create_loot_present(
 	tip_text: String,
 	drop_global_position: Vector2
 ) -> Node2D:
-	if dim_garden_plant == null or dim_garden_plant.all_drop_garden_plant_parent == null:
+	var new_drop := dim_garden_plant.create_drop(SceneRegistry.PRESENT) as Present
+	if new_drop == null:
 		return null
-	var new_drop: Present = SceneRegistry.PRESENT.instantiate()
+	## 存在时长要在入树之前给（_ready 里就按它起定时器），贴图由 setter 自己应用
 	new_drop.is_garden_plant = false
 	new_drop.auto_free_time = LOOT_EXIST_TIME
 	new_drop.tip_show_time = LOOT_TIP_TIME
@@ -197,8 +239,9 @@ func _create_loot_present(
 	var sfx := LootRegistry.get_sfx(loot_name)
 	if not sfx.is_empty():
 		new_drop.open_sfx = sfx
+	if not dim_garden_plant.add_drop(new_drop):
+		return null
 
-	dim_garden_plant.all_drop_garden_plant_parent.add_child(new_drop)
 	new_drop.global_position = get_clamp_drop_position(drop_global_position, icon.get_size().x / 2.0)
 	SoundManager.play_other_SFX("chime")
 	return new_drop
@@ -208,8 +251,10 @@ func _create_loot_present(
 ## is_level_complete_drop），点开后播「移向屏幕中央 -> 发光 -> 屏幕逐渐变白 -> 完全白了结算」
 ## 而不是普通拾取表现。只有这条奖励线适用 —— 通关解锁道具（3-4 车钥匙等）点开后还要抛奖杯，不能标记
 func mark_level_complete_drop(new_drop: Node2D) -> Node2D:
-	if new_drop != null:
-		new_drop.set("is_level_complete_drop", true)
+	if new_drop is DropItemBase:
+		(new_drop as DropItemBase).is_level_complete_drop = true
+	elif new_drop != null:
+		Log.error("要标记的掉落物不是 DropItemBase 的子类：" + str(new_drop.get_script()))
 	return new_drop
 
 
@@ -233,21 +278,12 @@ const CHOCOLATE_DROP_EDGE_MARGIN := 30.0
 ## 画布是有偏移的（相机跟随 / 关卡根节点挪过 / 开场那趟展示动画），屏幕左上角并不对应世界原点，
 ## 直接拿视口尺寸去夹，画面右侧这 150 像素范围里的掉落物都会跑到屏幕外 —— 只能眼看它 15 秒后消失
 ## edge_margin：掉落物自身半个身位（礼包约 40、种子包 50），不传就用礼包的
+## （换算本身在 `DropPositionUtil`：僵尸掉钱那条路要用，组件不该来够本管理器）
 func get_clamp_drop_position(drop_global_position:Vector2, edge_margin := DROP_EDGE_MARGIN) -> Vector2:
-	var rect := get_viewport_visible_rect().grow(-edge_margin)
-	var min_pos := rect.position
-	var max_pos := Vector2(maxf(rect.end.x, min_pos.x), maxf(rect.end.y, min_pos.y))
-	return Vector2(
-		clampf(drop_global_position.x, min_pos.x, max_pos.x),
-		clampf(drop_global_position.y - 50.0, min_pos.y, max_pos.y)
-	)
+	return DropPositionUtil.clamp_drop_position(self, drop_global_position, edge_margin)
 
 
 ## 当前视口能看见的那块世界矩形（掉落物用的是世界坐标，必须换算回去再夹）
 ## 没有画布偏移时它等于视口矩形，与直接按视口尺寸夹的结果一致
 func get_viewport_visible_rect() -> Rect2:
-	var screen_rect := get_viewport().get_visible_rect()
-	var to_world := get_viewport().get_canvas_transform().affine_inverse()
-	var top_left := to_world * screen_rect.position
-	var bottom_right := to_world * (screen_rect.position + screen_rect.size)
-	return Rect2(top_left, bottom_right - top_left)
+	return DropPositionUtil.get_viewport_visible_rect(self)

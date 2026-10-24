@@ -26,11 +26,11 @@
 
 | 子目录 | 内容 |
 |------|------|
-| [`core/`](core/) | 框架层：`autoload/` 单例与类型注册表（`character_registry.gd` `bullet_registry.gd` …）、`consts/` 全局枚举与常量、`utils/` 通用工具 |
+| [`core/`](core/) | 框架层：`autoload/` 单例与类型注册表（`character_registry.gd` `bullet_registry.gd` …）、`resource/` **统一资源注册表**（`asset_registry.gd`：图片 / 音频 / 字体 / 场景的取用 + 缓存 + 运行期注册，见 [../docs/参考存档/资源注册表.md](../docs/参考存档/资源注册表.md)）、`consts/` 全局枚举与常量、`utils/` 通用工具 |
 | [`entities/`](entities/) | 游戏实体：`character/`（base / components / plant / zombie）、`bullet/` |
 | [`levels/`](levels/AGENTS.md) | 内置关卡（按 `mode_*` 分目录）+ `core/` 关卡基类与时间轴 |
 | [`managers/`](managers/) | 管理器：波次、卡槽、手持物、格子、掉落、时间轴 |
-| [`mods/`](mods/) | **模组**：原版之外的玩法（现役：手套）。入口 `mod_manager.gd`（autoload）+ `mod_base.gd` + `mod_ids.gd`，装载规则见 [../../docs/参考存档/模组机制.md](../../docs/参考存档/模组机制.md) |
+| [`mods/`](mods/) | **模组框架**：装载器 `mod_manager.gd`（autoload）+ 基类 `mod_base.gd` + 契约 `mod_ids.gd` / `mod_config.gd` / `mod_category.gd`；模组源码在 [../../mods_builtin/](../../mods_builtin/README.md)（只放模组目录），装载规则见 [../../docs/参考存档/模组机制.md](../../docs/参考存档/模组机制.md) |
 | [`ui/`](ui/) | 界面：卡片 / 卡槽 / 金币 / 关卡内 HUD / 菜单 |
 | [`world/`](world/) | 战斗场景世界：`background/` 背景、`camera/` 相机 |
 | [`main/`](main/) | 主战斗场景入口 `main_game_base.tscn` |

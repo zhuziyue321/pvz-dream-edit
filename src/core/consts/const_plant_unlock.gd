@@ -15,16 +15,20 @@ const INIT_PLANT_TYPES: Array[StringName] = [
 	PlantIds.PEA_SHOOTER_SINGLE,
 ]
 
-## 控制台「调试模式」打开才解锁的植物：三种保龄球 + 反向双发
+## 原版流程拿不到、只能靠**运行期开关**直接解锁的植物：三种保龄球 + 反向双发
 ## （坚果保龄球 / 爆炸坚果保龄球 / 巨型坚果墙保龄球 / 反向双发射手）
 ##
 ## 这四株的本体与卡片都是现成的：既有行为（`src/entities/character/plant/plant_wall_nut_bowling*.tscn`、
-## `plant_pea_shooter_double_reverse.tscn`），也有卡片（AllCards 第二页的前四张，
-## 也就是选卡界面第 2 页的前四格）。
+## `plant_pea_shooter_double_reverse.tscn`），也有卡片（AllCards 第二页的前四张）。
 ## 但正常流程不解锁它们 —— 玩家只有「坚果保龄球」两个关卡里由传送带发货，
 ## 反向双发在原版里是「一路向左」那类特殊关 NPC 发货，也没有任何关卡给过种子包。
-## 想随手把它们当普通植物玩，就去控制台开「调试模式」（同步逻辑见 GlobalGameState.apply_debug_mode）。
-const DEBUG_MODE_PLANT_TYPES: Array[StringName] = [
+##
+## 谁来解锁它们：调试模组（`ModManager.set_mod_enabled(ModIds.DEBUG, ...)`）在自己的
+## `install()` 里 `unlock_plants()`、`uninstall()` 里逐株 `lock_plant()`。
+## **只动已解锁名单，不登记进「可选植物列表」** —— 所以选卡界面里看不到这四张卡。
+## 这份名单仍保留一个用途：让 `AllCards.is_appended_plant()` 把它们从
+## 「可选植物列表」的普通段剔掉（不当普通植物排）。
+const APPENDED_PLANT_TYPES: Array[StringName] = [
 	PlantIds.WALL_NUT_BOWLING,
 	PlantIds.WALL_NUT_BOWLING_BOMB,
 	PlantIds.WALL_NUT_BOWLING_BIG,

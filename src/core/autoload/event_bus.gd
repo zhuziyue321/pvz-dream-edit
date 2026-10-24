@@ -36,12 +36,20 @@ var _ordered_connections_cache: Dictionary = {}
 ## 配合 ConstEventName.EVENT_PAYLOAD_SIGNATURES，在 push 的当下把问题就地报出来。
 ## 没登记签名的事件照旧放行（渐进式：补一条多一条保护，不补也不会误报）。
 @export var validate_payload: bool = true
-## 调试模式
-@export var debug_mode: bool = false
-## 被 push 过的事件名集合（**仅在 debug_mode 下记录**）
+## 是否记录「被 push 过的事件名」（死事件检测用，见 `get_never_pushed_subscribed_events()`）
+##
+## 默认关：正常游玩不需要这份信息，别为每个事件多付一次字典写入。
+## 开关由**调试模组**在自己的 `install()` / `uninstall()` 里置位（原版之外的调试功能都归模组，
+## 本体只留这个普通的 bool 口子，不认识任何模组）。
+##
+## 历史：这里曾经叫 `@export var debug_mode` 且全仓没有一处置真（恒 false ⇒ 死事件检测等于没信息），
+## 后来改名 `is_trace_pushed_events` 并跟随一个全局「调试模式」；调试模式做成模组后，
+## 跟随关系改由模组自己建立。
+var is_trace_pushed_events := false
+## 被 push 过的事件名集合（**仅在 `is_trace_pushed_events` 下记录**）
 ##
 ## 用途：发现「有订阅方但从头到尾没被 push 过」的**死事件**（见 get_never_pushed_subscribed_events）。
-## 只在 debug 时记录是因为正常游玩不需要这份信息，别为每个事件多付一次字典写入。
+## 只在调试模式记录是因为正常游玩不需要这份信息，别为每个事件多付一次字典写入。
 var _pushed_event_names: Dictionary = {}
 ## 事件拦截器列表（见 `add_interceptor`）：派发给订阅方之前先过一遍，
 ## 拦截器返回 true 表示「这条我接管了」，本体不再本地派发。
@@ -68,7 +76,7 @@ func push_event(event_name: String, payload : Variant = [], immediate: bool = tr
 	## payload 签名校验：把「回调里才炸」的错误提前到 push 这一刻报出来
 	_validate_payload(event_name, payload)
 
-	if debug_mode:
+	if is_trace_pushed_events:
 		_pushed_event_names[event_name] = true
 
 	if enable_history:
@@ -130,11 +138,11 @@ func push_event(event_name: String, payload : Variant = [], immediate: bool = tr
 		callable_list.append(cb)
 
 	# 发送事件
-	for cb in callable_list:
+	for subscriber in callable_list:
 		if immediate:
-			cb.callv(payload)
+			subscriber.callv(payload)
 		else:
-			_schedule_deferred_call(cb, payload)
+			_schedule_deferred_call(subscriber, payload)
 
 	# 断开一次性连接 / 对象已释放的僵尸连接
 	# 注意：这里**不能**加 is_instance_valid(object) 保护 —— 僵尸连接的对象本来就已释放，
@@ -452,8 +460,9 @@ func get_subscription_counts() -> Dictionary:
 ## 这里让运行期自己把答案说出来 —— 跑一关（或多跑几个模式）后取一次，
 ## 列出来的就是「订阅方等着、发布方根本没写」的事件，可以据此决定删订阅还是补发布。
 ##
-## **只在 debug_mode 下有效**：没开 debug 时 `_pushed_event_names` 是空的，
-## 此时本函数会把**所有**有订阅的事件都列出来（等于没信息），所以调用前请先开 debug_mode。
+## **只在追踪开着（`is_trace_pushed_events`）时有效**：没开时 `_pushed_event_names` 是空的，
+## 此时本函数会把**所有**有订阅的事件都列出来（等于没信息），所以调用前请先开调试模组
+## （它会在 `install()` 里把 `is_trace_pushed_events` 置真）。
 func get_never_pushed_subscribed_events() -> Array[String]:
 	var result: Array[String] = []
 	for event_name in _get_all_signals():
