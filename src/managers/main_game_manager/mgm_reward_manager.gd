@@ -209,7 +209,10 @@ func gain_loot(loot_name:String, glo_pos:Vector2) -> void:
 	if await wait_reward_drop_opened(new_drop):
 		await wait_pickup_perform_finished()
 	else:
-		await wait_unlock_drop_closed(new_drop)
+		## 奖励没被点开、已经自动消失时 new_drop 早就释放了：
+		## 这一句要能接住，不然会报 "previously freed"（并把后面的结算一起带崩）
+		if is_instance_valid(new_drop):
+			await wait_unlock_drop_closed(new_drop)
 	## 等战利品这几秒里玩家可能已经退出关卡：主游戏没了就不结算了
 	if not is_instance_valid(main_game):
 		return
