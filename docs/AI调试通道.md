@@ -415,7 +415,8 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_seed_rain.gd` —— 迷你游戏「种子雨」的天降种子卡（发卡器挂在卡片前景层且定时器在跑 / 12 秒内持续出卡 / 卡片能捡起并能种到草坪 / 走通关结算切出主游戏），报告里出 `[SEEDRAIN] result=PASS`
 - `test/scenarios/probe_save_corrupt_guard.gd` —— 存档损坏的三条兜底（主档坏 → 回退 .bak 且不锁写 / 主档与 .bak 都坏 → 锁写且坏档隔离成 `.corrupt` / 重新读档后解锁能写档），报告里出 `[SAVEGUARD] result=PASS`
 - `test/scenarios/probe_level_registry_order.gd` —— 冒险模式第 n 个关卡 id 必须等于 `adventure_<大关>_<小关>`（**顺序 == 关卡序号**，是把选关页改成注册表动态生成的前提：level_id 按按钮顺序发放、save_game_name 由它拼出，错一位 = 全体玩家进度错位），报告里出 `[LVREG] result=PASS`
-- `test/scenarios/probe_debug_window_hotkey.gd` —— 调试窗口（Ctrl+Q）的热键与可见性链路（窗口已创建 / `_unhandled_key_input` 已启用 / 合成 Ctrl+Q 能开能关 / **`get_global_rect()` 真的落在视口内** + 截一张图），报告里出 `[DW] result=PASS`
+- `test/scenarios/probe_debug_window_hotkey.gd` —— 调试窗口（Ctrl+Q）的热键与可见性链路（探针自己打开**调试模组** / 窗口已创建 / `_unhandled_key_input` 已启用 / 合成 Ctrl+Q 能开能关 / **`get_global_rect()` 真的落在视口内**；带窗口时再截一张图，无头跳过截图），报告里出 `[DW] result=PASS`
+- `test/scenarios/probe_debug_window_pages.gd` —— 调试窗口的七页与面板能力（页数 = 7 / 日志页有只读文本框 / 合成 Ctrl+2 切页 / 搜索只藏匹配行且清空后还原 / `Log.info()` 能在日志页读到 / 点「加金币」后底部有反馈 / 拖宽 520 与复位 460 / 关掉模组窗口被释放），报告里出 `[DWP] result=PASS`
 
 ---
 
@@ -430,20 +431,29 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
   脚本把**上一次的旧内容当成本次结果**读回来并打屏；
 - 症状：「我传的是 `probe_bullet_camp`，怎么跑出来 `probe_zhaoxiao_cherry`」「`exitCode` 对不上」「报告里是别的探针的日志」。
 
-**做法（跑批前后各一条命令）**：
+**做法（跑批前后各一条命令 —— 只查，不杀）**：
 
 ```powershell
-# 1) 跑之前：清残留引擎进程（执行后数量应为 0）
-Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Stop-Process -Force -ErrorAction SilentlyContinue
-(Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Measure-Object).Count
+# 1) 跑之前：看有没有残留引擎进程（只列出，不要 Stop-Process）
+Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Select-Object Id, ProcessName, StartTime
 
 # 2) 跑之后：再查一次；不为 0 说明这次没正常退出，它的输出不可信
 ```
 
+> ⛔ **不要关 Godot 进程**：**禁止 `-KillStale`，也禁止 `Stop-Process *godot*`**。
+> 机器上跑着的那个 godot 很可能就是**用户正开着的编辑器 / 游戏窗口** —— 杀掉会把未保存的场景和脚本一起丢掉
+> （`2026-10-17_潜伏芹菜做成植物` 已踩过；2026-10-18 再次踩到并被明确要求停手）。
+>
+> 有残留时按这个顺序处理：① 看 `StartTime` 与自己这次跑批的对不对得上；② 是自己留下的 → **等它自己退**
+> （`run_autopilot` 每跑批一份独立 usrdir，正常会 `quit_game()` 退出）；③ 等不到再**请用户关**编辑器 / 游戏窗口，
+> 不要自己动手；④ 确实要并行跑，用 `-UsrDir` 给另一份独立临时目录，而不是杀进程。
+>
+> `run_autopilot.ps1` 遇到残留会直接 `result=STALE_PROCESS` / `exit 3` —— **这是要你等、不是要你杀**。
+
 > **判据（比看 `result=` 更早、更硬）**：stdout 里 `---- STDOUT ----` 之后第一条应当是
 > `Godot Engine v4.6.2...`，且**紧接着**出现
 > `[调试通道] 已注入 autopilot，场景脚本 = res://test/scenarios/<你传的那个>.gd`。
-> 没有这行 = autopilot 根本没注入 → 本次输出无效（而且那个进程会一直驻留到你去杀它）。
+> 没有这行 = autopilot 根本没注入 → 本次输出无效（那个进程会一直驻留，**别去杀它**，等用户处理）。
 
 ### 打开游戏（主力，带窗口）
 
