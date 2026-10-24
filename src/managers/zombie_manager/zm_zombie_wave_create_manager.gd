@@ -187,7 +187,8 @@ func create_norm_wave_zombies(wave_spawn:Array[StringName], wave:int) -> Array[Z
 				zombie_type = ZombieIds.ZAMBONI
 		if lane < 0:
 			lane = zombie_choose_row_system.select_spawn_row(
-				Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType
+				Global.character_registry.get_zombie_info(zombie_type, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType,
+				_get_row_spawn_weights()
 			)
 		wave_all_zombies.append(
 			wave_create_zombie(zombie_type, lane, wave, Callable(), i)
@@ -207,6 +208,16 @@ func select_bobsled_spawn_row() -> int:
 	return zombie_choose_row_system.select_spawn_row(
 		Global.character_registry.get_zombie_info(ZombieIds.BOBSLED, CharacterRegistry.ZombieInfoAttribute.ZombieRowType) as CharacterRegistry.ZombieRowType,
 		ice_row_weight)
+
+
+## 本关的「每行出怪权重」：斗转星移里出怪行受传送门位置影响
+## （原版 Challenge::PortalCombatRowSpawnWeight：门链离小推车太近的行几乎不出怪）
+## 其它关卡返回空数组 = 走选行系统的默认行权重
+func _get_row_spawn_weights() -> Array[float]:
+	var main_game := GameContext.curr_main_game
+	if main_game == null or main_game.portal_manager == null:
+		return []
+	return main_game.portal_manager.get_row_spawn_weights()
 
 
 ## 生成波次僵尸

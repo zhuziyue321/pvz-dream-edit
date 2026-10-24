@@ -2,18 +2,36 @@ extends Node2D
 class_name Portal
 ## 传送门 —— 迷你游戏**第 11 关**「斗转星移」(Portal Combat)
 ##
-## 草坪上摆两对传送门（一对方形一对圆形），僵尸 / 子弹从一扇进、配对的另一扇出，
-## 行进方向不变。门的摆放、换位与传送判定都在 PortalManager，
-## 本节点只负责「长什么样 + 横向判定」。
+## 原版口径（../PvZ-Portable-main/src/Lawn/Challenge.cpp 与 GridItem.cpp，
+## 交叉验证 ../re-plants-vs-zombies-main/Lawn/ 同名函数）：
+##   · 全场 4 扇门，两对：方形一对、圆形一对；**配对 = 同类型的另一扇**（不是按位置配对）
+##   · 门站在格子坐标上（列 grid_x / 行 lane）；换位 = 一扇门淡出消失 + 另一扇在新格淡入出现
+##   · 传送判定有三套 x 基准（僵尸 / 子弹 / 推车各一套），**别统一成一套**（见 PortalManager）
+##   · 绘制锚点（GridItem::OpenPortal）：圆门 (格中心-46, 行地面-65)、方门 (格中心-50, 行地面-40)
 ##
-## 贴图直接用原版 reanim 拆出来的 PNG（assets/reanim/Portal_*.png），
-## reanim 动画资源没有生成，改用 Tween 做旋转 / 呼吸动画。
+## 本节点只管「长什么样 + 自己站在哪」；摆门、换位、传送判定都在 PortalManager。
 
 ## 传送门外观（方形 = 黄门，圆形 = 蓝门；两扇同型为一对）
 enum E_PortalType {
-	Square,
-	Circle,
+	Square,	## 方形门
+	Circle,	## 圆形门
 }
+
+## 传送门类型（PortalManager 摆门时赋值）
+var portal_type: E_PortalType = E_PortalType.Square
+## 所在列（原版 gridX，0 起；本仓地图 9 列，第 10 列 = 草坪右缘的「虚拟列」）
+var grid_x := -1
+## 所在行（原版 gridY，0 起 = 最上面一行）
+var lane := -1
+## 门是否处于「打开」状态（原版 IsOpenPortal：关着的门不参与判定、也不占候选格）
+var is_open := false
+
+## 门的像素高（贴图分辨率不一，统一按目标高度归一，不用逐张调 scale）
+const DOOR_HEIGHT := 120.0
+## 绘制锚点相对「格中心 / 行地面」的偏移
+## （原版 GridItem::OpenPortal：圆门 x = gridX*80-6、y = 行地面-65；方门再 -4 / +25）
+const CIRCLE_DRAW_OFFSET := Vector2(-46.0, -65.0)
+const SQUARE_DRAW_OFFSET := Vector2(-50.0, -40.0)
 
 var TEX_SQUARE_CENTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Square_center.png")
 var TEX_SQUARE_GLOW: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Square_glow.png")
@@ -21,43 +39,46 @@ var TEX_CIRCLE_OUTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Po
 var TEX_CIRCLE_CENTER: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Circle_center.png")
 var TEX_CIRCLE_GLOW: Texture2D = AssetRegistry.get_texture("res://pak/reanim/Portal_Circle_glow.png")
 
-## 门的像素高（贴图分辨率不一，统一按目标高度归一，不用逐张调 scale）
-const DOOR_HEIGHT := 120.0
-## 传送判定半宽：僵尸 / 子弹 x 落进 [x-half, x+half] 且行号一致就算进门
-## （判定不看 y：僵尸原点 y = 行地面 y、子弹可能斜着飞，按行号匹配更稳）
-const HALF_WIDTH := 36.0
-
-## 传送门类型（PortalManager 摆门时赋值）
-var portal_type: E_PortalType = E_PortalType.Square
-## 所在行（从 0 开始）
-var lane := -1
-
 var _glow: Sprite2D
 var _frame: Sprite2D
-## 重摆换位动画（短时间内重复换位要先打断上一次，否则两段 tween 抢位置）
-var _relocate_tween: Tween
+## 淡入淡出 tween（重复调用要先打断上一次，否则两段 tween 抢透明度）
+var _fade_tween: Tween
 
 
-## 摆门：定类型与行，并按类型组装门面（重复调用会先清掉旧门面）
-func init_portal(new_type: E_PortalType, new_lane: int) -> void:
+## 摆门：定类型、列、行，并按类型组装门面（重复调用会先清掉旧门面）
+func init_portal(new_type: E_PortalType, new_grid_x: int, new_lane: int) -> void:
 	portal_type = new_type
+	grid_x = new_grid_x
 	lane = new_lane
 	_build_visuals()
 
 
-## x 是否落在门的判定范围
-func contains_x(pos_x: float) -> bool:
-	return absf(pos_x - global_position.x) <= HALF_WIDTH
+## 绘制锚点相对「格中心 / 行地面」的偏移
+func get_draw_offset() -> Vector2:
+	return CIRCLE_DRAW_OFFSET if portal_type == E_PortalType.Circle else SQUARE_DRAW_OFFSET
 
 
-## 淡出 → 挪到新位置 → 淡入（PortalManager 定期换位用）
-func relocate(new_pos: Vector2) -> void:
-	if _relocate_tween != null and _relocate_tween.is_valid():
-		_relocate_tween.kill()
-	_relocate_tween = create_tween()
-	_relocate_tween.tween_property(self, "modulate:a", 0.0, 0.3)
-	_relocate_tween.tween_callback(set_global_position.bind(new_pos))
-	_relocate_tween.tween_property(self, "modulate:a", 1.0, 0.3)
+## 打开门：淡入（原版 OpenPortal：播 anim_appear + 放传送门音效）
+func open_portal() -> void:
+	is_open = true
+	modulate.a = 0.0
+	_kill_fade_tween()
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(self, "modulate:a", 1.0, 0.3)
+
+
+## 关门：淡出后销毁自己（原版 ClosePortal：播 anim_disappear，动画播完 GridItemDie）
+func close_portal() -> void:
+	is_open = false
+	_kill_fade_tween()
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(self, "modulate:a", 0.0, 0.3)
+	_fade_tween.tween_callback(queue_free)
+
+
+func _kill_fade_tween() -> void:
+	if _fade_tween != null and _fade_tween.is_valid():
+		_fade_tween.kill()
 
 
 ## 按类型组装门面并起循环动画

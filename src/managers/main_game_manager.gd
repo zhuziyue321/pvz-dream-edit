@@ -29,6 +29,8 @@ class_name MainGameManager
 @onready var zombie_manager: ZombieManager = %ZombieManager
 @onready var game_item_manager: GameItemManager = %GameItemManager
 @onready var plant_cell_manager: PlantCellManager = %PlantCellManager
+## 斗转星移传送门管理器：只有开了 is_portal_combat 的关卡才工作（其余关卡它自己待机）
+@onready var portal_manager: PortalManager = %PortalManager
 @onready var background_manager: BackgroundManager = %BackgroundManager
 @onready var day_suns_manager: DaySunsManagner = %DaySunsManager
 @onready var drop_item_manager: DropItemManager = %DropItemManager

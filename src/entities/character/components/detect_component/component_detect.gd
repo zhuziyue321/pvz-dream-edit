@@ -41,6 +41,13 @@ const C_LayTypeValueReal:Dictionary[E_LayType, int]={
 @export var is_lane:=true
 ## 检测组件是否为检测层(否时为检测真实层,杨桃)
 @export var is_dectection := true
+## 是否允许「隔门索敌」（原版 Challenge::CanTargetZombieWithPortals）
+##
+## 原版只有**豌豆射手 / 双发射手 / 仙人掌**能隔着传送门打到门另一行的僵尸：
+## 植物先隔着门「看见」那只僵尸才会开火，子弹飞进门后被传送到另一行继续飞，最后打中。
+## 本仓的索敌走 Area2D 射线框（同行才碰得到），所以隔门那一路要单独补一条判定。
+## 默认关，由植物场景按需打开。
+@export var allow_target_through_portal := false
 @export_group("可检测道具")
 ## 是否检测脑子
 @export_flags("1 脑子", "2 罐子") var is_detect_items:int = 0
@@ -88,6 +95,9 @@ var is_attack_ladder_plant:=true
 var enemy_can_be_attacked :Character000Base = null
 ## 是否需要判断检测敌人
 var need_judge := false
+## 隔门索敌的轮询间隔（秒）与剩余时间
+const PORTAL_RECHECK_INTERVAL := 0.2
+var _portal_recheck_left := 0.0
 
 ## 检测区域列表
 var all_ray_area:Array[Area2D]
@@ -180,6 +190,13 @@ func _process(_delta: float) -> void:
 	if need_judge and is_enabling:
 		need_judge = false
 		judge_is_have_enemy()
+	## 隔门索敌要定时重查：僵尸从门里出来时**不会**触发本组件的 area_entered
+	## （它落在另一行，进不了本组件的射线框），只能靠轮询发现
+	if allow_target_through_portal and is_enabling:
+		_portal_recheck_left -= _delta
+		if _portal_recheck_left <= 0.0:
+			_portal_recheck_left = PORTAL_RECHECK_INTERVAL
+			need_judge = true
 
 ## 启用组件
 func enable_component(is_enable_factor:E_IsEnableFactor):
@@ -254,10 +271,31 @@ func judge_is_have_enemy() -> bool:
 	if _for_each_overlapping_area(Callable(self, "_judge_area_can_attack")):
 		signal_can_attack.emit()
 		return true
+	## 隔门索敌：原版豌豆 / 双发 / 仙人掌能隔着传送门打到另一行的僵尸
+	var portal_target := _find_target_through_portal()
+	if portal_target != null:
+		enemy_can_be_attacked = portal_target
+		signal_can_attack.emit()
+		return true
 	## 如果循环结束还未return,未找到敌人
 	enemy_can_be_attacked = null
 	signal_not_can_attack.emit()
 	return false
+
+
+## 隔门索敌的目标：问传送门管理器「这门往后有没有我够得着的僵尸」
+## （规则在 PortalManager.find_target_through_portal，照原版 CanTargetZombieWithPortals）
+func _find_target_through_portal() -> Character000Base:
+	if not allow_target_through_portal:
+		return null
+	var main_game := get_main_game()
+	if main_game == null or main_game.portal_manager == null:
+		return null
+	var plant := owner as Plant000Base
+	if plant == null:
+		return null
+	## 植物所在列 = row_col.y（row_col.x 是行）
+	return main_game.portal_manager.find_target_through_portal(plant.lane, plant.row_col.y)
 
 ## judge_is_have_enemy 对每个重叠区域的派发：先角色后道具（等价于原内联分支，U-42）
 func _judge_area_can_attack(area: Area2D) -> bool:

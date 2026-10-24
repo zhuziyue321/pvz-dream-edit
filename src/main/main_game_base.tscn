@@ -155,6 +155,7 @@ script = ExtResource("25_iuyhw")
 script = ExtResource("8_ha6fd")
 
 [node name="PortalManager" type="Node" parent="Manager"]
+unique_name_in_owner = true
 script = ExtResource("71_portal")
 
 [node name="CheckZombieEndWaveTimer" type="Timer" parent="Manager/ZombieManager"]

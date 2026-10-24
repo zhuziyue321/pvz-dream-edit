@@ -76,8 +76,9 @@ func owner_update_speed(speed_product:float):
 ## 开始攻击
 func attack_start():
 	super()
-	## 先随机等待一段时间调用一次攻击
-	await get_tree().create_timer(randf_range(0, bullet_attack_cd_timer.wait_time/3)).timeout
+	## 先随机等待一段时间调用一次攻击（原版 `RandRangeInt(0, mLaunchRate)` = 0~attack_cd 秒，
+	## 2026-10-24 从 0~attack_cd/3 对齐原版口径）
+	await get_tree().create_timer(randf_range(0, bullet_attack_cd_timer.wait_time)).timeout
 	if is_attack_res:
 		## 首次攻击还未使用计时器循环攻击
 		if bullet_attack_cd_timer.is_stopped():
