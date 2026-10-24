@@ -101,12 +101,12 @@ func _on_zombie_mode_lose_check_timeout() -> void:
 	on_zombie_mode_lose()
 
 
-## 场上有没有正在执行动作的纸板植物
+## 场上有没有正在执行动作的纸板植物 / 还没散尽的爆炸特效
 ##
-## 原版口径见 `Challenge::IZombieUpdate`：窝瓜下落 / 大嘴花啃咬 / 土豆雷爆炸粒子
-## 三种都算「还有动静」，判负要等它们过去。
-## 仓库只判前两种：土豆雷的爆炸特效不到 1 秒就消失，而本检查每 1 秒跑一次，
-## 正好撞上的概率极低（这条差异记在 docs/参考存档/我是僵尸原版对照.md §已知差异）。
+## 原版口径见 `Challenge::IZombieUpdate` 的 anActive：窝瓜下落 / 大嘴花啃咬 /
+## 土豆雷爆炸粒子（PARTICLE_POTATO_MINE）三种都算「还有动静」，判负要等它们过去。
+## 仓库的土豆雷爆炸特效是挂到 `main_game.bombs` 下的独立节点（粒子放完自删），
+## 直接看场上有没有活着的土豆雷爆炸特效即可。
 func _has_active_plant_action() -> bool:
 	for plant_cell in main_game.plant_cell_manager.get_cell_have_plant():
 		var plant := plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm)
@@ -118,6 +118,9 @@ func _has_active_plant_action() -> bool:
 			var chomper := plant as Plant007Chomper
 			if chomper.is_bite or chomper.is_chewing:
 				return true
+	for bomb_effect in main_game.bombs.get_children():
+		if bomb_effect is BombEffectPotatoMine:
+			return true
 	return false
 
 

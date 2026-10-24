@@ -52,10 +52,41 @@ func _init() -> void:
 	})
 
 
+## 原版第 1 关开场的戴夫对话（CutScene.cpp：I_ZOMBIE_1 → mCrazyDaveDialogStart = 2200），
+## 台词 = data/strings/lawn_strings.txt 的 CRAZY_DAVE_2200~2203
+const DAVE_OPENING_LINES: Array[String] = [
+	"僵尸们想要我帮他们练习入侵房子。",
+	"我告诉他们，只要植物不被破坏就没问题。",
+	"所以，我用硬纸板把你的草坪隔开了。",
+	"祝你玩的愉快！",
+]
+
+
+func _build_dave_opening() -> CrazyDaveDialogResource:
+	var dialog := CrazyDaveDialogResource.new()
+	for line in DAVE_OPENING_LINES:
+		var detail := CrazyDaveDialogDetailResource.new()
+		detail.text = line
+		dialog.dialog_detail_list.append(detail)
+	return dialog
+
+
 func run_flow(mg: MainGameManager) -> void:
+	if mg.curr_game_round == 1:
+		## 原版第 1 关开场的戴夫对话（进关必播，与原版一致）
+		await dave_dialog(_build_dave_opening())
+	## 进关即可放僵尸：主动把阶段推到 MAIN_GAME 放出卡槽
+	## （原版「我是僵尸」没有选卡 / 准备阶段，卡槽一进场就可见、玩家立刻能点卡放僵尸；
+	##  原先要等「开战」事件才放卡槽，差 1~2 秒）
+	await allow_operation()
 	if mg.curr_game_round == 1:
 		## 保龄球红线（仅第 1 轮）
 		await bowling_stripe()
+		## 开场提示 = 原版 IZombieStart 的 ADVICE_I_ZOMBIE_EAT_ALL_BRAINS：
+		## 原版一直挂着到玩家放下第一只僵尸（Challenge.cpp 放置成功时 ClearAdvice）
+		await hint("获得全部大脑，通过这一关卡！")
+		await wait_zombie_appear()
+		await hint("")
 	## 开战（原版「我是僵尸」**没有**「准备…安放…植物」阶段：
 	## 僵尸卡进关就发在手牌上，玩家直接点卡放僵尸；也没有小推车）
 	await start_battle(-1, [
