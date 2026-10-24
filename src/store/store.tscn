@@ -160,10 +160,10 @@ layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -217.0
-offset_top = -137.0
-offset_right = 189.0
-offset_bottom = 36.0
+offset_left = -199.0
+offset_top = -138.0
+offset_right = 207.0
+offset_bottom = 35.0
 grow_horizontal = 2
 texture = ExtResource("3_8gqjn")
 
@@ -174,10 +174,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -245.0
-offset_top = -199.0
-offset_right = -149.0
-offset_bottom = -124.0
+offset_left = -246.0
+offset_top = -198.0
+offset_right = -150.0
+offset_bottom = -123.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_default_cursor_shape = 2
@@ -194,9 +194,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 98.0
-offset_top = -200.0
+offset_top = -198.0
 offset_right = 234.0
-offset_bottom = -117.0
+offset_bottom = -115.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_default_cursor_shape = 2
@@ -230,12 +230,12 @@ theme_override_styles/panel = SubResource("StyleBoxEmpty_o853e")
 
 [node name="RowTools" type="HBoxContainer" parent="Bg/Car2/Panel"]
 layout_mode = 0
-offset_left = 230.0
-offset_top = 59.0
-offset_right = 522.0
-offset_bottom = 148.0
+offset_left = 226.0
+offset_top = 68.0
+offset_right = 515.0
+offset_bottom = 157.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="GoodsCardSlot" parent="Bg/Car2/Panel/RowTools" instance=ExtResource("24_cslot")]
 layout_mode = 2
@@ -272,32 +272,32 @@ layout_mode = 2
 
 [node name="RowUpgradeFirst" type="HBoxContainer" parent="Bg/Car2/Panel"]
 layout_mode = 0
-offset_left = 155.0
-offset_top = 163.0
-offset_right = 522.0
-offset_bottom = 252.0
+offset_left = 176.0
+offset_top = 172.0
+offset_right = 465.0
+offset_bottom = 261.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="RowUpgradeSecond" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 230.0
-offset_top = 59.0
-offset_right = 522.0
-offset_bottom = 148.0
+offset_left = 226.0
+offset_top = 68.0
+offset_right = 515.0
+offset_bottom = 157.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="RowUpgradeThird" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 155.0
-offset_top = 163.0
-offset_right = 522.0
-offset_bottom = 252.0
+offset_left = 176.0
+offset_top = 172.0
+offset_right = 465.0
+offset_bottom = 261.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="GoodsWallNutFirstAid" parent="Bg/Car2/Panel/RowUpgradeThird" instance=ExtResource("30_firstaid")]
 layout_mode = 2
@@ -305,12 +305,12 @@ layout_mode = 2
 [node name="RowGarden" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 230.0
-offset_top = 59.0
-offset_right = 522.0
-offset_bottom = 148.0
+offset_left = 226.0
+offset_top = 68.0
+offset_right = 515.0
+offset_bottom = 157.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="Goods2" parent="Bg/Car2/Panel/RowGarden" instance=ExtResource("7_gw0he")]
 layout_mode = 2
@@ -360,12 +360,12 @@ garden_tool = 6
 [node name="RowGardenSprout" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 230.0
-offset_top = 59.0
-offset_right = 522.0
-offset_bottom = 148.0
+offset_left = 226.0
+offset_top = 68.0
+offset_right = 515.0
+offset_bottom = 157.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="Goods1" parent="Bg/Car2/Panel/RowGardenSprout" instance=ExtResource("7_gw0he")]
 layout_mode = 2
@@ -417,12 +417,12 @@ character_init_type = 1
 [node name="RowGardenTools" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 155.0
-offset_top = 163.0
-offset_right = 522.0
-offset_bottom = 252.0
+offset_left = 176.0
+offset_top = 172.0
+offset_right = 465.0
+offset_bottom = 261.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="GoodsFertilizer" parent="Bg/Car2/Panel/RowGardenTools" instance=ExtResource("31_gtool")]
 layout_mode = 2
@@ -443,12 +443,12 @@ garden_tool = 4
 [node name="RowTreeFood" type="HBoxContainer" parent="Bg/Car2/Panel"]
 visible = false
 layout_mode = 0
-offset_left = 155.0
-offset_top = 163.0
-offset_right = 522.0
-offset_bottom = 252.0
+offset_left = 176.0
+offset_top = 172.0
+offset_right = 465.0
+offset_bottom = 261.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 7
 
 [node name="Goods4" parent="Bg/Car2/Panel/RowTreeFood" instance=ExtResource("7_gw0he")]
 layout_mode = 2
@@ -472,9 +472,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -536.0
-offset_right = -28.0
-offset_bottom = 124.0
+offset_left = -515.0
+offset_top = 110.0
+offset_right = -75.0
+offset_bottom = 218.0
 grow_horizontal = 0
 mouse_filter = 2
 texture = ExtResource("10_e6man")
@@ -486,10 +487,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 124.0
-offset_top = -122.0
-offset_right = 262.0
-offset_bottom = -42.0
+offset_left = -34.0
+offset_top = -88.0
+offset_right = 104.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_default_cursor_shape = 2
@@ -527,10 +528,10 @@ layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 206.0
-offset_top = -51.0
-offset_right = 206.0
-offset_bottom = -51.0
+offset_left = 650.0
+offset_top = -41.0
+offset_right = 650.0
+offset_bottom = -41.0
 grow_vertical = 0
 auto_hide = false
 
