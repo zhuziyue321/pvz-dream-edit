@@ -59,7 +59,7 @@
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_thumb1.png" id="33_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_lower.png" id="34_fuck"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_outerarm_upper.png" id="35_fuck"]
-[ext_resource type="Script" path="res://scripts/character/components/body_character.gd" id="60_b6bup"]
+[ext_resource type="Script" path="res://src/entities/character/components/body_character.gd" id="60_b6bup"]
 
 [sub_resource type="Animation" id="Animation_fuck"]
 length = 65.916667
