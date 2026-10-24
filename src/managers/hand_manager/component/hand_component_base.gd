@@ -91,6 +91,17 @@ func click_cell(_plant_cell: PlantCell) -> bool:
 	return false
 #endregion
 
+#region 卡在卡槽中的位置
+## 手上那张卡在**出战卡槽**里的下标（-1 = 手上没有卡 / 那张卡不在卡槽里）
+##
+## ★ 这是「提交卡在卡槽中的位置」的**本体口径**：种植时把这一条一起上报，
+##   外面（联机那侧）就能按"卡槽第几格"认人 —— 卡与冷却都在房主那里，
+##   说清"第几格"比说清"是哪一张卡"更不容易对不上。
+##   不是卡的手持物（铲子 / 锤子）照旧返回 -1。
+func get_card_slot_index() -> int:
+	return -1
+#endregion
+
 
 #region 界面
 ## 刷新手持物相关界面

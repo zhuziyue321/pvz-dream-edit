@@ -21,6 +21,13 @@ const OP_CLICK_SHOVEL := &"click_shovel"
 ## ★ 为什么点格子要带上"是哪一张卡"：**拿起植物是本地的**（客户端自己校验，手感不等主机回话），
 ##   主机那一局里根本没有客户端手里这一张 —— 不带卡的话主机重放这一步等于什么都没发生。
 ##   带上身份，主机照着它拿起**同一张**，再跑一遍本体的种植校验（见 [联机模组规范] §3.2）。
+##
+## ★★ **卡槽下标**（`ARG_SLOT_INDEX`）是**认人的那一条**：联机的卡槽按人数切成若干块
+##   （每人一块，见 `NetplaySlotLayout`），**所有卡与冷却都在房主那里**，
+##   所以客户端报"卡在卡槽里的第几格"，房主就能：
+##   ① 验"这一格是不是这个人的块"（别人的卡不许种）、
+##   ② 照**自己卡槽里那一张**来种（扣的是房主的阳光、开始的是房主的冷却）。
+##   下标是 -1 = 手上那张卡不在卡槽里（传送带上的卡 / 临时卡）⇒ 走"照身份拿一张"的旧路。
 const OP_CLICK_CELL := &"click_cell"
 ## 草坪上两格的植物互换（参数：两格各自的 row / col）—— 三消类玩法那一次「按住拖过去」
 ##
@@ -109,11 +116,49 @@ const ARG_CARD_REF := "card_ref"
 ## 主机那一局上没有它 —— 花多少由"手里拿着这一张的人"报，主机照着扣同样的数
 ## （紫卡会随场上株数加价，主机自己算不出来，只能照报的数扣）
 const ARG_SUN_COST := "sun_cost"
+## ★ **卡在出战卡槽里的下标**（`OP_CLICK_CELL` 用）：-1 = 手上那张卡不在卡槽里
+##
+## 本体那一份口径在 `CardSlotBattle.index_of_card()`（由 `HandManager._on_click_cell()`
+## 一起上报，见 `GlobalUtils.E_PlayerAction.ClickCell` 的 payload）。
+## 联机按"第几格"认人：卡与冷却都在房主那里，说清第几格比说清是哪一张更不容易对不上。
+const ARG_SLOT_INDEX := "slot_index"
 ## 种成之后**新植株的实体编号**（`OP_CLICK_CELL` 用）：由主机种成后回填进这条命令，
 ## 客户端照着把自己刚种下那一株改写成同一个号 —— 两端从此认得同一株植物。
 ## 不带的后果见 `NetplayBattleSync._claim_fresh_plant()`。
 const ARG_NEW_ID := "new_id"
 
+## ★ **客户端自己长的那一颗阳光**：请主机也长一模一样的一颗
+##
+## ⚠️ 正常情况下客户端**根本不该自己长**（生成闸门 `GlobalUtils.sun_spawn_gate` 拦着）——
+##   这一条是给「哪天有哪个生成点漏装了闸门」兜底的：漏了的那颗若不同步，两端就多一颗 / 少一颗，
+##   而且它还会被快照的缺席回收**凭空删掉**（本地老路与快照名册打架）。
+## 走法：客户端发现它 ⇒ 上行这条命令（带**它自己的本地编号** `ARG_SUN_SRC_ID` +
+##   起点 / 落点 / 用时 / 面值）⇒ 主机照数据长一颗 ⇒ **主机把自己那颗的编号回填进这条命令**
+##   ⇒ 下行 ⇒ 客户端把那颗**原地改成**主机的编号 ⇒ 从此两端认得同一颗，位置归快照管。
+## ★ **为什么要"原地改"而不是"删了重建"**：删了重建 ⇒ 玩家看到那颗阳光**闪一下**
+##   （出现 → 消失 → 一个 RTT 后再出现）。原地改 ⇒ 屏幕上一直是同一颗。
+## ⚠️ **本地编号只当身份用，不当身份之外用**：两端的 `entity_id` 各自独立自增，
+##   同一颗阳光在两端拿到的本地编号往往**相同** ⇒ 拿它认"主机给的"根本认不出来
+##   （认"是不是主机给的"靠实例级标记 `META_SUN_FROM_HOST`）。
+const OP_SUN_CLAIM := &"sun_claim"
+## 客户端那颗的**本地编号**（`OP_SUN_CLAIM` 用）：主机回填自己那颗的编号之后，
+## 客户端靠它认出「是哪一颗要改成主机那个号」
+const ARG_SUN_SRC_ID := "sun_src_id"
+## ★ 主机那颗「由认领触发」的标记：事件路径据此**不下发** ——
+##   认领那条命令已经带全了（编号 / 起点 / 落点 / 用时 / 面值），
+##   再单独发一遍标准 `sun_spawn` 会让客户端**同编号长出两颗**。
+const META_SUN_CLAIMED := &"netplay_sun_claimed"
+## ★ 客户端那颗「正在等主机认领」的标记：这段时间它**不进对齐视野**
+##   （位置不被快照覆盖、也不会被缺席回收删掉），认领到了就摘掉这个标记
+const META_SUN_PENDING := &"netplay_sun_pending"
+## ★「等认领」期间用的临时编号：主机那边永远不会发这个号 ⇒ 不会与主机的名册撞上
+const PENDING_SUN_ID := 1 << 30
+## ★ **"这一颗是主机给的"**标记（打在阳光节点上）
+##
+## ⚠️ 为什么不用编号来认"主机给的"：两端的 `entity_id` 是**各自独立自增**的，
+##   同一颗阳光在两端拿到的本地编号往往**相同** —— 拿编号认，"客户端自己长的那颗"
+##   与"主机的某一颗"分不开。实例级标记没有这个问题。
+const META_SUN_FROM_HOST := &"netplay_sun_from_host"
 ## 字典键名（写出来是为了不让字符串散在收发两端）
 const KEY_OP := "op"
 const KEY_ARGS := "args"
@@ -189,10 +234,15 @@ static func args_from_action(action: int, payload: Array) -> Dictionary:
 	return {}
 
 
-## 点某一格：row / col，外加**手里那一张卡的身份与花费**（手上没卡就只有格子）
+## 点某一格：row / col，外加**手里那一张卡的身份与花费**与**它在卡槽里的下标**
+## （手上没卡就只有格子）
 ##
 ## ★ 为什么要带卡：两端是各挑各的卡（选卡协商只保证**不重复**），客户端拿起的那一株
 ##   主机手上没有 —— 主机只能照着身份自己拿起一张同样的，才知道要种什么、扣多少阳光。
+##
+## ★★ **下标**（`ARG_SLOT_INDEX`）是**认人的那一条**：联机的卡槽按人数切块，
+##   所有卡与冷却都在房主那里 ⇒ 房主按"第几格"认人（先验这一格是不是这个人的块）。
+##   本体那一份口径来自 payload 的第二项（`HandManager._on_click_cell()` 一起上报的）。
 static func _args_of_click_cell(payload: Array) -> Dictionary:
 	var cell: PlantCell = payload[0] if payload.size() > 0 and payload[0] is PlantCell else null
 	if cell == null or not is_instance_valid(cell):
@@ -200,6 +250,8 @@ static func _args_of_click_cell(payload: Array) -> Dictionary:
 	var args := {
 		ARG_ROW: cell.row_col.x,
 		ARG_COL: cell.row_col.y,
+		## ★ 卡在卡槽里的下标（-1 = 不在卡槽里）：payload 的第二项
+		ARG_SLOT_INDEX: int(payload[1]) if payload.size() > 1 else -1,
 	}
 	var card := held_card()
 	if card != null and card.card_reference != null:
@@ -247,9 +299,9 @@ static func _has_prop(target, prop: StringName) -> bool:
 
 ## 当前**拿在手上**的那一张卡（手上没东西 / 拿的不是卡时返回 null）
 ##
-## 为什么问的是"手上"而不是"卡槽第几张"：两端各挑各的卡，**下标对不上**（同样第 0 张，
-## 两个人挑的往往不是同一株）。而"我现在拿着哪一张"才是主机重放时真正需要的那一条信息 ——
-## 拿 `card_reference` 说身份，主机照着它自己取 / 造一张同样的。
+## ★ 这里问的是"手上"：**下标**由本体那一侧一起报上来（`ARG_SLOT_INDEX`，
+##   见 `_args_of_click_cell()`），而**身份**（`card_reference`）留作兜底 ——
+##   卡不在卡槽里时（传送带 / 临时卡）只有身份认得人。
 static func held_card() -> Card:
 	var mg := GameContext.curr_main_game
 	if mg == null or not is_instance_valid(mg) or mg.hand_manager == null:

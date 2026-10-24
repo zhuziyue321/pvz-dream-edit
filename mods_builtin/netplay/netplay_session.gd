@@ -122,7 +122,9 @@ func join(address: String = DEFAULT_ADDRESS, port: int = DEFAULT_PORT) -> bool:
 	multiplayer.multiplayer_peer = peer
 	_connect_multiplayer_signals()
 	role = E_Role.Client
-	local_peer_id = multiplayer.get_unique_id()
+	## ⚠️ **这里还没连上**，`get_unique_id()` 给的是本地随机 id（不是房主那边认的 id）——
+	##   真正的 peer id 要等连上才有（见 `_on_connected_to_server()`）。
+	local_peer_id = 0
 	_set_state(E_State.Connecting)
 	_emit_log("正在连接 %s:%d ..." % [address, port])
 	return true
@@ -296,6 +298,56 @@ func _card_selection_refresh_asked() -> void:
 @rpc("any_peer", "reliable")
 func card_selection(selections: Array) -> void:
 	card_selection_received.emit(multiplayer.get_remote_sender_id(), selections)
+#endregion
+
+#region 卡槽分块的传输
+## 房主下发了**卡槽分块方案**（联机的卡槽按人数切块，见 `NetplaySlotLayout`）
+##
+## 载荷是一个字典，三样东西：
+##   · `capacity`：卡槽格数（这一关能摆几张）
+##   · `widths`：{peer_id = 那人那块能放几张}（"尽量均分"的那一份）
+##   · `ranges` + `refs`：**收工那一刻**才有的那一份 —— 合并卡表（按块顺序拼好的）
+##     与每块在合并卡表里的范围（房主验种植时用）
+##
+## ⚠️ 前一样（方案）会在**进关那一刻**先发一次（那时只有宽度，用来限住选卡张数），
+##   后一样（合并卡表）等选卡收工才发 —— 客户端收到后把自己的卡槽换成那一份，
+##   于是"卡槽第几格"在两端指的是同一张卡。
+signal slot_layout_received(layout: Dictionary)
+## 客户端请房主**再发一次**合并卡表（客户端收工时还没拿到时用）
+signal slot_layout_refresh_requested()
+
+
+## 房主 ⇒ 客户端：这一局的**卡槽分块方案**
+func request_slot_layout(layout: Dictionary) -> void:
+	if not is_host() or not is_linked():
+		return
+	slot_layout.rpc(layout)
+
+
+@rpc("any_peer", "reliable")
+func slot_layout(layout: Dictionary) -> void:
+	if multiplayer.get_remote_sender_id() != SERVER_PEER_ID:
+		return
+	slot_layout_received.emit(layout)
+
+
+## 客户端：还没拿到**合并卡表** ⇒ 请房主再发一次
+##
+## ★ 为什么要这条"回头再要"的路：合并卡表是**选卡收工那一刻**才有的，
+##   而客户端离开选卡阶段的时刻与房主**不一定同步**（谁的过渡先走完谁先到）——
+##   客户端可能先走完、那会儿合并卡表还没发出去 ⇒ 干等就永远等不到。
+##   所以客户端收工时若还没拿到，就**主动要一次**（房主那边留着，随时能重发）。
+func request_slot_layout_refresh() -> void:
+	if not is_client() or not is_linked():
+		return
+	ask_slot_layout.rpc()
+
+
+@rpc("any_peer", "reliable")
+func ask_slot_layout() -> void:
+	if multiplayer.get_remote_sender_id() != SERVER_PEER_ID:
+		return
+	slot_layout_refresh_requested.emit()
 #endregion
 
 
@@ -616,8 +668,12 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
+	## ★ **连上这一刻**才是本机真正的 peer id（房主那边认的也是这个）
+	##   —— `join()` 里取的那次是**连上之前的本地随机 id**，两边对不上，
+	##   凡是用 peer id 查表的地方（卡槽分块的"我那块"、选卡张数上限）都会查空。
+	local_peer_id = multiplayer.get_unique_id()
 	_set_state(E_State.Connected)
-	_emit_log("已连上主机（本地 peer id=%d）" % multiplayer.get_unique_id())
+	_emit_log("已连上主机（本地 peer id=%d）" % local_peer_id)
 
 
 func _on_connection_failed() -> void:

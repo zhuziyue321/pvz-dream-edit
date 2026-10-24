@@ -57,7 +57,9 @@ var player_action_gate: Callable = Callable()
 enum E_PlayerAction {
 	ClickCard,		## 点了卡槽里的一张卡（payload: `[Card]`）
 	ClickShovel,	## 点了铲子（payload: 空）
-	ClickCell,		## 点了某一格草地（payload: `[PlantCell]`）—— 种植物与铲植物是同一枚入口
+	ClickCell,		## 点了某一格草地（payload: `[PlantCell, int]`）—— 种植物与铲植物是同一枚入口
+					## 第二项 = 手上那张卡在**出战卡槽**里的下标（-1 = 手上没有卡 / 不在卡槽里），
+					## 供"按卡槽第几格认人"用（联机那侧卡与冷却都在房主那里）
 	PickSun,		## 捡起一颗阳光（payload: `[Sun]`）
 	PickDrop,		## 捡起一件掉落物（payload: `[Coin]` 或 `[ChocolateDrop]`）
 	SwapCell,		## 把草坪上两格的植物互换（payload: `[PlantCell, PlantCell]`）

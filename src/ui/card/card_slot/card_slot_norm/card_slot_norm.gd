@@ -186,7 +186,9 @@ func _on_card_click(card:Card):
 
 	## 如果没被选取，放在最后一位
 	else:
-		if card_slot_battle.curr_cards.size() >= card_slot_battle.cards_placeholder.size():
+		## ★ 上限取 `get_max_choosed()`：联机时卡槽按人数分块（每人一块），
+		##   这里限的是"我这一块能放几张"，不是整副卡槽的格数
+		if card_slot_battle.curr_cards.size() >= card_slot_battle.get_max_choosed():
 			SoundManager.play_other_SFX("buzzer")
 			return
 		else:
@@ -217,7 +219,9 @@ func _on_imitater_card_click(card:Card):
 
 	## 如果没被选取，放在最后一位
 	else:
-		if card_slot_battle.curr_cards.size() >= card_slot_battle.cards_placeholder.size():
+		## ★ 上限取 `get_max_choosed()`：联机时卡槽按人数分块（每人一块），
+		##   这里限的是"我这一块能放几张"，不是整副卡槽的格数
+		if card_slot_battle.curr_cards.size() >= card_slot_battle.get_max_choosed():
 			SoundManager.play_other_SFX("buzzer")
 			card_slot_candidate.imitater_card_slot_disappear()
 			return

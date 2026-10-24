@@ -18,7 +18,7 @@ const BASE_SUN_VALUE := 25.0
 
 ## 生产阳光移动的 tween（由 SunSpawner 起，拾取时要打断）
 var spawn_sun_tween:Tween
-## 掉这一趟用了多少秒（由 SunSpawner 写入；联机下发时带着，两端的下落动画才一样快）
+## 掉这一趟用了多少秒（由 SunSpawner 写入；联机下发时带着，主机那一趟的用时）
 var spawn_fall:float = 0.0
 
 

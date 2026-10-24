@@ -53,6 +53,10 @@ extends Node
 ##
 ## 关联：[联机模组](../../docs/参考存档/联机模组.md) ｜ [联机模组规范](../../docs/参考存档/联机模组规范.md)
 
+## 跨文件引用：同目录的脚本一律 preload 成常量再引用 ——
+## `class_name` **不一定**注册成全局类（模组可能被搬到 `user://` 下，实测 Godot 4.6.2 不注册）
+const NetplayCommand := preload("netplay_command.gd")
+
 const SELF_NODE_NAME := "NetplayStateSync"
 
 ## ★ 广播频率：**每秒多少次**（控制台「快照频率」那一栏可调，见 `NetplayMod`）
@@ -75,7 +79,8 @@ const MAX_PLANTS := 64
 const MAX_SUNS := 24
 const MAX_BULLETS := 32
 const MAX_BOSSES := 2
-## 出战卡槽里的卡（选卡槽位最多十来格，12 足够）
+## 出战卡槽里的卡（联机时**所有人的卡都在这一副槽里** —— 卡槽按人数分块，
+## 合起来不超过卡槽格数：原版最多 10 格（`ConstShop.MAX_CARD_SLOT_NUM`），12 足够）
 const MAX_CARDS := 12
 ## 字节预算：ENet 的不可靠包超过 MTU（约 1400B）会**整包丢弃**（见文件头）。
 ##
@@ -132,6 +137,14 @@ const MISS_FRAMES_BEFORE_DELETE_BULLET := 6
 ## 又比僵尸短（被捡走是**命令**驱动的，客户端收到就立刻摘掉，快照只兜底 ——
 ## 兜底拖 1.5 秒会让"已经被捡走的那一颗"还挂在画面上）
 const MISS_FRAMES_BEFORE_DELETE_SUN := 30
+## 落点判定的容差（像素）：阳光的位置到这个范围就算"落地了"
+##
+## ★ 为什么需要"落地"这个概念：主机的阳光落定时会走 `Sun.on_sun_tween_finished()`，
+##   那里判"自动收集阳光"。客户端改成"位置全抄主机"之后**不再自己起下落 tween**，
+##   也就没有那个落地回调 ⇒ 只能靠"位置到落点了"来补这一刀（见 `_check_sun_landed`）。
+const SUN_LANDED_EPS := 2.0
+## "这一颗已经判过落地"的标记（挂在阳光节点上，节点销毁时随之消失）
+const SUN_LANDED_META := &"netplay_sun_landed"
 
 #region 动画（★ 由主机下发"播哪一条、播到第几秒"，客户端照播）
 ##
@@ -267,6 +280,9 @@ var _frame := 0
 ## 僵尸采集的**轮转游标**：快照截断时下一帧从这一帧没采到的那一只接着采 ——
 ## 理由见 `collect_snapshot`（不轮转的话，排在后面那批僵尸会**永远收不到位置**）
 var _z_cursor := 0
+## 阳光采集的**轮转游标**（与僵尸同一套）：截断时下一帧从这一帧没采到的那一颗接着采 ——
+## 理由见 `collect_snapshot_extra`（不轮转的话，排在后面那批阳光会**永远收不到位置**）
+var _s_cursor := 0
 ## 本地有而快照里没有的实体（entity_id → 连续缺席帧数）
 var _missing: Dictionary = {}
 ## 动画变体属性的探测缓存：类 → {属性名: 有没有}（见 `_has_prop`）
@@ -617,17 +633,28 @@ func collect_snapshot_extra(mg: MainGameManager) -> Dictionary:
 	var s_x := PackedFloat32Array()
 	var s_y := PackedFloat32Array()
 	if mg.suns != null:
+		var suns: Array[Sun] = []
 		for child in mg.suns.get_children():
 			var sun := child as Sun
-			if sun == null or not is_instance_valid(sun) or sun.entity_id == 0:
-				continue
-			if s_id.size() >= s_cap:
-				snap[&"s_cut"] = true
-				break
+			if sun != null and is_instance_valid(sun) and sun.entity_id != 0:
+				suns.append(sun)
+		## ★ **轮转**（与僵尸同一套，见 `collect_snapshot` 里那段）：
+		## 这一帧装不下的那些，**下一帧从它们接着采**（游标停在断点上）。
+		## 不轮转的话每帧都从头采、被截断的永远是排在后面那同一批 ⇒ 那几颗在客户端
+		## **永远收不到位置** —— 而客户端的阳光位置**完全归快照管**（不再自己演下落），
+		## 于是那几颗会**僵在原地**，直到超时淡出。
+		var total := suns.size()
+		var take := mini(total, s_cap)
+		if total > take:
+			snap[&"s_cut"] = true
+		for i in range(take):
+			var sun: Sun = suns[(_s_cursor + i) % total]
 			s_id.append(sun.entity_id)
 			s_value.append(sun.sun_value)
 			s_x.append(sun.position.x)
 			s_y.append(sun.position.y)
+		if total > 0:
+			_s_cursor = (_s_cursor + take) % total
 	snap[&"s_id"] = s_id
 	snap[&"s_value"] = s_value
 	snap[&"s_x"] = s_x
@@ -1548,6 +1575,11 @@ func _align_suns(mg: MainGameManager, snap: Dictionary) -> void:
 	for child in mg.suns.get_children():
 		var sun := child as Sun
 		if sun != null and is_instance_valid(sun) and sun.entity_id != 0:
+			## ★ 「等认领」的那颗**不进对齐视野**：它还没有主机身份（挂着临时编号），
+			##   让它进来会被快照覆盖位置（串到主机的同号那颗上）或被缺席回收删掉。
+			##   见 `NetplaySunSync` 的认领流程。
+			if sun.has_meta(NetplayCommand.META_SUN_PENDING):
+				continue
 			local[sun.entity_id] = sun
 
 	var seen := {}
@@ -1559,12 +1591,16 @@ func _align_suns(mg: MainGameManager, snap: Dictionary) -> void:
 			var sun: Sun = local[id]
 			if not is_instance_valid(sun):
 				continue
-			## ⚠️ 正在跑下落 tween 的那颗**不要**覆盖位置：命令通道那颗正在演"弹起来再落下"，
-			## 快照每帧吸附会把它按死在半空（两端都看得到它不动，只是不动的位置不同）。
-			## 落定之后 tween 就结束了，位置才交回快照管。
-			if _is_sun_falling(sun):
-				continue
+			## ★ **位置一律以主机为准**（**包括正在下落的那一颗**）。
+			## 早先这里刻意跳过"正在跑下落 tween"的：怕快照每帧吸附把客户端那一下按死在半空。
+			## 但客户端那一下是照主机给的"落点 + 时长"**自己重放**的 —— 两端跑的是两条时间轴，
+			## 下落那一段始终差着整整一个 RTT 的位移（落点对得上，过程对不上）。
+			## 现在客户端连 tween 都不起（见 `NetplaySunSync._spawn_from_host`），位置逐帧抄主机 ——
+			## 场上**每一颗**阳光在两端都在同一处。
 			sun.position = target
+			## 客户端没有下落 tween ⇒ 也就没有"落地那一刻"的回调，
+			## 自动收集阳光靠**位置到达落点**来判（见 `_check_sun_landed`）
+			_check_sun_landed(sun)
 		else:
 			_spawn_sun(mg, id, s_value[i], target)
 
@@ -1572,10 +1608,27 @@ func _align_suns(mg: MainGameManager, snap: Dictionary) -> void:
 		_reap_missing(mg, local, seen, _delete_sun, MISS_FRAMES_BEFORE_DELETE_SUN)
 
 
-## 这颗是不是还在下落？（见 `_align_suns` 里"不要覆盖位置"那段）
-func _is_sun_falling(sun: Sun) -> bool:
-	return sun.spawn_sun_tween != null and sun.spawn_sun_tween.is_valid() \
-		and sun.spawn_sun_tween.is_running()
+## 这一颗是不是已经落地了（客户端没有下落 tween，只能这样判）
+##
+## ★ 为什么需要它：主机的阳光落定时会走 `Sun.on_sun_tween_finished()` ——
+##   那里判"自动收集阳光"，开着自动收集的客户端本该在落地那一刻把那颗收走。
+##   客户端改成"位置全抄主机"之后就不起 tween 了，落地回调也就没了 ⇒ 落点判定补上这一刀
+##   （收不收仍由本体自己判，这里只负责"通知它落地了"）。
+## ⚠️ 一颗只判一次（`meta` 记着）：`on_sun_tween_finished()` 里会 `request_pick()`，
+##   重复触发会把拾取流程走两遍。
+func _check_sun_landed(sun: Sun) -> void:
+	if sun == null or not is_instance_valid(sun):
+		return
+	if sun.has_meta(SUN_LANDED_META):
+		return
+	var to := sun.spawn_target
+	## 落点是 ZERO = 这一颗不是"从某处落到某处"长出来的（快照补种出来的那种没有落点）⇒ 不判
+	if to == Vector2.ZERO:
+		return
+	if sun.position.distance_to(to) > SUN_LANDED_EPS:
+		return
+	sun.set_meta(SUN_LANDED_META, true)
+	sun.on_sun_tween_finished()
 
 
 ## 返回补出来的那一只（补失败返回 null），调用方要**当场**把渲染状态写上去 ——
@@ -1608,6 +1661,9 @@ func _spawn_sun(mg: MainGameManager, id: int, sun_value: int, pos: Vector2) -> v
 		return
 	sun.assign_entity_id(id)
 	sun.init_sun(sun_value, pos)
+	## ★ 打标记：这颗是主机给的 —— 客户端的"自长检测"要认它（见 `NetplaySunSync`），
+	##   否则会被当成"本地自己长的"而删掉。
+	sun.set_meta(NetplayCommand.META_SUN_FROM_HOST, true)
 	mg.suns.add_child(sun)
 
 

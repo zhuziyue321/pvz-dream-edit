@@ -1,14 +1,14 @@
 class_name SunSpawner
 ## **阳光的生成口**：实例化 -> 入树 -> 记落点 -> 起下落 -> 广播，全在这一处
 ##
-## 以前这段在七个地方各抄了一遍（天降 / 向日葵 / 宝石迷阵 / 锤子 / 水族馆 / DLC 荧光蘑菇 /
-## 联机客户端的重放），其中「弹起来再落下」那四段 tween 几乎逐字相同 —— 改一个忘三个。
+## 以前这段在六个地方各抄了一遍（天降 / 向日葵 / 宝石迷阵 / 锤子 / 水族馆 / DLC 荧光蘑菇），
+## 其中「弹起来再落下」那四段 tween 几乎逐字相同 —— 改一个忘三个。
 ## 现在生成点只管说清「长在哪儿、值多少」，表现与联机广播由这里统一。
 ##
-## 两条入口：
+## 三条入口：
 ##   `pop_up()`       —— 弹起来再落下（向日葵吐的、消除掉的、锤出来的…）
 ##   `fall_from_sky()`—— 天降（从天上匀速落下，用时按距离 / 速度算）
-##   `replay_fall()`  —— 联机客户端照主机下发的数据重放那一段下落（不新长一颗）
+##   `spawn_at()`     —— 照给定的数据长（联机主机替客户端长那一颗时用，一个随机都不摇）
 ##
 ## 闸门（`GlobalUtils.sun_spawn_gate`）：客户端不长自己的那一份，天上掉哪一颗由主机说了算 ——
 ## 判在**生成口**而不是 `Sun` 自己身上：挂到 Sun 里要在已经 add_child 之后才拦得下来
@@ -68,23 +68,35 @@ static func fall_from_sky(parent: Node2D, local_pos: Vector2, target_y: float,
 	return sun
 
 
-## 联机客户端照主机下发的两个点重放那一段下落（起终点一致，两端才落在同一处）
+## **照给定的数据长一颗**（联机主机侧用：客户端自己长了一颗、请主机也长一模一样的一颗）
 ##
-## ⚠️ 时长也照主机给的来：天降是「距离 / 速度」（慢悠悠），向日葵吐的是固定 0.9 秒（弹一下），
-## 客户端自己按速度算会把后者变成 0.15 秒 —— 位置对得上，看着对不上
-static func replay_fall(sun: Sun) -> void:
-	if sun == null or not is_instance_valid(sun):
-		return
-	var to := sun.spawn_target
-	if to == Vector2.ZERO:
-		return
-	var duration := maxf(sun.spawn_fall, 0.05)
+## 与 `pop_up()` / `fall_from_sky()` 的区别：那一个**摇随机**（横向偏移 / 落点 / 用时），
+## 这里**一个随机都不摇** —— 起点 / 落点 / 用时全由调用方给定，
+## 两端才落在同一处、掉得一样快（`pop_up()` 那种随机偏移在客户端是摇不出来的）。
+##
+## [param parent] 阳光挂到哪个节点下（一般是 `MainGameManager.suns`）
+## [param from] 起点（**父节点的本地坐标**，与其它两个入口同口径）
+## [param value] 面值
+## [param to] 落点（父节点的本地坐标）
+## [param fall] 掉这一趟用几秒
+static func spawn_at(parent: Node2D, from: Vector2, value: int, to: Vector2, fall: float) -> Sun:
+	if _is_gate_blocked():
+		return null
+	var sun := _instantiate(parent)
+	if sun == null:
+		return null
+	sun.init_sun(value, from)
+	parent.add_child(sun)
+	sun.spawn_target = to
+	sun.spawn_fall = maxf(fall, 0.05)
 	sun.spawn_sun_tween = sun.create_tween()
 	sun.spawn_sun_tween.set_parallel()
-	if absf(to.x - sun.position.x) > 0.5:
-		sun.spawn_sun_tween.tween_property(sun, "position:x", to.x, duration)
-	sun.spawn_sun_tween.tween_property(sun, "position:y", to.y, duration)
+	if absf(to.x - from.x) > 0.5:
+		sun.spawn_sun_tween.tween_property(sun, "position:x", to.x, sun.spawn_fall)
+	sun.spawn_sun_tween.tween_property(sun, "position:y", to.y, sun.spawn_fall)
 	sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
+	_notify_spawned(sun)
+	return sun
 
 
 ## 「弹起来再落下」那一趟：垂直两段（先弹起后落下）+ 横向匀速

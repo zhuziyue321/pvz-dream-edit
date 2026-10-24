@@ -30,6 +30,7 @@ extends Node
 const NetplayCommand := preload("netplay_command.gd")
 const NetplaySunSync := preload("netplay_sun_sync.gd")
 const NetplayDropSync := preload("netplay_drop_sync.gd")
+const NetplayCardSync := preload("netplay_card_sync.gd")
 
 const SELF_NODE_NAME := "NetplayActionGateway"
 
@@ -66,6 +67,12 @@ func handle_action(action: int, payload: Array) -> bool:
 	## 捡东西这一类要先问"主机那一局上有没有它"，不接管时直接放回去（见文件头）
 	if not _may_take(action, payload):
 		return false
+	## ★ **卡槽还没同步好**时：这一格的下标此刻没有意义（合并卡表还没换进本机卡槽），
+	##   既不上行（上行了也是错的下标）也不本地跑（本地跑完两端就不一致了）——
+	##   **宁可这一笔没发生**。铲子那类手上不是卡的点击照旧放行。
+	if _is_blocked_by_slot_sync(action, payload):
+		_notify("卡槽还没同步好，这一笔先不种（稍等一下）")
+		return true
 	var op := NetplayCommand.op_from_action(action)
 	if op == &"":
 		return false
@@ -75,6 +82,45 @@ func handle_action(action: int, payload: Array) -> bool:
 	if action != GlobalUtils.E_PlayerAction.ClickShovel and args.is_empty():
 		return false
 	return _send(op, args)
+
+
+## 这一笔是不是"卡槽还没同步好"导致的（该拦下来、不上行也不本地跑）
+##
+## ★ 只管**手上是卡**的那一种：payload 第二项是卡在出战卡槽里的下标（-1 = 手上不是卡），
+##   而下标只有在**合并卡表换进本机卡槽之后**才认得人（见 `NetplayCardSync`）。
+## ⚠️ 重放中（主机下发的事实）**不拦**：那一下必须照本地跑掉，
+##   拦了就等于把主机已经生效的那一笔吞掉（本地这一株就永远种不出来）。
+func _is_blocked_by_slot_sync(action: int, payload: Array) -> bool:
+	if action != GlobalUtils.E_PlayerAction.ClickCell:
+		return false
+	if payload.size() < 2 or int(payload[1]) < 0:
+		return false
+	if _is_executing():
+		return false
+	if _session != null and _session.is_host():
+		## 房主自己那一局就是**事实来源**：它的卡槽天生就是那副合并卡槽，不用等同步
+		return false
+	var card_sync := _card_sync()
+	if card_sync == null:
+		## 这一关没有常规卡槽（传送带关）⇒ 没有分块这回事，放行
+		return false
+	return not card_sync.is_shared_ready()
+
+
+## 此刻是不是正在重放主机下发的事实（重放中的操作不能再当成一次新的玩家操作）
+func _is_executing() -> bool:
+	var battle_sync = _session.get_battle_sync() if _session != null else null
+	if battle_sync == null or not is_instance_valid(battle_sync):
+		return false
+	return battle_sync.is_executing()
+
+
+## 本局的选卡 / 卡槽同步节点（没有就返回 null）
+func _card_sync() -> Node:
+	var mg := _resolve_main_game()
+	if mg == null:
+		return null
+	return mg.get_node_or_null(NetplayCardSync.SELF_SYNC_NODE_NAME)
 
 
 ## 这一类操作现在该不该被接管（不接管的几种情况见文件头）

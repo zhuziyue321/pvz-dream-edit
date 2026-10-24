@@ -11,6 +11,22 @@ class_name CardSlotBattle
 var cards_placeholder:Array = []
 ## 出战卡片
 var curr_cards : Array[Card]
+## 出战卡槽**最多能选几张**（0 = 按占位数量算）
+##
+## ★ 联机时按「卡槽分块」给每人一份：卡槽按人数切成若干块，每人只能在自己那块里选，
+##   合起来的张数才不会超过卡槽格数（见 `get_max_choosed()`）。
+##   单机没人改这一项 ⇒ 照旧按占位数量算（选卡界面的上限就取这里）。
+var max_choosed_card_num: int = 0
+## 出战卡槽**只显示这一段**（`visible_start` = 从第几张开始显示，-1 = 从头；
+## `visible_count` = 显示几张，-1 = 一直到末尾）
+##
+## ★ 联机时卡槽按人数分块（见联机模组的卡槽分块）：房主那一侧摆着**合并卡表**
+##   （10 槽），但每个玩家只该看见**自己那一块**（5 槽）——
+##   可见区间就是"我那块"，区间之外那几张**照样存在、照样走冷却**（卡与冷却都在房主那里），
+##   只是不显示、也点不到。
+## 单机没人改这一项 ⇒ 照旧全都显示。
+var visible_start: int = -1
+var visible_count: int = -1
 ## 阳光值
 var sun_value:
 	set(value):
@@ -51,13 +67,66 @@ func add_one_card_placeholder() -> void:
 	card_ui_list.add_child(cloned_card_placeholder)
 	cards_placeholder = card_ui_list.get_children()
 
+#region 选卡上限与卡位
+## 选卡阶段最多能选几张（`max_choosed_card_num` 为 0 时按占位数量算）
+##
+## ★ 为什么要有这一项：联机时**卡槽按人数分块**（每人一块，见联机模组的卡槽分块），
+##   选卡界面的上限必须跟着每人那块的宽度走 —— 否则两个人各选满一整槽，
+##   合起来就超过卡槽格数了（房主那边根本摆不下）。
+func get_max_choosed() -> int:
+	if max_choosed_card_num > 0:
+		return mini(max_choosed_card_num, cards_placeholder.size())
+	return cards_placeholder.size()
+
+
+## 某张卡在出战卡槽里的下标（不在卡槽里返回 -1）
+##
+## ★ 这是「卡在卡槽中的位置」的**唯一口径**：种植时上报这一条，
+##   联机那侧就能按"卡槽第几格"认人（卡与冷却都在房主那里），不必比对卡的完整身份。
+func index_of_card(card: Card) -> int:
+	if card == null or not is_instance_valid(card):
+		return -1
+	return curr_cards.find(card)
+
+
+## 出战卡槽**只显示** [param start] 起 [param count] 张（-1 / -1 = 恢复成全都显示）
+##
+## ★ 联机分块用：房主那一侧是合并卡表（10 槽），每个玩家只显示**自己那一块**。
+##   区间之外那几张卡**照样在槽里**（冷却照走、照样占着"第几格"），
+##   只是看不见、点不到 —— 所以房主那边"卡槽第几格"仍然是**整副合并卡表**的口径。
+func set_visible_range(start: int, count: int) -> void:
+	visible_start = start if start >= 0 else -1
+	visible_count = count if count >= 0 else -1
+	judge_disappear_add_card_bar()
+	main_game_refresh_card()
+
+
+## 可见区间的起点（没有限制 ⇒ 0）
+func visible_begin() -> int:
+	return visible_start if visible_start > 0 else 0
+
+
+## 第 [param index] 张卡在不**可见区间**里
+func is_index_visible(index: int) -> bool:
+	if visible_start < 0 and visible_count < 0:
+		return true
+	var begin := visible_begin()
+	if visible_count < 0:
+		return index >= begin
+	return index >= begin and index < begin + visible_count
+#endregion
+
 ## 主游戏刷新卡片
 func main_game_refresh_card():
 	update_card_purple_sun_cost()
 	for i in range(curr_cards.size()):
 		var card:Card = curr_cards[i]
 		card.judge_sun_enough(sun_value)
-		card.set_shortcut((i+1)%10)
+		## 快捷键按**可见序号**给（分块时看不见的那几张不占快捷键）
+		if is_index_visible(i):
+			card.set_shortcut((i - visible_begin() + 1) % 10)
+		else:
+			card.set_shortcut_disappear()
 		if not card.signal_card_use_end.is_connected(card_use_end.bind(card)):
 			card.signal_card_use_end.connect(card_use_end.bind(card))
 	judge_disappear_add_card_bar()
@@ -163,19 +232,25 @@ func card_use_end(card:Card):
 
 #region 控制台相关
 ## 是否显示多余卡槽
+##
+## ★ 现在还要叠一层"**可见区间**"：联机分块时，区间之外的槽位**整格不显示**
+##   （那一格的卡也一起看不见、点不到 —— 卡本身还在槽里，冷却照走）。
 func judge_disappear_add_card_bar():
+	for i in range(cards_placeholder.size()):
+		cards_placeholder[i].visible = _placeholder_should_show(i)
+
+
+## 第 [param index] 个占位格该不该显示
+func _placeholder_should_show(index: int) -> bool:
+	## 可见区间之外 ⇒ 不显示
+	if not is_index_visible(index):
+		return false
 	## 在游戏进行阶段
 	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 		if Global.config_service.disappear_spare_card_Placeholder:
-			if curr_cards.size() < cards_placeholder.size():
-				for hide_index in range(curr_cards.size(), cards_placeholder.size()):
-					cards_placeholder[hide_index].visible = false
-		else:
-			for show_index in range(cards_placeholder.size()):
-				cards_placeholder[show_index].visible = true
-	else:
-		for i in range(cards_placeholder.size()):
-			cards_placeholder[i].visible = true
+			## 放不下卡的空槽位不显示
+			return index < curr_cards.size()
+	return true
 
 #endregion
 

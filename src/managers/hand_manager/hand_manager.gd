@@ -208,7 +208,12 @@ func _on_click_cell(plant_cell: PlantCell) -> void:
 		return
 	## 统一先过玩家操作上报口：被接管时（联机客户端）这一次只是**请求**，等主机回话再落
 	## （见 `GlobalUtils.submit_player_action`）
-	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.ClickCell, [plant_cell]):
+	## ★ payload 第二项是**手上那张卡在出战卡槽里的下标**（-1 = 手上没有卡 / 不在卡槽里）：
+	##   联机按"卡槽第几格"认人（卡与冷却都在房主那里），本体也走同一份口径
+	var slot_index := -1
+	if curr_hand_component != null:
+		slot_index = curr_hand_component.get_card_slot_index()
+	if GlobalUtils.submit_player_action(GlobalUtils.E_PlayerAction.ClickCell, [plant_cell, slot_index]):
 		return
 	## 组件返回 true 表示这次点击用完了手持物
 	if curr_hand_component.click_cell(plant_cell):

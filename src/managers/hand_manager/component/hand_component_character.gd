@@ -282,3 +282,20 @@ func get_zombie_static_shadow_global_position(plant_cell: PlantCell) -> Vector2:
 	return global_pos
 #endregion
 
+#region 卡在卡槽中的位置
+## 手上那张卡在**出战卡槽**里的下标（-1 = 不在卡槽里，例如传送带上流过来的卡）
+##
+## ★ 口径与基类那一处一致（见 `HandComponentBase.get_card_slot_index()`）：
+##   种植时上报这一条，外面按"卡槽第几格"认人。
+##   卡还在卡槽里（拿起来并不把它取走）⇒ 拿在手上时照样查得到下标。
+func get_card_slot_index() -> int:
+	if curr_card == null or not is_instance_valid(curr_card):
+		return -1
+	if main_game == null or main_game.card_manager == null:
+		return -1
+	var slot: CardSlotBattle = main_game.card_manager.card_slot_battle
+	if slot == null or not is_instance_valid(slot):
+		return -1
+	return slot.index_of_card(curr_card)
+#endregion
+

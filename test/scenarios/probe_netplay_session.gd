@@ -1039,6 +1039,72 @@ func _check_sun_sync(a) -> void:
 		abs(bare_sun.spawn_fall - 0.9) < 0.001, str(bare_sun.spawn_fall))
 	bare_sun.free()
 
+	## ★ **位置改成"逐帧抄主机"之后，客户端不再自己演那一下下落** ——
+	##   本体那个"照主机数据重放"的入口随之删除（留着就是没有调用方的死代码）。
+	## ⚠️ 查源码而不是 `has_method()`：那是个**静态**函数，`has_method` 查实例方法表，恒为 false
+	var spawner_src := FileAccess.get_file_as_string("res://src/items/drop/sun_spawner.gd")
+	_check(a, "★ 客户端不再自己重放下落（本体那个重放入口已删）",
+		not spawner_src.contains("replay_fall"))
+
+	## 落点判定：客户端没有 tween ⇒ 没有"落地那一刻"的回调，
+	## 自动收集阳光靠"位置到达落点"来判（`NetplayStateSync._check_sun_landed`）
+	var state_sync := NetplayStateSync.new()
+	var auto_before := Global.config_service.auto_collect_sun
+	## 自动收集关着 ⇒ 落地回调不会真的去收（免得探针里放音效 / 淡出）
+	Global.config_service.auto_collect_sun = false
+	var landed_sun := Sun.new()
+	landed_sun.position = Vector2(100, 200)
+	landed_sun.spawn_target = Vector2(100, 200)
+	state_sync._check_sun_landed(landed_sun)
+	_check(a, "★ 位置到落点 = 落地（自动收集靠这一刀判）",
+		landed_sun.has_meta(&"netplay_sun_landed"))
+	## 还在半空的那颗不判
+	var flying_sun := Sun.new()
+	flying_sun.position = Vector2(100, 200)
+	flying_sun.spawn_target = Vector2(100, 260)
+	state_sync._check_sun_landed(flying_sun)
+	_check(a, "没落到落点就不算落地", not flying_sun.has_meta(&"netplay_sun_landed"))
+	## 一颗只判一次（判两遍会把拾取流程走两遍）
+	state_sync._check_sun_landed(landed_sun)
+	_check(a, "一颗只判一次落地", landed_sun.has_meta(&"netplay_sun_landed"))
+	Global.config_service.auto_collect_sun = auto_before
+	landed_sun.free()
+	flying_sun.free()
+	state_sync.free()
+
+	## ★ **客户端自己长的那一颗也要归主机**：客户端发现它 ⇒ 删掉本地那颗 + 上行 `sun_claim`，
+	##   请主机照同样的数据也长一颗 ⇒ 两端一致（见 `NetplaySunSync` 的「自长」那一段）。
+	var claim_cmd := NetplayCommand.build(NetplayCommand.OP_SUN_CLAIM, {
+		NetplayCommand.ARG_SUN_VALUE: 25,
+		NetplayCommand.ARG_FROM: Vector2(120, -40),
+		NetplayCommand.ARG_TO: Vector2(120, 300),
+		NetplayCommand.ARG_FALL: 0.9})
+	_check(a, "「请主机长一颗」认得出操作名",
+		NetplayCommand.op_of(claim_cmd) == NetplayCommand.OP_SUN_CLAIM)
+	var claim_args := NetplayCommand.args_of(claim_cmd)
+	_check(a, "「请主机长一颗」带得回落点与用时",
+		Vector2(claim_args.get(NetplayCommand.ARG_TO, Vector2.ZERO)) == Vector2(120, 300)
+		and absf(float(claim_args.get(NetplayCommand.ARG_FALL, 0.0)) - 0.9) < 0.001)
+	_check(a, "★「主机给的」是**实例级标记**（两端的编号会撞，拿编号认不出来）",
+		NetplayCommand.META_SUN_FROM_HOST == &"netplay_sun_from_host")
+	_check(a, "★ 本体有「照数据长一颗」的入口（主机替客户端长那一颗时用）",
+		spawner_src.contains("static func spawn_at"))
+
+	## ★ **认领流程**：客户端自己长的那颗 ⇒ 主机回填编号 ⇒ 客户端**原地改编号**（不闪一下）
+	var claim2 := NetplayCommand.build(NetplayCommand.OP_SUN_CLAIM, {
+		NetplayCommand.ARG_SUN_SRC_ID: 77,
+		NetplayCommand.ARG_SUN_ID: 88,
+		NetplayCommand.ARG_SUN_VALUE: 25})
+	var claim2_args := NetplayCommand.args_of(claim2)
+	_check(a, "★「认领」带得回客户端的本地编号（靠它认人 ⇒ 原地改编号，不闪）",
+		int(claim2_args.get(NetplayCommand.ARG_SUN_SRC_ID, 0)) == 77)
+	_check(a, "★「等认领」用的是主机不会发的临时编号（不会与主机的名册撞上）",
+		NetplayCommand.PENDING_SUN_ID == 1 << 30)
+	_check(a, "★「认领来的」「等认领」「主机给的」三个标记互不相同",
+		NetplayCommand.META_SUN_CLAIMED != NetplayCommand.META_SUN_PENDING
+		and NetplayCommand.META_SUN_PENDING != NetplayCommand.META_SUN_FROM_HOST
+		and NetplayCommand.META_SUN_CLAIMED != NetplayCommand.META_SUN_FROM_HOST)
+
 	## 命令：那一颗要带上编号 / 值 / 起点 / 落点 / 时长（两端落在同一处、掉得一样快）
 	var spawn_cmd := NetplayCommand.build(NetplayCommand.OP_SUN_SPAWN, {
 		NetplayCommand.ARG_SUN_ID: 7, NetplayCommand.ARG_SUN_VALUE: 25,
