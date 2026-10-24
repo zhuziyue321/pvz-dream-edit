@@ -26,6 +26,13 @@ const SESSION_PATH := "/root/NetplaySession"
 ## 传送带关：不用选卡（没有 `card_slot_norm`），于是「准备 / 开始」那一整套不挡路，
 ## 双进程实测能直接进战斗 —— 要测的是同步，不是选卡 UI。
 const LEVEL_SCRIPT := "res://src/levels/mode_adventure/adventure_01_10.gd"
+## ★ 关卡可以命令行换：`--pair-level=res://src/levels/mode_adventure/adventure_01_01.gd`
+##   （"卡槽分块"那套只在**有常规卡槽**的关卡上存在 —— 1-10 是传送带关，根本没有卡槽）
+static func level_script() -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--pair-level="):
+			return arg.split("=")[-1]
+	return LEVEL_SCRIPT
 const PORT := 8912
 ## 观察时长：客户端被拉进关要 ~10 秒，第一波默认 20 秒后才来（见 `boot_level.gd`），
 ## 所以必须留到 60 秒才盖得到"两端都在打同一波"
@@ -109,6 +116,7 @@ func run(a) -> void:
 	## 于是"等准备"闸门把主机挡住，之后再没人按第二次开始 ⇒ 两端一起卡在 CHOOSE_CARD。
 	## 这里把玩家会做的两步补上：等客户端报准备 → 主机按开始。
 	await _wait_ready_then_start(a)
+	_check_visible_range(a)
 	_tick_log(a, "开战后")
 
 	## 观察：对拍全在 `_on_command_received()` 里做，这里只负责把进程撑住
@@ -151,7 +159,7 @@ func _progress() -> int:
 
 #region 进关
 func _enter_level(a) -> void:
-	var script := load(LEVEL_SCRIPT) as GDScript
+	var script := load(level_script()) as GDScript
 	if script == null:
 		a.log("!! 关卡脚本加载失败")
 		return
@@ -168,6 +176,55 @@ func _enter_level(a) -> void:
 	if GameContext.curr_main_game == null:
 		return
 	a.log("  已进关，阶段=%d" % GameContext.curr_main_game.main_game_progress)
+	## ★ 在选卡界面**真的挑两张卡** —— 不挑的话两端都是 0 张，
+	##   "每人只显示自己那一块" 这件事根本无从验（块是空的）。
+	_pick_cards(a, 2)
+
+
+## 在选卡界面挑 [param count] 张卡（走本体那枚入口 `_on_card_click`）
+func _pick_cards(a, count: int) -> void:
+	var mg := GameContext.curr_main_game
+	if mg == null or mg.card_manager == null or mg.card_manager.card_slot_norm == null:
+		a.log("  （本关没有常规卡槽，跳过挑卡）")
+		return
+	var norm: CardSlotNorm = mg.card_manager.card_slot_norm
+	var candidates: CardSlotCandidate = norm.card_slot_candidate
+	if candidates == null or not is_instance_valid(candidates):
+		a.log("  （没有待选区，跳过挑卡）")
+		return
+	var picked := 0
+	for card_id in candidates.all_card_candidate_containers_plant:
+		if picked >= count:
+			break
+		var container = candidates.all_card_candidate_containers_plant[card_id]
+		if container == null or not is_instance_valid(container) or container.card == null:
+			continue
+		norm._on_card_click(container.card)
+		picked += 1
+	a.log("  主机挑了 %d 张卡（卡槽里现在 %d 张）"
+		% [picked, mg.card_manager.card_slot_battle.curr_cards.size()])
+
+
+## ★ 卡槽分块的落点检查：**眼前只摆自己那一块**（房主是第 0 块 ⇒ 从 0 开始、宽度 = 自己挑的张数）
+func _check_visible_range(a) -> void:
+	var mg := GameContext.curr_main_game
+	if mg == null or mg.card_manager == null or mg.card_manager.card_slot_battle == null:
+		return
+	var battle: CardSlotBattle = mg.card_manager.card_slot_battle
+	var session := _session()
+	if session == null:
+		return
+	var card_sync := mg.get_node_or_null("NetplayCardSync")
+	if card_sync == null:
+		a.log("  [NG] 没有卡槽同步节点")
+		return
+	var block: Dictionary = card_sync.range_of(session.local_peer_id)
+	var ok := int(block.get("start", -1)) == battle.visible_start \
+		and int(block.get("count", -1)) == battle.visible_count
+	a.log("  [%s] 房主眼前只摆自己那块：可见=[%d,%d) 应为=[%d,%d)（卡槽里共 %d 张）" % [
+		("OK" if ok else "NG"), battle.visible_start, battle.visible_start + battle.visible_count,
+		int(block.get("start", -1)), int(block.get("start", -1)) + int(block.get("count", 0)),
+		battle.curr_cards.size()])
 #endregion
 
 
@@ -211,6 +268,8 @@ func _wait_ready_then_start(a) -> void:
 		var others := session.other_peer_ids()
 		if not others.is_empty() and NetplayReadyFlow.all_ready(session.ready_peers, others):
 			break
+		if int(waited) % 5 == 0:
+			a.log("  …等准备 %.0fs：ready=%s others=%s" % [waited, str(session.ready_peers), str(others)])
 		await a.wait(1.0)
 		waited += 1.0
 	a.log("  等准备 %.0fs：房间准备状态=%s 其他 peer=%s" % [

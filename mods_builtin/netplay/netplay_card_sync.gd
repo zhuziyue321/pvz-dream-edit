@@ -363,6 +363,7 @@ func _on_slot_layout_refresh_requested() -> void:
 func _compose_shared_slot() -> void:
 	var slot := _battle_slot()
 	if slot == null or _session == null or not _session.is_host():
+		Log.warn("联机模组: 这一局没法分块（没有出战卡槽？传送带关就是这样）")
 		return
 	var peers := _player_peer_ids()
 	var capacity := slot.cards_placeholder.size()
