@@ -35,10 +35,12 @@ func _init() -> void:
 	random_pot_num_on_fixed_mode = Vector3i(0, 0, 5)
 	is_zombie_mode = true
 	plant_col_on_zombie_mode = 5
-	all_plants_weight_on_zombie_mode.assign({
-	&"pea_shooter_single": 1,
-	&"sun_flower": 1
-	})
+	## 纸板植物布局表（原版口径）：整块红线左侧（5 列 × 5 行 = 25 格）都种上豌豆与向日葵
+	zombie_mode_plant_layout = [
+		{"plant": PlantIds.PEA_SHOOTER_SINGLE, "row": -1, "col": -1, "count": 12},
+		{"plant": PlantIds.SUN_FLOWER, "row": -1, "col": -1, "count": 13},
+	]
+
 	## 保龄球红线：第 4 列之后只能进僵尸
 	is_bowling_stripe = true
 	plant_cell_col_j = 4

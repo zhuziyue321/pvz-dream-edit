@@ -30,53 +30,57 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.Null
 	is_pot_mode = true
 	pot_mode = ConstLevelData.E_PotMode.Fixd
+	## 原版冒险 4-5 的三批罐子（Challenge.cpp 的 ScaryPotterPopulate 里 mLevel == 35 那段）：
+	##   第 1 批：第 6~8 列（3 列 15 罐）豌豆5 窝瓜5 / 普僵4 铁桶1，不提示
+	##   第 2 批：第 5~8 列（4 列 20 罐）豌豆4 寒冰5 窝瓜4 / 普僵5 铁桶1 橄榄球1，2 个绿罐
+	##   第 3 批：第 4~8 列（5 列 25 罐）豌豆5 寒冰5 魅惑菇5 / 普僵6 铁桶2 舞王1 玩偶匣1，3 个绿罐
 	pot_col_range = Vector2i(6, 9)
 	random_pot_plant.assign({
-	&"pea_shooter_single": 9,
-	&"squash": 2
+		&"pea_shooter_single": 5,
+		&"squash": 5
 	})
 	random_pot_zombie.assign({
-	&"norm": 3,
-	&"jackbox": 1
+		&"norm": 4,
+		&"bucket": 1
 	})
 	pot_config_on_round.assign([{
-	"pot_col_range": Vector2i(6, 9),
-	"pot_hint_num": 0,
-	"random_pot_plant": {
-	&"pea_shooter_single": 9,
-	&"squash": 2
-	},
-	"random_pot_zombie": {
-	&"norm": 3,
-	&"jackbox": 1
-	}
+		"pot_col_range": Vector2i(6, 9),
+		"pot_hint_num": 0,
+		"random_pot_plant": {
+			&"pea_shooter_single": 5,
+			&"squash": 5
+		},
+		"random_pot_zombie": {
+			&"norm": 4,
+			&"bucket": 1
+		}
 	}, {
-	"pot_col_range": Vector2i(5, 9),
-	"pot_hint_num": 2,
-	"random_pot_plant": {
-	&"pea_shooter_single": 7,
-	&"snow_pea": 5,
-	&"squash": 1
-	},
-	"random_pot_zombie": {
-	&"norm": 4,
-	&"bucket": 2,
-	&"football": 1
-	}
+		"pot_col_range": Vector2i(5, 9),
+		"pot_hint_num": 2,
+		"random_pot_plant": {
+			&"pea_shooter_single": 4,
+			&"snow_pea": 5,
+			&"squash": 4
+		},
+		"random_pot_zombie": {
+			&"norm": 5,
+			&"bucket": 1,
+			&"football": 1
+		}
 	}, {
-	"pot_col_range": Vector2i(4, 9),
-	"pot_hint_num": 3,
-	"random_pot_plant": {
-	&"pea_shooter_single": 6,
-	&"snow_pea": 6,
-	&"hypno_shroom": 4
-	},
-	"random_pot_zombie": {
-	&"norm": 4,
-	&"bucket": 2,
-	&"jackson": 1,
-	&"jackbox": 2
-	}
+		"pot_col_range": Vector2i(4, 9),
+		"pot_hint_num": 3,
+		"random_pot_plant": {
+			&"pea_shooter_single": 5,
+			&"snow_pea": 5,
+			&"hypno_shroom": 5
+		},
+		"random_pot_zombie": {
+			&"norm": 6,
+			&"bucket": 2,
+			&"jackson": 1,
+			&"jackbox": 1
+		}
 	}])
 	## 本关通关掉落：裂荚射手（种子包）
 	level_complete_loot = "split_pea_seed_packet"

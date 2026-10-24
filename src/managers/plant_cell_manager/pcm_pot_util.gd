@@ -55,13 +55,11 @@ static func clear_all_pot(pcm: PlantCellManager) -> void:
 static func init_plant_cell_row_on_zombie_row_type(pcm: PlantCellManager) -> void:
 	for zombie_row_type in pcm.plant_cell_row_on_zombie_row_type:
 		pcm.plant_cell_row_on_zombie_row_type[zombie_row_type].clear()
-	if pcm.game_para.pot_col_range.y > pcm.row_col.y:
-		pcm.game_para.pot_col_range.y = pcm.row_col.y
-	## 罐子需要的列
-	var need_col: int = pcm.game_para.pot_col_range.y - pcm.game_para.pot_col_range.x
-	var num_pot_candidate: int = need_col * pcm.row_col.x
+	## 罐子占的列
+	var columns: Array[int] = get_pot_columns(pcm)
+	var num_pot_candidate: int = columns.size() * pcm.row_col.x
 
-	if need_col == 0:
+	if columns.is_empty():
 		return
 
 	if pcm.game_para.pot_mode == ConstLevelData.E_PotMode.Fixd:
@@ -75,12 +73,30 @@ static func init_plant_cell_row_on_zombie_row_type(pcm: PlantCellManager) -> voi
 		var plant_cell_row: Array = pcm.all_plant_cells[i]
 		## 用 has() 兜底：ZombieRowType 以后新增取值（例如 Both）时不会因为字典缺键而报错
 		var zombie_row_type: CharacterRegistry.ZombieRowType = \
-			GameContext.curr_main_game.zombie_manager.all_zombie_rows[i].zombie_row_type
+		GameContext.curr_main_game.zombie_manager.all_zombie_rows[i].zombie_row_type
 		if not pcm.plant_cell_row_on_zombie_row_type.has(zombie_row_type):
 			pcm.plant_cell_row_on_zombie_row_type[zombie_row_type] = []
-		pcm.plant_cell_row_on_zombie_row_type[zombie_row_type].append_array(
-			plant_cell_row.slice(pcm.game_para.pot_col_range.x, pcm.game_para.pot_col_range.y)
-		)
+		for col in columns:
+			if col < plant_cell_row.size():
+				pcm.plant_cell_row_on_zombie_row_type[zombie_row_type].append(plant_cell_row[col])
+
+
+## 罐子占的列（列索引，0 起）
+##   · pot_cols 非空 → 用它（可以是任意列集合，原版解谜第 2 关「一路向左」的罐子
+##     在第 3~7 列而不是最右 5 列，连续区间表达不了）
+##   · 否则 → pot_col_range 的连续区间（左闭右开），越界自动夹到地图列数
+static func get_pot_columns(pcm: PlantCellManager) -> Array[int]:
+	var columns: Array[int] = []
+	if not pcm.game_para.pot_cols.is_empty():
+		for col in pcm.game_para.pot_cols:
+			if col >= 0 and col < pcm.row_col.y and not columns.has(col):
+				columns.append(col)
+		columns.sort()
+		return columns
+	var end_col: int = mini(pcm.game_para.pot_col_range.y, pcm.row_col.y)
+	for col in range(pcm.game_para.pot_col_range.x, end_col):
+		columns.append(col)
+	return columns
 
 ## 筛掉不能摆罐子的格子：已经种了植物、或者已经摆了一个罐子的格子跳过。
 ## 多轮砸罐子关（原版冒险 4-5）必须这么做：上一批罐子里开出的植物还留在草坪上，
@@ -172,6 +188,13 @@ static func create_all_pot_on_fixed_mode(pcm: PlantCellManager) -> void:
 		pcm, pcm.game_para.plant_pot, plant_cell_remaining, ScaryPot.E_PotType.Plant
 	)
 
+	## 太阳罐（原版 SCARYPOT_SUN）：里面是 1~3 颗阳光，原版只有无尽关有 1 个
+	for i in range(pcm.game_para.sun_pot_num):
+		if plant_cell_remaining.is_empty():
+			Log.warn("太阳罐数量(" + str(pcm.game_para.sun_pot_num) + ")超过剩余植物格子数，多余的将被跳过")
+			break
+		create_sun_pot(pcm, plant_cell_remaining.pop_back())
+
 
 	## 随机罐子数量和
 	var random_pot_num_sum = pcm.game_para.random_pot_num_on_fixed_mode.x \
@@ -214,6 +237,16 @@ static func create_random_res_pot(
 		ScaryPot.E_PotInitParaAttr.IsFixedRes: false,
 		ScaryPot.E_PotInitParaAttr.PlantCell: plant_cell,
 		ScaryPot.E_PotInitParaAttr.IsAlwaysLookPot: GameContext.curr_main_game.game_para.is_can_look_random_res_pot
+	}
+	plant_cell_creat_pot(pcm, plant_cell, pot_para)
+
+
+## 创建一个太阳罐（原版 SCARYPOT_SUN：里面是 1~3 颗阳光，砸开一次全掉出来）
+static func create_sun_pot(pcm: PlantCellManager, plant_cell: PlantCell) -> void:
+	var pot_para: Dictionary = {
+		ScaryPot.E_PotInitParaAttr.PotType: ScaryPot.E_PotType.Sun,
+		ScaryPot.E_PotInitParaAttr.IsFixedRes: true,
+		ScaryPot.E_PotInitParaAttr.PlantCell: plant_cell
 	}
 	plant_cell_creat_pot(pcm, plant_cell, pot_para)
 

@@ -398,9 +398,10 @@ func has_conveyor_belt() -> bool:
 @export_subgroup("斗转星移传送门参数")
 ## 迷你游戏「斗转星移」：草坪上摆两对传送门（一对方形一对圆形），
 ## 子弹 / 僵尸从一扇进、配对的另一扇出且方向不变；开启后由 PortalManager 接管
+##
+## 门的位置、换位节奏（首次 90 秒 / 之后每 60 秒）、判定窗口全部按原版写死在
+## PortalManager 里（见 docs/参考存档/斗转星移传送门.md），**不做成关卡参数**。
 @export var is_portal_combat := false
-## 传送门每隔多少秒随机换一次位置（<= 0 表示摆好后不再换）
-@export var portal_reshuffle_interval := 15.0
 #endregion
 
 #region 罐子参数
@@ -409,12 +410,22 @@ func has_conveyor_belt() -> bool:
 @export var is_pot_mode := false
 @export var pot_mode: ConstLevelData.E_PotMode = ConstLevelData.E_PotMode.Null
 @export var pot_col_range: Vector2i = Vector2i(4, 9)
+## 罐子占的列（列索引，0 起）：非空时用它替代 pot_col_range 的连续区间。
+## 原版解谜第 2 关「一路向左」的罐子在第 3~7 列（最右一列留空），连续区间表达不了。
+@export var pot_cols: PackedInt32Array = []
+## 太阳罐的个数：原版只有无尽关有 1 个（SCARYPOT_SUN），砸开掉 1~3 颗阳光
+@export var sun_pot_num: int = 0
+## 无尽关的难度递增：每 N 轮多 1 个巨人僵尸（同时少 1 个普僵）。
+## 原版无尽关是每 10 轮 +1 个巨人、最多 8 个（见 docs/参考存档/砸罐子原版对照.md）
+@export var pot_extra_gargantuar_per_round: int = 0
+## 无尽关巨人僵尸的递增上限
+@export var pot_extra_gargantuar_max: int = 8
 ## 结果随机罐子是否永久可观察罐内（打开后砸之前就能看到里面是什么）
 ## 目前只有自定义关卡在用（data/levels/params/vase_zombie.gd），内置关卡一律 false
 @export var is_can_look_random_res_pot := false
 ## 戴夫提示罐的个数：摆好罐子后有几个「装着植物的罐子」会显示成绿色植物罐，
 ## 玩家一眼就知道那几个是植物（但不知道是哪种植物）。
-## 原版冒险 4-5：第 1 批全是棕色罐（0）、第 2 批 2 个绿罐、第 3 批 3 个
+## 原版：解谜 1~9 关每关 2 个、冒险 4-5 是第 1 批 0 个 / 第 2 批 2 个 / 第 3 批 3 个
 @export var pot_hint_num: int = 0
 
 @export_subgroup("固定生成，随机位置(从后往前随机放置罐子，满足列对齐，不足的格子使用结果随机罐子补齐)")
@@ -432,7 +443,8 @@ var pot_num_on_fixed_mode: int = 0
 ## （解谜模式的砸罐子无尽关就是这么用的；原版冒险 4-5 三批罐子一批比一批难，必须逐轮覆盖）。
 ## 字典的键（都可省略，省略则沿用上一轮的值）：
 ##   random_pot_plant / plant_pot / random_pot_zombie / zombie_pot / random_pot_num_on_fixed_mode
-##   pot_col_range（本轮罐子占的列，原版冒险 4-5：3 列 → 4 列 → 5 列）/ pot_hint_num（本轮戴夫提示罐个数）
+##   pot_col_range（本轮罐子占的列，原版冒险 4-5：3 列 → 4 列 → 5 列）/ pot_cols（本轮罐子占的列集合）
+##   pot_hint_num（本轮戴夫提示罐个数）/ sun_pot_num（本轮太阳罐个数）
 @export var pot_config_on_round: Array[Dictionary] = []
 ## 第 1 批罐子配置的快照：apply_pot_config_on_round() 改写的就是上面这批顶层字段，
 ## 而顶层字段同时是第 1 批的数据源（init_para() 只读顶层字段），
@@ -443,11 +455,32 @@ var pot_config_first_round: Dictionary = {}
 #region 我是僵尸模式
 @export_group("我是僵尸模式")
 @export var is_zombie_mode := false
+## 红线左侧的列数 —— 原版 `Challenge::CanPlantAt` 的 aLimit（= `IZombiePlacePlants` 的 aColumns）：
+## 第 1~5 关 = 4、第 6~8 关 = 5、第 9 关 = 6、无尽关 = 5。
+## 这个数同时决定「纸板植物能占的列」与「僵尸能放的列」（原版两者是同一个数）。
 @export var plant_col_on_zombie_mode: int = 4
-@export var all_plants_weight_on_zombie_mode: Dictionary[StringName, int]
-@export var all_must_plants_on_zombie_mode: Dictionary[StringName, int]
+## 原版逐关的纸板植物布局表（`Challenge::IZombieInitLevel`，见 docs/参考存档/我是僵尸原版对照.md）
+##
+## 每项一个字典，字段：
+##   "plant" —— 植物 id（PlantIds.XXX）
+##   "row"   —— 行号（0 起，0 = 顶行）；-1 = 不限行（全 5 行）
+##   "col"   —— 列号（0 起，0 = 最左列）；-1 = 在红线左侧的可用列里随机落位
+##   "count" —— 数量（只有 col = -1 的随机条目用得上）
+##
+## 原版有两种摆放：固定格位（`IZombiePlacePlantInSquare`）与范围内随机（`IZombiePlacePlants`），
+## 这里用 col >= 0 / col < 0 区分，**按数组顺序执行**（后面的条目会避开已经占掉的格子）。
+@export var zombie_mode_plant_layout: Array[Dictionary] = []
 
 #endregion
+
+## 我是僵尸模式**本轮**要摆的纸板植物布局表
+##
+## 默认就是关卡写死的 `zombie_mode_plant_layout`（原版第 1~9 关：逐关固定表）。
+## 无尽关要「每轮换一套阵型」（原版 `Challenge::IZombieInitLevel` 的 ENDLESS 分支），
+## 由关卡脚本覆写这个方法按轮次现算 —— 本体不认识任何具体玩法（硬约束 §1-8）。
+func get_zombie_mode_plant_layout() -> Array[Dictionary]:
+	return zombie_mode_plant_layout
+
 
 #region 迷你游戏物品参数
 @export_group("游戏物品参数")
@@ -720,22 +753,47 @@ func _init_pot_mode() -> void:
 ## 只在固定生成模式生效;配置缺失 / 越界时保持当前配置不变。
 ## 由 PlantCellManager 在每轮创建罐子之前调用(见 start_next_game_plant_cell_manager_update)
 func apply_pot_config_on_round(round_index: int) -> void:
-	if pot_config_on_round.is_empty():
-		return
-	var index: int = round_index - 1
-	if index < 0 or index >= pot_config_on_round.size():
-		Log.warn(
-			str("第 ") + str(round_index) + str(" 轮没有对应的罐子配置(共 ") \
-			+ str(pot_config_on_round.size()) + str(" 份)，沿用上一轮的罐子配置")
-		)
-		return
-	## 从第 1 批的原始配置出发，依次覆盖到第 round_index 批：
-	## 每份配置里省略的键沿用上一批的值，不复位的话反复切轮次会把配置一层层叠上去，
-	## 而且第 1 批（init_para 读顶层字段）会被后面几批的配置顶掉
+	## 每轮都从第 1 批的原始配置出发：
+	## 少了这一步，反复切轮次会把配置一层层叠上去（而且第 1 批会被后面几批顶掉），
+	## 无尽关的「巨人递增」也会在上一轮的结果上再减一次，越滚越多
 	reset_pot_config_first_round()
-	for i in range(index + 1):
-		_apply_pot_config_on_round(pot_config_on_round[i])
+	if not pot_config_on_round.is_empty():
+		var index: int = round_index - 1
+		if index < 0 or index >= pot_config_on_round.size():
+			Log.warn(
+				str("第 ") + str(round_index) + str(" 轮没有对应的罐子配置(共 ") \
+			+ str(pot_config_on_round.size()) + str(" 份)，沿用上一轮的罐子配置")
+			)
+		else:
+			## 依次覆盖到第 round_index 批：每份配置里省略的键沿用上一批的值
+			for i in range(index + 1):
+				_apply_pot_config_on_round(pot_config_on_round[i])
+	## 无尽关的难度递增：跟批次数无关，单独算（所以不能跟着上面那段一起早退）
+	_apply_pot_gargantuar_grow(round_index)
 	_init_pot_mode_fixed()
+
+
+## 无尽砸罐子的难度递增：每 N 轮多 1 个巨人僵尸，同时少 1 个普僵。
+## 原版：g = clamp(阶段数 / 10, 0, 8)，普僵 8-g、巨人 1+g
+## （原版的无尽关第 1 批阶段数是 0，所以第一批是普僵 8 / 巨人 1）。
+func _apply_pot_gargantuar_grow(round_index: int) -> void:
+	if pot_extra_gargantuar_per_round <= 0:
+		return
+	## 没有第 1 批的快照就无从「从原始配置重算」，跳过（否则会在上一轮的结果上继续减）
+	if pot_config_first_round.is_empty():
+		return
+	var extra: int = mini(
+		pot_extra_gargantuar_max,
+		int((round_index - 1) / pot_extra_gargantuar_per_round)
+	)
+	if extra <= 0:
+		return
+	var norm_num: int = int(random_pot_zombie.get(ZombieIds.NORM, 0))
+	var gargantuar_num: int = int(random_pot_zombie.get(ZombieIds.GARGANTUAR, 0))
+	## 普僵最多减到 0（原版普僵本来就只有 8 个）
+	var add_num: int = mini(extra, norm_num)
+	random_pot_zombie[ZombieIds.NORM] = norm_num - add_num
+	random_pot_zombie[ZombieIds.GARGANTUAR] = gargantuar_num + add_num
 
 
 ## 记录第 1 批罐子的配置，作为每次切轮次的起点（见 apply_pot_config_on_round）
@@ -747,7 +805,9 @@ func snapshot_pot_config_first_round() -> void:
 		"zombie_pot": zombie_pot.duplicate(true),
 		"random_pot_num_on_fixed_mode": random_pot_num_on_fixed_mode,
 		"pot_col_range": pot_col_range,
+		"pot_cols": Array(pot_cols),
 		"pot_hint_num": pot_hint_num,
+		"sun_pot_num": sun_pot_num,
 	}
 
 
@@ -761,7 +821,9 @@ func reset_pot_config_first_round() -> void:
 	zombie_pot = pot_config_first_round["zombie_pot"].duplicate(true)
 	random_pot_num_on_fixed_mode = pot_config_first_round["random_pot_num_on_fixed_mode"] as Vector3i
 	pot_col_range = pot_config_first_round["pot_col_range"] as Vector2i
+	pot_cols = PackedInt32Array(pot_config_first_round["pot_cols"])
 	pot_hint_num = int(pot_config_first_round["pot_hint_num"])
+	sun_pot_num = int(pot_config_first_round["sun_pot_num"])
 
 
 ## 覆盖一份轮次罐子配置
@@ -782,9 +844,19 @@ func _apply_pot_config_on_round(config: Dictionary) -> void:
 	if config.has("pot_col_range"):
 		pot_col_range = config["pot_col_range"] as Vector2i
 		_normalize_pot_col_range()
+	## 每批罐子占的列集合（任意列集合，优先于 pot_col_range）
+	if config.has("pot_cols"):
+		var cols_cfg = config["pot_cols"]
+		if cols_cfg is PackedInt32Array:
+			pot_cols = cols_cfg.duplicate()
+		elif cols_cfg is Array:
+			pot_cols = PackedInt32Array(cols_cfg)
 	## 每批戴夫提示罐的个数（原版冒险 4-5：不提示 → 2 个 → 3 个）
 	if config.has("pot_hint_num"):
 		pot_hint_num = int(config["pot_hint_num"])
+	## 每批太阳罐的个数
+	if config.has("sun_pot_num"):
+		sun_pot_num = int(config["sun_pot_num"])
 	_init_pot_mode_fixed()
 
 
@@ -827,6 +899,8 @@ func _init_pot_mode_fixed() -> void:
 		else:
 			pot_num_on_fixed_mode += zombie_pot[zombie_type]
 	pot_num_on_fixed_mode += random_pot_num_on_fixed_mode.x + random_pot_num_on_fixed_mode.y + random_pot_num_on_fixed_mode.z
+	## 太阳罐也占格子
+	pot_num_on_fixed_mode += sun_pot_num
 	random_pot_zombie_with_zombie_row_type = get_pot_zombie_with_row_type_pot_on_fiexd_mode(random_pot_zombie)
 	zombie_pot_with_zombie_row_type = get_pot_zombie_with_row_type_pot_on_fiexd_mode(zombie_pot)
 

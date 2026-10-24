@@ -3,10 +3,10 @@ class_name PotAllVaseChunks
 
 @onready var vase_chunks: PotVaseChunkDrop = $VaseChunks
 
-## 根据罐子类型更新罐子外表
-func update_pot_vase_chunks_appearance(curr_pot_type:ScaryPot.E_PotType):
-	vase_chunks.frame_coords.y = int(curr_pot_type)
-	vase_chunks.frame_coords.y = int(curr_pot_type)
+## 按罐子外观切换碎片的行（vase_chunks.png 是 9 列 × 3 行，三行分别对应
+## 棕罐 / 绿罐 / 僵尸脸罐的碎片颜色）。索引与 Scary_Pot.png 的「列 = 外观」同一口径。
+func update_pot_vase_chunks_appearance(look_index: int) -> void:
+	vase_chunks.frame_coords.y = look_index
 
 func activate_it():
 	reparent(owner.plant_cell)

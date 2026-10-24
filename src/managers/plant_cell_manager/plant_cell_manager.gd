@@ -23,12 +23,8 @@ var curr_plant_num:Dictionary[StringName, int]
 ## 当前罐子数量
 var curr_pot_num = 0
 
-## 我是僵尸模式的随机植物生成池
-var plant_random_pool_on_zombie_mode:RandomPicker
-## 我是僵尸模式下所有创建植物的植物格子
-var all_plant_cells_create_plant_on_zombie_mode:Array[PlantCell] = []
-## 我是僵尸模式必须先生成的植物
-var all_must_plants_on_zombie_mode:Dictionary[StringName, int] = {}
+## 我是僵尸模式的纸板植物：由 `game_para.zombie_mode_plant_layout`（原版逐关布局表）驱动，
+## 摆放算法见 create_plant_on_zombie_mode()。
 
 
 func _ready() -> void:
@@ -179,14 +175,11 @@ func init_manager() -> void:
 		init_pot()
 		cerate_pot()
 		if game_para.is_zombie_mode:
-			init_plant_on_zombie_mode()
 			create_plant_on_zombie_mode()
 
-	## 有存档初始化罐子数据 我是僵尸数据
+	## 有存档：植物由存档恢复（纸板植物的落位也在存档里），这里只摆罐子
 	else:
 		init_pot()
-		if game_para.is_zombie_mode:
-			init_plant_on_zombie_mode()
 
 ## plant_cell与hand_manager信号连接
 func signal_connect_plant_cell_with_hand_manager(hand_manager:HandManager):
@@ -232,34 +225,94 @@ func system_plant_one(plant_data: SystemPlantResource) -> void:
 		var plant_cell:PlantCell = all_plant_cells[plant_data.plant_cell_pos.x-1][plant_data.plant_cell_pos.y-1]
 		plant_cell.create_plant(plant_data.plant_type, false, false, plant_data.is_imitater_plant, game_para.is_zombie_mode)
 
-## 始化我是僵尸模式的植物数据
-func init_plant_on_zombie_mode():
-	all_must_plants_on_zombie_mode = game_para.all_must_plants_on_zombie_mode
-	var plant_random_pool_on_zombie_mode_data := []
-	for plant_type in game_para.all_plants_weight_on_zombie_mode.keys():
-		plant_random_pool_on_zombie_mode_data.append([plant_type, game_para.all_plants_weight_on_zombie_mode[plant_type]])
-	plant_random_pool_on_zombie_mode = RandomPicker.new(plant_random_pool_on_zombie_mode_data)
-	all_plant_cells_create_plant_on_zombie_mode.clear()
+#region 我是僵尸模式：纸板植物（原版 `Challenge::IZombieInitLevel`）
 
-	for i in range(row_col.x):
-		all_plant_cells_create_plant_on_zombie_mode.append_array(all_plant_cells[i].slice(0, game_para.plant_col_on_zombie_mode))
-
-## 创建我是僵尸模式的植物
+## 按原版逐关布局表摆纸板植物
+##
+## 原版有两种摆放，仓库用布局表的 "col" 区分：
+##   col >= 0 —— 固定格位（原版 `IZombiePlacePlantInSquare`）
+##   col < 0  —— 范围内随机（原版 `IZombiePlacePlants`）
+## 按表顺序执行，后面的条目会避开已经占掉的格子（与原版「候选格权重置 0」同义）。
 func create_plant_on_zombie_mode():
-	var all_plant_cells_create_plant_on_zombie_mode_copy = all_plant_cells_create_plant_on_zombie_mode.duplicate(true)
-	all_plant_cells_create_plant_on_zombie_mode_copy.shuffle()
-	for plant_type in all_must_plants_on_zombie_mode.keys():
-		## 当前种类植物的个数
-		for _i in range(all_must_plants_on_zombie_mode[plant_type]):
-			## 如果已经全都种植过了
-			if all_plant_cells_create_plant_on_zombie_mode_copy.is_empty():
+	## 已经占掉的格子（键 = "行,列"）
+	var occupied := {}
+	for item in game_para.get_zombie_mode_plant_layout():
+		var plant_type: StringName = item.get("plant", PlantIds.NULL)
+		if plant_type == PlantIds.NULL:
+			continue
+		var row: int = item.get("row", -1)
+		var col: int = item.get("col", -1)
+		if col >= 0:
+			_place_zombie_mode_plant_at(plant_type, row, col, occupied)
+		else:
+			_place_zombie_mode_plants_random(plant_type, item.get("count", 1), row, occupied)
+
+
+## 固定格位摆放（原版 `IZombiePlacePlantInSquare`）：该格能种就种
+func _place_zombie_mode_plant_at(plant_type: StringName, row: int, col: int, occupied: Dictionary) -> void:
+	if row < 0 or col < 0:
+		return
+	if occupied.has(_zombie_mode_cell_key(row, col)):
+		return
+	var plant_cell: PlantCell = _get_zombie_mode_plant_cell(row, col)
+	if plant_cell == null or plant_cell.get_curr_plant_num() > 0:
+		return
+	occupied[_zombie_mode_cell_key(row, col)] = true
+	## 我是僵尸模式种的全是普通植物，模仿者材质那一档（第 4 个参数）不参与
+	plant_cell.create_plant(plant_type, false, false, false, true)
+
+
+## 范围内随机摆放（原版 `IZombiePlacePlants`）
+##
+## 原版候选格 = 限定行（row = -1 时不限行）× 红线左侧前 N 列，
+## 且**坚果与火炬只出现在最右 3 列**；权重全是 1（等概率随机），
+## 放过的格权重置 0（不再重复使用）；实际放的数量 = min(表里写的数量, 候选格数)。
+func _place_zombie_mode_plants_random(plant_type: StringName, count: int, row: int, occupied: Dictionary) -> void:
+	var min_row: int = 0 if row < 0 else row
+	var max_row: int = all_plant_cells.size() - 1 if row < 0 else row
+	var col_limit: int = game_para.plant_col_on_zombie_mode
+	var candidates: Array[Vector2i] = []
+	for curr_row in range(min_row, max_row + 1):
+		for curr_col in range(col_limit):
+			## 原版：坚果 / 火炬只出现在最右 3 列
+			if _is_wallnut_or_torchwood(plant_type) and col_limit - curr_col > 3:
 				continue
-			var plant_cell:PlantCell = all_plant_cells_create_plant_on_zombie_mode_copy.pop_back()
-			## 我是僵尸模式种的全是普通植物，模仿者材质那一档（第 4 个参数）不参与
-			plant_cell.create_plant(plant_type, false, false, false, true)
-	for plant_cell:PlantCell in all_plant_cells_create_plant_on_zombie_mode_copy:
-		var plant_type: StringName = plant_random_pool_on_zombie_mode.get_random_item()
+			if occupied.has(_zombie_mode_cell_key(curr_row, curr_col)):
+				continue
+			var plant_cell: PlantCell = _get_zombie_mode_plant_cell(curr_row, curr_col)
+			if plant_cell == null or plant_cell.get_curr_plant_num() > 0:
+				continue
+			candidates.append(Vector2i(curr_col, curr_row))
+	var place_count: int = mini(count, candidates.size())
+	for _i in range(place_count):
+		var index: int = randi() % candidates.size()
+		var pos: Vector2i = candidates[index]
+		candidates.remove_at(index)
+		occupied[_zombie_mode_cell_key(pos.y, pos.x)] = true
+		var plant_cell: PlantCell = _get_zombie_mode_plant_cell(pos.y, pos.x)
 		plant_cell.create_plant(plant_type, false, false, false, true)
+
+
+## 坚果 / 火炬：原版只出现在红线左侧的最右 3 列
+func _is_wallnut_or_torchwood(plant_type: StringName) -> bool:
+	return plant_type == PlantIds.WALL_NUT or plant_type == PlantIds.TORCH_WOOD
+
+
+## 取某行某列的植物格子（越界返回 null）
+func _get_zombie_mode_plant_cell(row: int, col: int) -> PlantCell:
+	if row < 0 or row >= all_plant_cells.size():
+		return null
+	var row_cells: Array = all_plant_cells[row]
+	if col < 0 or col >= row_cells.size():
+		return null
+	return row_cells[col] as PlantCell
+
+
+## 占位标记的键（"行,列"）
+func _zombie_mode_cell_key(row: int, col: int) -> String:
+	return "%d,%d" % [row, col]
+
+#endregion
 
 
 #region 罐子
@@ -363,8 +416,7 @@ func start_next_game_plant_cell_manager_update():
 			await get_tree().process_frame
 			await get_tree().process_frame
 			is_clear_plant = true
-		if plant_random_pool_on_zombie_mode.get_item_weight(PlantIds.SUN_FLOWER) > 1:
-			plant_random_pool_on_zombie_mode.update_item_weight(PlantIds.SUN_FLOWER, max(9-GameContext.curr_main_game.curr_game_round, 1))
+		## 每轮重摆纸板植物（无尽关每轮换一套阵型，见关卡脚本覆写的 get_zombie_mode_plant_layout）
 		create_plant_on_zombie_mode()
 
 	## 多轮砸罐子关每批罐子的配置不一样（原版冒险 4-5：3 列 → 4 列 → 5 列，一批比一批难），

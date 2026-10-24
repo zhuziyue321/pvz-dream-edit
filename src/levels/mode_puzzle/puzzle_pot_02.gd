@@ -20,9 +20,11 @@ func _init() -> void:
 	card_mode = ConstLevelData.E_CardMode.Null
 	is_pot_mode = true
 	pot_mode = ConstLevelData.E_PotMode.Fixd
-	pot_col_range = Vector2i(4, 9)
+	## 原版这一关的罐子在第 3~7 列（最右一列空着），所以用列集合而不是连续区间
+	pot_cols = PackedInt32Array([3, 4, 5, 6, 7])
 	## 棕色神秘罐（植物）: 反向双发(49) x7 / 寒冰射手(6) x3 / 坚果墙(4) x3 / 土豆地雷(5) x2
-	pot_hint_num = 0
+	## 原版每关固定 2 个绿罐（提示玩家这几个罐子里是植物）
+	pot_hint_num = 2
 	## 棕色神秘罐（僵尸）: 铁桶(5) x3 / 普僵(1) x6 / 玩偶匣(16) x1
 	random_pot_plant.assign({
 	&"wall_nut": 3,

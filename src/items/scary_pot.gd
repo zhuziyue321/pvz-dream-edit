@@ -2,13 +2,19 @@ extends MainGameItemBase
 class_name ScaryPot
 
 var SCARY_POT_WATER: Texture2D = AssetRegistry.get_texture("res://pak/images/Scary_Pot.png")
-## 罐子类型（**单个罐子级**：这一个罐子里装的是植物还是僵尸）
+## 罐子类型（**单个罐子级**：这一个罐子里装的是什么）
 ## ⚠️ 名字和 `ConstLevelData.E_PotMode` 撞车，但**两者不是一回事**（U-11）：
 ## 本枚举是说「罐子里装的是什么」，`E_PotMode` 是说「这一关的罐子怎么生成」。
+## 对应原版的 `ScaryPotType`（对照见 docs/参考存档/砸罐子原版对照.md）：
+##   Random = 原版的「未知内容罐」（本项目多出来的一种：开罐时现场摇）
+##   Plant  = SCARYPOT_SEED（绿外观）
+##   Zombie = SCARYPOT_ZOMBIE（僵尸脸外观）
+##   Sun    = SCARYPOT_SUN（太阳罐：砸开掉 1~3 颗阳光，原版只有无尽关有）
 enum E_PotType{
 	Random,	## 随机罐子
 	Plant,	## 植物罐子
 	Zombie,	## 僵尸罐子
+	Sun,	## 太阳罐子
 }
 
 @onready var area_2d_detect: Area2D = $Area2DDetect
@@ -28,6 +34,8 @@ enum E_PotType{
 
 ## 是否已经打开
 var is_open:=false
+## 是否正在开（锤子动画播放中，等动画结束才真开罐）
+var is_opening:=false
 ## 罐子类型
 @export var pot_type:E_PotType = E_PotType.Random
 ## 是否为结果随机罐子,若结果随机，最后会从白名单中等权重随机
@@ -36,6 +44,8 @@ var is_open:=false
 @export var curr_plant_type: StringName
 ## 当前僵尸类型
 @export var curr_zombie_type: StringName
+## 太阳罐里装的阳光颗数（原版：随机 1~3 颗，砸开时一次全掉出来）
+@export var sun_count:=1
 
 ## 卡片存在时间，结束后5秒闪烁消失
 @export var card_exist_time:=10.0
@@ -49,6 +59,7 @@ enum E_PotInitParaAttr{
 	ZombieType,		## 生成僵尸类型
 	PlantCell,		## 罐子所在植物格子
 	IsAlwaysLookPot,	## 永久可以观察罐内（结果随机罐子开关 is_can_look_random_res_pot 打开）
+	SunCount,		## 太阳罐里装的阳光颗数（不传则随机 1~3 颗）
 }
 
 ## 影响观察当前pot的角色
@@ -86,18 +97,39 @@ func init_pot(pot_init_para:Dictionary):
 	if is_fixed_res:
 		curr_plant_type = pot_init_para.get(E_PotInitParaAttr.PlantType, PlantIds.NULL)
 		curr_zombie_type = pot_init_para.get(E_PotInitParaAttr.ZombieType, ZombieIds.NULL)
-		assert(curr_plant_type!= PlantIds.NULL or curr_zombie_type !=  ZombieIds.NULL, "error: 植物类型和僵尸类型都为空")
+		## 太阳罐里既没有植物也没有僵尸，只有阳光 —— 所以上面两个都空是正常的
+		if pot_type != E_PotType.Sun:
+			assert(curr_plant_type!= PlantIds.NULL or curr_zombie_type !=  ZombieIds.NULL, "error: 植物类型和僵尸类型都为空")
+	## 太阳罐随机装 1~3 颗阳光（原版：mSunCount = Rand(3) + 1）
+	sun_count = pot_init_para.get(E_PotInitParaAttr.SunCount, 0)
+	if pot_type == E_PotType.Sun and sun_count <= 0:
+		sun_count = randi_range(1, 3)
 	plant_cell = pot_init_para[E_PotInitParaAttr.PlantCell]
 	lane = plant_cell.row_col.x
 	is_always_look_pot = pot_init_para.get(E_PotInitParaAttr.IsAlwaysLookPot, false)
 
 
 
+## 罐子外观在图集里的列号（Scary_Pot.png 是 3 列 × 2 行）：
+## 0 = 棕色普通罐、1 = 绿色植物罐、2 = 僵尸脸罐。
+## 外观由「罐子里装什么」派生：植物罐是绿罐、僵尸罐是僵尸脸罐，
+## 其余（随机罐 / 太阳罐）都是棕罐。
+## 碎片的行（vase_chunks.png 9 列 × 3 行）也是按外观分的，用同一个索引。
+static func get_pot_look_index(pot_type_arg: E_PotType) -> int:
+	match pot_type_arg:
+		E_PotType.Plant:
+			return 1
+		E_PotType.Zombie:
+			return 2
+		_:
+			return 0
+
 ## 根据罐子类型更新罐子外表
 func update_pot_appearance(curr_pot_type:E_PotType):
-	scary_pot_back.frame_coords.x = int(curr_pot_type)
-	scary_pot_front.frame_coords.x = int(curr_pot_type)
-	pot_all_vase_chunks.update_pot_vase_chunks_appearance(curr_pot_type)
+	var look_index: int = get_pot_look_index(curr_pot_type)
+	scary_pot_back.frame_coords.x = look_index
+	scary_pot_front.frame_coords.x = look_index
+	pot_all_vase_chunks.update_pot_vase_chunks_appearance(look_index)
 
 	## 当前植物格子为水(8)或睡莲（16）地形
 	if plant_cell.curr_condition & 24:
@@ -120,8 +152,17 @@ func mouse_exit_pot():
 	scary_pot_front.modulate = Color(1,1,1)
 
 ## 打开罐子,被锤子打开
-func open_pot_be_hammar():
-	hammer.activate_it()
+## 原版是「先播锤子动画，动画播完才真开罐」
+## （Challenge::ScaryPotterMalletPot → 动画结束 → ScaryPotterOpenPot），
+## 这里等锤子落下去再开，罐子不会在锤子还没砸到时就消失
+func open_pot_be_hammar() -> void:
+	if is_opening or is_open:
+		return
+	is_opening = true
+	await hammer.activate_it()
+	## 等动画这段时间里这个罐子可能已被巨人砸开 / 被小丑炸开（罐子本体已经释放）
+	if not is_instance_valid(self) or is_open:
+		return
 	open_pot()
 
 #endregion
@@ -144,12 +185,17 @@ func open_pot():
 	is_open = true
 	plant_cell.open_pot_update_plant_cell_data()
 	pot_all_vase_chunks.activate_it()
+	## 原版开罐是两声：SOUND_BONK（敲到罐子）+ FOLEY_VASE_BREAKING（罐子碎了）
+	SoundManager.play_other_SFX("bonk")
 	SoundManager.play_other_SFX("vase_breaking")
 	var is_zombie:= false
 	## 结果随机罐子，并且无法观察时，随机结果
 	if not is_fixed_res and not is_can_loot_pot:
 		random_res()
-	if curr_plant_type!= PlantIds.NULL:
+	if pot_type == E_PotType.Sun:
+		## 太阳罐：里面是阳光，不掉角色
+		open_sun()
+	elif curr_plant_type!= PlantIds.NULL:
 		open_plant(curr_plant_type)
 	elif curr_zombie_type != ZombieIds.NULL:
 		open_zombie(curr_zombie_type)
@@ -159,6 +205,20 @@ func open_pot():
 	signal_open_pot.emit(is_zombie, marker_2d_create_card_or_trophy.global_position)
 	## 等待一帧后删除
 	queue_free()
+
+
+## 打开太阳罐：掉出 sun_count 颗阳光（原版 SCARYPOT_SUN：一次掉 1~3 颗）
+func open_sun() -> void:
+	if not is_instance_valid(GameContext.curr_main_game):
+		return
+	var suns := GameContext.curr_main_game.suns
+	if suns == null or not is_instance_valid(suns):
+		return
+	var sun_global_pos: Vector2 = marker_2d_create_card_or_trophy.global_position
+	for i in range(maxi(sun_count, 1)):
+		## 横向错开一点，几颗阳光不叠在一起
+		var offset := Vector2(15.0 * i, 0.0)
+		SunSpawner.pop_up(suns, suns.to_local(sun_global_pos + offset), SunSpawner.DEFAULT_SUN_VALUE)
 
 
 func random_res():
@@ -175,6 +235,9 @@ func random_res():
 		E_PotType.Zombie:
 			var curr_zomebi_row_type:CharacterRegistry.ZombieRowType = GameContext.curr_main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_row_type
 			curr_zombie_type = Global.global_read_data.whitelist_refresh_zombie_types_with_zombie_row_type[curr_zomebi_row_type].pick_random()
+		E_PotType.Sun:
+			## 太阳罐的内容是固定的（阳光），不参与随机
+			pass
 
 ## 打开植物
 func open_plant(plant_type: StringName):
@@ -244,6 +307,9 @@ func start_loot_pot():
 	## 如果还没有角色虚影，初始化角色虚影
 	if character_static == null:
 		character_static_init()
+	## 太阳罐里没有角色，没有虚影可显示
+	if character_static == null:
+		return
 	is_can_loot_pot = true
 	scary_pot_front.visible = false
 	character_static.visible = true
@@ -263,12 +329,18 @@ func end_loot_pot():
 
 ## 角色虚影初始化
 func character_static_init():
+	## 太阳罐里只有阳光，没有角色虚影
+	if pot_type == E_PotType.Sun:
+		return
 	## 固定随机结果
 	if is_fixed_res:
 		if curr_plant_type != PlantIds.NULL:
 			character_static = AllCards.all_plant_card_prefabs[curr_plant_type].character_static.duplicate()
 		elif curr_zombie_type != ZombieIds.NULL:
 			character_static = AllCards.all_zombie_card_prefabs[curr_zombie_type].character_static.duplicate()
+		## 两边都没有内容（例如配错的罐子）：没有虚影可显示
+		if character_static == null:
+			return
 		character_container.add_child(character_static)
 		character_static.position = Vector2(0,0)
 	else:

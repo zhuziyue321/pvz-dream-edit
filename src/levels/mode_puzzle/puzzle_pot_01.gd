@@ -22,7 +22,8 @@ func _init() -> void:
 	pot_mode = ConstLevelData.E_PotMode.Fixd
 	pot_col_range = Vector2i(4, 9)
 	## 棕色神秘罐（植物）: 豌豆射手(1) x5 / 寒冰射手(6) x5 / 窝瓜(18) x5
-	pot_hint_num = 0
+	## 原版每关固定 2 个绿罐（从植物罐里随机挑 2 个换成绿外观，提示玩家这几个是植物）
+	pot_hint_num = 2
 	## 棕色神秘罐（僵尸）: 铁桶(5) x3 / 普僵(1) x6 / 玩偶匣(16) x1
 	random_pot_plant.assign({
 	&"pea_shooter_single": 5,

@@ -23,20 +23,20 @@ func _init() -> void:
 	pot_col_range = Vector2i(2, 9)
 	## 棕色神秘罐（植物）: 磁力菇(32) x3 / 南瓜头(31) x3 / 反向双发(49) x6 / 寒冰射手(6) x2 / 窝瓜(18) x4 / 魅惑菇(13) x2
 	pot_hint_num = 2
-	## 棕色神秘罐（僵尸）: 橄榄球(8) x3 / 铁桶(5) x4 / 普僵(1) x7 / 玩偶匣(16) x1
+	## 棕色神秘罐（僵尸）: 普僵(1) x6 / 铁桶(5) x5 / 玩偶匣(16) x1 / 橄榄球(8) x3
 	random_pot_plant.assign({
-	&"snow_pea": 2,
-	&"hypno_shroom": 2,
-	&"squash": 4,
-	&"pumpkin": 3,
-	&"magnet_shroom": 3,
-	&"pea_shooter_double_reverse": 6
+		&"snow_pea": 2,
+		&"hypno_shroom": 2,
+		&"squash": 4,
+		&"pumpkin": 3,
+		&"magnet_shroom": 3,
+		&"pea_shooter_double_reverse": 6
 	})
 	random_pot_zombie.assign({
-	&"norm": 7,
-	&"bucket": 4,
-	&"football": 3,
-	&"jackbox": 1
+		&"norm": 6,
+		&"bucket": 5,
+		&"football": 3,
+		&"jackbox": 1
 	})
 
 
