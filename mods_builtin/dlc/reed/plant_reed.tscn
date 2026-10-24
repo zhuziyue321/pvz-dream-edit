@@ -1,0 +1,84 @@
+[gd_scene load_steps=15 format=3]
+
+; 闪电芦苇（DLC 的 Reed）—— 战斗植物，由模组「DLC植物」提供
+;
+; 结构照 `../kingcactus/plant_kingcactus.tscn`：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 检测组件 + 攻击冷却 / 落雷计时器。
+;
+; 摆放：**不要给动画节点加缩放** —— 每个部件的原版缩放已经在动画的 `scale` 轨道里。
+;   动画根 `Reed` 的画布原点在左上，部件全是 `centered = false`（左上角定位）。
+;   整株 ≈ （待运行期 `get_content_rect()` 实测后回填）：先给一个预估 `(-40, -70)`，
+;   之后按探针量出的「内容底边对齐本体同类植物」再调。
+;   `Marker2D` 放在身体中心偏上（闪电从这个点落下）。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_Reed_idle` / `_attack` / `_idle_charged` / `_blink` / `_face`），而 `AnimLib` 里
+;   只有一条名叫 `ALL_ANIMS` 的合并动画 —— 既不是分段名、也没法按段播。
+;   这里把五段 Animation 资源重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也是它）。`AnimLib` 在动画场景里的索引是 20。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/reed/reed_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed_attack.tres" id="7_attack"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed_idle_charged.tres" id="8_idle_charged"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed_blink.tres" id="9_blink"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Reed/Reed_face.tres" id="10_face"]
+
+; 五段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_reed"]
+_data = {
+&"Reed_blink": ExtResource("9_blink"),
+&"Reed_face": ExtResource("10_face"),
+&"Reed_idle": ExtResource("6_idle"),
+&"Reed_idle_charged": ExtResource("8_idle_charged"),
+&"Reed_attack": ExtResource("7_attack")
+}
+
+; 检测框：wiki `range = Three lanes` —— 索敌**跨三行**（`is_lane = false`），
+; 高按 3 行取 260 px（与 voltshroom 跨行同一口径：1 格 ≈ 76 px、一行 ≈ 85 px）；
+; 水平方向沿用原来的 380 px。跨行时形状以**植物根为基准居中**，y 略上移到植株中部。
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_reed"]
+size = Vector2(380, 260)
+
+[node name="DlcReed" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_reed"
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="ReedAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的五段库（原因见文件头）
+[node name="AnimLib" parent="Body/ReedAnim" index="20"]
+libraries = {
+&"": SubResource("AnimationLibrary_reed")
+}
+
+[node name="Marker2D" type="Marker2D" parent="Body"]
+position = Vector2(2, -37.5)
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 1.5
+
+[node name="ShootTimer" type="Timer" parent="."]
+wait_time = 0.4
+one_shot = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+is_lane = false
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -30)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+shape = SubResource("RectangleShape2D_reed")

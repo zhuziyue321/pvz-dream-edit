@@ -1,0 +1,63 @@
+[gd_scene load_steps=9 format=3]
+
+; 飓衣甘蓝（DLC 的 Hurrikale）—— 一次性飓风植物，由模组「DLC植物」提供
+;
+; 结构照 `../kingcactus/plant_kingcactus.tscn`（同一套 DLC 动画转换产物）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 覆盖的动画库 + 起手计时器。
+; 这株**不吐子弹**：没有检测框 / 出弹计时器，起手计时器一到就刮风（见 hurrikale_plant.gd）。
+;
+; 摆放：**不要给动画节点加缩放** —— 每个部件的原版缩放已经在动画的 `scale` 轨道里
+;   （DLC 这部动画是 0.6~0.8），根节点再加一层就整株缩小了。
+;   `position` 让内容底边落在 Body 原点附近（与本体陆生植物同一套「贴地」口径），
+;   具体数值由探针 `probe_dlc_hurrikale.gd` 实测 `get_content_rect()` 后校正。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_Hurrikale_idle` / `_blow` / `_loop`），而 `AnimLib` 里只有一条名叫
+;   `ALL_ANIMS` 的合并动画 —— 既不是分段名，也没法按段播。
+;   这里把要用的段重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+;   `AnimLib` 在本实例动画里的子节点索引是 22（26 个子节点，它排第 23 个）。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/Hurrikale/Hurrikale.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/hurrikale/hurrikale_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Hurrikale/Hurrikale_idle.tres" id="5_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Hurrikale/Hurrikale_blow.tres" id="6_blow"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Hurrikale/Hurrikale_loop.tres" id="7_loop"]
+
+; 三段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_hurrikale"]
+_data = {
+&"Hurrikale_blow": ExtResource("6_blow"),
+&"Hurrikale_idle": ExtResource("5_idle"),
+&"Hurrikale_loop": ExtResource("7_loop")
+}
+
+[node name="DlcHurrikale" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_hurrikale"
+attack_value = 0
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+; 摆放（实测，见 probe 的量法：动画节点 position 归零后量 `get_content_rect`）：
+;   本体是个「叶子张得开」的大株甘蓝 —— idle 各帧实体包围盒稳定在 ≈ 170×165，
+;   底部恒在画布 y≈+112.8（叶尖最低点），水平中心 ≈ 画布 x 39（会左右轻摆）。
+;   对齐口径：内容底边落到本体豌豆射手的内容底边（Body 坐标 +10.7）→ position.y ≈ 10.7-112.8 ≈ -102；
+;   水平中心归零 → position.x ≈ -39。**不要给动画节点加缩放**（部件缩放已在动画 scale 轨道里）。
+[node name="HurrikaleAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的三段库（原因见文件头，索引 22 按本实例实际子节点数）
+[node name="AnimLib" parent="Body/HurrikaleAnim" index="22"]
+libraries = {
+&"": SubResource("AnimationLibrary_hurrikale")
+}
+
+; 起手计时器：种下后一小会儿就刮风（wait_time 由脚本按导出值再设一次）
+[node name="WindupTimer" type="Timer" parent="."]
+wait_time = 0.4
+one_shot = true

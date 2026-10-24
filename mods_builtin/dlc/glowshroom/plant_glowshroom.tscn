@@ -1,0 +1,181 @@
+[gd_scene load_steps=24 format=3]
+
+; 光照蘑菇（DLC 的 Lume-shroom）—— 光源辅助植物，由模组「DLC植物」提供
+;
+; 结构照 `../pultshroom/plant_pultshroom.tscn`（同一套 DLC 动画转换产物）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 检测组件（这里当「光域」用）。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   待机包围盒以运行期 `AnimationFrameUtil.get_content_rect()` 实测为准（探针里量），
+;   对齐口径 = 本体阳光菇（同为蘑菇）的内容底边落在原点附近。这个初值会被探针实测后校正。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已在动画的 `scale` 轨道里，再叠一层就整株缩小。
+;
+; 光域：这株不攻击，`DetectComponent` 的大矩形（不按行过滤 + 比屏幕大）只用来圈定「谁算在光域里」，
+;   脚本另外接它的 Area2D 进 / 出信号维护「域内僵尸名单」，僵尸在域里被击败就掉一颗小阳光。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_GlowShroom_idle` …），而 `AnimLib` 里只有一条 `ALL_ANIMS` 合并动画 ——
+;   那既不是分段名、也没法按段播。这里把五段 Animation 资源重新装进 `AnimLib` 的库，
+;   脚本只控制这一个播放器（卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+;   注意这株**没有攻击段**，库里没有 shooting。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/glowshroom/glowshroom_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom_end.tres" id="7_end"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom_blink.tres" id="8_blink"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom_face.tres" id="9_face"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/GlowShroom/GlowShroom_sleep.tres" id="10_sleep"]
+; 照明光走**路灯花那条路**：那圈光不是一张整图，而是 `pak/particles/LanternShine.xml`
+;   的发射器把 `LanternShine.png`（200×200 的星芒光带）**旋转 + 闪烁**出来的 ——
+;   整张摆出来只会是一坨 X 形，必须按原版那样当粒子撒。
+;   参数照抄该 XML：scale .7~1、alpha .3~.5、自转 ±20~40°/s、两个反向发射器（这里合并成
+;   一个节点用随机正负角速度）。
+; ⚠️ 别拿 `GlowShroom_BigGlow.png` 当这层光 —— 那张是蘑菇帽上那团小呼吸光，是动画自己的部件
+;   （`GlowShroom_idle` 里 `visible = true`、`_sleep` 里 `false`、`_end` 里淡出），原尺寸原缩放。
+; 上升粒子 = DLC 粒子图 `glow_particle1.png`（3×3 小光点，`Gloweffect.reanim` 的
+;   `Glow_particle1` 轨道用的就是这张 —— 上升、放大、淡出）
+[ext_resource type="Texture2D" path="res://pak/particles/LanternShine.png" id="11_light"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/glowshroom/glow_particle1.png" id="12_particle"]
+
+; 五段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_glowshroom"]
+_data = {
+&"GlowShroom_blink": ExtResource("8_blink"),
+&"GlowShroom_end": ExtResource("7_end"),
+&"GlowShroom_face": ExtResource("9_face"),
+&"GlowShroom_idle": ExtResource("6_idle"),
+&"GlowShroom_sleep": ExtResource("10_sleep")
+}
+
+; 光晕 / 粒子都开**加色混合**：DLC 自己的发光特效（`Gloweffect.reanim`、`PottedPlantGlow`）
+; 全都标了 `Additive = 1` —— 夜里的光是「往画面上加亮」，不是「盖一层不透明色」
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_glow_add"]
+blend_mode = 1
+
+; 上升粒子的透明度曲线：照抄 `Gloweffect.reanim` 的 `Glow_particle1` 轨道
+;（前 45% 淡入到 0.96 → 短暂保持 → 末段 38% 淡出到 0）
+[sub_resource type="Gradient" id="Gradient_glow_particle"]
+offsets = PackedFloat32Array(0, 0.45, 0.62, 1)
+colors = PackedColorArray(1, 1, 0.85, 0, 1, 1, 0.85, 0.96, 1, 1, 0.85, 0.93, 1, 1, 0.85, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_glow_particle"]
+gradient = SubResource("Gradient_glow_particle")
+
+; 上升粒子的缩放曲线：同一轨道的 3.167 → 4.33 → 3.836，归一成 0.73 → 1 → 0.885
+;（先变大、到顶再略收 —— 就是原版那颗光点「升起时胀一下再缩回去」的手感）
+[sub_resource type="Curve" id="Curve_glow_particle"]
+_data = [Vector2(0, 0.73), 0.0, 0.0, 0, 0, Vector2(0.46, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.885), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_glow_particle"]
+curve = SubResource("Curve_glow_particle")
+
+; 路灯花那圈光的闪烁曲线：照抄 `LanternShine.xml` 的 `ParticleAlpha .5 Bounce [.3 .5]`
+;（亮 ↔ 暗 来回摆），末段补一个短淡出 —— 原版粒子到点直接消失，这里收得柔和一点
+[sub_resource type="Gradient" id="Gradient_lantern_shine"]
+offsets = PackedFloat32Array(0, 0.3, 0.75, 1)
+colors = PackedColorArray(1, 1, 0.92, 0.3, 1, 1, 0.92, 0.5, 1, 1, 0.92, 0.3, 1, 1, 0.92, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_lantern_shine"]
+gradient = SubResource("Gradient_lantern_shine")
+
+; 路灯花那圈光的发射：铺满整块被照亮的地方（判定框 380×425，半边距 170×190），
+; 原地自转闪烁 —— `ParticleSpinSpeed ±20~40`（度/秒）换算成弧度就是 ±0.35~0.7
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_lantern_shine"]
+emission_shape = 3
+emission_box_extents = Vector3(170, 190, 1)
+gravity = Vector3(0, 0, 0)
+angular_velocity_min = -0.7
+angular_velocity_max = 0.7
+scale_min = 0.7
+scale_max = 1.0
+color_ramp = SubResource("GradientTexture1D_lantern_shine")
+
+; 粒子发射：铺满整块被照亮的地方（判定框 380×425，半边距取 170×190 略往里收，
+; 免得刚出生就贴在光边缘上），整体向上飘 80~135 px
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_glow_particle"]
+emission_shape = 3
+emission_box_extents = Vector3(170, 190, 1)
+direction = Vector3(0, -1, 0)
+spread = 12.0
+initial_velocity_min = 45.0
+initial_velocity_max = 75.0
+gravity = Vector3(0, 0, 0)
+scale_min = 3.0
+scale_max = 4.5
+scale_curve = SubResource("CurveTexture_glow_particle")
+color_ramp = SubResource("GradientTexture1D_glow_particle")
+
+; 光域范围：wiki 信息框的 `range = 5x5`（图鉴正文那句 "huge area" 是形容词，不当尺寸用）——
+; 5 列 × 76 px/列 = 380 px、5 行 × 85 px/行 = 425 px（1 格 / 1 行的口径与芦荟 3×3、
+; 电击蘑菇 3×5 同一套）。形状以**单元格**为中心：植物原点在单元格底部上方 20 px，
+; 故中心 y = -(85 / 2 - 20) = -22.5
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_glowshroom"]
+size = Vector2(380, 425)
+
+[node name="DlcGlowShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_glowshroom"
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="GlowShroomAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的五段库（原因见文件头）
+[node name="AnimLib" parent="Body/GlowShroomAnim" index="11"]
+libraries = {
+&"": SubResource("AnimationLibrary_glowshroom")
+}
+
+; 蘑菇白天睡觉（wiki：Sleeps = Yes）—— 睡着的白天光域熄灭、不掉阳光；
+; 检测组件也进睡眠禁用名单，姿势由脚本听 `SleepComponent` 的两个信号换成 `GlowShroom_sleep`
+[node name="SleepComponent" node_paths=PackedStringArray("sleep_influence_components") parent="." index="4"]
+sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../DetectComponent")]
+is_sleep_in_day = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+is_lane = false
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -22.5)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+shape = SubResource("RectangleShape2D_glowshroom")
+
+; 看得见的那圈光（`LanternShine`）：原版路灯花的发光就是这坨 —— 星芒光带在照明区里
+; 原地自转 + 闪烁（加色混合，`z_index = -1` 压在本体后面）。
+; `amount = 16` ≈ 原版两个发射器各 `SpawnMinActive 10` 的量；`preprocess` 让种下时就是满的。
+; 白天睡觉 / 离场时由脚本 `glowshroom_plant.gd` 收掉（睡着 = 灯灭）。
+[node name="LanternShine" type="GPUParticles2D" parent="."]
+emitting = false
+z_index = -1
+position = Vector2(0, -22.5)
+material = SubResource("CanvasItemMaterial_glow_add")
+amount = 16
+texture = ExtResource("11_light")
+lifetime = 2.0
+preprocess = 2.0
+process_material = SubResource("ParticleProcessMaterial_lantern_shine")
+
+; 光晕里升起的粒子：铺满同一块被照亮的地方（中心同在 (0,-22.5)），缓缓向上飘的小光点。
+; 睡着 / 离场时由脚本把 `emitting` 关掉（已在天上的几颗自然飘完）。
+[node name="GlowParticles" type="GPUParticles2D" parent="."]
+emitting = false
+z_index = -1
+position = Vector2(0, -22.5)
+material = SubResource("CanvasItemMaterial_glow_add")
+amount = 24
+texture = ExtResource("12_particle")
+lifetime = 1.8
+preprocess = 1.8
+process_material = SubResource("ParticleProcessMaterial_glow_particle")

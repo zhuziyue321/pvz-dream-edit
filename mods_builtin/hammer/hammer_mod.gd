@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「锤子」：点一下草坪，对以点击点为中心的小范围内的僵尸造成伤害
 ##
 ## ★ 为什么是模组：原版没有这个玩法 —— 原版的锤子只属于「锤僵尸」迷你游戏
@@ -35,7 +35,7 @@ extends "../mod_base.gd"
 ## 手套占 70~140，锤子接着排 140~210
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const HandComponentHammerMod := preload("hand_component_hammer_mod.gd")
 
 const SHOVEL_SLOT_NODE := "%UIShovel"

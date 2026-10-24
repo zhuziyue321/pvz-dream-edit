@@ -86,21 +86,16 @@ func _on_host_drop_spawned(drop: Node) -> void:
 	}))
 
 
-## 这一件是哪种 / 编号几 / 落在哪儿（两类掉落物字段名不同，在这里收口）
+## 这一件是哪种 / 编号几 / 落在哪儿
+##
+## 三个字段现在都在 `DropItemBase` 上（钱 / 巧克力 / 种子包 / 礼包 / 阳光同一份），
+## 不再按 `is Coin` / `is ChocolateDrop` 分堆 —— 加一种掉落物不必再动这里三个函数
 static func _kind_of(drop: Node) -> int:
-	if drop is Coin:
-		return (drop as Coin).drop_kind
-	if drop is ChocolateDrop:
-		return (drop as ChocolateDrop).drop_kind
-	return -1
+	return (drop as DropItemBase).drop_kind if drop is DropItemBase else -1
 
 
 static func _id_of(drop: Node) -> int:
-	if drop is Coin:
-		return (drop as Coin).entity_id
-	if drop is ChocolateDrop:
-		return (drop as ChocolateDrop).entity_id
-	return 0
+	return (drop as DropItemBase).entity_id if drop is DropItemBase else 0
 
 
 func _position_of(drop: Node) -> Vector2:
@@ -108,11 +103,7 @@ func _position_of(drop: Node) -> Vector2:
 
 
 static func _spawn_target_of(drop: Node) -> Vector2:
-	if drop is Coin:
-		return (drop as Coin).spawn_target
-	if drop is ChocolateDrop:
-		return (drop as ChocolateDrop).spawn_target
-	return Vector2.ZERO
+	return (drop as DropItemBase).spawn_target if drop is DropItemBase else Vector2.ZERO
 #endregion
 
 
@@ -162,30 +153,30 @@ func _spawn_from_host(args: Dictionary) -> void:
 
 #region 小工具
 ## 收走这一件（**主机重放**用：走的是本体的拾取入口，音效 / 飞向钱袋 / 入账都不用抄一遍）
+##
+## `pick()` 是 `DropItemBase` 上统一的收走口（不过闸门：主机已经点了头）；
+## 以前这里按类型分别调 `Coin.collect()` / `ChocolateDrop._on_texture_button_pressed()`
 static func collect_drop_by_id(mg: MainGameManager, drop_id: int) -> bool:
 	var drop := find_drop_by_id(mg, drop_id)
 	if drop == null:
 		return false
-	if drop is Coin:
-		(drop as Coin).collect()
-		return true
-	if drop is ChocolateDrop:
-		(drop as ChocolateDrop)._on_texture_button_pressed()
+	if drop is DropItemBase:
+		(drop as DropItemBase).pick()
 		return true
 	return false
 
 
-## 在两堆父节点里按编号找一件掉落物（金币与巧克力不在同一个父节点下）
+## 在两个父节点里按编号找一件掉落物（金币与巧克力不在同一个父节点下）
 static func find_drop_by_id(mg: MainGameManager, drop_id: int) -> Node:
 	if drop_id == 0:
 		return null
 	if mg == null or mg.drop_item_manager == null or not is_instance_valid(mg.drop_item_manager):
 		return null
 	var parents: Array[Node] = []
-	if mg.drop_item_manager.dim_coin != null and is_instance_valid(mg.drop_item_manager.dim_coin):
-		parents.append(mg.drop_item_manager.dim_coin.all_drop_coin_parent)
-	if mg.drop_item_manager.dim_chocolate != null and is_instance_valid(mg.drop_item_manager.dim_chocolate):
-		parents.append(mg.drop_item_manager.dim_chocolate.all_drop_chocolate_parent)
+	if is_instance_valid(mg.drop_item_manager.dim_coin):
+		parents.append(mg.drop_item_manager.dim_coin.get_drop_parent())
+	if is_instance_valid(mg.drop_item_manager.dim_chocolate):
+		parents.append(mg.drop_item_manager.dim_chocolate.get_drop_parent())
 	for parent in parents:
 		if parent == null or not is_instance_valid(parent):
 			continue

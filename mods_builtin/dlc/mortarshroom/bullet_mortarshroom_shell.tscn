@@ -1,0 +1,98 @@
+[gd_scene load_steps=13 format=3]
+
+; 臼炮蘑菇的炮弹 —— 继承本体 `bullet_parabola_base.tscn`（抛物线移动 / 影子 / 攻击框 / 保护伞弹开
+; 都沿用），再加上 `SpatterComponent` 做落地溅射（迷你西瓜投手式）。只换三样：
+;   · 贴图用 DLC 自己的 `mortarshroom_shell.png`（32×32，深色圆壳 + 引信，缩到 0.9 → ≈29 px）；
+;     原先借的是投掷蘑菇的孢子（17 px 淡绿小点），炮弹看着太轻，也和投掷蘑菇撞脸；
+;   · 数值：直接命中 40（wiki「moderate」）、溅射 sum=60（每敌 1~30）、射程 6 格，
+;     抛物线高度 -350（臼炮抛得比孢子高、比西瓜低）；
+;   · 溅射框：CapsuleShape2D（半径 60 / 高 300），打到本行与上下一行。
+;
+; 速度口径：`BulletMovementParabola` 用「起点→控制点→终点」的路程 ÷ speed 算总时长，
+; 所以 speed 只影响飞行时间，不影响落点。
+
+[ext_resource type="PackedScene" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_parabola"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/mortarshroom/bullet_mortarshroom_shell.gd" id="2_script"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/mortarshroom/mortarshroom_shell.png" id="3_spore"]
+[ext_resource type="Script" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="4_effect"]
+[ext_resource type="Texture2D" path="res://pak/particles/PuffShroom_puff2.png" id="5_puff"]
+[ext_resource type="Script" path="res://src/entities/bullet/component/spatter_component.gd" id="6_spatter"]
+
+; 落地烟借本体 `pak/particles/PuffShroom_puff2.png`（21×21 **单帧**，DLC 包的
+; `MortarShroomSplat` / `MortarShroomMuzzle` 用的也是 `IMAGE_PUFFSHROOM_PUFF2`）。⚠️ 别照抄
+; 蜜蜂 / 尖刺 / 箭那三张 96×32 三帧命中图的 `particles_animation` 设置：那会把单帧烟横切成
+; 3 条 7×21 的细条并循环跳帧。本体 `bullet_puff.tscn` 用同款贴图时就不开切帧，这里照本体来。
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_puff"]
+
+[sub_resource type="Curve" id="Curve_puff"]
+_data = [Vector2(0, 0.550562), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_puff"]
+curve = SubResource("Curve_puff")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_puff"]
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 50.0
+initial_velocity_max = 80.0
+gravity = Vector3(0, 100, 0)
+scale_curve = SubResource("CurveTexture_puff")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
+radius = 20.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_spatter"]
+radius = 60.0
+height = 300.0
+
+[node name="BulletDlcMortarShell" instance=ExtResource("1_parabola")]
+bullet_type = &"dlc_mortarshroom_shell"
+attack_value = 40
+speed = 500.0
+max_distance = 1200.0
+is_rotate = true
+
+[node name="BulletShadow" parent="." index="0"]
+scale = Vector2(1.2, 1.0)
+
+[node name="BulletBody" parent="Body" index="0"]
+texture = ExtResource("3_spore")
+scale = Vector2(0.9, 0.9)
+
+; `is_bullet_effect` 显式写死：继承链上 `bullet_parabola_base.tscn` 现在没覆盖这一项，
+; 靠基类默认值也能生效，但默认值一翻就会静默变成「命中无特效」，这里不赌默认。
+[node name="BulletEffect" parent="." index="2"]
+script = ExtResource("4_effect")
+is_bullet_effect = true
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="BulletEffect/AllParticles2D" index="0"]
+material = SubResource("CanvasItemMaterial_puff")
+emitting = false
+amount = 10
+texture = ExtResource("5_puff")
+lifetime = 0.5
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_puff")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2DAttack" index="0"]
+shape = SubResource("CircleShape2D_attack")
+
+; ⚠️ 抛物线高度是 `MovementComponent` 的字段，**不是子弹根的字段** ——
+; 写在根节点上会被静默忽略（一直吃基类的 -300），必须覆盖这个节点再写
+[node name="MovementComponent" parent="." index="4"]
+parabola_height = -350.0
+
+[node name="SpatterComponent" type="Node2D" parent="." index="6"]
+script = ExtResource("6_spatter")
+sum_attack_value = 60
+range_attack_value = Vector2i(1, 30)
+spatter_lane_up_down = 1
+
+[node name="Area2DSpatter" type="Area2D" parent="SpatterComponent" index="0"]
+collision_layer = 8
+collision_mask = 512
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="SpatterComponent/Area2DSpatter" index="0"]
+shape = SubResource("CapsuleShape2D_spatter")

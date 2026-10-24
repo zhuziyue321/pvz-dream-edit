@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「更多的防具」：原版的桶只有铁桶一种，本模组按 Minecraft 的矿石阶梯再加三种 ——
 ## **铜桶 / 钻石桶 / 下界合金桶**，各配一只戴桶的僵尸（铜桶会氧化变脆、下界合金最硬）。
 ##
@@ -25,7 +25,7 @@ extends "../mod_base.gd"
 ## 本体：铁桶僵尸的场景（桶精灵 / 铁器节点 / 掉落物 / 破损外观整套现成）
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 ## 下面三个常量取的是**脚本上的常量**（`ARMOR_MAX_HP`，给模组页面写说明用），
 ## 与再下面的 `SCRIPT_*`（喂给 `CharacterRegistry` 的配方）指向同一批文件，不是重复登记
 const ZombieCopperBucket := preload("zombie_copper_bucket.gd")

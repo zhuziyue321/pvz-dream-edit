@@ -1,0 +1,58 @@
+[gd_scene load_steps=7 format=3]
+
+; 橡木弓箭手的箭 —— 继承本体 `bullet_cactus.tscn`（直线移动 / 影子 / 攻击框都沿用），
+; 只换两样：
+;   · 贴图用 DLC 自己的 `oak_archer_arrow.png`（115×18，缩到 0.6 → ≈69×11 px，箭的细长造型）；
+;   · 数值：80 伤害（wiki：Oak Archer 页「普通攻击 80」，带问号）、speed 260。
+;
+; 橡木弓箭手是本行**直线射手**：一支箭水平往右飞，撞上僵尸即命中（不走抛物线，
+; 所以直接复用本体 `bullet_cactus.tscn` 那条匀速直线，不用自己写移动脚本）。
+; 速度口径：飞完 9 格（684 px）≈ 2.6 秒 —— 介于豌豆（轻快）与仙人掌刺（慢）之间的「箭」手感。
+;
+; 命中特效：继承链上 `bullet_cactus.tscn` 写死了 `is_bullet_effect = false`，命中没有任何表现。
+; 这里把 `BulletEffect` 换成 `bullet_effect_norm.gd`（基类那份只 reparent、不释放，会漏节点）
+; 并打开开关，粒子用 `oakarcher_hit.png`（横向 3 帧、单帧 32×32 的木屑 / 树叶碎屑）。
+
+[ext_resource type="PackedScene" uid="uid://dewmob4swv03e" path="res://src/entities/bullet/bullet_cactus.tscn" id="1_base"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/reanim/OakArcher/oak_archer_arrow.png" id="2_arrow"]
+[ext_resource type="Script" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_effect"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/oakarcher/oakarcher_hit.png" id="4_hit"]
+
+; 横向 3 帧的命中特效：`particles_animation` 让 GPUParticles2D 按贴图横向帧数逐帧播
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_hit"]
+particles_animation = true
+particles_anim_h_frames = 3
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+; 命中点是固定的：不要初速度 / 重力，粒子就停在命中处把 3 帧播完
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_hit"]
+direction = Vector3(0, 0, 0)
+spread = 0.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.0
+initial_velocity_max = 0.0
+
+[node name="BulletDlcOakArcherArrow" instance=ExtResource("1_base")]
+bullet_type = &"dlc_oakarcher_arrow"
+attack_value = 80
+speed = 260.0
+max_distance = 900.0
+
+[node name="BulletBody" parent="Body" index="0"]
+texture = ExtResource("2_arrow")
+scale = Vector2(0.6, 0.6)
+
+[node name="BulletEffect" parent="." index="2"]
+script = ExtResource("3_effect")
+is_bullet_effect = true
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="BulletEffect/AllParticles2D" index="0"]
+material = SubResource("CanvasItemMaterial_hit")
+emitting = false
+amount = 1
+texture = ExtResource("4_hit")
+lifetime = 0.25
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_hit")

@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 自制关卡模组：把玩家目录（`user://custom_level`）与**所有模组各自目录下的 `levels/`**
 ##（随各模组加载根走，见 custom_choose_level.gd:get_mod_level_dirs()）里的自制关卡脚本
 ## 加载成可选关卡
@@ -28,7 +28,7 @@ static func _choose_level_scene_path() -> String:
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
 const CustomChooseLevel := preload("custom_choose_level.gd")
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 
 ## 主菜单场景：认它来决定「什么时候该挂入口按钮」
 const START_MENU_TSCN := "res://src/menus/start_menu/start_menu.tscn"

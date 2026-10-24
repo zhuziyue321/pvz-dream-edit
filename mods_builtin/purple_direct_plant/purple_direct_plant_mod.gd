@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「紫卡直接种植」：紫卡（升级植物）**不必先种基座植物**，可以直接种在空地上
 ##
 ## ★ 为什么是模组：原版紫卡只能种在它的基座植物上（机枪射手要种在双发豌豆上、
@@ -25,7 +25,7 @@ extends "../mod_base.gd"
 
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const Rule := preload("purple_direct_plant_rule.gd")
 const ConditionPurpleDirect := preload("condition_purple_direct.gd")
 const ConditionPurpleDirectCobCannon := preload("condition_purple_direct_cob_cannon.gd")

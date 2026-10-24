@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「生态版」：把**原版已有的数值**改成同人口径（不改玩法，不加内容）
 ##
 ## ★ 为什么是模组：仓库的目标是复刻原版，原版数值是多少就该是多少。
@@ -26,7 +26,7 @@ extends "../mod_base.gd"
 
 ## `user://` 下脚本的 class_name 不注册成全局类（实测 Godot 4.6.2），
 ## 上级目录与同目录的文件一律 preload 成常量再引用（见 `mods_builtin/README.md`）
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const Settings := preload("eco_settings.gd")
 const EcoPlantPatcher := preload("eco_plant_patcher.gd")
 const EcoWiring := preload("eco_wiring.gd")

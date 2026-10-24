@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「手套」：把场上已种下的植物搬到另一个格子（不铲除、不重种，实例与状态全保留）
 ##
 ## ★ 为什么是模组：原版没有这个玩法 —— 原版的手套是禅境花园工具（商店买断、用来搬花园植物），
@@ -13,7 +13,7 @@ extends "../mod_base.gd"
 ##   3. `RealGlove`  —— 跟随鼠标的真手套，挂到 `CanvasLayerTemp`
 ##
 ## 还管两件本体做不到的事：
-##   1. **解锁**：与商店里的**园艺手套**同一时刻拿到 —— 商店买下园艺手套（$1000，需先通关 5-5
+##   1. **解锁**：与商店里的**园艺手套**同一时刻拿到 —— 商店买下园艺手套（$1000，需先通完 5-4
 ##      解锁禅境花园才上架）的那一刻，关卡内手套同时到手。
 ##      旧口径是"通关冒险 4-5（序号 35）后戴夫赠送"，现已改掉；本体不再有"手套解锁"这个概念。
 ##   2. **冷却设置**（有没有冷却 / 按秒数还是按波数 / 几秒 / 几波）：原版没有手套，也就没有冷却 —— 默认关。
@@ -43,7 +43,7 @@ const REAL_GLOVE_POSITION := Vector2(687, 67)
 
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const RealGlove := preload("real_glove.gd")
 const HandComponentGlove := preload("hand_component_glove.gd")
 ## 解锁 / 冷却的**定义与读值口**单独在 `glove_settings.gd`
@@ -122,7 +122,7 @@ func create_detail_control() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.add_child(ModBase.create_detail_label(
-		"解锁：在商店买下「园艺手套」（$%d，需先通关 5-5 解锁禅境花园才上架）的那一刻同时到手"
+		"解锁：在商店买下「园艺手套」（$%d，需先通完 5-4 解锁禅境花园才上架）的那一刻同时到手"
 		% ConstShop.GARDENING_GLOVE_PRICE))
 	box.add_child(ModBase.create_detail_label("进度：" + _progress_text()))
 	box.add_child(ModBase.create_detail_label(
@@ -220,8 +220,8 @@ func _progress_text() -> String:
 		return "已买下园艺手套 —— 关卡内手套已到手（下一局卡槽里就有它）"
 	var is_garden_open := Global.global_game_state.is_garden_unlocked()
 	return "还没买园艺手套%s" % (
-		" —— 商店（通关 5-5 解锁花园后上架）买下它，关卡里就能用它搬植物"
-		if is_garden_open else " —— 商店的园艺手套要等通关 5-5 解锁花园后才上架")
+		" —— 商店（通完 5-4 解锁花园后上架）买下它，关卡里就能用它搬植物"
+		if is_garden_open else " —— 商店的园艺手套要等通完 5-4 解锁花园后才上架")
 
 
 ## 每局安装：造出三件套并接好线（本体场景里没有手套节点，全靠这里现场装）

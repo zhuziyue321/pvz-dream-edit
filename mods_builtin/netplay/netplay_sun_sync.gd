@@ -137,23 +137,8 @@ func _spawn_from_host(args: Dictionary) -> void:
 	sun.spawn_fall = float(args.get(NetplayCommand.ARG_FALL, 0.0))
 	mg.suns.add_child(sun)
 	_known_sun_ids[sun_id] = true
-	_fall_to_target(sun)
-
-
-## 照主机给的两个点走一段下落（起终点一致，两端才落在同一处）
-func _fall_to_target(sun: Sun) -> void:
-	var to := sun.spawn_target
-	if to == Vector2.ZERO:
-		return
-	## 时长也照主机给的来：天降是"距离 / 速度"（慢悠悠），向日葵吐的是固定 0.9 秒（弹一下），
-	## 客户端自己按速度算会把后者变成 0.15 秒 —— 位置对得上，看着对不上
-	var duration := maxf(sun.spawn_fall, 0.05)
-	sun.spawn_sun_tween = sun.create_tween()
-	sun.spawn_sun_tween.set_parallel()
-	if abs(to.x - sun.position.x) > 0.5:
-		sun.spawn_sun_tween.tween_property(sun, "position:x", to.x, duration)
-	sun.spawn_sun_tween.tween_property(sun, "position:y", to.y, duration)
-	sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
+	## 照主机给的两个点走一段下落（起终点一致，两端才落在同一处，见 `SunSpawner.replay_fall`）
+	SunSpawner.replay_fall(sun)
 #endregion
 
 

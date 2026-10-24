@@ -1,0 +1,85 @@
+[gd_scene load_steps=13 format=3]
+
+; 拳击白菜（DLC 的 BonkChoy）—— 近战战斗植物，由模组「DLC植物」提供
+;
+; 结构照 `../pultshroom/plant_pultshroom.tscn`（同一套 DLC 动画转换产物）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 检测组件 + 攻击冷却计时器。
+;
+; 玩法（近战，不用子弹）：检测框铺本行左右两格，框里有僵尸就一拳一拳地打，
+; 这一拳能直接打死目标时换成上勾拳（伤害更高）。伤害走 `DamageInfo` + `apply_damage()`，
+; 与 `mods_builtin/pvz2/bonkchoy/bonkchoy_plant.gd` 同一套近战口径。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   ⚠️ 不要给动画节点加缩放 —— 每部件的原版缩放已经在动画的 `scale` 轨道里，
+;      根节点再加一层就整株缩小。
+;   摆放以探针 `get_content_rect()` 实测为准（`test/scenarios/probe_dlc_bonkchoy.gd` STEP5）：
+;   运行期内容（Body 坐标）宽 ≈ 85.1、高 ≈ 89.5，换算到画布内部包围盒中心 ≈ (32.3, 31.9)，
+;   x 用 -32.3 把内容居中到植物原点；底边对齐本体卷心菜投手（Body 坐标 +10.1）：
+;   内部底边 ≈ 76.7 → position.y = 10.1 - 76.7 ≈ -66.6。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_BonkChoy_idle` / `_shooting` / `_uppercut` / `_blink` / `_face`），而 `AnimLib` 里只有一条
+;   名叫 `ALL_ANIMS` 的合并动画 —— 那既不是分段名，也没法按段播。
+;   这里把五段 Animation 资源重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+;   `AnimLib` 在动画场景里的索引 = 15（BonkChoy.tscn 中第 16 个子节点，0 基）。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/bonkchoy/bonkchoy_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy_shooting.tres" id="7_shooting"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy_uppercut.tres" id="8_uppercut"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy_blink.tres" id="9_blink"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BonkChoy/BonkChoy_face.tres" id="10_face"]
+
+; 五段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_bonkchoy"]
+_data = {
+&"BonkChoy_blink": ExtResource("9_blink"),
+&"BonkChoy_face": ExtResource("10_face"),
+&"BonkChoy_idle": ExtResource("6_idle"),
+&"BonkChoy_shooting": ExtResource("7_shooting"),
+&"BonkChoy_uppercut": ExtResource("8_uppercut")
+}
+
+; 近战检测框：本行左右各约 1.5 格（±120 px，约 3 格宽），高 80（兜住受击框）
+; 与 `mods_builtin/pvz2/bonkchoy/plant_bonkchroom.tscn` 同口径
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bonkchoy"]
+size = Vector2(240, 80)
+
+[node name="DlcBonkChoy" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_bonkchoy"
+attack_value = 15
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="BonkChoyAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的五段库（原因见文件头）
+[node name="AnimLib" parent="Body/BonkChoyAnim" index="15"]
+libraries = {
+&"": SubResource("AnimationLibrary_bonkchoy")
+}
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 0.95
+one_shot = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+is_lane = true
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -25)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+shape = SubResource("RectangleShape2D_bonkchoy")

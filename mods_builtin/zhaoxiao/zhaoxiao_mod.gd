@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「招笑版」：只改**向日葵**、**豌豆射手**与**樱桃炸弹**三只植物（都是原版没有的，所以做成模组）
 ##
 ## ★ 向日葵（改名 + 产阳光时的集体转头与流汗），四件事：
@@ -42,7 +42,7 @@ extends "../mod_base.gd"
 
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 上级目录与同目录的文件一律 preload 成常量再引用，不能写 `extends ModBase`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const Settings := preload("zhaoxiao_settings.gd")
 const SunflowerWatcher := preload("zhaoxiao_sunflower.gd")
 const PeashooterWatcher := preload("zhaoxiao_peashooter.gd")

@@ -1,0 +1,74 @@
+[gd_scene load_steps=10 format=3]
+
+; 血橙（DLC 的 BloodOrange）—— 即炸植物，由模组「DLC植物」提供
+;
+; 结构照 kingcactus：本体 `plant_base.tscn` + 一个 DLC 动画节点 + 爆炸检测框 + 引信计时器。
+;
+; 摆放：**不要给动画节点加缩放** —— 每个部件的原版缩放已经在动画的 `scale` 轨道里
+;   （这株部件 ≈0.65~0.67）。内容包围盒（idle，含运行期塞入的贴图）≈ x[6.1, 74.9]、y[-10.6, 62.8]，
+;   整株 ≈ 69×73 px（与本体樱桃炸弹同量级）。中心 ≈ (40.5, 26.1)。
+;   水平对齐中心：`position.x = -40.5`；底边贴地（与国王仙人掌同一套「下压 20」）：
+;   `position.y = 20 - 62.8 = -42.8`。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_BloodOrange_idle` / `_explode`），而 `AnimLib` 里只有一条合并动画（非分段名、没法按段播）。
+;   这里把两段 Animation 资源重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/BloodOrange/BloodOrange.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/bloodorange/bloodorange_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BloodOrange/BloodOrange_idle.tres" id="5_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BloodOrange/BloodOrange_explode.tres" id="6_explode"]
+[ext_resource type="Script" path="res://src/entities/character/components/can_attack_status_component/component_can_attack_status.gd" id="7_can"]
+
+; 两段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_bloodorange"]
+_data = {
+&"BloodOrange_idle": ExtResource("5_idle"),
+&"BloodOrange_explode": ExtResource("6_explode")
+}
+
+; 爆炸范围：照樱桃炸弹（3×3 ≈ 250×200），居中于植物、略往上抬（植物原点在脚底附近）
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bomb"]
+size = Vector2(250, 200)
+
+[node name="DlcBloodOrange" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_bloodorange"
+attack_value = 1800
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+[node name="BloodOrangeAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的两段库（原因见文件头）
+[node name="AnimLib" parent="Body/BloodOrangeAnim" index="18"]
+libraries = {
+&"": SubResource("AnimationLibrary_bloodorange")
+}
+
+; 爆炸检测框：遮罩 2052（与本体樱桃炸弹 / 毁灭菇同款，命中僵尸受击框）
+[node name="Area2DBomb" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2052
+input_pickable = false
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2DBomb"]
+position = Vector2(0, -25)
+shape = SubResource("RectangleShape2D_bomb")
+
+; 可攻击状态掩码：只炸僵尸（与本体炸弹同口径，僵尸全状态 63）
+[node name="CanAttackStatusComponent" type="Node2D" parent="."]
+script = ExtResource("7_can")
+can_attack_zombie_status = 63
+
+; 引信：种下后短暂待机，到点引爆（一次性）
+[node name="FuseTimer" type="Timer" parent="."]
+wait_time = 1.0
+one_shot = true

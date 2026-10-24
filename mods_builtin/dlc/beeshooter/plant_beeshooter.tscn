@@ -1,0 +1,105 @@
+[gd_scene load_steps=13 format=3]
+
+; 蜜蜂射手（DLC 的 Beeshooter）—— 战斗植物，由模组「DLC植物」提供
+;
+; 结构照 `../kingcactus/plant_kingcactus.tscn`（同一套 DLC 动画转换产物），
+; 但**这株的 reanim 被拆成了多层动画**，所以比别的 DLC 植物多一层开火播放器：
+;   · `AnimLib`（动画场景自带）：播 `BeeShooter_full_idle` —— 唯一一段「完整姿态」
+;     （身体 + 头 + 嘴，探针实测部件已对齐）。同目录的 `BeeShooter_idle` 只有茎叶、
+;     `BeeShooter_head_idle` 只有头，都不能单独当待机用。
+;   · `ShootLayer`（本场景新增）：播 `BeeShooter_shooting_overlay` —— 从 `BeeShooter_shooting`
+;     里只留头/嘴/闪帧轨道、按 `full_idle` 的 t=0 头位整体平移后的**头部覆盖动画**
+;     （`shooting` 原段会把身体部件的 visible 关掉，直接播会「没身子」）。
+;     两层同时跑：身体来自 `full_idle`，头/嘴来自覆盖层（后加的节点后处理，覆盖生效）。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   探针实测 `full_idle` 第 1 秒可见部件合并包围盒 ≈ x[18.35, 81.09] y[14.13, 79.09]
+;   （中心 x≈49.7、底边 79.09）。规则「position = -(中心x, 底边y)」得 (-49.7, -79.1)；
+;   再对齐本体豌豆射手的底边（Body 坐标 +11.35）下压到 -67.7 —— 取 (-49.7, -67.7)。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已经在动画的 `scale` 轨道里。
+;   `Marker2D` 放在嘴部枪口（画布 ≈ (81, 28) → 节点坐标 (31, -40)）：蜜蜂从这里吐出、直线往右飞。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer，
+;   而 `AnimLib` 里只有一条名叫 `ALL_ANIMS` 的合并动画 —— 既不是分段名，也没法按段播。
+;   这里把待机重新装进 `AnimLib` 的库，另起 `ShootLayer` 装开火覆盖层。
+;   `AnimLib` 在动画场景里的索引照实际数：根节点下 18 个 Sprite（index 0~16）+ AnimLib=17。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/BeeShooter/BeeShooter.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/beeshooter/beeshooter_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BeeShooter/BeeShooter_full_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/BeeShooter/BeeShooter_shooting_overlay.tres" id="7_shooting"]
+[ext_resource type="Script" path="res://src/entities/character/components/can_attack_status_component/component_can_attack_status.gd" id="8_cas"]
+
+; 待机：完整姿态（身体 + 头 + 嘴）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_beeshooter"]
+_data = {
+&"BeeShooter_full_idle": ExtResource("6_idle")
+}
+
+; 开火：头部覆盖层（只动头 / 嘴 / 闪帧，身体留给待机层）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_shootlayer"]
+_data = {
+&"BeeShooter_shooting_overlay": ExtResource("7_shooting")
+}
+
+; 双向索敌框（wiki `range = Forward and backward`）：以植物为中心左右各铺 400 px，
+; 高 60 只为兜住僵尸受击框，行过滤由 `DetectComponent.is_lane`（默认 true）做。
+; 朝哪边吐由脚本按「离自己最近的那只在哪一侧」决定（见 `_shoot_bullet()`）
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_beeshooter"]
+size = Vector2(800, 60)
+
+[node name="DlcBeeShooter" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_beeshooter"
+attack_value = 20
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="BeeShooterAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地装的待机库（原因见文件头）
+[node name="AnimLib" parent="Body/BeeShooterAnim" index="17"]
+libraries = {
+&"": SubResource("AnimationLibrary_beeshooter")
+}
+
+; 开火覆盖层：与 `AnimLib` 同父，根节点默认都是 `BeeShooterAnim`，
+; 轨道 `Anim_face:...` 指向同一批部件；后处理所以盖在待机层之上
+[node name="ShootLayer" type="AnimationPlayer" parent="Body/BeeShooterAnim"]
+libraries = {
+&"": SubResource("AnimationLibrary_shootlayer")
+}
+
+[node name="Marker2D" type="Marker2D" parent="Body"]
+position = Vector2(42.7, -29.8)
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 1.5
+
+[node name="ShootTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+
+; 129 = 1（正常）+ 128（灌木）：DLC 官方口径里蜜蜂射手是**唯一能打到灌木丛里僵尸**的手段
+; （pvz-dlc-edition.fandom.com/wiki/Woods "Plants like Beeshooter are meant to counter this"）
+[node name="CanAttackStatusComponent" type="Node2D" parent="DetectComponent"]
+script = ExtResource("8_cas")
+can_attack_zombie_status = 129
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -25)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+position = Vector2(0, 0)
+shape = SubResource("RectangleShape2D_beeshooter")

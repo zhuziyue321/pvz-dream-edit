@@ -1,0 +1,62 @@
+[gd_scene load_steps=8 format=3]
+
+; 蜜蜂射手的蜜蜂 —— 继承本体 `bullet_linear_base.tscn`（直线移动 / 影子 / 攻击框都沿用），
+; 只换三样：
+;   · 贴图用 DLC 自己的 `beeshooter_bee_fly.png`（横向 3 帧、单帧 61×46 的**振翅**循环，
+;     缩到 0.4 → ≈24×18 px，与本体豌豆同量级）；逐帧切换由同目录 `bullet_beeshooter_bee.gd`
+;     改 `BulletBody.region_rect` 完成（原来那张单帧 `beeshooter_bee.png` 翅膀是不动的）；
+;   · 数值：20 伤害（wiki 的「Average / 等效 1 豌豆」）、speed 300（与本体豌豆一致）；
+;   · 命中特效：`BulletEffect` 换成 `bullet_effect_norm.gd` 并打开 `is_bullet_effect`
+;     （继承链上 bullet_cactus / 基类那份只 reparent、不释放，会漏节点），
+;     GPUParticles2D 用 `beeshooter_hit.png`（横向 3 帧、单帧 32×32 的蜂蜜溅点）。
+;
+; 命中口径：直线子弹吃行属性（`IsActivateLane = true` + `BulletLane`），
+; 命中由自己的攻击框与僵尸受击框重叠决定，只需往右飞。
+
+[ext_resource type="PackedScene" path="res://src/entities/bullet/bullet_linear_base.tscn" id="1_linear"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/beeshooter/beeshooter_bee_fly.png" id="2_bee"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/beeshooter/bullet_beeshooter_bee.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="4_effect"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/beeshooter/beeshooter_hit.png" id="5_hit"]
+
+; 横向 3 帧的命中特效：`particles_animation` 让 GPUParticles2D 按贴图横向帧数逐帧播
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_hit"]
+particles_animation = true
+particles_anim_h_frames = 3
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+; 命中点是固定的：不要初速度 / 重力，粒子就停在命中处把 3 帧播完
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_hit"]
+direction = Vector3(0, 0, 0)
+spread = 0.0
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.0
+initial_velocity_max = 0.0
+
+[node name="BulletDlcBeeShooter" instance=ExtResource("1_linear")]
+script = ExtResource("3_script")
+bullet_type = &"dlc_beeshooter_bee"
+attack_value = 20
+speed = 300.0
+max_distance = 1400.0
+
+[node name="BulletBody" parent="Body" index="0"]
+texture = ExtResource("2_bee")
+region_enabled = true
+region_rect = Rect2(0, 0, 61, 46)
+scale = Vector2(0.4, 0.4)
+
+[node name="BulletEffect" parent="." index="2"]
+script = ExtResource("4_effect")
+is_bullet_effect = true
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="BulletEffect/AllParticles2D" index="0"]
+material = SubResource("CanvasItemMaterial_hit")
+emitting = false
+amount = 1
+texture = ExtResource("5_hit")
+lifetime = 0.25
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_hit")

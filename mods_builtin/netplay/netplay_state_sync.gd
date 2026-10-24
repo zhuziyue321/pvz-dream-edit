@@ -158,7 +158,7 @@ const MISS_FRAMES_BEFORE_DELETE_SUN := 30
 ##
 ## ⚠️ 前提是客户端**接管**动画：普僵那条路是 AnimationTree 每帧按 `is_death` 等字段
 ## **自己挑**动画，会把我们 `play()` 的那一条下一帧就换掉 —— 结果"发了等于没发"。
-## 所以客户端第一次见到一个角色就把它关掉（`_take_over_anim()`），动画完全由快照驱动。
+## 所以客户端第一次见到一个角色就把它关掉（动画组件的 `take_over()`），动画完全由快照驱动。
 ##
 ## ⚠️ **动画名只能问动画组件**（`AnimComponentBase.update_current_anim()`），**不能**读
 ## `AnimationPlayer.current_animation`：动画树驱动角色时那个字段**恒为空**（树走自己的
@@ -238,7 +238,7 @@ const RENDER_P_SUN_TIME_MASK := 0b111_1111_1111
 ## 动画进度的量化步长（秒）：1/64 ≈ 15.6ms，约等于一帧；10 位可表示到 15.98 秒
 ## （走路 / 啃食 / 倒地都在 2 秒以内，量程绰绰有余）
 const PHASE_STEP := 1.0 / 64.0
-## 相位占位：主机那边**没有正在播的动画**（此时读播放头会刷 ERROR，见 `_anim_has_head`）
+## 相位占位：主机那边**没有正在播的动画**（此时读播放头会刷 ERROR，判空在动画组件里）
 ##
 ## ★ 为什么不能发 0：0 是个合法的相位（"播放头在开头"），客户端照 0 去 `seek()`
 ## 会把本地正在播的动画**拽回第一帧**；而"主机没在播"是另一回事 —— 客户端该做的是**不动**。
@@ -1027,68 +1027,27 @@ static func _is_cut(snap: Dictionary, key: StringName) -> bool:
 static func _anim_index_of(character: Character000Base) -> int:
 	if character == null or not is_instance_valid(character.anim_component):
 		return ANIM_NONE
-	character.anim_component.update_current_anim()
-	var anim_name := character.anim_component.anim_name_now
-	if anim_name == &"":
-		return ANIM_NONE
-	var player := _anim_player_of(character)
-	if player == null:
-		return ANIM_NONE
-	var idx := _anim_list_of(player).find(anim_name)
-	## 下标必须落在 `ANIM_NONE` 之下 —— 它是单字节投递的，255 被留作"不接管"的占位符
-	return ANIM_NONE if idx < 0 or idx >= ANIM_NONE else idx
-
-
-## 这个播放器的动画列表（**缓存**：每帧每只调一次 `get_animation_list()` 太贵，
-## 而列表在角色实例化之后就不再变 —— 两端都是同一份 .tscn，缓存不会造成错位）
-## ⚠️ 必须先 `has_meta` 再 `get_meta`：`get_meta(key, 默认值)` 在键不存在时**照样会
-## push_error**（引擎日志里刷一行 ERROR），默认值只是让它不崩。
-static func _anim_list_of(player: AnimationPlayer) -> PackedStringArray:
-	if player.has_meta(&"netplay_anim_list"):
-		return player.get_meta(&"netplay_anim_list")
-	var list := player.get_animation_list()
-	player.set_meta(&"netplay_anim_list", list)
-	return list
-
-
-## 【客户端侧】接管这个角色的动画：关掉动画树的状态机，改由快照直接驱动
-##
-## ⚠️ **必须**关：`AnimComponentNorm` 那条路是 AnimationTree 用 `advance_expression`
-## 每帧读 `is_death` / `is_attack` / `walk_status` … **自己挑**动画，我们 `play()` 的那一条
-## 下一帧就被它换回去 —— "发了等于没发"。关掉之后 AnimationPlayer 完全归快照管。
-## 只做一次（meta 记着，幂等）。
-static func _take_over_anim(character: Character000Base) -> void:
-	if character == null or not is_instance_valid(character):
-		return
-	if character.has_meta(&"netplay_anim_taken"):
-		return
-	character.set_meta(&"netplay_anim_taken", true)
-	if not is_instance_valid(character.anim_component):
-		return
-	var norm := character.anim_component as AnimComponentNorm
-	if norm == null or not is_instance_valid(norm.animation_tree):
-		return
-	norm.animation_tree.active = false
+	## ★ 采集一步到位：动画组件自己报"此刻在播哪条"，再换成本地播放器列表里的下标
+	##   （两种驱动都覆盖：动画树下钻状态机 / 远端驱动读播放器，见 `AnimComponentNorm`）
+	var snap := character.anim_component.snapshot()
+	return int(snap.get(&"index", ANIM_NONE))
 
 
 ## 【客户端侧】照主机播同一条动画
 ##
-## 只做"名字不一样就 `play()`"这一件事 —— 播到**第几秒**由 `z_render` / `p_render` 里的
-## phase 管（`_apply_anim_phase`）；两条合起来才是完整的"播哪一条、播到第几秒"。
+## ★ **接管、找播放器、下标→名字、seek 全部收在动画组件里**（`take_over()` /
+##   `apply_anim_index()` / `apply_anim_phase()`）。模组只把快照里的两个数递过去，
+##   不再自己递归找 `AnimationPlayer`、也不再往角色身上打 meta 标记。
+##
+## 只切"播哪条" —— 播到**第几秒**由 `z_render` / `p_render` 里的 phase 管
+## （`_apply_anim_phase`）；两条合起来才是完整的"播哪一条、播到第几秒"。
 static func _apply_anim(character: Character000Base, idx: int) -> void:
 	if idx == ANIM_NONE or character == null or not is_instance_valid(character):
 		return
-	_take_over_anim(character)
-	var player := _anim_player_of(character)
-	if player == null:
+	## ⚠️ 必须判空：运行时裸 new 出来、还没挂进宿主场景的角色没有组件
+	if not is_instance_valid(character.anim_component):
 		return
-	var list := _anim_list_of(player)
-	if idx >= list.size():
-		return
-	var anim_name := list[idx]
-	if player.current_animation == anim_name or not player.has_animation(anim_name):
-		return
-	player.play(anim_name)
+	character.anim_component.apply_anim_index(idx)
 
 
 ## 这类僵尸有没有这个"动画变体"属性？按**脚本**缓存 —— `get_property_list()` 每帧调太贵
@@ -1292,15 +1251,14 @@ func _apply_phase(character: Character000Base, phase_packed: int) -> void:
 ## ⚠️ 只在**偏得明显**时才 `seek()`（`PHASE_RESYNC_EPS`）：播放头本来每帧都在自己往前走，
 ## 每帧硬拉会跟它打架，表现为动画抖动。两端速度一致时，纠过一次之后偏差基本不再增长，
 ## 所以实际上只在"刚补种出来"那一下、以及冰冻 / 加速这类速度差上才纠。
-## ⚠️ 客户端的动画树已被接管（`_take_over_anim`），这里不会再有状态机来抢播放头。
-## ⚠️ 也不能对空播放头动手：本地还没 `play()` 过时一样会刷那条 ERROR（同 `_anim_has_head`）。
+## ⚠️ 客户端的动画树已被动画组件接管（`AnimComponentBase.take_over()`），这里不会再有状态机来抢播放头。
+## ⚠️ 也不能对空播放头动手：本地还没 `play()` 过时一样会刷那条 ERROR（判空在组件里）。
 func _apply_anim_phase(character: Character000Base, phase: float) -> void:
-	var player := _anim_player_of(character)
-	if not _anim_has_head(player):
+	if character == null or not is_instance_valid(character):
 		return
-	if absf(player.current_animation_position - phase) < PHASE_RESYNC_EPS:
+	if not is_instance_valid(character.anim_component):
 		return
-	player.seek(clampf(phase, 0.0, maxf(player.current_animation_length, 0.0)), true)
+	character.anim_component.apply_anim_phase(phase)
 
 
 ## 向日葵"准备产出"那一下发光：把本地的 `CreateSunTimer` 对到主机的剩余时间
@@ -1327,41 +1285,8 @@ func _apply_create_sun(p: Plant000Base, packed: int) -> void:
 	timer.start(host_left)
 
 
-## 角色真正在播的那个 AnimationPlayer（动画树与纯播放器两种角色各一条路）
-##
-## ⚠️ 走**基类** `AnimComponentBase` 拿不到播放器：只有两个子类各自持有
-## （`AnimComponentNorm` 持 `animation_tree`、`AnimComponentPlayer` 持 `animation_player`），
-## 而 `AnimComponentEmpty`（保龄球植物）两个都没有 ⇒ 返回 null。
-##
-## ⚠️ 标了 `static`：主机侧的 `_anim_index_of()` 与客户端侧的 `_apply_anim()` 都是静态的
-## （它们只吃参数、不碰实例状态），静态函数调不到非静态的 —— 这个函数本身也不碰。
-static func _anim_player_of(character: Character000Base) -> AnimationPlayer:
-	if character == null or not is_instance_valid(character.anim_component):
-		return null
-	var player: AnimationPlayer = null
-	## ⚠️ 必须先 `as` 成子类再取：`anim_component` 是**基类** `AnimComponentBase`，
-	## 在基类上直接写 `.animation_tree` 取到的是 Variant（`var tree :=` 推断不出类型）
-	var norm := character.anim_component as AnimComponentNorm
-	if norm != null:
-		var tree: AnimationTree = norm.animation_tree
-		if tree != null and is_instance_valid(tree):
-			## ⚠️ `AnimationTree.anim_player` 是 **NodePath**，不是节点本身
-			player = tree.get_node_or_null(tree.anim_player) as AnimationPlayer
-	else:
-		var pl := character.anim_component as AnimComponentPlayer
-		if pl != null:
-			player = pl.animation_player
-	return player if is_instance_valid(player) else null
-
-
-## 这个播放器的播放头有效吗（即：有一条正在播的动画）
-##
-## ⚠️ **为什么必须先探**：`current_animation` 为空时读 `current_animation_position` /
-## `current_animation_length` 会刷一行 ERROR（"AnimationPlayer has no current animation."）
-## —— 每只僵尸每帧都要采一次，一刷就是满屏，还看不出是哪只。
-## 什么情况会空：非循环动画自然播完、刚被 `stop()`、动画树刚接管还没 `play()`。
-static func _anim_has_head(player: AnimationPlayer) -> bool:
-	return player != null and is_instance_valid(player) and player.current_animation != &""
+## 播放器定位 / 下标映射 / 判空已全部收进动画组件（`get_animation_player()` /
+## `anim_index_of()` / `apply_anim_*`），本类不再直接碰 `AnimationPlayer`。
 
 
 ## 【主机侧】动画播到第几秒 —— 返回的是**打包后可直投 `z_render` 的 int**
@@ -1526,15 +1451,15 @@ func _align_plants(mg: MainGameManager, snap: Dictionary) -> void:
 			if not is_instance_valid(cell):
 				continue
 			for place in cell.plant_in_cell:
-				var plant: Plant000Base = cell.get_plant(place)
-				if is_instance_valid(plant) and plant.entity_id != 0:
-					local[plant.entity_id] = plant
-					if not seen.has(plant.entity_id):
-						var key := _orphan_key(cell.row_col, plant.plant_type)
+				var local_plant: Plant000Base = cell.get_plant(place)
+				if is_instance_valid(local_plant) and local_plant.entity_id != 0:
+					local[local_plant.entity_id] = local_plant
+					if not seen.has(local_plant.entity_id):
+						var key := _orphan_key(cell.row_col, local_plant.plant_type)
 						if not orphans.has(key):
 							orphans[key] = []
 						var pool: Array = orphans[key]
-						pool.append(plant)
+						pool.append(local_plant)
 
 	for i in range(p_id.size()):
 		var id := p_id[i]

@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「明日方舟」：把《明日方舟》的战斗数值规则搬进本作 —— 原版没有这些概念，做成模组
 ##
 ## 三块功能（默认数值全为 0 / 不注册精英副本时，开着也是原版体验；关掉模组则整套规则消失）：
@@ -24,7 +24,7 @@ extends "../mod_base.gd"
 ##
 ## 跨文件引用：`user://` 下脚本的 `class_name` 不注册全局类（实测 Godot 4.6.2），
 ## 一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const ArknightsStats := preload("arknights_stats.gd")
 const ArknightsElite := preload("arknights_elite.gd")
 
@@ -66,9 +66,9 @@ func install() -> void:
 			## 登记失败只跳过这一株，别让整包模组起不来
 			Log.error("明日方舟：%s 的精英副本登记失败，已跳过" % str(plant_type))
 			continue
-		## **不调 `make_selectable()`**：精英副本不是「再进选卡界面的新植物」，而是
+		## **不登记选卡页**：精英副本不是「再进选卡界面的新植物」，而是
 		## 「原版那一格的替换者」—— 靠 `on_level_para_ready()` 里的 `set_plant_choose_replacement()`
-		## 在原位出场。调了它等于在列表末尾多占一格（见 `AllCards` 的两张表）
+		## 在原位出场。登记页等于另开一格（见 `AllCards.register_plant_choose_page`）
 		_elite_kits.append(kit)
 		## 种子包（卡面）上贴同一枚标记：卡面就是本体精灵树的缩小图片，场上有了它也得有
 		ArknightsElite.mark_card(recipe.plant_type)

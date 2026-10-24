@@ -1,0 +1,90 @@
+[gd_scene load_steps=11 format=3]
+
+; 甜菜守卫（DLC 的 ChardGuard）—— 高血量防御 + 近战击退植物，由模组「DLC植物」提供
+;
+; 结构照 `../bonkchoy/plant_bonkchoy.tscn`（同一套 DLC 动画转换产物、同为近战）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 检测组件 + 攻击冷却 / 崩飞计时器。
+;
+; 玩法（防御 + 击退，不用子弹、不造成伤害）：检测框铺本行右侧，僵尸凑过来想啃它时
+; 抡胳膊把对方往后（右）崩飞一截，共 3 次；用完变 `idle_broken` 只挨打。血量靠覆盖
+; `HpComponent.max_hp` 抬高（防御植物的命门）。逻辑全在 `chardguard_plant.gd`。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   ⚠️ 本株**例外地**给动画根节点加了 `scale = 0.7`：DLC 原画内容 126.8×138.6，
+;      是本体坚果墙（70.4×71.9）的近两倍，不缩会明显压到相邻格；缩到 88.8×97 后才和
+;      防御植物同一量级。其它株不加缩放（每部件的原版缩放已在动画的 `scale` 轨道里）。
+;   最终值以探针 `get_content_rect()` 量到的「底边对齐本体坚果墙（6.7）」为准
+;   （见 `test/scenarios/probe_dlc_chardguard.gd` STEP5 打印的 INFO）。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_ChardGuard_idle` / `_attack` / `_idle_broken` …），而 `AnimLib` 里只有一条
+;   名叫 `ALL_ANIMS` 的合并动画 —— 那既不是分段名、也没法按段播。
+;   这里把三段 Animation 资源重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+;   `AnimLib` 在动画场景里的索引 = 18（ChardGuard.tscn 中第 19 个子节点，0 基）。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/ChardGuard/ChardGuard.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/chardguard/chardguard_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/ChardGuard/ChardGuard_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/ChardGuard/ChardGuard_attack.tres" id="7_attack"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/ChardGuard/ChardGuard_idle_broken.tres" id="8_broken"]
+
+; 三段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_chardguard"]
+_data = {
+&"ChardGuard_attack": ExtResource("7_attack"),
+&"ChardGuard_idle": ExtResource("6_idle"),
+&"ChardGuard_idle_broken": ExtResource("8_broken")
+}
+
+; 近身检测框：只铺本行**右侧**（僵尸从右往左来，只有右边那只在啃它）。
+; 宽 230 / 高 90，中心偏右（position.x = 75）—— x 覆盖 [-40, 190]，够罩住「正在啃它」的
+; 那只僵尸，又不至于把崩飞后（+160）落在 x≈+220 的僵尸还留在框里（那样会连续崩不停）。
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_chardguard"]
+size = Vector2(230, 90)
+
+[node name="DlcChardGuard" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_chardguard"
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+; 防御植物的命门：血量按 wiki 的 Chard Guard 页取 1500（本体默认 300），扛得住成群的啃咬
+[node name="HpComponent" parent="." index="3"]
+max_hp = 1500
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="ChardGuardAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+scale = Vector2(0.7, 0.7)
+
+; 动画场景里的 `AnimLib` 换成本地合成的三段库（原因见文件头）
+[node name="AnimLib" parent="Body/ChardGuardAnim" index="18"]
+libraries = {
+&"": SubResource("AnimationLibrary_chardguard")
+}
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 1.2
+one_shot = true
+
+[node name="PunchTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+is_lane = true
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -30)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+position = Vector2(75, 0)
+shape = SubResource("RectangleShape2D_chardguard")

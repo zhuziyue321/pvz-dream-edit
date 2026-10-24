@@ -1,0 +1,54 @@
+[gd_scene load_steps=6 format=3]
+
+; 火焰豌豆射手（PVZ2 的 Fire Peashooter）—— 战斗植物，由模组「PVZ2」提供
+;
+; 结构：本体 `plant_base.tscn` + 一个**空** Node2D 动画挂点 + 子弹出生点 + 检测组件 + 攻击冷却计时器。
+;   ★ 挂点上没有脚本：播放器在另一个模组里，脚本 / bin / 贴图由
+;     `firepeashooter_plant.gd` 的 `character_ready()` 通过 `../pam_bridge.gd` 运行时挂上
+;     （理由见 `../celerystalker/plant_celerystalker.tscn` 的注释）。
+;
+; 摆放（画布 390×390 以中心为原点，脚在画布 y≈280、中心 x≈219）：
+;   `pivot_offset = (-24, -85)`、`scale = 0.35` 让整株 ≈ 132×89 px（与本体豌豆射手差不多高）
+;   ——这两个值现在是 `firepeashooter_plant.gd` 里的 `ANIM_PIVOT` / `ANIM_SCALE`。
+;   `Marker2D` 放在嘴前（画布 (400, 200) → 节点坐标 (62, -28)），火豌豆从这里飞出。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="Script" path="firepeashooter_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+
+; 一整行的检测框：与本体豌豆射手同口径（宽 1000、高 5，往右铺）
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_firepeashooter"]
+size = Vector2(1000, 5)
+
+[node name="PlantPVZ2FirePeashooter" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"pvz2_firepeashooter"
+attack_value = 40
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="FirePeashooterAnim" type="Node2D" parent="Body"]
+
+[node name="Marker2D" type="Marker2D" parent="Body"]
+position = Vector2(62, -28)
+
+[node name="SleepComponent" node_paths=PackedStringArray("sleep_influence_components") parent="." index="4"]
+sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../DetectComponent")]
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 1.4
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -25)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+position = Vector2(500, 0)
+shape = SubResource("RectangleShape2D_firepeashooter")

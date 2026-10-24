@@ -1,4 +1,4 @@
-extends "../mod_base.gd"
+extends "res://src/mods/mod_base.gd"
 ## 模组「联机」：两人 / 多人**合作共守一块草坪**
 ##
 ## ★ 为什么是模组：原版《植物大战僵尸》没有联机，这是同人加的玩法 ——
@@ -48,7 +48,7 @@ extends "../mod_base.gd"
 ## 会话挂 root 时的节点名（两端 RPC 路径一致，靠的就是这个名字固定）
 ## 跨文件引用：`user://` 下脚本的 class_name **不会注册成全局类**（实测 Godot 4.6.2），
 ## 所以同目录 / 上级的文件一律 preload 成常量再引用，不能写 `extends Xxx` / `var x: Xxx`
-const ModBase := preload("../mod_base.gd")
+const ModBase := preload("res://src/mods/mod_base.gd")
 const NetplaySession := preload("netplay_session.gd")
 const NetplayStateSync := preload("netplay_state_sync.gd")
 const NetplayReadyFlow := preload("netplay_ready_flow.gd")

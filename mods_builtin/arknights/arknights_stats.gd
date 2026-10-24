@@ -92,53 +92,53 @@ static func is_character(target: Node) -> bool:
 static func get_defense(target: Node) -> int:
 	if not is_character(target):
 		return DEFAULT_DEFENSE
-	var char := target as Character000Base
-	var override: Variant = char.mod_custom_effects.get(KEY_INSTANCE_DEFENSE)
+	var character := target as Character000Base
+	var override: Variant = character.mod_custom_effects.get(KEY_INSTANCE_DEFENSE)
 	if override != null:
 		return maxi(0, int(override))
-	return maxi(0, int(_stat_of(char).get("defense", DEFAULT_DEFENSE)))
+	return maxi(0, int(_stat_of(character).get("defense", DEFAULT_DEFENSE)))
 
 
 ## 目标法术抗性（百分比，夹在 0~100）：**单实例覆盖 > 类型表 > 默认值**
 static func get_spell_resist(target: Node) -> float:
 	if not is_character(target):
 		return DEFAULT_SPELL_RESIST
-	var char := target as Character000Base
-	var override: Variant = char.mod_custom_effects.get(KEY_INSTANCE_SPELL_RESIST)
+	var character := target as Character000Base
+	var override: Variant = character.mod_custom_effects.get(KEY_INSTANCE_SPELL_RESIST)
 	if override != null:
 		return clampf(float(override), 0.0, 100.0)
-	return clampf(float(_stat_of(char).get("spell_resist", DEFAULT_SPELL_RESIST)), 0.0, 100.0)
+	return clampf(float(_stat_of(character).get("spell_resist", DEFAULT_SPELL_RESIST)), 0.0, 100.0)
 
 
 ## 单实例覆盖防御力（临时 buff / 干员自己的数值）；传 null 取消覆盖
 static func set_instance_defense(target: Node, defense_value) -> void:
 	if not is_character(target):
 		return
-	var char := target as Character000Base
+	var character := target as Character000Base
 	if defense_value == null:
-		char.mod_custom_effects.erase(KEY_INSTANCE_DEFENSE)
+		character.mod_custom_effects.erase(KEY_INSTANCE_DEFENSE)
 		return
-	char.mod_custom_effects[KEY_INSTANCE_DEFENSE] = maxi(0, int(defense_value))
+	character.mod_custom_effects[KEY_INSTANCE_DEFENSE] = maxi(0, int(defense_value))
 
 
 ## 单实例覆盖法术抗性（0~100）；传 null 取消覆盖
 static func set_instance_spell_resist(target: Node, spell_resist_value) -> void:
 	if not is_character(target):
 		return
-	var char := target as Character000Base
+	var character := target as Character000Base
 	if spell_resist_value == null:
-		char.mod_custom_effects.erase(KEY_INSTANCE_SPELL_RESIST)
+		character.mod_custom_effects.erase(KEY_INSTANCE_SPELL_RESIST)
 		return
-	char.mod_custom_effects[KEY_INSTANCE_SPELL_RESIST] = clampf(float(spell_resist_value), 0.0, 100.0)
+	character.mod_custom_effects[KEY_INSTANCE_SPELL_RESIST] = clampf(float(spell_resist_value), 0.0, 100.0)
 
 
 ## 清掉单实例覆盖（效果结束时调；类型表里的默认值不受影响）
 static func clear_instance_stats(target: Node) -> void:
 	if not is_character(target):
 		return
-	var char := target as Character000Base
-	char.mod_custom_effects.erase(KEY_INSTANCE_DEFENSE)
-	char.mod_custom_effects.erase(KEY_INSTANCE_SPELL_RESIST)
+	var character := target as Character000Base
+	character.mod_custom_effects.erase(KEY_INSTANCE_DEFENSE)
+	character.mod_custom_effects.erase(KEY_INSTANCE_SPELL_RESIST)
 #endregion
 
 
@@ -159,12 +159,12 @@ static func reduce_spell(amount: int, spell_resist_percent: float) -> int:
 ## 该角色在类型表里的那一行（没有配过 = 空字典，读出来全是默认值）
 ##
 ## ⚠️ `plant_type` / `zombie_type` 是各自子类的字段、不在 `Character000Base` 上，
-##    这里走 `Object.get()` 动态取（静态写 `char.zombie_type` 在 Godot 4.6 下是编译错误）
-static func _stat_of(char: Character000Base) -> Dictionary:
+##    这里走 `Object.get()` 动态取（静态写 `character.zombie_type` 在 Godot 4.6 下是编译错误）
+static func _stat_of(character: Character000Base) -> Dictionary:
 	var table := PLANT_STATS
-	var type_id: Variant = char.get("plant_type")
-	if char is Zombie000Base:
+	var type_id: Variant = character.get("plant_type")
+	if character is Zombie000Base:
 		table = ZOMBIE_STATS
-		type_id = char.get("zombie_type")
+		type_id = character.get("zombie_type")
 	var stat: Variant = table.get(type_id)
 	return stat as Dictionary if stat != null else {}

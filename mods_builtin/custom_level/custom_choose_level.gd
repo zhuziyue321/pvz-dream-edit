@@ -185,11 +185,11 @@ func _scan_root(root: String, auto_create := false) -> Array:
 	## 散装文件：是关卡的进列表，其余的当依赖先加载
 	var loose_deps: Array[String] = []
 	for file_name in loose_files:
-		var full_path = root + "/" + file_name
-		if is_level_file(full_path):
-			levels.append(full_path)
+		var file_path = root + "/" + file_name
+		if is_level_file(file_path):
+			levels.append(file_path)
 		else:
-			loose_deps.append(full_path)
+			loose_deps.append(file_path)
 	load_dependencies(loose_deps)
 
 	var loose_levels: Array = []
@@ -229,9 +229,9 @@ func pick_level_script(files: Array[String]) -> String:
 	if candidates.is_empty():
 		## 外部 .gd 认不出继承链时（比如导出模板下拿不到全局类）的兜底：只有单个脚本就当它是
 		var scripts: Array[String] = []
-		for f in files:
-			if SCRIPT_EXT.has(f.get_extension().to_lower()):
-				scripts.append(f)
+		for fallback_file in files:
+			if SCRIPT_EXT.has(fallback_file.get_extension().to_lower()):
+				scripts.append(fallback_file)
 		if scripts.size() == 1:
 			return scripts[0]
 		return ""

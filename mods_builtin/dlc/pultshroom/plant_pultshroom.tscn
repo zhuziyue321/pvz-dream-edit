@@ -1,0 +1,94 @@
+[gd_scene load_steps=13 format=3]
+
+; 投掷蘑菇（DLC 的 Pult-shroom）—— 战斗植物，由模组「DLC植物」提供
+;
+; 结构照 `../kingcactus/plant_kingcactus.tscn`（同一套 DLC 动画转换产物）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 检测组件 + 攻击冷却 / 出弹计时器。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   按 idle 第 0 帧的 `position` / `scale` / 贴图合并包围盒 = x[2.7, 58.6]、y[22.4, 62.4]
+;   （整株 ≈ 56×40 px，DLC 这部动画的部件缩放是 0.6）。
+;   ⚠️ 底下那 9.5 px 来自 `PultShroom_eyes`：它的贴图是**动画的 texture 轨道**在运行期塞进来的，
+;      场景里该 Sprite 没有 texture —— 只按场景量包围盒会漏掉它（探针实测才发现，别照旧值改回来）。
+;   对齐口径：本体小喷菇（同为蘑菇）内容底边落在原点上方约 0.3 px → 这里取 (-30.7, -62.1)，
+;   底边 ≈ +0.3 px（探针断言与小喷菇差 ≤ 4 px）。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已经在动画的 `scale` 轨道里，再叠一层就整株缩小。
+;   `Marker2D` 放在篮子口（画布 (26.5, 30.7) → 节点坐标 (-4, -31.4)），孢子从这里抛出去。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_PultShroom_idle` / `_shooting` / `_blink` / `_face` / `_sleep`），而 `AnimLib` 里只有一条
+;   名叫 `ALL_ANIMS` 的合并动画 —— 那既不是分段名，也没法按段播。
+;   这里把五段 Animation 资源重新装进 `AnimLib` 的库，脚本只控制这一个播放器
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/pultshroom/pultshroom_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom_shooting.tres" id="7_shooting"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom_blink.tres" id="8_blink"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom_face.tres" id="9_face"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/PultShroom/PultShroom_sleep.tres" id="10_sleep"]
+
+; 五段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_pultshroom"]
+_data = {
+&"PultShroom_blink": ExtResource("8_blink"),
+&"PultShroom_face": ExtResource("9_face"),
+&"PultShroom_idle": ExtResource("6_idle"),
+&"PultShroom_shooting": ExtResource("7_shooting"),
+&"PultShroom_sleep": ExtResource("10_sleep")
+}
+
+; 抛射射程：wiki 写「抛射·中等，1×6」——6 格 = 76 × 6 = 456 px 往右铺，
+; 覆盖一整行的僵尸（高度 60 只为兜住受击框，行过滤仍由 `DetectComponent.is_lane` 做）
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pultshroom"]
+size = Vector2(456, 60)
+
+[node name="DlcPultShroom" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_pultshroom"
+attack_value = 20
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="PultShroomAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的五段库（原因见文件头）
+[node name="AnimLib" parent="Body/PultShroomAnim" index="11"]
+libraries = {
+&"": SubResource("AnimationLibrary_pultshroom")
+}
+
+[node name="Marker2D" type="Marker2D" parent="Body"]
+position = Vector2(-11.3, -26.8)
+
+; 蘑菇白天睡觉（wiki：Sleeps = Yes）—— 睡着的白天不索敌、不出弹；
+; 姿势由脚本听 `SleepComponent` 的两个信号换成 `PultShroom_sleep`
+[node name="SleepComponent" node_paths=PackedStringArray("sleep_influence_components") parent="." index="4"]
+sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../DetectComponent")]
+is_sleep_in_day = true
+
+[node name="AttackCdTimer" type="Timer" parent="."]
+wait_time = 2.85
+
+[node name="ShootTimer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(0, -25)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+position = Vector2(228, 0)
+shape = SubResource("RectangleShape2D_pultshroom")

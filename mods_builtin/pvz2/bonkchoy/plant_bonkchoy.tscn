@@ -1,7 +1,21 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
+
+; 菜问（PVZ2 的 Bonk Choy）—— 战斗植物，由模组「PVZ2」提供
+;
+; 结构：本体 `plant_base.tscn` + 一个**空** Node2D 动画挂点 + 检测组件 + 出拳冷却计时器。
+;   ★ 挂点上没有脚本：播放器在另一个模组（「PAM 动画播放器」）里，而模组有两个加载根
+;     （`user://mods/` / `res://mods_builtin/`），`.tscn` 里写死 `res://` 在玩家把本模组拷进
+;     `user://mods/` 之后会指错。脚本 / bin / 贴图由 `bonkchoy_plant.gd` 的 `character_ready()`
+;     通过 `../pam_bridge.gd` 运行时挂上。
+;
+; 摆放：画布 390×390 以中心为原点，地面线在画布 y≈240 ⇒ 播放器的 `pivot_offset = (0, -45)`，
+;   脚落在植物原点；`scale = 0.55` 让整株 ≈ 76×95（格子大小）。
+;   ——两个值现在是 `bonkchoy_plant.gd` 里的 `ANIM_PIVOT` / `ANIM_SCALE`。
+;
+; 检测框 240×80：RTON `BonkchoyProps` 的伤害矩形是 x ∈ [-189, 16]、y ∈ [-119, -49]
+; （往左宽、往右窄），本作按「左右相邻两格」铺成对称的 240 宽，够用就好。
 
 [ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
-[ext_resource type="PackedScene" path="bonkchoy_anim.tscn" id="2_anim"]
 [ext_resource type="Script" path="bonkchoy_plant.gd" id="3_script"]
 [ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
 [ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
@@ -13,16 +27,14 @@ size = Vector2(240, 80)
 script = ExtResource("3_script")
 plant_type = &"pvz2_bonkchoy"
 jab_damage = 15
-uppercut_damage = 35
+uppercut_damage = 60
 attack_cd = 0.35
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
 
 [node name="AnimComponent" parent="." index="2"]
 script = ExtResource("5_animempty")
 
-[node name="BonkChoyAnim" parent="Body" index="1" instance=ExtResource("2_anim")]
-position = Vector2(-77, -101)
-scale = Vector2(0.45, 0.45)
+[node name="BonkChoyAnim" type="Node2D" parent="Body" index="1"]
 
 [node name="AttackCdTimer" type="Timer" parent="." index="9"]
 wait_time = 0.35

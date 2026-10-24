@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3]
+
+; 潜伏芹菜（PVZ2 的 Celery Stalker）—— 战斗植物，由模组「PVZ2」提供
+;
+; 结构：本体 `plant_base.tscn` + 一个**空** Node2D 动画挂点 + 检测组件。
+;   ★ 挂点上**没有脚本**：PAM 播放器在另一个模组（「PAM 动画播放器」）里，
+;     而模组有两个加载根（`user://mods/` / `res://mods_builtin/`），`.tscn` 里写死 `res://` 路径
+;     在玩家把本模组拷进 `user://mods/` 之后就会指错地方。所以脚本 / bin / 贴图
+;     全部由 `celerystalker_plant.gd` 的 `character_ready()` 通过 `../pam_bridge.gd` 在运行时挂上。
+;
+; 摆放（画布 390×390 以中心为原点，地面线在画布 y≈240）：
+;   `pivot_offset = (0, -45)` 把「画布中心 → 脚下」那 45 px 补掉，脚正好落在植物原点；
+;   `scale = 0.55` 让整株 ≈ 72×94 px（格子 76×95）。
+;   ——这两个值现在是 `celerystalker_plant.gd` 里的 `ANIM_PIVOT` / `ANIM_SCALE`。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="Script" path="celerystalker_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/detect_component/component_detect.gd" id="4_detect"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="5_animempty"]
+
+; 检测框：往**左**铺开（x ∈ [-115, 35]），僵尸的受击框（局部 40×20，中心 y≈-50）落进来才认。
+; 高度 80 与菜问一致；宽度只铺左侧 = 拳头够得到的范围（见 `celerystalker_plant.gd` 的 `reach_left`）。
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_celerystalker"]
+size = Vector2(150, 80)
+
+[node name="PlantPVZ2CeleryStalker" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"pvz2_celerystalker"
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("DetectComponent")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("5_animempty")
+
+[node name="CeleryStalkerAnim" type="Node2D" parent="Body"]
+
+[node name="SleepComponent" node_paths=PackedStringArray("sleep_influence_components") parent="." index="4"]
+sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../DetectComponent")]
+
+[node name="ScanTimer" type="Timer" parent="."]
+wait_time = 0.1
+
+[node name="DetectComponent" type="Node2D" parent="."]
+script = ExtResource("4_detect")
+
+[node name="Area2D" type="Area2D" parent="DetectComponent"]
+position = Vector2(-40, -25)
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D"]
+shape = SubResource("RectangleShape2D_celerystalker")

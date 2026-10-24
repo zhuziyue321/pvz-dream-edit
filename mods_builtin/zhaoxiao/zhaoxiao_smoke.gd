@@ -7,7 +7,7 @@ extends Node
 ##   本体判「我这只僵尸贴到植物了」就是 `zombie.is_attack`（攻击组件收到检测信号后置位，
 ##   同一根信号也把移动因素 `IsAttack` 打开 —— 所以它**本来就停住了**，这里不用自己定身）。
 ##   要做的是把那一下的**伤害压成 0** 并把动画**从「啃」换成待机**：
-##     · 伤害：本体每 8 帧按 `curr_attack_value_per_min` 算一次啃咬伤害，把它摁成 0 即可
+##     · 伤害：本体每 8 帧按 `curr_attack_value_per_sec` 算一次啃咬伤害，把它摁成 0 即可
 ##       （0 走伤害管线会被直接取消，一滴血都不掉，也不播受击音效）；
 ##     · 动画：置 `is_idle = true` + 把动画状态机**硬跳到 `Idle`**
 ##       —— 本体**没有 `Walk→Idle` 转移**（Idle 只能从 `Start` 进），所以只能 `play()` 硬跳；
@@ -41,7 +41,7 @@ const PLAYBACK_PARAM := &"parameters/StateMachine/playback"
 
 ## 宿主（被烟熏的那只僵尸）
 var _zombie: Zombie000Base
-## 宿主的啃咬组件（普通僵尸版才有 `curr_attack_value_per_min`，其余僵尸拿不到就只做动画那半）
+## 宿主的啃咬组件（普通僵尸版才有 `curr_attack_value_per_sec`，其余僵尸拿不到就只做动画那半）
 var _eater: AttackComponentZombieNorm
 ## 动画树与它的状态机 playback（拿不到就不切动画，只保留「停下 + 不啃」）
 var _playback: AnimationNodeStateMachinePlayback
@@ -64,7 +64,7 @@ func _ready() -> void:
 		return
 	_eater = _zombie.attack_component as AttackComponentZombieNorm
 	if _eater != null:
-		_attack_value_before = _eater.curr_attack_value_per_min
+		_attack_value_before = _eater.curr_attack_value_per_sec
 	var anim_tree := _zombie.get_node_or_null(^"AnimationTree") as AnimationTree
 	if anim_tree != null:
 		_playback = anim_tree.get(PLAYBACK_PARAM) as AnimationNodeStateMachinePlayback
@@ -117,8 +117,8 @@ func _process(_delta: float) -> void:
 ## 每帧摁而不是只摁一次：本体在速度变化（冰冻 / 黄油 / 报纸破防…）时会**重算**这个值，
 ## 只摁一次会被它盖回去。
 func _keep_bite_damage_zero() -> void:
-	if _eater != null and _eater.curr_attack_value_per_min != 0:
-		_eater.curr_attack_value_per_min = 0
+	if _eater != null and _eater.curr_attack_value_per_sec != 0:
+		_eater.curr_attack_value_per_sec = 0
 
 
 ## 切到「站着待机」（贴到植物了）
@@ -152,7 +152,7 @@ func stop_smoke() -> void:
 		if _is_forcing_idle:
 			_release_idle()
 		if _eater != null and _attack_value_before >= 0:
-			_eater.curr_attack_value_per_min = _attack_value_before
+			_eater.curr_attack_value_per_sec = _attack_value_before
 		## 撤掉「谁都能打它」：它回到原样（只有敌对方打得中）
 		_zombie.is_enemy_to_all_camps = false
 

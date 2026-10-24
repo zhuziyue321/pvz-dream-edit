@@ -12,7 +12,10 @@
 - 玩家那份**读不出来**（导出后脚本被转成引擎认不出的形态）时，会退回到这里再试一次。
 
 两个源**不互相复制**（2026-10-15 起）：这里的文件不会自动铺到 `user://mods/`，
-想改哪个内置模组就自己把**整个目录**拷过去（含 `mod_base.gd`，一个模组只从一个根加载）。
+想改哪个内置模组就自己把**整个目录**拷过去（一个模组只从一个根加载）。
+
+**这个目录只放模组目录**：装载器 / 基类 / id / 配置 / 分类这些框架文件都在
+[../src/mods/](../src/mods/README.md)，不在这里 —— 根目录下除了这份 README 就只剩各模组文件夹。
 
 ## 为什么要有这么一层
 
@@ -31,19 +34,24 @@
 
 | 不能写 | 改成 |
 |---|---|
-| `extends ModBase` | `extends "../mod_base.gd"`（相对路径；绝对路径也行） |
+| `extends ModBase` | `extends "res://src/mods/mod_base.gd"`（**唯一**允许的绝对路径：基类只有框架那一份，见下） |
 | `var m: ModBase` / `-> ModBase` | 去掉类型标注（`ModBase` 常量只用来取 `DETAIL_REFRESH_META` 这类常量） |
 | `GloveMod.CONST` / `X.new()` | 先 `const GloveMod := preload("xxx.gd")`，再用常量引用 |
 | 两个文件互相 `preload` | **会成环**，把「两边都要读的设置」抽成第三个文件（如 `glove_settings.gd` / `hammer_settings.gd`） |
 
-**`mod_ids.gd` / `mod_config.gd` 是例外**：它们保留 `class_name`，因为它们是本体 ↔ 模组的契约，
-`res://` 侧（`adventure_04_06.gd`、`data/mods/mod_config.tres`）要用它们的名字编译。
+**模组基类不在这个目录里**：`mod_base.gd` 只有框架那一份（[../src/mods/mod_base.gd](../src/mods/mod_base.gd)），
+入口脚本照上面那样写**绝对路径** `extends "res://src/mods/mod_base.gd"` —— 两个加载根下都指向同一份，
+把模组目录拷到 `user://mods/` 时**不用**再带一份 `mod_base.gd`。
+
+**`ModIds` / `ModConfig` / `ModCategory` 是例外**：它们保留 `class_name`，因为它们是本体 ↔ 模组的契约，
+`res://` 侧（`adventure_04_06.gd`、`data/mods/mod_config.tres`、模组页面）要用它们的名字编译；三份都在
+[../src/mods/](../src/mods/README.md)。
 
 另外两个实测结论（已写进 `mod_manager.gd` 的类注释）：
 
 - `user://` 的脚本**不走资源缓存**，每次 `load()` 都是新对象 → `Script.instance_has()` **恒为 false**，
   判断「是不是 ModBase 子类」要沿 `get_base_script()` 基链**比路径**。
-- `res://` 的脚本**可以** `preload("res://mods_builtin/xxx.gd")`，探针就是这么引用的 ——
+- `res://` 的脚本**可以** `preload("res://mods_builtin/<id>/xxx_mod.gd")`，探针就是这么引用的 ——
   模组不写 `class_name`，两边都只能按路径 preload 成常量。
 
 **模组素材（贴图 / 场景）**放**模组自己目录**里，用 `load_asset("x.png")`（入口脚本，`ModBase` 子类）
@@ -53,20 +61,20 @@
 
 ## 文件
 
-| 文件 | 作用 |
+根目录**只有模组文件夹**（外加这份 README）：框架文件（`mod_manager.gd` / `mod_base.gd` /
+`mod_ids.gd` / `mod_config.gd` / `mod_category.gd`）在 [../src/mods/](../src/mods/README.md)。
+
+| 目录 | 作用 |
 |---|---|
-| `mod_base.gd` | `ModBase`：模组基类，`install()` / `on_level_para_ready()` / `install_to_main_game()`（时序见类注释）+ `get_mod_categories()` / `get_mod_dependencies()`（分类与依赖声明） |
-| `mod_ids.gd` | `ModIds`：模组 id 常量表（**保留 `class_name`**，本体与模组共用） |
-| `mod_config.gd` | `ModConfig`：**工程默认**开关数据资源（`data/mods/mod_config.tres` 用它；只在存档文件不存在时播种一次，保留 `class_name`） |
-| `mod_category.gd` | `ModCategory`：**模组分类契约**（维度 C：内容性质），保留 `class_name`。常量 `ADD_UNIT` / `ADD_TOOL` / `OVERRIDE_RULE` / `ADD_STRUCTURE` + `ALL` + `NAMES` + `name_of()`；模组在 `get_mod_categories()` 里返回这些常量（**多标签**，可同时归多类），模组页面据此过滤 |
 | `glove/` | 手套模组：把场上已种下的植物搬到另一个格子（含 `glove_settings.gd`） |
 | `hammer/` | 锤子模组：点一下草坪，对小范围内的僵尸造成伤害（数值可调，也可秒杀；含 `hammer_settings.gd`） |
 | `more_armor/` | 更多的防具模组：铜桶 / 钻石桶 / 下界合金桶，各配一只戴桶的僵尸（热注册，编号 9001 起） |
 | `custom_level/` | 自制关卡模组：加载 `user://custom_level` 下的玩家自制关卡**与所有模组各自目录下的 `levels/`**（不论该模组启用与否，同 id 时玩家目录优先），并在主菜单加入口 |
 | `netplay/` | 联机模组：ENet 连线 + 命令同步，主菜单加入口 |
 | `purple_direct_plant/` | 紫卡直接种植模组：紫卡不必先种基座植物，代价是「基座植物的阳光 + 惩罚阳光」（含 `purple_direct_plant_rule.gd`） |
-| `water_bowl/` | 水盆模组：新增战斗植物「水盆」（花盆的水生形态，摆在陆地上、**上面只接水生植物**，且**上层植物的影子藏掉**；含 `plant_water_bowl.tscn` / `water_bowl_plant.gd`）—— **新增植物怎么装**见 [../docs/参考存档/运行期植物.md](../docs/参考存档/运行期植物.md) |
-| `pvz2/` | PVZ2 模组：**新增战斗植物「菜问」**（《植物大战僵尸 2》的角色，原版没有）；PVZ2 的 PAM 动画已离线烘焙成 `.tscn`（贴图在 `res://mods_builtin/pvz2/bonkchoy/`，与脚本/场景同目录，模组自包含），本仓库只收产物、不在运行时解析 PAM —— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.7 |
+| `dlc/` | DLC 植物模组：收纳一份 DLC 的植物动画，**并带两张 DLC 新地图的演示关**（`levels/moon_roof_demo` 月夜屋顶 / `levels/woods_demo` 郊外营地，见 [dlc/README.md](dlc/README.md) §8）（`reanim/` → `animation/`），并把其中 **16 株接成能种的植物**（环轨仙人掌 / 投掷蘑菇 / 拳击白菜 / 闪电芦苇 / 臼炮蘑菇 / 血橙 / 电击蘑菇 / 橡木弓箭手 / 蜜蜂射手 / 飓衣甘蓝 / 甜菜守卫 / 柠檬榴弹 / 芦荟 / 光照蘑菇 / 缩小紫罗兰 / 增幅鹅河菊）；**原「水盆」模组已并入**（`waterbowl/`：花盆的水生形态，摆在陆地上、**上面只接水生植物**，且**上层植物的影子藏掉**）—— 见 [dlc/README.md](dlc/README.md) 与 [../docs/参考存档/运行期植物.md](../docs/参考存档/运行期植物.md) |
+| `pam/` | **PAM 动画播放器**模组：PVZ2 的 PopAnim（`.pam.bin`）运行时播放器，本身不加玩法（`runtime/pam_animator.gd` / `pam_static_frame.gd` + 数据类）。单独拆出来是因为 PVZ2 的植物 / 子弹 / 僵尸 / 特效都要播 PAM，别的模组以后也会用同一套；播放口径只在这里维护一次 —— 见 [../docs/参考存档/动画导入.md](../docs/参考存档/动画导入.md) §PAM 与 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.7 |
+| `pvz2/` | PVZ2 模组：**新增五株战斗植物**（《植物大战僵尸 2》的角色，原版没有）——「菜问」「潜伏芹菜」「火焰豌豆射手」「豌豆荚」「毒液豌豆」；五株**全部**走「一张 1536 图集 + 一个 `.pam.bin`」+ 依赖模组 `pam/`（菜问原本是烘焙成 `.tscn` 的路子，2026-10-23 重写时一并换成 PAM 路线）；阳光 / 冷却 / 近战伤害 / 子弹伤害全部取自解包资源的 RTON；动画产物由 `tools/bake_pvz2_assets.py` 一键重烘，本仓库只收产物、不在运行时解析 PAM；打法：潜伏芹菜伏击（左边有僵尸才冒头连打）、火焰豌豆射手直线吐火豌豆、豌豆荚**同格最多叠 5 层、攻击时按层数连发**、毒液豌豆直线吐毒豌豆（PVZ2 的中毒持续掉血未实现）—— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.7 |
 | `eco/` | 生态版模组：把**原版已有的数值**改成同人口径（10 条：三种植物的阳光、寒冰菇伤害、机枪连发、仙人掌子弹穿透、卷心菜索敌三行、吸金磁能吸铁器、格子新增光照等级 → 向日葵按光照多产阳光），不加任何玩法（含 `eco_settings.gd` / `eco_plant_patcher.gd` / `eco_wiring.gd`；**依赖紫卡直接种植**，打开生态版会一并打开它）—— **本体为它留的通用口子**见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.6 |
 | `zhaoxiao/` | 招笑版模组：改向日葵与豌豆射手两只植物。**向日葵 → 朝阳葵**：任何一株产阳光时其余朝阳葵一起**只转头**看它（花茎叶子不动；目标在左边就把花头镜像过去，再转到「右侧对准目标」），它自己**持续**流汗（纯贴图挂一颗在花心上、不做动画，借禅境花园那颗「缺水」水珠贴图）。**豌豆射手 → 傻豆射手**：普通攻击打出去的是一颗**没有碰撞箱、不造成伤害**的傻豆（两种随机：飞到**僵尸前面**就**掉到地上**、落地那一下播本体的「豌豆命中」特效再消失 / **射偏** —— 照僵尸受击框算出来的方向，**恰好**擦着头顶或贴着脚底过去），每打一颗攒怒气、怒气把整株**慢慢染红**，满了放大招 —— 怒气 2 秒内**匀速**降下去，这段时间朝正前方 ±25 度、以随机速度散射**普通豌豆**（真子弹）。两只植物的观察者节点都是每局现挂（含 `zhaoxiao_settings.gd` / `zhaoxiao_sunflower.gd` / `zhaoxiao_peashooter.gd` / `zhaoxiao_shadou.gd`）—— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.8 |
 
@@ -75,10 +83,12 @@
 | `zhaoxiao/`（续） | **摔倒机制 + 绊倒路障僵尸**：僵尸可以像被绊倒一样**趴在地上**（`zhaoxiao_fall.gd`：停住 + `Body` 绕脚根倒 90° 趴平，`FALL_TIME` 秒后自己站起来继续走；不走动画状态机、死亡时立刻把身体转回来）；**绊倒路障僵尸**（`zhaoxiao_cone_zombie.gd`，本体复用 `zombie_cone.tscn`）速度 10 倍、无视植物，走到从右侧数第 4 列摔倒并把头上的路障**永久留在草坪上**（`zhaoxiao_cone_drop.gd`：挂在僵尸行节点上、不淡出，后来走到它身上的僵尸都被绊倒，每只只绊一次）—— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.8.5 |
 
 | `arknights/` | 明日方舟模组：**战斗数值规则** —— 防御力 / 法术抗性 + 物理 / 法术伤害分类（未标记的伤害按物理算，默认数值全 0 = 原版体验）+ **植物精英化**：每种内置植物一个精英副本（卡面借原版的脸、阳光冷却打折），普通关选卡界面只显示精英副本、场上植物按精英数值结算（血量 / 伤害加强、附送防御法抗），特殊关（`is_general_level()` 判据 + `LEVELS_USE_ORIGINAL` 注明名单）整局用原版。含 `arknights_stats.gd`（伤害类型 + 防御 / 法抗数值表 + 减免公式）与 `arknights_elite.gd`（精英化规则）两份共享契约，单独一份防 `preload` 成环 —— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.9 |
+| `debug/` | **调试模式模组**（2026-10-23 从本体搬来）：僵尸卡片（选卡界面第 2 页，含僵王）+ 四株原版流程拿不到的植物（三保龄球 + 反向双发，只解锁、不进选卡界面）+ `EventBus` 事件追踪 + **Ctrl+Q 调试窗口**（`debug_window.gd` / `debug_window_entries.gd` / `debug_damage_modifier.gd`）。窗口七页：常用（通关 / 重开 / 跳关 / 存档）、战斗（刷僵尸 / 跳波 / 秒杀 / 植物无敌 / 无限阳光）、资源、开关（与内置控制台同一批字段）、运行（倍速 / 暂停）、状态、日志；支持 Ctrl+1-9 切页、搜索、拖动调宽。关掉 = 窗口 / 僵尸页 / 解锁 / 追踪一起撤掉 —— 见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §6.10 与 [../docs/参考存档/调试窗口.md](../docs/参考存档/调试窗口.md) |
 
 ## 新增一个模组
 
-`ModIds` 加常量 → `ModManager.MOD_SCRIPT_PATHS` 加一行 → `mods_builtin/<id>/` 写入口脚本（继承 `ModBase`）。
+`ModIds` 加常量 → `ModManager.MOD_SCRIPT_PATHS` 加一行 → `mods_builtin/<id>/` 写入口脚本
+（`extends "res://src/mods/mod_base.gd"`）。
 细则与边界规则见 [../docs/参考存档/模组机制.md](../docs/参考存档/模组机制.md) §四 / §五。
 
 ### 同时声明它的分类（维度 C）

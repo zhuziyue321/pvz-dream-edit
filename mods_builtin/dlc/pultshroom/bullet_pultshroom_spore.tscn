@@ -1,0 +1,67 @@
+[gd_scene load_steps=9 format=3]
+
+; 投掷蘑菇的孢子 —— 继承本体 `bullet_parabola_base.tscn`（抛物线移动 / 影子 / 攻击框 / 保护伞弹开
+; 都沿用），只换三样：
+;   · 贴图用 DLC 自己那张 `PultShroom_spore-1.png`（29×28，缩到 0.6 → ≈17 px，与豌豆同量级）；
+;   · 数值：20 伤害（wiki「light」）、speed 320（飞完 6 格 ≈ 0.6 秒，符合投手的手感）；
+;   · 抛物线高度 -260（本株射程只有 6 格，照卷心菜的 -500 会抛得又高又飘）。
+;
+; 速度口径：`BulletMovementParabola` 用「起点→控制点→终点」的路程 ÷ speed 算总时长，
+; 所以 speed 只影响飞行时间，不影响落点。
+
+[ext_resource type="PackedScene" path="res://src/entities/bullet/bullet_parabola_base.tscn" id="1_parabola"]
+[ext_resource type="Texture2D" path="res://mods_builtin/dlc/reanim/PultShroom/PultShroom_spore-1.png" id="2_spore"]
+[ext_resource type="Script" path="res://src/fx/bullet_effect/bullet_effect_norm.gd" id="3_effect"]
+[ext_resource type="Texture2D" path="res://pak/particles/PuffShroom_puff2.png" id="4_puff"]
+
+; 命中烟借本体 `pak/particles/PuffShroom_puff2.png`（21×21 **单帧**，DLC 包的
+; `MortarShroomSplat` 用的也是 `IMAGE_PUFFSHROOM_PUFF2`）。⚠️ 别照抄蜜蜂 / 尖刺 / 箭那三张
+; 96×32 三帧命中图的 `particles_animation` 设置：那会把单帧烟横切成 3 条 7×21 的细条并循环
+; 跳帧。本体 `bullet_puff.tscn` 用同款贴图时就不开切帧，这里照本体来。
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_puff"]
+
+[sub_resource type="Curve" id="Curve_puff"]
+_data = [Vector2(0, 0.550562), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_puff"]
+curve = SubResource("Curve_puff")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_puff"]
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = 50.0
+initial_velocity_max = 80.0
+gravity = Vector3(0, 100, 0)
+scale_curve = SubResource("CurveTexture_puff")
+
+[node name="BulletDlcPultShroomSpore" instance=ExtResource("1_parabola")]
+bullet_type = &"dlc_pultshroom_spore"
+attack_value = 20
+speed = 320.0
+max_distance = 1200.0
+
+[node name="BulletBody" parent="Body" index="0"]
+texture = ExtResource("2_spore")
+scale = Vector2(0.6, 0.6)
+
+; ⚠️ 抛物线高度是 `MovementComponent` 的字段，**不是子弹根的字段** ——
+; 写在根节点上会被静默忽略（本体卷心菜 / 玉米 / 西瓜那几张卡就是这么写的，实际一直是 -300）
+[node name="MovementComponent" parent="." index="4"]
+parabola_height = -260.0
+
+; `is_bullet_effect` 显式写死：继承链上 `bullet_parabola_base.tscn` 现在没覆盖这一项，
+; 靠基类默认值也能生效，但默认值一翻就会静默变成「命中无特效」，这里不赌默认。
+[node name="BulletEffect" parent="." index="2"]
+script = ExtResource("3_effect")
+is_bullet_effect = true
+
+[node name="GPUParticles2D" type="GPUParticles2D" parent="BulletEffect/AllParticles2D" index="0"]
+material = SubResource("CanvasItemMaterial_puff")
+emitting = false
+amount = 10
+texture = ExtResource("4_puff")
+lifetime = 0.5
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("ParticleProcessMaterial_puff")

@@ -1,0 +1,71 @@
+[gd_scene load_steps=11 format=3]
+
+; 柠檬榴弹（DLC 的 Lemon-nade）—— 一次性三连炸植物，由模组「DLC植物」提供
+;
+; 结构照 `../pultshroom/plant_pultshroom.tscn`（同一套 DLC 动画转换产物）：
+; 本体 `plant_base.tscn` + 一个 DLC 动画节点 + 引信/步进计时器。
+; 与投掷蘑菇的差别：没有 DetectComponent / 出生 Marker2D / 睡眠组件，
+; 攻击逻辑（三连炸 + 范围伤害）全在脚本里，用 `intersect_shape` 即时查僵尸。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   按 idle 第 0 帧的 position / scale / 贴图合并包围盒 = x[11.5, 68.4]、y[-7.7, 81.4]
+;   （整株 ≈ 57×89 px；Lemonade_body 86×127 @0.661 是主体，柠檬杯底落在 y≈81）。
+;   ⚠️ 这些 Sprite 的贴图是**动画 texture 轨道**在运行期塞进来的，场景里没有 texture
+;      （与投掷蘑菇的 `PultShroom_eyes` 同一坑）—— 只按场景量包围盒会漏，故以探针运行期
+;      `get_content_rect()` 实测为准。
+;   对齐口径：让内容底边落在格线（原点）附近 → 取 (-40, -81)，底边 ≈ +0.4、水平中心 ≈ 0。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已在动画的 `scale` 轨道里（这株是 0.64~0.66）。
+;
+; ⚠️ 为什么要覆盖 `AnimLib` 的库：转换工具把每段动画各放进一个独立 AnimationPlayer
+;   （`Anim_Lemonade_idle` / `_explode` / `_explode2` / `_explode3`），而 `AnimLib` 里只有一条
+;   名叫 `ALL_ANIMS` 的合并动画 —— 既不是分段名也没法按段播。这里把四段重新装进 `AnimLib`
+;   （卡面取帧 `AnimationFrameUtil` 找的也正是它）。
+;   `AnimLib` 在动画场景里的索引照实际数 = 13。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/dlc/animation/character/plant/Lemonade/Lemonade.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/dlc/lemonade/lemonade_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Lemonade/Lemonade_idle.tres" id="5_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Lemonade/Lemonade_explode.tres" id="6_explode"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Lemonade/Lemonade_explode2.tres" id="7_explode2"]
+[ext_resource type="Animation" path="res://mods_builtin/dlc/animation/character/plant/Lemonade/Lemonade_explode3.tres" id="8_explode3"]
+[ext_resource type="Script" path="res://src/entities/character/components/can_attack_status_component/component_can_attack_status.gd" id="9_can"]
+
+; 四段动画合成一个库（挂到动画场景里那个 `AnimLib` 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_lemonade"]
+_data = {
+&"Lemonade_explode": ExtResource("6_explode"),
+&"Lemonade_explode2": ExtResource("7_explode2"),
+&"Lemonade_explode3": ExtResource("8_explode3"),
+&"Lemonade_idle": ExtResource("5_idle")
+}
+
+[node name="DlcLemonade" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"dlc_lemonade"
+attack_value = 900
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+[node name="LemonadeAnim" parent="Body" instance=ExtResource("2_anim")]
+position = Vector2(-38, -57.5)
+
+; 动画场景里的 `AnimLib` 换成本地合成的四段库（原因见文件头）
+[node name="AnimLib" parent="Body/LemonadeAnim" index="13"]
+libraries = {
+&"": SubResource("AnimationLibrary_lemonade")
+}
+
+; 可攻击状态掩码：只炸僵尸（与本体樱桃炸弹同口径，僵尸全状态 63）
+[node name="CanAttackStatusComponent" type="Node2D" parent="."]
+script = ExtResource("9_can")
+## 191 = 1 + 2 + 4 + 8 + 16 + 32 + 128（灌木）：爆杀类要能打到灌木丛里的僵尸
+can_attack_zombie_status = 191
+
+; 引信 + 三连炸步进计时器：wait_time 由脚本按导出值再设一次
+[node name="ActionTimer" type="Timer" parent="."]
+wait_time = 0.6
+one_shot = true
