@@ -35,6 +35,8 @@ const UNLOCK_DROP_WAIT_STEP := 0.25
 const PICKUP_PERFORM_WAIT_TIME := 12.0
 ## 等收尾表演的轮询间隔秒数（白屏到底就该切场景，轮询要比解锁道具那套细）
 const PICKUP_PERFORM_WAIT_STEP := 0.05
+## 等领奖屏上「继续」被点的兜底秒数（原版是无限等；这里留个上限，免得玩家不点就把关卡卡死）
+const AWARD_SCREEN_WAIT_TIME := 60.0
 
 ## 本关的胜利流程是否已经启动（防重复：流程内已经判过胜时，run_flow 结束不再重复结算）
 var is_win_started := false
@@ -46,6 +48,11 @@ var last_battle_finish_glo_pos := Vector2.ZERO
 var is_unlock_drop_on_level_complete_done := false
 ## 通关掉落物的收尾表演是否已经播完（屏幕已经全白，可以切场景了）
 var is_pickup_perform_finished := false
+## 本关的通关奖励是「新植物」时记下植物编号：结算之后要弹原版那张领奖屏
+## （原版 AWARD_FORLEVEL，见 src/ui/award_screen/award_screen.gd）
+var pending_award_plant: StringName = PlantIds.NULL
+## 领奖屏上的「继续」被点了没有（**必须是成员变量**：lambda 捕获局部变量是按值的）
+var is_award_continue_pressed := false
 
 
 func init_manager() -> void:
@@ -194,6 +201,10 @@ func gain(loot_name:String, glo_pos:Vector2) -> void:
 func gain_loot(loot_name:String, glo_pos:Vector2) -> void:
 	if not is_instance_valid(main_game) or main_game.drop_item_manager == null:
 		return
+	## 种子包类战利品 = 「拿到一株新植物」：记下来，结算之后要弹原版那张领奖屏
+	var award_plant := LootRegistry.get_plant_type(loot_name)
+	if award_plant != PlantIds.NULL:
+		pending_award_plant = award_plant
 	var new_drop := main_game.drop_item_manager.create_loot_drop(loot_name, glo_pos)
 	if new_drop == null:
 		Log.error("战利品没建出来，直接结算：" + loot_name)
@@ -201,6 +212,8 @@ func gain_loot(loot_name:String, glo_pos:Vector2) -> void:
 		return
 	main_game.drop_item_manager.mark_level_complete_drop(new_drop)
 	main_game.main_game_progress = MainGameManager.E_MainGameProgress.GAME_OVER
+	## 原版：关卡奖励掉出来时屏幕中央闪一下（PARTICLE_SCREEN_FLASH，见 Challenge.cpp:2017）
+	EventBus.push_event(ConstEventName.LEVEL_COMPLETE_LOOT_SPAWNED, [])
 	Log.info("=======================掉落战利品：" + loot_name + "=======================")
 	## 礼物盒类战利品（奖杯 / 玉米卷）照旧被抛到画面内的落点上；
 	## 种子包自己有抛物线弹出（SeedPacket.launch），不要再抛一次
@@ -208,11 +221,6 @@ func gain_loot(loot_name:String, glo_pos:Vector2) -> void:
 		throw_to(new_drop, _get_loot_throw_target(new_drop))
 	if await wait_reward_drop_opened(new_drop):
 		await wait_pickup_perform_finished()
-	else:
-		## 奖励没被点开、已经自动消失时 new_drop 早就释放了：
-		## 这一句要能接住，不然会报 "previously freed"（并把后面的结算一起带崩）
-		if is_instance_valid(new_drop):
-			await wait_unlock_drop_closed(new_drop)
 	## 等战利品这几秒里玩家可能已经退出关卡：主游戏没了就不结算了
 	if not is_instance_valid(main_game):
 		return
@@ -228,6 +236,60 @@ func _get_loot_throw_target(loot:Node2D) -> Vector2:
 		var x_diff = loot.global_position.x - 100
 		return loot.position - Vector2(x_diff + randf_range(-50,50), 0)
 	return loot.position - Vector2(randf_range(-50,50), 0)
+
+
+## **原版 `Coin::FanOutCoins`：把奖励「扇形」散成金币 / 钻石**
+##
+## 原版出处：PvZ-Portable `src/Lawn/Coin.cpp:1153-1173`，由 `Coin::Collect` 里关卡奖励那一支调用：
+##   · 奖杯（COIN_TROPHY）          → 散 1 颗钻石
+##   · 冒险 5-10 通关                 → 散 3 颗钻石（那条分支排在奖杯分支**前面**，所以 5-10 是 3 颗）
+##   · 钱袋（COIN_AWARD_MONEY_BAG）    → 散 5 枚金币
+##   · 金盏花奖（COIN_AWARD_GOLD_SUNFLOWER）→ 散 5 颗钻石
+## 后两种本仓库没有对应战利品（战利品表见 LootRegistry），所以只有前两支。
+##
+## 原版的散法：初速度 5 像素/帧（= 300 像素/秒），角度按 `PI/2 + PI*(i+1)/(N+1)` 均分，朝上张开。
+## 散出来的金币**不自动收集**（原版是 COIN_MOTION_FROM_PRESENT，不参与自动收集），
+## 要玩家自己点；关卡紧接着就切走，所以它基本上是纯视觉表现。
+const FAN_OUT_SPEED := 300.0
+## 散币的飞行时间（秒）：定水平散布的距离
+const FAN_OUT_FLY_TIME := 0.9
+
+
+## 散币：只有奖杯才散（见上面那段原版说明）
+## 由礼包的 pick() 在**点开那一刻**调（原版就是在 Coin::Collect 里散）
+func fan_out_coins(loot_name: String, from_pos: Vector2) -> void:
+	if loot_name != LootRegistry.TROPHY:
+		return
+	if not is_instance_valid(main_game) or main_game.drop_item_manager == null:
+		return
+	var dim := main_game.drop_item_manager.dim_coin
+	if dim == null or not is_instance_valid(dim):
+		return
+	## 冒险 5-10 是 3 颗，其余关卡的奖杯是 1 颗
+	var count := 1
+	if get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
+		count = 3
+	for i in count:
+		var angle := PI / 2.0 + PI * (i + 1) / (count + 1)
+		var vel := Vector2(sin(angle), cos(angle)) * FAN_OUT_SPEED
+		var coin := dim.create_drop(
+			ItemRegistry.get_drop_scene(ItemRegistry.E_DropKind.Diamond)) as Coin
+		if coin == null:
+			return
+		coin.drop_kind = ItemRegistry.E_DropKind.Diamond
+		## 原版散出来的钱不参与自动收集：只能玩家自己点
+		coin.auto_pick_on_landed = false
+		## 没有钱袋就不指定飞向哪里（Vector2.ZERO = 点开后原地淡出，见 Coin.pick）
+		coin.setup(Vector2.ZERO)
+		if not dim.add_drop(coin):
+			return
+		coin.global_position = from_pos
+		## 水平方向按初速分量散开，垂直方向回到原高度（最高点 = 初速竖直分量 × 飞行时间 ÷ 2）
+		## 时长与峰值走掉落物自己的导出字段，launch() 那条链（起飞 / 落地 / 自动拾取判定）才完整
+		coin.duration = FAN_OUT_FLY_TIME
+		coin.peak_height = maxf(0.0, -vel.y * FAN_OUT_FLY_TIME * 0.5)
+		coin.launch(Vector2(vel.x * FAN_OUT_FLY_TIME, 0.0))
+
 
 
 ## 奖杯 / 通关奖励的默认落点：本轮战斗打完的位置（清场那一刻 = 最后一只僵尸死的地方），
@@ -253,6 +315,14 @@ func throw_to(node:Node2D, target_pos: Vector2, duration: float = 1.0):
 
 	tween.parallel().tween_property(node, "position:y", peak_pos.y, duration / 2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(node, "position:y", target_pos.y, duration / 2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN).set_delay(duration / 2)
+	## 落地的那一刻：原版在这时给关卡奖励挂上弹跳箭头（见 DropItemBase.notify_loot_landed）
+	tween.tween_callback(_notify_loot_landed.bind(node))
+
+
+## 抛掷结束的通知（节点可能早就被释放了，要先判一下）
+func _notify_loot_landed(node: Node2D) -> void:
+	if node is DropItemBase and is_instance_valid(node):
+		(node as DropItemBase).notify_loot_landed()
 
 
 ## 通关时掉落本关的解锁道具（关卡数据 drop_unlock_on_level_complete，原版冒险 3-4 的车钥匙）
@@ -347,12 +417,24 @@ func win_main_game():
 	if game_para.game_round != 1:
 		main_game.save_manager.re_main_game()
 
+	## 原版：冒险模式首次通关拿到新植物 -> 结算之后先弹**领奖屏**
+	## （原版 AWARD_FORLEVEL，见 src/ui/award_screen/award_screen.gd）：
+	## 底图 + 「新植物」标题 + 放大的种子包 + 植物名 + 植物说明 + 一个「继续」按钮，
+	## 玩家点「继续」才往下走（跳商店 / 跳图鉴 / 回主菜单）。
+	var award_plant := pending_award_plant
+	pending_award_plant = PlantIds.NULL
+	if award_plant != PlantIds.NULL:
+		await show_award_screen(award_plant)
+		## 等玩家点「继续」这几秒里玩家可能已经退出关卡：主游戏没了就不往下走了
+		if not is_instance_valid(main_game):
+			return
+
 	## 二周目：本关是冒险模式的最后一关（5-10）-> 进下一周目（进度按周目过滤，见 GlobalGameState）
 	## 先按「本关是不是 5-10」挡一道，免得迷你 / 解谜 / 生存关卡通关时也来碰周目；
 	## advance_adventure_round() 自己还会再核一遍「本周目 1-1 ~ 5-10 全都通了」，所以：
 	##   · 调试把存档写成"半通"时不会误进;   · 重打 5-10 也不会连着进两周目（进完周目进度就归零了）。
 	## 放在跳商店 / 图鉴判定**之前**：进不进下一周目与商店那两跳各管各的。
-	if _get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
+	if get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
 		Global.global_game_state.advance_adventure_round()
 
 	if is_need_goto_store_on_win(is_shop_unlocked_before, shop_expand_stage_before):
@@ -375,6 +457,38 @@ func win_main_game():
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(game_para.game_mode, MainSceneRegistry.MainScenes.StartMenu))
 
 
+## **弹原版那张「新植物」领奖屏**，等玩家点「继续」才返回
+##
+## 原版：首次通关拿到新植物时走 `ShowAwardScreen(AWARD_FORLEVEL)`，
+## 领奖屏上是放大的种子包 + 植物名 + 植物说明，点「继续」才回选关界面
+## （PvZ-Portable src/Lawn/Widget/AwardScreen.cpp 的 DrawAwardSeed）。
+## 本仓库把这张屏做成主游戏之上的一层（见 src/ui/award_screen/award_screen.tscn），
+## 等玩家点「继续」期间主游戏还在原地（不切场景），点完才往下走。
+func show_award_screen(plant_type: StringName) -> void:
+	if not is_instance_valid(main_game):
+		return
+	if SceneRegistry.AWARD_SCREEN == null:
+		Log.error("领奖屏场景没登记，跳过领奖屏")
+		return
+	var screen := SceneRegistry.AWARD_SCREEN.instantiate() as AwardScreen
+	if screen == null:
+		return
+	main_game.add_child(screen)
+	screen.show_plant(plant_type)
+	## 等玩家点「继续」：轮询而不是 await 信号 —— 领奖屏先被释放时不会把协程留成永久挂起
+	## ⚠️ 标志位必须是**成员变量**：GDScript 的 lambda 捕获局部变量是按值的，
+	## 在 lambda 里改局部变量改不到外面（那会永远等下去）
+	is_award_continue_pressed = false
+	screen.continue_pressed.connect(func() -> void: is_award_continue_pressed = true)
+	var waited := 0.0
+	while not is_award_continue_pressed and is_instance_valid(screen) and is_instance_valid(main_game) \
+			and waited < AWARD_SCREEN_WAIT_TIME:
+		await get_tree().create_timer(0.1).timeout
+		waited += 0.1
+	if is_instance_valid(screen):
+		screen.queue_free()
+
+
 ## 通关后是否需要直接进商店（原版：3-4 拿到车钥匙开张、4-4 拿到玉米卷扩充、5-1 / 5-10 分批上架）
 ## 用"写通关存档前后各取一次"的判定，只有本关打通才刚触发时为真，
 ## 重打同一关或打别的关卡不会重复跳商店
@@ -385,11 +499,11 @@ func is_need_goto_store_on_win(is_shop_unlocked_before: bool, shop_expand_stage_
 	if Global.global_game_state.get_shop_expand_stage() > shop_expand_stage_before:
 		## 原版通关 5-10 不跳商店（AwardScreen 里只处理 3-4 / 4-4 / 5-1；5-10 是结局），
 		## 第四页（禅境花园 / 蜗牛 / 智慧树 / 树肥料）只是随通关上架，玩家自己从主菜单进店看
-		if _get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
+		if get_curr_adventure_level() == ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL:
 			Log.info("通关冒险模式 5-10：商店第四页上架（原版不自动跳商店）")
 			return false
 		Log.info(str("通关冒险模式 ") \
-			+ ConstUnlockLevel.get_adventure_level_name(_get_curr_adventure_level()) \
+			+ ConstUnlockLevel.get_adventure_level_name(get_curr_adventure_level()) \
 			+ str(" 商店扩充，直接进入商店"))
 		return true
 	return false
@@ -407,7 +521,7 @@ const STORE_INTRO_3100 := "嘿，我的邻居！我有一些新东西出售啦�
 
 ## 把本关的进店开场塞给 StoreManager（切场景前赋值，静态变量，见 StoreManager.pending_intro_lines）
 func _prepare_store_intro() -> void:
-	var curr_level := _get_curr_adventure_level()
+	var curr_level := get_curr_adventure_level()
 	StoreManager.pending_intro_lines = []
 	if curr_level == ConstUnlockLevel.SHOP_UNLOCK_ADVENTURE_LEVEL:
 		StoreManager.pending_intro_lines = [STORE_INTRO_301, STORE_INTRO_302]
@@ -426,7 +540,7 @@ func is_need_goto_almanac_on_win(is_almanac_unlocked_before: bool) -> bool:
 
 
 ## 本关的冒险模式关卡序号(1-1 = 1 …… 5-10 = 50)，非冒险模式返回 0
-func _get_curr_adventure_level() -> int:
+func get_curr_adventure_level() -> int:
 	if game_para == null:
 		return 0
 	return Global.global_game_state.get_adventure_level_on_save_game_name(game_para.save_game_name)

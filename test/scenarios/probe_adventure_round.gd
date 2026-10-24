@@ -192,11 +192,16 @@ func run(a) -> void:
 		return
 	await a.wait(2.0)
 	GameContext.curr_main_game.shortcut_win_main_game()
-	## 首次通关 5-10 会先跳商店（商店第三批扩展就在 5-10），周目应该已经 +1 了
-	if not await a.wait_scene("store", 25.0):
-		_check(a, "（前置）首次通关 5-10 进商店", false, str(a.get_tree().current_scene.scene_file_path))
+	## 首次通关 5-10：**不跳商店**，只把商店第四页上架（见 MgmRewardManager.is_need_goto_store_on_win
+	## 里 5-10 那一支：「原版不自动跳商店」，5-10 是结局关，结算后回主菜单）
+	## 结算线战利品**永不过期**（原版 Coin::IsLevelAward 不走 mDisappearCounter）：
+	## 玩家不点奖杯时，结算流程要等满 MgmRewardManager.UNLOCK_DROP_WAIT_TIME（20 秒）兜底才继续，
+	## 所以这里给的窗口要比「点开奖杯」那条路宽得多
+	if not await a.wait_scene("start_menu", 45.0):
+		_check(a, "（前置）5-10 结算后回主菜单（结局关不跳商店）", false,
+			str(a.get_tree().current_scene.scene_file_path))
 	else:
-		_check(a, "首次通关 5-10 进商店（原有行为不变）", true)
+		_check(a, "5-10 结算后回主菜单（结局关不跳商店，原版口径）", true)
 	_check(a, "win_main_game 自己进了第 2 周目", state.curr_adventure_round == 2,
 		str(state.curr_adventure_round))
 	_check(a, "第 2 周目进度归零", state.get_adventure_round_cleared_level() == 0,

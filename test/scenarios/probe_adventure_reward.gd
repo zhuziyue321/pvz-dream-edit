@@ -44,6 +44,14 @@ func run(a) -> void:
 	# ------------------------------------------------ STEP2 点开奖励直接结算
 	a.log("STEP2 点开奖励（应直接结算，不再抛奖杯）")
 	new_drop._on_texture_button_pressed()
+	## 原版：首次通关拿到**新植物**时，结算之后先弹一张「新植物」领奖屏
+	## （原版 AWARD_FORLEVEL，见 src/ui/award_screen/award_screen.gd），点「继续」才往下走。
+	## 1-2 的奖励是樱桃炸弹（植物类）→ 会弹；道具类奖励（车钥匙 / 玉米卷 / 洒水壶）不弹。
+	var award := await _wait_award_screen(a, 20.0)
+	_check(a, "点开奖励后弹出了「新植物」领奖屏", award != null, str(award))
+	if award != null:
+		var btn := AutopilotProbe.screen_center_of(award.continue_button)
+		await a.click(btn.x, btn.y)
 	await a.wait(8.0)
 	_check(a, "点开奖励后直接结算回主菜单",
 		"start_menu" in a.get_tree().current_scene.scene_file_path,
@@ -145,6 +153,30 @@ func run(a) -> void:
 
 
 #region 断言与工具
+## 领奖屏：主游戏底下挂着的那一层（原版 AWARD_FORLEVEL 的「新植物」那一支）
+func _find_award_screen() -> AwardScreen:
+	var mg := GameContext.curr_main_game
+	if mg == null:
+		return null
+	for c in mg.get_children():
+		if c is AwardScreen:
+			return c as AwardScreen
+	return null
+
+
+## 等领奖屏出现（淡入 180 帧 = 3 秒，等它跑完再点「继续」）
+func _wait_award_screen(a, timeout: float) -> AwardScreen:
+	var waited := 0.0
+	while waited < timeout:
+		var found := _find_award_screen()
+		if found != null:
+			await a.wait(3.4)
+			return found
+		await a.wait(0.25)
+		waited += 0.25
+	return null
+
+
 ## 进关：改存档后切到对应关卡场景，等场景就绪
 func _enter_level(a, level_file: String, page: int, level_id: String) -> bool:
 	var p = (load("res://src/levels/mode_adventure/" + level_file + ".gd") as GDScript).new()

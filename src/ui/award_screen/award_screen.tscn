@@ -1,0 +1,136 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/ui/award_screen/award_screen.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://pak/images/AwardScreen_Back.jpg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://bnlu4gj7hi2m2" path="res://data/ui/card_bg/norm.tres" id="3_cardbg"]
+[ext_resource type="FontFile" uid="uid://dqb8lum530s2f" path="res://assets_custom/fonts/方正少儿_GBK.ttf" id="4_font_title"]
+[ext_resource type="FontFile" uid="uid://bjnvl0v2ws21u" path="res://assets_custom/fonts/SIMSUN.TTC" id="5_font_body"]
+[ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="6_theme"]
+[ext_resource type="Script" uid="uid://parybxg7tb1k" path="res://src/ui/pvz_button_base.gd" id="7_button"]
+
+[sub_resource type="SystemFont" id="SystemFont_cost"]
+font_names = PackedStringArray("Sans-Serif")
+font_weight = 500
+hinting = 2
+subpixel_positioning = 0
+
+[node name="AwardScreen" type="CanvasLayer"]
+layer = 120
+script = ExtResource("1_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+
+[node name="Title" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 34.0
+offset_right = 800.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.835294, 0.623529, 0.168627, 1)
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 24
+text = "新植物"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Packet" type="Node2D" parent="Root"]
+position = Vector2(350, 129)
+
+[node name="CardBg" type="Sprite2D" parent="Root/Packet"]
+scale = Vector2(2, 2)
+texture = ExtResource("3_cardbg")
+
+[node name="PlantContainer" type="Node2D" parent="Root/Packet"]
+position = Vector2(0, 18)
+
+[node name="Cost" type="Label" parent="Root/Packet"]
+offset_left = -45.0
+offset_top = 39.0
+offset_right = 15.0
+offset_bottom = 63.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_fonts/font = SubResource("SystemFont_cost")
+theme_override_font_sizes/font_size = 20
+text = "100"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="PlantName" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 308.0
+offset_right = 800.0
+offset_bottom = 340.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 18
+text = "豌豆射手"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Description" type="Label" parent="Root"]
+layout_mode = 0
+offset_left = 285.0
+offset_top = 360.0
+offset_right = 515.0
+offset_bottom = 450.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.156863, 0.196078, 0.352941, 1)
+theme_override_fonts/font = ExtResource("5_font_body")
+theme_override_font_sizes/font_size = 16
+text = "植物说明"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ContinueButton" type="BaseButton" parent="Root"]
+layout_mode = 0
+offset_left = 322.0
+offset_top = 500.0
+offset_right = 478.0
+offset_bottom = 542.0
+focus_mode = 2
+theme = ExtResource("6_theme")
+script = ExtResource("7_button")
+
+[node name="Panel" type="Panel" parent="Root/ContinueButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_type_variation = &"PanelButtonBG"
+
+[node name="Label" type="Label" parent="Root/ContinueButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.835294, 0.623529, 0.168627, 1)
+theme_override_fonts/font = ExtResource("4_font_title")
+theme_override_font_sizes/font_size = 18
+text = "继续"
+horizontal_alignment = 1
+vertical_alignment = 1

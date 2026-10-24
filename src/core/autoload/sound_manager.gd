@@ -407,6 +407,9 @@ const SFXOtherMap := {
 	&"scream":"res://pak/sounds/scream.ogg",
 	## 获胜音效
 	&"winmusic":"res://pak/sounds/winmusic.ogg",
+	## 通关终章音效（原版 FOLEY_FINAL_FANFARE：冒险 5-10 通关时播，
+	## 见 PvZ-Portable src/Lawn/Board.cpp 的 FadeOutLevel）
+	&"finalfanfare":"res://pak/sounds/finalfanfare.ogg",
 
 
 	##-------------------------- 主游戏场景物品相关 --------------------------
