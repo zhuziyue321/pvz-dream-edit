@@ -75,7 +75,7 @@ func _check_snow_pea_decelerate(a, mg, boss, hp) -> void:
 	await a.wait(0.3)
 	var factor: float = _speed_factor(boss, Character000Base.E_Influence_Speed_Factor.IceDecelerateSpeed)
 	a.log("  寒冰豌豆命中后减速倍率 = %s" % str(factor))
-	_check(a, "寒冰豌豆让僵王减速 0.5", is_equal_approx(factor, 0.5), "倍率=%s" % str(factor))
+	_check(a, "寒冰豌豆让僵王减速 0.4", is_equal_approx(factor, 0.4), "倍率=%s" % str(factor))
 	## 命中过的子弹自己会 queue_free，重复释放会报错；这里只收尾。
 	if is_instance_valid(bullet):
 		bullet.queue_free()
@@ -116,7 +116,7 @@ func _check_ice_shroom_freeze(a, mg, boss, hp) -> void:
 	await a.wait(0.6)
 	var decelerate_factor: float = _speed_factor(boss, Character000Base.E_Influence_Speed_Factor.IceDecelerateSpeed)
 	a.log("  解冻后减速倍率 = %s" % str(decelerate_factor))
-	_check(a, "解冻后转减速 0.5", is_equal_approx(decelerate_factor, 0.5), "倍率=%s" % str(decelerate_factor))
+	_check(a, "解冻后转减速 0.4", is_equal_approx(decelerate_factor, 0.4), "倍率=%s" % str(decelerate_factor))
 	hp.curr_hp = hp.max_hp
 #endregion
 

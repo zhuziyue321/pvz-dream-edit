@@ -589,7 +589,8 @@ func _on_slow_timer_timeout() -> void:
 func be_ice_decelerate(time:float):
 	if is_death:
 		return
-	update_speed_factor(0.5, E_Influence_Speed_Factor.IceDecelerateSpeed)
+	## 原版 `CHILLED_SPEED_FACTOR = 0.4`（对齐原版口径，2026-10-24 从 0.5 改来）
+	update_speed_factor(0.4, E_Influence_Speed_Factor.IceDecelerateSpeed)
 	body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color(0.5, 1, 1))
 	if not is_instance_valid(all_timer[E_TimerType.IceDecelerate]):
 		all_timer[E_TimerType.IceDecelerate] = GlobalUtils.create_new_timer_once(self, _on_ice_decelerate_timer_timeout)
