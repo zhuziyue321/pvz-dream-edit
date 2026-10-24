@@ -56,6 +56,11 @@ const SHOP_BUTTON_PATH := "BG_Right/Item/TextureButton3"
 ## 花园状态图标(缺水 / 新植物气泡):与解锁表现一样是按存档算的,切换用户后要一起重算
 const GARDEN_FLAG_PATH := "BG_Right/Item/TextureButton/GardenConditionFlag"
 
+## 主菜单木牌上那张「MULTIPLAYER」牌:本体只留这个入口壳,
+## 玩家对战模组(ModIds.PLAYER_BATTLE)没开时整块不显示 —— 本体不 import 模组,
+## 只问 ModManager 的开关(见 [模组机制] 边界规则 1)
+const MULTIPLAYER_SIGN_PATH := "WoodSign/ButtonMultiplayer"
+
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -72,6 +77,10 @@ func _ready() -> void:
 	_update_mode_lock_state()
 	## 切换用户时存档是热加载的、本场景不重建,解锁表现要跟着新存档重算
 	user.user_session_switched.connect(refresh_for_current_user)
+	## 模组开关变了要跟着刷新(模组页面就在主菜单里,拨一下「玩家对战」的开关,
+	## 木牌上那块「MULTIPLAYER」牌要立刻出现 / 消失)
+	if not ModManager.mod_enabled_changed.is_connected(_on_mod_enabled_changed):
+		ModManager.mod_enabled_changed.connect(_on_mod_enabled_changed)
 
 
 ## 该模式是否可进入: 控制台打开"开放所有关卡"时一律放行,否则看冒险模式进度
@@ -116,6 +125,23 @@ func _update_mode_lock_state() -> void:
 			button.modulate = LOCKED_BUTTON_COLOR
 	_apply_adventure_button_state()
 	_apply_item_lock_state()
+	_apply_multiplayer_sign_state()
+
+
+## 「MULTIPLAYER」牌按模组开关显示 / 隐藏:玩家对战模组没开就没有这个入口
+## (本体不 import 模组,只问 ModManager 的开关 —— 见 [模组机制] 边界规则 1)
+func _apply_multiplayer_sign_state() -> void:
+	var sign_btn := get_node_or_null(NodePath(MULTIPLAYER_SIGN_PATH)) as TextureButton
+	if sign_btn == null:
+		return
+	sign_btn.visible = ModManager.is_mod_enabled(ModIds.PLAYER_BATTLE)
+
+
+## 模组开关变了:只有玩家对战这块牌跟它有关,别的入口照旧
+func _on_mod_enabled_changed(mod_id: StringName, _enabled: bool) -> void:
+	if mod_id != ModIds.PLAYER_BATTLE:
+		return
+	_apply_multiplayer_sign_state()
 
 
 ## 冒险模式按钮: 没通关过 1-1 时是"开始冒险模式"木牌(不显示关卡号),
@@ -274,16 +300,16 @@ func _on_button_4_pressed() -> void:
 	Global.game_para = null
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(MainSceneRegistry.MainScenes.ChooseLevelSurvival))
 
-## 主菜单左下木牌上的「MULTIPLAYER」牌: 进多人游戏(PVP)选关界面
+## 主菜单左下木牌上的「MULTIPLAYER」牌: 进玩家对战选关界面
 ##
-## 那一页由 pvp 模组提供: 本体只留了一个枚举槽位(MainScenes.ChooseLevelPvp),
+## 那一页由玩家对战模组提供: 本体只留了一个枚举槽位(MainScenes.ChooseLevelPlayerBattle),
 ## 场景路径由模组在 install() 时注入注册表(本体不许出现模组里的路径, 见 ModBase 边界规则)。
 ## 模组没装 / 没开时这里只给一句提示, 不切场景(槽位没登记 → get_scene_path 会打一行 error,
 ## 所以先自己判一次有没有登记)
 func _on_multiplayer_pressed() -> void:
-	var slot := MainSceneRegistry.MainScenes.ChooseLevelPvp
+	var slot := MainSceneRegistry.MainScenes.ChooseLevelPlayerBattle
 	if not Global.main_scene_registry.MainScenesMap.has(slot):
-		show_lock_tip("「多人游戏」要在模组页面里打开（选项 → 控制台 → 模组）")
+		show_lock_tip("「玩家对战」要在模组页面里打开（选项 → 控制台 → 模组）")
 		return
 	Global.game_para = null
 	GlobalUtils.change_scene(Global.main_scene_registry.get_scene_path(slot))

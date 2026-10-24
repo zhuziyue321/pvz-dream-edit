@@ -22,10 +22,10 @@ enum MainScenes{
 	## 槽位留给自制关卡模组：场景路径由该模组在 install() 时注入 MainScenesMap
 	## （本体不许出现模组里的路径，见 docs/参考存档/模组机制.md）
 	ChooseLevelCustom,
-	## 槽位留给多人游戏(PVP)模组：同上，场景路径由该模组在 install() 时注入
+	## 槽位留给玩家对战模组：同上，场景路径由该模组在 install() 时注入
 	## （主菜单木牌上的「MULTIPLAYER」牌按下就进这一槽位登记的选关界面）
 	## ⚠️ 数值只许往后加：存档键（"106_x_xxxx"）与 ResourceLevelData.game_mode 都按数值存
-	ChooseLevelPvp,
+	ChooseLevelPlayerBattle,
 
 	Garden = 200,
 	Almanac,

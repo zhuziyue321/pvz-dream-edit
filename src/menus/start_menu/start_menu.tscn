@@ -56,7 +56,7 @@
 [ext_resource type="Texture2D" uid="uid://b7o4ahh4s4bq8" path="res://pak/images/SelectorScreen_StoreHighlight.png" id="54_ojqr6"]
 [ext_resource type="Texture2D" uid="uid://bt8sr43vbvnna" path="res://pak/images/reloaded/mainmenu/SelectorScreen_WoodSign2_press.png" id="54_yl4bl"]
 [ext_resource type="Texture2D" uid="uid://c4m1e8eegrhq6" path="res://pak/images/SelectorScreen_WoodSign3.png" id="56_b7wor"]
-[ext_resource type="Texture2D" uid="uid://cyag3b0l8quu3" path="res://pak/images/SelectorScreen_WoodSign3_press.png" id="84_pvpsign"]
+[ext_resource type="Texture2D" uid="uid://cyag3b0l8quu3" path="res://pak/images/SelectorScreen_WoodSign3_press.png" id="84_pbsign"]
 [ext_resource type="PackedScene" uid="uid://cp0kgnsx20pyh" path="res://src/ui/dialog.tscn" id="57_ry5e1"]
 [ext_resource type="PackedScene" uid="uid://cngkuh03v6yty" path="res://src/ui/dialog_confirm.tscn" id="58_confirm"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="59_e0j7q"]
@@ -2098,10 +2098,10 @@ layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -96.6
-offset_top = 94.6
-offset_right = 144.4
-offset_bottom = 134.6
+offset_left = -92.0
+offset_top = 93.0
+offset_right = 96.0
+offset_bottom = 117.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_343qg")
 
@@ -2142,8 +2142,8 @@ offset_right = 285.0
 offset_bottom = 283.0
 mouse_default_cursor_shape = 2
 texture_normal = ExtResource("56_b7wor")
-texture_pressed = ExtResource("84_pvpsign")
-texture_hover = ExtResource("84_pvpsign")
+texture_pressed = ExtResource("84_pbsign")
+texture_hover = ExtResource("84_pbsign")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1486086871]
 libraries/ = SubResource("AnimationLibrary_b7wor")
@@ -2423,11 +2423,14 @@ offset_bottom = 136.0
 
 [node name="Label" type="Label" parent="Dialog" unique_id=1490832528]
 layout_mode = 1
-offset_left = 134.0
-offset_top = 128.0
-offset_right = 174.0
-offset_bottom = 151.0
+offset_left = 48.0
+offset_top = 80.0
+offset_right = 272.0
+offset_bottom = 225.0
 text = "没做"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="User" type="Control" parent="." unique_id=2121767396]
 visible = false

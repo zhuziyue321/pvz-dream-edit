@@ -63,6 +63,11 @@ class_name ModManagerClass
 ##
 ## 关联：ModIds ｜ ModConfig ｜ [模组机制](../../docs/参考存档/模组机制.md)
 
+## 某个模组的开关变了（开 / 关都发一次）：本体界面连它就能跟着刷新
+## （例：主菜单那块「MULTIPLAYER」牌 —— 玩家对战模组没开时整块不显示，
+##  在模组页面里把开关拨一下，这块牌要立刻出现 / 消失）
+signal mod_enabled_changed(mod_id: StringName, enabled: bool)
+
 ## 玩家那一份的根目录（`user://` = 编辑器与导出后同址）：**优先加载**
 const MODS_ROOT := "user://mods"
 ## 内置模组的根（工程内，导出后躺在包里）：玩家那份没有 / 读不出来时的**兜底加载根**
@@ -77,7 +82,7 @@ const MOD_SCRIPT_PATHS: Dictionary = {
 	ModIds.PURPLE_DIRECT_PLANT: "purple_direct_plant/purple_direct_plant_mod.gd",
 	ModIds.MORE_ARMOR: "more_armor/more_armor_mod.gd",
 	ModIds.CUSTOM_LEVEL: "custom_level/custom_level_mod.gd",
-	ModIds.PVP: "pvp/pvp_mod.gd",
+	ModIds.PLAYER_BATTLE: "player_battle/player_battle_mod.gd",
 	ModIds.NETPLAY: "netplay/netplay_mod.gd",
 	ModIds.ECO: "eco/eco_mod.gd",
 	ModIds.PVZ2: "pvz2/pvz2_mod.gd",
@@ -86,6 +91,7 @@ const MOD_SCRIPT_PATHS: Dictionary = {
 	ModIds.ARKNIGHTS: "arknights/arknights_mod.gd",
 	ModIds.DLC: "dlc/dlc_mod.gd",
 	ModIds.DEBUG: "debug/debug_mod.gd",
+	ModIds.ZOMBIE_CARD: "zombie_card/zombie_card_mod.gd",
 }
 ## 模组基类（**框架单一一份**，在 `src/mods/`）：用它判断「入口脚本是不是真的继承了 ModBase」
 ## ⚠️ 它**不在**两个加载根里（`mods_builtin/` 只放模组目录）：模组入口一律
@@ -569,20 +575,20 @@ func set_mod_enabled(mod_id: StringName, value: bool) -> void:
 func _apply_enabled_state(mod_id: StringName, value: bool) -> void:
 	enabled_mods[mod_id] = value
 	var mod = get_mod(mod_id)
-	if mod == null:
-		return
-	if value:
-		if not installed_mods.get(mod_id, false):
-			_install(mod_id, mod)
-		return
-	if installed_mods.get(mod_id, false):
-		mod.uninstall()
-		installed_mods[mod_id] = false
-		## 摘掉本模组注册进 DamageSystem 的伤害修饰器（旧版 mod_base 没有则跳过）
-		if mod.has_method("_uninstall_damage_modifiers"):
-			mod._uninstall_damage_modifiers()
-		else:
-			_warn_legacy_mod(mod_id, mod)
+	if mod != null:
+		if value:
+			if not installed_mods.get(mod_id, false):
+				_install(mod_id, mod)
+		elif installed_mods.get(mod_id, false):
+			mod.uninstall()
+			installed_mods[mod_id] = false
+			## 摘掉本模组注册进 DamageSystem 的伤害修饰器（旧版 mod_base 没有则跳过）
+			if mod.has_method("_uninstall_damage_modifiers"):
+				mod._uninstall_damage_modifiers()
+			else:
+				_warn_legacy_mod(mod_id, mod)
+	## 开关真的变了：通知外面一声（本体界面按这个刷新，如主菜单那块「MULTIPLAYER」牌）
+	mod_enabled_changed.emit(mod_id, value)
 
 
 ## 换用户：模组开关与设置跟着换成新用户那一份（存档文件在用户目录下，一人一份）
