@@ -51,6 +51,8 @@ const NO_DEPENDENCY_TEXT := "（这个模组不依赖其它模组）"
 ## 依赖块的名字：详情区里靠名字找它（不靠下标 —— 它前面有几行随模组而变）
 const DEPENDENCY_BOX_NAME := "DependencyBox"
 
+## 左右两个滚动区的垂直滚动条宽度（默认太窄不好拖）
+const SCROLLBAR_WIDTH := 18.0
 ## 「模组自己那一块」挂刷新回调用的 meta 键 —— 与 `src/mods/mod_base.gd` 的
 ## `DETAIL_REFRESH_META` 必须一致。这里不能写 `DETAIL_REFRESH_META`：
 ## 模组（含 `ModBase`）不写 `class_name`（模组脚本可能在 `user://mods/` 下加载，那里
@@ -86,6 +88,9 @@ func _ready() -> void:
 		registry.values_changed.connect(_on_values_changed)
 	## 分类过滤栏是固定结构（维度 C 的四类），打开页面时建一次即可
 	_build_filter_bar()
+	## 滚动条加宽（默认太窄不好拖）
+	for scroll: ScrollContainer in [$OptionBG/ListScroll, $OptionBG/DetailScroll]:
+		scroll.get_v_scroll_bar().custom_minimum_size.x = SCROLLBAR_WIDTH
 
 
 #region 打开 / 关闭

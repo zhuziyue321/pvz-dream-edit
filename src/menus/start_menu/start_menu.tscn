@@ -72,6 +72,7 @@
 [ext_resource type="Script" uid="uid://b6dhsamdijupk" path="res://src/menus/start_menu/panel_rename_user.gd" id="81_dj5t5"]
 [ext_resource type="Script" uid="uid://cwusfudks6mhf" path="res://src/ui/dialog_error.gd" id="82_krdmy"]
 [ext_resource type="PackedScene" uid="uid://dm0dpage7kq3v" path="res://src/ui/mod_page/mod_page.tscn" id="83_modpage"]
+[ext_resource type="Texture2D" uid="uid://hl74vdgxdih2" path="res://assets_custom/image/main_game_item/Tombstones.png" id="85_tomb"]
 
 [sub_resource type="Animation" id="Animation_xll4c"]
 resource_name = "Idle"
@@ -1580,6 +1581,13 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("2_jjhxv")
+
+[node name="MenuTombstone" type="Sprite2D" parent="."]
+position = Vector2(250, 415)
+texture = ExtResource("85_tomb")
+hframes = 5
+vframes = 4
+frame = 18
 
 [node name="BG_Left" type="TextureRect" parent="." unique_id=1417766778]
 layout_mode = 1
