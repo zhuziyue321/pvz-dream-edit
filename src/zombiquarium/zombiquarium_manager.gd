@@ -1,11 +1,12 @@
 extends Node2D
 class_name ZombiquariumManager
-## 僵尸水族馆（Zombiquarium，迷你游戏第 8 关）玩法总控
+## 僵尸水族馆（Zombiquarium，原版迷你游戏第 8 关）玩法总控
 ##
-## 原版本关没有草坪、没有植物、没有出怪：整个关卡就是一口鱼缸 + 几只潜水僵尸（见 ConstZombiquarium）。
-## 玩法闭环：
-##   点鱼缸花 5 阳光造一个脑子 -> 脑子下沉，僵尸游过来吃掉 -> 僵尸定时产 25 阳光（点了才算收到）
-##   -> 阳光够 100 买僵尸、够 1000 买奖杯 -> 买下奖杯通关；僵尸 20 秒没吃到脑子就饿死，全死光判负。
+## 原版本关没有草坪、没有植物、没有出怪：整关就是一口鱼缸 + 几只潜水僵尸（见 ConstZombiquarium）。
+## 玩法闭环（口径全部来自原版源码 `../PvZ-Portable-main/src/Lawn/Challenge.cpp`）：
+##   点鱼缸花 5 阳光造一个脑子（Challenge.cpp:3375）-> 脑子下沉，僵尸游过来吃掉（Zombie.cpp:3103）
+##   -> 僵尸定时吐 25 阳光（Zombie.cpp:3246）-> 阳光够 100 买僵尸、够 1000 买奖杯（Plant.cpp:5004/5005）
+##   -> 买下奖杯通关；僵尸不喂会掉血掉到 0 就死，全死光判负（Challenge.cpp:3383）。
 ##
 ## **买东西的入口**：出战卡槽里的两张自定义种子包 —— 100 阳光买潜水僵尸、1000 阳光买奖杯，
 ## 由关卡脚本用通用口子 `create_custom_seed_packet()` 放上去（见 minigame_08_zombie_aquarium）；
@@ -13,7 +14,9 @@ class_name ZombiquariumManager
 ##
 ## 落位说明：本节点挂在主游戏场景（MainGameManager）下、覆盖整屏（z_index 4000，压住草坪但压不住
 ## 产出阳光的 Suns 层 4002），位置对齐相机左上角（camera_2d.position 就是可见区左上角的世界坐标，
-## 见 main_game_camera.gd 的口径）。文案这一类 UI 挂在本节点下的 CanvasLayer 里，走屏幕坐标。
+## 见 main_game_camera.gd 的口径）。**本节点的局部坐标 = 原版的棋盘坐标**（800x600），
+## 所以原版那些绝对坐标（点击范围 80~720 / 90~430、游动范围 0~680 / 100~400…）可以原样用。
+## 文案这一类 UI 挂在本节点下的 CanvasLayer 里，走屏幕坐标。
 ##
 ## 阳光仍然走主游戏那一份（CardSlotBattle.sun_value）：点了阳光自动进账，本关只负责花
 ## （造脑子 / 买僵尸 / 买奖杯），这样已有的收阳光表现、存档与结算都不用另起一套。
@@ -25,26 +28,18 @@ class_name ZombiquariumManager
 ##   - 判负不走存档 / 红字演出，只给结论。
 ## 玩法数值与规则两种模式完全一致，差别只在「阳光打哪儿记」「结算交给谁」。
 
-## 点鱼缸造脑子的范围（相对本节点的水域矩形）：点在水域里才造脑子
-@export var water_rect := Rect2(110.0, 115.0, 640.0, 435.0)
-## 僵尸游动范围（相对本节点）：比水域小一圈，免得僵尸贴着缸壁
-@export var swim_rect := Rect2(150.0, 150.0, 550.0, 330.0)
-## 脑子沉到这个 y（相对本节点）就算到缸底，白花一份阳光
-@export var brain_bottom_y := 545.0
-
 ## 本关结束（true = 买下奖杯通关，false = 宠物僵尸全死光判负）
 signal signal_finished(is_win: bool)
 ## 阳光变了（入口场景的 HUD / 调试通道显示用；直接改出战卡槽的数值不会触发，够用即可）
 signal signal_sun_value_changed(sun: int)
 
-## 文案取自原版 lawn_strings.txt（见 ConstZombiquarium 头部的来源注释）
-const ADVICE_CLICK_TO_FEED := "点击鱼缸给僵尸喂食"
-const ADVICE_BUY_SNORKEL := "点击购买更多的潜水僵尸！"
-const ADVICE_CLICK_TROPHY := "点击奖杯来完成关卡！"
-const ADVICE_DEATH := "你的宠物僵尸已经全部死亡了！"
-
-## 「可以买更多僵尸了」这句只提示一次，停留秒数
-const ADVICE_BUY_SNORKEL_TIME := 4.0
+## 原版的教学步骤（Challenge.cpp:3400-3427 的 mTutorialState）
+enum E_TutorialState {
+	Off,			## 原版 TUTORIAL_OFF
+	BuySnorkel,		## 原版 TUTORIAL_ZOMBIQUARIUM_BUY_SNORKEL：教玩家买潜水僵尸
+	BoughtSnorkel,	## 原版 TUTORIAL_ZOMBIQUARIUM_BOUGHT_SNORKEL
+	ClickTrophy,	## 原版 TUTORIAL_ZOMBIQUARIUM_CLICK_TROPHY：教玩家点奖杯
+}
 
 @onready var pets_root: Node2D = $Pets
 @onready var brains_root: Node2D = $Brains
@@ -64,11 +59,14 @@ var is_running := false
 var _pets: Array[ZombiquariumPet] = []
 var _brains: Array[ZombiquariumBrain] = []
 var _is_finished := false
-## 玩家是否已经造过脑子（造过之后就不用再提示「点击鱼缸」了）
-var _is_brain_created := false
-## 「可以买更多僵尸了」是否已经提示过（只提示一次）
-var _is_buy_snorkel_adviced := false
-var _advice_timer := 0.0
+## 奖杯已经掉下来（原版 `HasLevelAwardDropped()`）
+var _is_award_dropped := false
+## 原版 mHelpDisplayed：「攒够阳光」那条提示只出一次
+var _is_collect_sun_advised := false
+## 原版 mTutorialState
+var _tutorial_state: E_TutorialState = E_TutorialState.Off
+## 当前提示文案（原版同一时刻只显示一条 advice）
+var _advice_text := ""
 
 
 #region 初始化
@@ -88,8 +86,9 @@ func init_zombiquarium(main_game: MainGameManager) -> void:
 		_hide_lawn_ui()
 	is_running = true
 	_setup_ui()
+	## 原版 Challenge.cpp:311-312：开局送两只潜水僵尸
 	for _i in range(ConstZombiquarium.PET_NUM_START):
-		_create_pet(_random_point_in_rect(swim_rect))
+		_create_pet(_random_pet_pos())
 	_refresh_hud()
 	_emit_sun_changed()
 
@@ -134,14 +133,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
 	var local_pos := get_local_mouse_position()
-	if not water_rect.has_point(local_pos):
+	## 原版 Challenge.cpp:3362：点在这块矩形里才造脑子
+	if not ConstZombiquarium.CLICK_AREA.has_point(local_pos):
 		return
 	create_brain(local_pos)
 	get_viewport().set_input_as_handled()
 
 
 ## 造一个脑子：花一份阳光，脑子从落点往下沉（沉到缸底还没被吃就白花）
+## [param local_pos] 点击位置（鱼缸局部坐标 = 原版棋盘坐标）
 func create_brain(local_pos: Vector2) -> void:
+	## 原版 Challenge.cpp:3375：缸里最多 3 个脑子，且要先扣得起 5 阳光
 	if _brains.size() >= ConstZombiquarium.BRAIN_MAX_NUM:
 		SoundManager.play_other_SFX("buzzer")
 		return
@@ -149,13 +151,18 @@ func create_brain(local_pos: Vector2) -> void:
 		SoundManager.play_other_SFX("buzzer")
 		return
 	var brain: ZombiquariumBrain = SceneRegistry.ZOMBIQUARIUM_BRAIN.instantiate()
-	brain.bottom_y = brain_bottom_y
 	brains_root.add_child(brain)
-	brain.position = _clamp_point_in_rect(water_rect, local_pos)
+	## 原版 Challenge.cpp:3355-3356：脑子的落点 = 点击点 - (15,15)
+	brain.position = local_pos - ConstZombiquarium.BRAIN_OFFSET
+	## 原版脑子画在宠物之上（Challenge.cpp:3351 `mRenderOrder = 400000`）
+	brain.z_index = 1
 	brain.signal_brain_gone.connect(_on_brain_gone)
 	_brains.append(brain)
-	_is_brain_created = true
-	SoundManager.play_other_SFX("plant_water")
+	## 原版 Challenge.cpp:3348：投了脑子就别再提示「点击鱼缸给僵尸喂食」
+	if _advice_text == ConstZombiquarium.ADVICE_CLICK_TO_FEED:
+		_set_advice("")
+	## 原版 Challenge.cpp:3357 投脑子是 tap 音
+	SoundManager.play_other_SFX("tap")
 #endregion
 
 
@@ -189,9 +196,10 @@ func _emit_sun_changed() -> void:
 func _create_pet(local_pos: Vector2) -> ZombiquariumPet:
 	var pet: ZombiquariumPet = SceneRegistry.ZOMBIQUARIUM_PET.instantiate()
 	pets_root.add_child(pet)
-	pet.position = _clamp_point_in_rect(swim_rect, local_pos)
+	pet.position = local_pos
 	## 先入场景树再初始化：僵尸是本节点的子节点，@onready 的那些引用要等入树才拿得到
-	pet.init_pet(swim_rect)
+	## 找脑子由宠物自己去板子上找（原版就是这么干的），这里只把「脑子列表怎么取」告诉它
+	pet.init_pet(get_brains)
 	pet.signal_produce_sun.connect(_on_pet_produce_sun)
 	pet.signal_pet_death.connect(_on_pet_death)
 	_pets.append(pet)
@@ -211,7 +219,7 @@ func _on_pet_produce_sun(_pet: ZombiquariumPet, sun_global_pos: Vector2) -> void
 	SunSpawner.pop_up(_mg.suns, _mg.suns.to_local(sun_global_pos), ConstZombiquarium.PET_SUN_VALUE)
 
 
-## 僵尸死透了：全部死光就判负
+## 僵尸死透了：全部死光就判负（原版 Challenge.cpp:3383 `mZombies.mSize == 0`）
 func _on_pet_death(pet: ZombiquariumPet) -> void:
 	_pets.erase(pet)
 	if _is_finished or not _pets.is_empty():
@@ -222,78 +230,58 @@ func _on_pet_death(pet: ZombiquariumPet) -> void:
 ## 脑子没了（沉到缸底 / 被吃掉）
 func _on_brain_gone(brain: ZombiquariumBrain) -> void:
 	_brains.erase(brain)
-	for pet in _pets:
-		pet.clear_target_brain(brain)
 #endregion
 
 
 #region 每帧
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	if _is_finished:
 		return
-	_assign_brains()
-	_consume_eaten_brain()
-	if _advice_timer > 0.0:
-		_advice_timer -= delta
-		if _advice_timer <= 0.0:
-			_advice_timer = 0.0
+	_update_advice()
 	_refresh_hud()
 
 
-## 每帧给每只僵尸派一个最近的脑子（原版：脑子沉在哪，僵尸就往哪游）
-func _assign_brains() -> void:
-	for pet in _pets:
-		if pet.state != ZombiquariumPet.E_PetState.Swim and pet.state != ZombiquariumPet.E_PetState.Chase:
-			continue
-		var nearest: ZombiquariumBrain = null
-		var nearest_distance := INF
-		for brain in _brains:
-			var distance := pet.position.distance_to(brain.position)
-			if distance < nearest_distance:
-				nearest_distance = distance
-				nearest = brain
-		if nearest != null:
-			pet.set_target_brain(nearest)
+## 提示与教学：原版 Challenge.cpp:3381-3427（ZombiquariumUpdate）
+func _update_advice() -> void:
+	## 原版 Challenge.cpp:3394：进度口径 = 阳光，封顶 1000
+	var score := clampi(get_sun_value(), 0, ConstZombiquarium.WINNING_SCORE)
+	## ① 原版 Challenge.cpp:3388-3392：一条提示都没显示过 → 先教玩家攒阳光
+	if _advice_text.is_empty() and not _is_collect_sun_advised:
+		_is_collect_sun_advised = true
+		_set_advice(ConstZombiquarium.ADVICE_COLLECT_SUN % ConstZombiquarium.WINNING_SCORE)
+	## ② 原版 Challenge.cpp:3396-3399：离通关差 100 点以内 → 「就要成功了！」
+	if score >= ConstZombiquarium.WINNING_SCORE - 100:
+		_set_advice(ConstZombiquarium.ADVICE_ALMOST_THERE)
+	## ③ 原版 Challenge.cpp:3400-3413：阳光够多就教玩家买潜水僵尸；掉回 100 以下就取消这一步
+	if score >= ConstZombiquarium.ADVICE_BUY_SNORKEL_SCORE \
+			and _tutorial_state == E_TutorialState.Off:
+		_tutorial_state = E_TutorialState.BuySnorkel
+		_set_advice(ConstZombiquarium.ADVICE_BUY_SNORKEL)
+	elif score < ConstZombiquarium.ADVICE_BUY_SNORKEL_SCORE - 10 \
+			and _tutorial_state == E_TutorialState.BuySnorkel:
+		_tutorial_state = E_TutorialState.Off
+		_set_advice("")
+	## ④ 原版 Challenge.cpp:3414-3427：阳光满了就教玩家点奖杯；阳光不够就退回上一步
+	if score >= ConstZombiquarium.WINNING_SCORE \
+			and _tutorial_state == E_TutorialState.BoughtSnorkel:
+		_tutorial_state = E_TutorialState.ClickTrophy
+		_set_advice(ConstZombiquarium.ADVICE_CLICK_TROPHY)
+	elif score < ConstZombiquarium.WINNING_SCORE \
+			and _tutorial_state == E_TutorialState.ClickTrophy:
+		_tutorial_state = E_TutorialState.BoughtSnorkel
 
 
-## 僵尸咬住脑子的那一刻就把脑子吃掉（别的僵尸盯着的同一个脑子要同时失效）
-func _consume_eaten_brain() -> void:
-	for pet in _pets:
-		if pet.state != ZombiquariumPet.E_PetState.Eat:
-			continue
-		var brain := pet.get_eating_brain()
-		if is_instance_valid(brain) and not brain.is_eaten:
-			brain.be_eaten()
-
-
-## 刷新按钮可用状态与提示文案
+## 刷新按钮可用状态
 func _refresh_hud() -> void:
 	var sun := get_sun_value()
 	button_buy_pet.disabled = _is_finished or sun < ConstZombiquarium.PET_SUN_COST
 	button_buy_trophy.disabled = _is_finished or sun < ConstZombiquarium.TROPHY_SUN_COST
-	if _is_finished:
-		return
-	if sun >= ConstZombiquarium.TROPHY_SUN_COST:
-		_set_advice(ADVICE_CLICK_TROPHY, 0.0)
-		return
-	if _advice_timer > 0.0:
-		return
-	if not _is_brain_created:
-		_set_advice(ADVICE_CLICK_TO_FEED, 0.0)
-		return
-	if not _is_buy_snorkel_adviced and sun >= ConstZombiquarium.PET_SUN_COST:
-		_is_buy_snorkel_adviced = true
-		_set_advice(ADVICE_BUY_SNORKEL, ADVICE_BUY_SNORKEL_TIME)
-		return
-	_set_advice("", 0.0)
 
 
-## 写提示文案；stay_time > 0 表示停留这么多秒后自动清空
-func _set_advice(text: String, stay_time: float) -> void:
-	if advice_label.text == text:
-		return
+## 写提示文案（原版同一时刻只显示一条 advice，后写的覆盖先写的）
+func _set_advice(text: String) -> void:
+	_advice_text = text
 	advice_label.text = text
-	_advice_timer = stay_time
 #endregion
 
 
@@ -306,10 +294,17 @@ func _set_advice(text: String, stay_time: float) -> void:
 func try_buy_pet() -> bool:
 	if _is_finished:
 		return false
+	## 原版 Challenge.cpp:3322：场上僵尸超过 100 只就不给买了
+	if _pets.size() > ConstZombiquarium.PET_MAX_NUM:
+		return false
 	if not spend_sun(ConstZombiquarium.PET_SUN_COST):
 		return false
-	_create_pet(_random_point_in_rect(swim_rect))
-	SoundManager.play_other_SFX("points")
+	_create_pet(_random_pet_pos())
+	## 原版 Challenge.cpp:3325-3330：正在教「买潜水僵尸」这一步 → 这一步教完了
+	if _tutorial_state == E_TutorialState.BuySnorkel:
+		_tutorial_state = E_TutorialState.BoughtSnorkel
+	## 原版 Challenge.cpp:3333-3334：入水声 + 水花
+	SoundManager.play_other_SFX("zombiesplash")
 	return true
 
 
@@ -321,6 +316,11 @@ func try_buy_trophy(trophy_screen_pos: Vector2) -> bool:
 		return false
 	if not spend_sun(ConstZombiquarium.TROPHY_SUN_COST):
 		return false
+	## 原版 Challenge.cpp:3338：奖杯掉下来（SpawnLevelAward）—— 原版这时宠物就不再找脑子、
+	## 不吐阳光、也不掉血了
+	_is_award_dropped = true
+	for pet in _pets:
+		pet.is_award_dropped = true
 	Log.info("僵尸水族馆：买下奖杯，通关")
 	_finish(true)
 	EventBus.push_event(ConstEventName.CREATE_TROPHY, [trophy_screen_pos])
@@ -352,10 +352,11 @@ func _finish(is_win: bool) -> void:
 
 
 ## 宠物僵尸全死光：走与「僵尸进家」同一套失败流程（重开存档 + 失败音乐 + 红字）
-## 原版本关的失败提示是 lawn_strings 的 [ZOMBIQUARIUM_DEATH_MESSAGE]「你的宠物僵尸已经全部死亡了！」
+## 原版本关的失败提示是 lawn_strings 的 [ZOMBIQUARIUM_DEATH_MESSAGE]
+## 「你的宠物僵尸已经全部死亡了！」（原版 Challenge.cpp:3385 判负）
 func _lose_game() -> void:
 	Log.info("僵尸水族馆：宠物僵尸全部死亡，判负")
-	_set_advice(ADVICE_DEATH, 0.0)
+	_set_advice(ConstZombiquarium.ADVICE_DEATH)
 	if _mg == null:
 		## 独立预览：没有存档与失败演出，只给出结论
 		SoundManager.play_other_SFX("losemusic")
@@ -379,21 +380,16 @@ func get_pets() -> Array[ZombiquariumPet]:
 	return _pets
 
 
-## 当前水缸里的脑子（探针 / 调试通道用）
+## 当前水缸里的脑子（探针 / 调试通道用；宠物每 tick 自己来这里找最近的脑子）
+## 返回副本：宠物遍历时可能正好吃掉其中一个（会把这一个从列表里摘掉），副本不受影响
 func get_brains() -> Array[ZombiquariumBrain]:
-	return _brains
+	return _brains.duplicate()
 
 
-func _random_point_in_rect(rect: Rect2) -> Vector2:
+## 宠物生成位置：原版 Challenge.cpp:3310-3311
+func _random_pet_pos() -> Vector2:
 	return Vector2(
-		randf_range(rect.position.x, rect.end.x),
-		randf_range(rect.position.y, rect.end.y)
-	)
-
-
-func _clamp_point_in_rect(rect: Rect2, point: Vector2) -> Vector2:
-	return Vector2(
-		clampf(point.x, rect.position.x, rect.end.x),
-		clampf(point.y, rect.position.y, rect.end.y)
+		randf_range(ConstZombiquarium.PET_SPAWN_X.x, ConstZombiquarium.PET_SPAWN_X.y),
+		randf_range(ConstZombiquarium.PET_SPAWN_Y.x, ConstZombiquarium.PET_SPAWN_Y.y)
 	)
 #endregion

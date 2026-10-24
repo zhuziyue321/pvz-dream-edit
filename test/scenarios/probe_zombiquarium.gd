@@ -1,13 +1,16 @@
 extends RefCounted
 ## 探针：迷你游戏第 8 关「僵尸水族馆」（Zombiquarium）的关键玩法闭环
-## 覆盖：
+## 覆盖（口径全部按原版源码，见 src/core/consts/const_zombiquarium.gd）：
 ##   ① 关卡字段：开局 50 阳光、不出怪（monster_mode = Null）、不走选卡
 ##   ② 进关后水族馆挂上：开局 2 只宠物僵尸、阳光 50
-##   ③ 点鱼缸造脑子：扣 5 阳光、水缸里最多同时 3 个脑子（第 4 个被拒，不扣阳光）
-##   ④ 花 100 阳光买一只潜水僵尸（点出战卡槽里那张 100 的种子包）
-##   ⑤ 攒够 1000 阳光点奖杯种子包：关卡结束（signal_finished(true)）+ 奖杯真的抛出来
-##   ⑤b 右下角进度条口径 = 阳光 / 1000
-##   ⑥ 第二轮：所有宠物饿死 -> 主游戏进入 GAME_OVER（判负）
+##   ③ 宠物的血量模型：原版初始 200 血、每 100 tick 掉 10 血，血量 ≤150 才找脑子
+##   ④ 造脑子：扣 5 阳光、水缸里最多同时 3 个脑子（第 4 个被拒，不扣阳光）
+##   ⑤ 僵尸游过来把脑子吃掉（吃完回 200 血，封顶 300）
+##   ⑥ 僵尸定时产阳光（首次 200~400 tick，之后 1000~1500 tick）
+##   ⑦ 花 100 阳光买一只潜水僵尸（点出战卡槽里那张 100 的种子包）
+##   ⑧ 攒够 1000 阳光点奖杯种子包：关卡结束（signal_finished(true)）+ 奖杯真的抛出来
+##   ⑧b 右下角进度条口径 = 阳光 / 1000
+##   ⑨ 第二轮：所有宠物饿死 -> 主游戏进入 GAME_OVER（判负）
 ## 机器可读汇总：最后一行 [ZOMBAQ] result=PASS|FAIL failed=<n>
 
 const LEVEL_AQUARIUM := "res://src/levels/mode_minigame/minigame_08_zombie_aquarium.gd"
@@ -64,20 +67,42 @@ func _run_win(a, title: String) -> void:
 		mg.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME,
 		"实际=" + str(mg.main_game_progress))
 
-	## ③ 造脑子：扣阳光
+	## ③ 宠物的初始状态
 	var first_pet: ZombiquariumPet = aquarium.get_pets()[0]
 	_check(a, title + ": 宠物在播游泳动画",
 		first_pet.get_curr_anim_name() == &"Zombie_snorkle_aquarium_swim",
 		"实际=" + str(first_pet.get_curr_anim_name()))
-	aquarium.create_brain(first_pet.position + Vector2(10, 0))
+	_check(a, title + ": 宠物血量从 200 起掉（原版 Zombie.cpp:867）",
+		first_pet.get_health() <= ConstZombiquarium.PET_HEALTH_INIT \
+				and first_pet.get_health() > ConstZombiquarium.PET_SEEK_HEALTH,
+		"实际=" + str(first_pet.get_health()))
+	## 产阳光用「事件计数」验：阳光掉在场上会被捡走 / 超时消失，数场上个数不稳
+	var sun_spawned := [0]
+	var on_sun_spawned := func(_sun) -> void: sun_spawned[0] += 1
+	EventBus.subscribe(ConstEventName.SUN_SPAWNED, on_sun_spawned)
+
+	## ③b 血量模型：原版每 100 tick 掉 10 血，血量 ≤150 才找脑子
+	## （200 血 → 掉到 150 要 500 tick ≈ 8.3 秒）
+	var waited := 0.0
+	while first_pet.get_health() > ConstZombiquarium.PET_SEEK_HEALTH and waited < 15.0:
+		await a.wait(0.5)
+		waited += 0.5
+	_check(a, title + ": 血量掉到 150（原版 PET_SEEK_HEALTH）",
+		first_pet.get_health() <= ConstZombiquarium.PET_SEEK_HEALTH,
+		"实际=" + str(first_pet.get_health()))
+
+	## ④ 造脑子：扣 5 阳光（投在宠物的嘴部锚点上，原版判定半径 50）
+	aquarium.create_brain(first_pet.get_mouth_pos())
 	_check(a, title + ": 造脑子扣 5 阳光", aquarium.get_sun_value() == 45,
 		"实际=" + str(aquarium.get_sun_value()))
-	## ③b 僵尸会游过来把脑子吃掉（脑子就在它嘴边，2.5 秒内必吃到）
-	await a.wait(2.5)
+	## ④b 僵尸会游过来把脑子吃掉（落地 15 tick 后才吃得掉）
+	await a.wait(3.0)
 	_check(a, title + ": 僵尸把脑子吃了", aquarium.get_brains().is_empty(),
 		"还剩 " + str(aquarium.get_brains().size()) + " 个脑子")
+	_check(a, title + ": 吃完脑子回血（封顶 300）", first_pet.get_health() > 150,
+		"实际=" + str(first_pet.get_health()))
 
-	## ③c 上限 3 个：连着造 3 个（同一帧内断言，僵尸来不及吃），第 4 个被拒
+	## ④c 上限 3 个：连着造 3 个（同一帧内断言，僵尸来不及吃），第 4 个被拒
 	aquarium.create_brain(Vector2(300, 200))
 	aquarium.create_brain(Vector2(500, 250))
 	aquarium.create_brain(Vector2(600, 300))
@@ -88,13 +113,11 @@ func _run_win(a, title: String) -> void:
 		aquarium.get_brains().size() == 3 and aquarium.get_sun_value() == 30,
 		"脑子=" + str(aquarium.get_brains().size()) + " 阳光=" + str(aquarium.get_sun_value()))
 
-	## ③d 僵尸定时产阳光（首次间隔 = 区间 × 0.6，约 5~7 秒）
-	var suns_root: Node2D = mg.get_node_or_null("%Suns")
-	var sun_before: int = suns_root.get_child_count()
+	## ④d 僵尸定时产阳光（原版首次 200~400 tick，之后 1000~1500 tick）
 	await a.wait(8.0)
-	var sun_after: int = suns_root.get_child_count()
-	_check(a, title + ": 僵尸产了阳光", sun_after > sun_before,
-		"before=" + str(sun_before) + " after=" + str(sun_after))
+	EventBus.unsubscribe(ConstEventName.SUN_SPAWNED, on_sun_spawned)
+	_check(a, title + ": 僵尸产了阳光", sun_spawned[0] > 0,
+		"本关产阳光次数=" + str(sun_spawned[0]))
 
 	## ④ 买僵尸：玩家现在是在出战卡槽里点的（100 阳光那张种子包），右下角那排按钮已经不参与主游戏
 	mg.card_manager.card_slot_battle.sun_value = 100
@@ -109,7 +132,7 @@ func _run_win(a, title: String) -> void:
 		aquarium.get_pets().size() == 3 and aquarium.get_sun_value() == 0,
 		"僵尸=" + str(aquarium.get_pets().size()) + " 阳光=" + str(aquarium.get_sun_value()))
 
-	## ④b 进度条口径 = 阳光 / 1000
+	## ⑤b 进度条口径 = 阳光 / 1000
 	var provider: LevelProgressProvider = mg.level_progress_controller.provider
 	_check(a, title + ": 进度条数据源 = 水族馆阳光口径", provider is ZombiquariumProgressProvider,
 		"实际=" + str(provider))
@@ -128,11 +151,13 @@ func _run_win(a, title: String) -> void:
 	_check(a, title + ": 卡槽里有 1000 阳光的买奖杯种子包", trophy_packet != null, "卡槽里没有这张卡")
 	if trophy_packet == null:
 		return
-	var temp_before: int = mg.get_node_or_null("%CanvasLayerTemp").get_child_count()
+	## 奖杯是「战利品掉落物」，挂在掉落层（CanvasLayerDropItem/AllDropGardenPlant），不是 CanvasLayerTemp
+	var drop_root: Node2D = mg.get_node_or_null("CanvasLayerDropItem/AllDropGardenPlant")
+	var temp_before: int = drop_root.get_child_count() if drop_root != null else 0
 	trophy_packet.button.pressed.emit()
 	await a.wait(1.0)
 	_check(a, title + ": 关卡结束信号 = 通关", win_result == [true], "实际=" + str(win_result))
-	var temp_after: int = mg.get_node_or_null("%CanvasLayerTemp").get_child_count()
+	var temp_after: int = drop_root.get_child_count() if drop_root != null else 0
 	_check(a, title + ": 奖杯已抛出", temp_after > temp_before,
 		"before=" + str(temp_before) + " after=" + str(temp_after))
 #endregion
@@ -169,7 +194,7 @@ func _run_lose(a, title: String) -> void:
 	var aquarium: ZombiquariumManager = scene.get_manager()
 	_check(a, title + ": 重开后又是 2 只宠物", aquarium.get_pets().size() == 2,
 		"实际=" + str(aquarium.get_pets().size()))
-	## 全部饿死：走 pet.die()，死亡动画 + 淡出大概 3.6s
+	## 全部饿死：走 pet.die()，死亡动画放完大概 2.6s（原版速率 14 → 36 帧 / 14）
 	var dying_pet: ZombiquariumPet = aquarium.get_pets()[0]
 	for pet in aquarium.get_pets().duplicate():
 		pet.die()

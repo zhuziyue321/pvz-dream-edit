@@ -5,9 +5,10 @@ extends LevelScriptBase
 ## 文件名里的编号 = 选关界面上的原版顺序（01~20），与 `src/menus/choose_level/mini_game_choose_level.tscn` 的按钮顺序一致。
 ##
 ## ⚠️ 本关没有草坪玩法：不出怪、不种植物、不天降阳光，整关就是一口鱼缸，
-## 玩法本体在 `src/zombiquarium/`（数值见 `src/core/consts/const_zombiquarium.gd`）：
+## 玩法本体在 `src/zombiquarium/`（数值见 `src/core/consts/const_zombiquarium.gd`，
+## **逐条标了原版源码出处**）：
 ##   点鱼缸花 5 阳光造脑子喂潜水僵尸 -> 僵尸定时产阳光 -> 100 阳光买僵尸、1000 阳光买奖杯通关；
-##   僵尸 20 秒没吃到脑子会饿死，全死光判负。
+##   宠物僵尸一直在掉血（血量 ≤150 才找脑子，吃一个 +200），掉到 0 就死，全死光判负。
 ## 因此这里**不走** show_zombie / choose_card / start_battle 那套流程，只负责把
 ## 主游戏推进到 MAIN_GAME 阶段，然后把流程挂在水族馆的结束信号上。
 

@@ -43,7 +43,7 @@ func run(a) -> void:
 	_check(a, "③ 造脑子扣 5 阳光", manager.get_sun_value() == 45, "实际=" + str(manager.get_sun_value()))
 	_check(a, "③b HUD 阳光数字跟上", "45" in scene.sun_label.text, "实际=" + scene.sun_label.text)
 
-	## ④ 判负：全部饿死（死亡动画 + 淡出约 3.6 秒）
+	## ④ 判负：全部饿死（死亡动画放完约 2.6 秒，原版速率 14 → 36 帧 / 14）
 	var result: Array = []
 	scene.signal_finished.connect(func(is_win: bool) -> void: result.append(is_win))
 	for pet in manager.get_pets().duplicate():

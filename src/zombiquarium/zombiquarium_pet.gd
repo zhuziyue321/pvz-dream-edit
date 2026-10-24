@@ -1,15 +1,19 @@
 extends Node2D
 class_name ZombiquariumPet
-## 僵尸水族馆的「宠物」潜水僵尸
+## 僵尸水族馆里养着的潜水僵尸（原版的「宠物」）
 ##
-## 原版本关的僵尸不是敌人：它们在水缸里游、饿了要喂脑子、喂饱了定时产阳光，
-## 饿了不吃就痛苦地死掉（见 ConstZombiquarium.PET_HUNGRY_TIME）。
+## 行为照搬原版 `Zombie::UpdateZombiquarium` + `Zombie::ZombiquariumFindClosestBrain`
+## （A 级参照工程 `../PvZ-Portable-main/src/Lawn/Zombie.cpp`）：
+##   · 原版一 tick = 1/60 秒，本脚本也按固定步长跑 tick（`ConstZombiquarium.TICK_SECONDS`）
+##   · 状态机四态：DRIFT / ACCEL / BACK_AND_FORTH / BITE（`E_PetPhase`）
+##   · 速度每 tick +0.01，上限随状态不同（0.5 / 0.3 / 0.05），出界时按当前速度的 0.3 倍减速
+##   · 方向角 vel_z：换阶段时随机取，锁定脑子时对准脑子
+##   · 血量：初始 200、上限 300、每 100 tick 掉 10；血量 ≤150 才找脑子，吃一个 +200
+##   · 吐阳光：开局 200~400 tick 一次，之后 1000~1500 tick 一次，25 阳光，从嘴部冒出
+##   · 血量 <100 身上发绿；血量归零播死亡动画，动画放完离场
 ##
-## 角色本体复用潜水僵尸场景（Z012Snorkle），但按**展示态**初始化
-## （Character000Base.E_CharacterInitType.IsShow）：受击框 / 攻击 / 移动 / 血量条全部不参与，
-## 只借用它的动画资源（animation/character/zombie/zombie_snorkle/zombie_snorkle_aquarium_*），
-## 位置与状态由本脚本自己管（水缸里没有行、没有格子，也用不上移动组件）。
-##
+## **坐标口径**：本节点的 `position` 就是原版的 `mPos`（水族馆局部坐标 = 原版棋盘坐标），
+## 精灵挂在子节点上，偏移见 `PET_SPRITE_OFFSET`。
 ## 组件只通过信号与宿主通信（硬约束 §1-2）：本脚本不读组件内部字段，只发信号给管理器。
 
 ## 动画名（见 zombie_snorkle.tscn 的 AnimationPlayer 动画库）
@@ -17,198 +21,273 @@ const ANIM_SWIM := &"Zombie_snorkle_aquarium_swim"
 const ANIM_BITE := &"Zombie_snorkle_aquarium_bite"
 const ANIM_DEATH := &"Zombie_snorkle_aquarium_death"
 
-## 游动速度（像素/秒）：慢悠悠地漂才像在水里
-const SWIM_SPEED := 34.0
-## 看见脑子后追过去的速度倍率（饿了要赶紧吃到，比闲逛快）
-const CHASE_SPEED_SCALE := 1.8
-## 离脑子这么近就开吃（像素）
-const EAT_DISTANCE := 26.0
-## 咬一口的时长（秒），与 ANIM_BITE 的 length 一致
-const EAT_TIME := 1.16667
-## 死亡动画时长（秒），与 ANIM_DEATH 的 length 一致
-const DEATH_TIME := 3.0
-## 死亡动画播完后淡出的时长（秒）
-const DEATH_FADE_TIME := 0.6
-## 闲逛时换一个落脚点的间隔范围（秒）
-const WANDER_CD_RANGE := Vector2(1.5, 3.5)
-## 产阳光时僵尸身体发光的位置偏移（相对本节点，往上一点）
-const SUN_OFFSET := Vector2(0, -34.0)
-## 饿了时的身体颜色（原版「身体发绿黄色」）
-const HUNGRY_COLOR := Color(0.62, 1.0, 0.42, 1.0)
+## 精灵根节点相对 mPos 的偏移 —— 推导只用**原版自己的几何**，不靠量图：
+##   · 原版潜水僵尸的受击框是 mPos + Rect(12, 0, 62, 115)（原版 Zombie.cpp:488）
+##   · 原版的嘴部锚点是 mPos + (50, 40)（原版 Zombie.cpp:3092 判吃脑子、3246 吐阳光，同一个点）
+##   · 仓库这条水族馆动画里，头贴图（`Body/BodyCorrect/Anim_head1`）在 BodyCorrect 空间的
+##     x 21.6~66.3、y -1.3~49.0，躯干（body1）在 x 39.4~76.9、y 44.6~81.2，腿脚一直到 y 122
+##   · 于是把 **BodyCorrect 原点摆到 mPos 上**，原版的受击框与嘴部锚点正好落在头与躯干上
+##     （腿脚到 122，与受击框底 115 只差 7px）
+##   · BodyCorrect 在仓库场景里的位置是 (-62, -122)（src/entities/character/zombie/zombie_snorkle.tscn），
+##     所以精灵根节点摆在 mPos + (62, 122)
+const PET_SPRITE_OFFSET := Vector2(62.0, 122.0)
 
-## 宠物状态
-enum E_PetState {
-	Swim,	## 闲逛
-	Chase,	## 追脑子
-	Eat,	## 正在吃脑子
-	Death,	## 已饿死，正在播死亡动画
+## 宠物状态（原版 ZombiePhase 的四个水族馆阶段）
+enum E_PetPhase {
+	Drift,		## 原版 PHASE_ZOMBIQUARIUM_DRIFT：慢慢飘
+	Accel,		## 原版 PHASE_ZOMBIQUARIUM_ACCEL：朝一个方向加速游
+	BackAndForth,	## 原版 PHASE_ZOMBIQUARIUM_BACK_AND_FORTH：在 x 200~550 之间来回
+	Bite,		## 原版 PHASE_ZOMBIQUARIUM_BITE：正在吃脑子
 }
 
-## 僵尸死透了（死亡动画播完，管理器据此判负）
+## 僵尸死透了（死亡动画放完，管理器据此判负）
 signal signal_pet_death(pet: ZombiquariumPet)
-## 该产一颗阳光了（阳光由管理器统一生成，本脚本不碰阳光经济）
+## 该吐一颗阳光了（阳光由管理器统一生成，本脚本不碰阳光经济）
 signal signal_produce_sun(pet: ZombiquariumPet, global_pos: Vector2)
 
-## 宠物能游动的水域（相对水族馆节点的矩形）
-var move_range := Rect2()
+## 脑子列表的取法（**由管理器注入的 Callable**）：原版每只僵尸自己去板子上找最近的脑子，
+## 所以找脑子这件事留在宠物这边，管理器不派活（硬约束 §1-2：不跨节点抓字段）
+var brains_getter: Callable = Callable()
+
 ## 当前状态
-var state: E_PetState = E_PetState.Swim
-## 已经饿了多久（秒），吃到脑子就清零，到 PET_HUNGRY_TIME 就饿死
-var hunger_time := 0.0
+var phase: E_PetPhase = E_PetPhase.Drift
+## 当前血量（原版 mBodyHealth）
+var health: int = ConstZombiquarium.PET_HEALTH_INIT
+## 奖杯已经掉下来（原版 `HasLevelAwardDropped()`）：原版这时宠物不再找脑子、不吐阳光、不掉血
+var is_award_dropped := false
 
 var _zombie: Zombie012Snorkle
 var _anim_player: AnimationPlayer
-var _target_brain: ZombiquariumBrain
-var _wander_target := Vector2.ZERO
-var _wander_time_left := 0.0
-var _eat_time_left := 0.0
-var _death_time_left := 0.0
-var _sun_time_left := 0.0
+## 原版 mZombieAge：每 tick +1，满 100 的整数倍掉 10 血
+var _age := 0
+## 原版 mPhaseCounter：阶段计时（tick）
+var _phase_counter := 0
+## 原版 mVelZ：速度方向角（弧度）
+var _vel_z := 0.0
+## 原版 mVelX（水族馆里当「速度大小」用）：每 tick +0.01
+var _speed := 0.0
+## 原版 mSummonCounter：吐阳光的倒计时（tick）
+var _summon_counter := 0
+var _tick_accumulator := 0.0
+var _is_dead := false
 
 
 #region 初始化
 ## 初始化宠物：造出展示态的潜水僵尸（必须在 add_child 到场景树之前调用）
-func init_pet(curr_move_range: Rect2) -> void:
-	move_range = curr_move_range
+## [param new_brains_getter] 取脑子列表的 Callable（管理器注入）
+func init_pet(new_brains_getter: Callable) -> void:
+	brains_getter = new_brains_getter
 	_create_zombie()
-	_reset_sun_timer(true)
-	_pick_wander_target()
+	## 原版 Zombie.cpp:865-868：进关就是 DRIFT 阶段、阶段计时 200 tick、血量 200、
+	## 第一次吐阳光的倒计时 200~400 tick
+	phase = E_PetPhase.Drift
+	_phase_counter = ConstZombiquarium.PHASE_TICKS_DRIFT_INIT
+	health = ConstZombiquarium.PET_HEALTH_INIT
+	_summon_counter = randi_range(
+		ConstZombiquarium.PET_SUMMON_INIT_RANGE.x,
+		ConstZombiquarium.PET_SUMMON_INIT_RANGE.y
+	)
+	_refresh_tint()
 
 
 ## 造一只展示态的潜水僵尸挂在本节点下
 func _create_zombie() -> void:
 	## 展示态：受击框 / 攻击 / 移动组件都不启用（见 character_base.ready_show / zombie_base.ready_show）
 	_zombie = CharacterShowFactory.create_show_zombie(
-		ConstZombiquarium.get_pet_zombie_type(), self) as Zombie012Snorkle
+		ConstZombiquarium.get_pet_zombie_type(), self, PET_SPRITE_OFFSET) as Zombie012Snorkle
 	if _zombie == null:
 		return
-	## 水里的僵尸没有影子
+	## 水里的僵尸没有影子（原版 Zombie.cpp:9373「shadows look really dumb in Zombiquarium」）
 	_zombie.shadow.visible = false
 	## 动画树在展示态会一直播 idle，交给动画播放器直接播水族馆那三条动画
 	_zombie.anim_component.stop_anim()
 	_anim_player = _zombie.get_node("AnimationPlayer")
-	_play_anim(ANIM_SWIM)
+	_play_swim_anim()
 #endregion
 
 
-#region 每帧
+#region 每帧 / 每 tick
 func _process(delta: float) -> void:
-	if _zombie == null:
+	if _is_dead:
+		_update_dead()
 		return
-	match state:
-		E_PetState.Swim:
-			_update_hunger(delta)
-			_update_sun_timer(delta)
-			_update_swim(delta)
-		E_PetState.Chase:
-			_update_hunger(delta)
-			_update_sun_timer(delta)
-			_update_chase(delta)
-		E_PetState.Eat:
-			_update_eat(delta)
-		E_PetState.Death:
-			_update_death(delta)
+	_tick_accumulator += delta
+	## 一帧最多补 15 tick：防止卡顿后一次性狂跑（原版不会这样，这里只防卡死）
+	_tick_accumulator = minf(_tick_accumulator, ConstZombiquarium.TICK_SECONDS * 15.0)
+	while _tick_accumulator >= ConstZombiquarium.TICK_SECONDS:
+		_tick_accumulator -= ConstZombiquarium.TICK_SECONDS
+		_tick()
 
 
-## 累计饥饿：到点就饿死（原版 20 秒没吃到脑子就 "痛苦地死去"）
-func _update_hunger(delta: float) -> void:
-	hunger_time += delta
-	_refresh_hunger_tint()
-	if hunger_time >= ConstZombiquarium.PET_HUNGRY_TIME:
-		die()
+## 一个 tick：对应原版 `Zombie::Update` 里的一帧（60 帧/秒）
+func _tick() -> void:
+	_age += 1
+	## 原版 Zombie.cpp:4340：阶段计时每 tick 减 1
+	if _phase_counter > 0:
+		_phase_counter -= 1
 
+	if phase == E_PetPhase.Bite:
+		## 原版 Zombie.cpp:3139-3148：咬的动画放完就回到漂游
+		if _is_anim_finished(ANIM_BITE):
+			_play_swim_anim()
+			phase = E_PetPhase.Drift
+			_phase_counter = ConstZombiquarium.PHASE_TICKS_DRIFT_AFTER_BITE
+	elif not _find_closest_brain() and _phase_counter == 0:
+		## 原版 Zombie.cpp:3150-3181：阶段计时归零且附近没脑子 → 随机换一个漂游方式
+		_pick_random_phase()
 
-## 饿了就把身体染成绿黄色报警（原版表现）
-func _refresh_hunger_tint() -> void:
-	if not is_instance_valid(_zombie):
-		return
-	var left_time: float = ConstZombiquarium.PET_HUNGRY_TIME - hunger_time
-	if left_time <= ConstZombiquarium.PET_HUNGRY_WARN_TIME:
-		_zombie.body.modulate = HUNGRY_COLOR
-	else:
-		_zombie.body.modulate = Color.WHITE
-
-
-## 产阳光倒计时
-func _update_sun_timer(delta: float) -> void:
-	_sun_time_left -= delta
-	if _sun_time_left > 0.0:
-		return
-	_reset_sun_timer(false)
-	signal_produce_sun.emit(self, global_position + SUN_OFFSET)
-
-
-## 重排下一次产阳光的时间
-func _reset_sun_timer(is_first: bool) -> void:
-	var interval: float = randf_range(
-		ConstZombiquarium.PET_SUN_INTERVAL_RANGE.x,
-		ConstZombiquarium.PET_SUN_INTERVAL_RANGE.y
-	)
-	if is_first:
-		interval *= ConstZombiquarium.PET_SUN_FIRST_SCALE
-	_sun_time_left = interval
-
-
-## 没有脑子时在水里随便漂
-func _update_swim(delta: float) -> void:
-	_wander_time_left -= delta
-	if _wander_time_left <= 0.0 or position.distance_to(_wander_target) < 8.0:
-		_pick_wander_target()
-	_move_toward(_wander_target, SWIM_SPEED, delta)
-
-
-## 有脑子就游过去吃
-func _update_chase(delta: float) -> void:
-	if not is_instance_valid(_target_brain):
-		state = E_PetState.Swim
-		return
-	_move_toward(_target_brain.position, SWIM_SPEED * CHASE_SPEED_SCALE, delta)
-	if position.distance_to(_target_brain.position) <= EAT_DISTANCE:
-		_start_eat()
-
-
-func _update_eat(delta: float) -> void:
-	_eat_time_left -= delta
-	if _eat_time_left > 0.0:
-		return
-	## 吃完回到闲逛：饥饿清零、脑子由管理器回收
-	_play_anim(ANIM_SWIM)
-	state = E_PetState.Swim
-	_pick_wander_target()
-
-
-## 死亡动画播完 -> 淡出 -> 通知管理器
-func _update_death(delta: float) -> void:
-	_death_time_left -= delta
-	if _death_time_left > 0.0:
-		return
-	if is_instance_valid(_zombie):
-		var tween := create_tween()
-		tween.tween_property(_zombie, "modulate:a", 0.0, DEATH_FADE_TIME)
-		await tween.finished
-	set_process(false)
-	signal_pet_death.emit(self)
-	queue_free()
+	_move()
+	_summon_sun()
+	_take_age_damage()
 #endregion
 
 
-#region 行为接口（管理器调用）
-## 指派一个脑子给本宠物（管理器每帧按最近的脑子指派，可能被多只宠物同时盯上，先到的先吃）
-func set_target_brain(brain: ZombiquariumBrain) -> void:
-	if state != E_PetState.Swim and state != E_PetState.Chase:
-		return
-	_target_brain = brain
-	state = E_PetState.Chase
+#region 原版行为对照
+## 原版 `Zombie::ZombiquariumFindClosestBrain`：找最近的脑子（落地 15 tick 之后的才算）；
+## 够近就吃掉（回血 + 播咬的动画），否则把方向角对准它、进入加速阶段
+func _find_closest_brain() -> bool:
+	## 原版 Zombie.cpp:3081：奖杯掉了、血还够多 → 都不找脑子
+	if is_award_dropped or health > ConstZombiquarium.PET_SEEK_HEALTH:
+		return false
+	var closest: ZombiquariumBrain = null
+	var closest_distance := 0.0
+	for brain in _get_brains():
+		if not is_instance_valid(brain) or brain.is_eaten:
+			continue
+		## 原版 Zombie.cpp:3090：脑子落地 15 tick 之后才吃得掉
+		if brain.get_alive_tick() < ConstZombiquarium.BRAIN_EAT_DELAY_TICK:
+			continue
+		var distance: float = brain.get_center().distance_to(get_mouth_pos())
+		if closest == null or distance < closest_distance:
+			closest_distance = distance
+			closest = brain
+	if closest == null:
+		return false
+	## 原版 Zombie.cpp:3103：够近就吃掉
+	if closest_distance < ConstZombiquarium.BRAIN_EAT_DISTANCE:
+		_eat_brain(closest)
+		return false
+	## 原版 Zombie.cpp:3117-3125：方向角对准脑子，进入加速阶段
+	var to_brain: Vector2 = closest.get_center() - get_mouth_pos()
+	_vel_z = atan2(to_brain.y, to_brain.x)
+	if _vel_z < 0.0:
+		_vel_z += TAU
+	phase = E_PetPhase.Accel
+	return true
 
 
-## 当前追的脑子没了（被别的僵尸吃掉 / 沉到缸底）
-func clear_target_brain(brain: ZombiquariumBrain) -> void:
-	if _target_brain != brain:
+## 吃掉一个脑子：原版 Zombie.cpp:3105-3114（脑子死、回 200 血、播咬的动画、进 BITE 阶段）
+func _eat_brain(brain: ZombiquariumBrain) -> void:
+	brain.be_eaten()
+	health = mini(health + ConstZombiquarium.PET_EAT_HEAL, ConstZombiquarium.PET_HEALTH_MAX)
+	_refresh_tint()
+	_play_anim(ANIM_BITE, ConstZombiquarium.ANIM_RATE_BITE)
+	phase = E_PetPhase.Bite
+	_phase_counter = ConstZombiquarium.PHASE_TICKS_BITE
+	## 原版 Zombie.cpp:3106 吃脑子是 slurp 音效
+	SoundManager.play_other_SFX("slurp")
+
+
+## 随机换一个漂游方式：原版 Zombie.cpp:3152-3180
+func _pick_random_phase() -> void:
+	## 原版 `Rand(7)` → 0~6
+	var hit := randi() % 7
+	_phase_counter = randi_range(
+		ConstZombiquarium.PHASE_TICKS_RANDOM.x,
+		ConstZombiquarium.PHASE_TICKS_RANDOM.y
+	)
+	if hit <= 4:
+		## 原版 Zombie.cpp:3155-3158：随便找个方向加速游
+		phase = E_PetPhase.Accel
+		_vel_z = randf() * TAU
+		_set_swim_rate(ConstZombiquarium.ANIM_RATE_FAST)
+	elif hit == 5:
+		## 原版 Zombie.cpp:3167-3172：来回游，先往右
+		phase = E_PetPhase.BackAndForth
+		_vel_z = 0.0
+		_set_swim_rate(ConstZombiquarium.ANIM_RATE_FAST)
+	else:
+		## 原版 Zombie.cpp:3175-3179：来回游，先往左
+		phase = E_PetPhase.BackAndForth
+		_vel_z = PI
+		_set_swim_rate(ConstZombiquarium.ANIM_RATE_FAST)
+
+
+## 移动：原版 Zombie.cpp:3183-3236
+func _move() -> void:
+	var dir_x := cos(_vel_z)
+	var dir_y := sin(_vel_z)
+	## 原版 Zombie.cpp:3186-3201：出界判定
+	var is_out_of_bounds := false
+	if position.x < ConstZombiquarium.PET_AREA_X.x and dir_x < 0.0:
+		is_out_of_bounds = true
+	elif position.x > ConstZombiquarium.PET_AREA_X.y and dir_x > 0.0:
+		is_out_of_bounds = true
+	elif position.y < ConstZombiquarium.PET_AREA_Y.x and dir_y < 0.0:
+		is_out_of_bounds = true
+	elif position.y > ConstZombiquarium.PET_AREA_Y.y and dir_y > 0.0:
+		is_out_of_bounds = true
+
+	var max_speed := ConstZombiquarium.SPEED_ACCEL
+	if is_out_of_bounds:
+		## 原版 Zombie.cpp:3204-3208：出界减速，阶段计时也压到 100 以内
+		max_speed = _speed * ConstZombiquarium.SPEED_OUT_OF_BOUNDS_SCALE
+		_phase_counter = mini(100, _phase_counter)
+	elif phase == E_PetPhase.Accel:
+		max_speed = ConstZombiquarium.SPEED_ACCEL
+	elif phase == E_PetPhase.BackAndForth:
+		## 原版 Zombie.cpp:3215-3223：到折返点就折向
+		if position.x < ConstZombiquarium.PET_TURN_X.x and dir_x < 0.0:
+			_vel_z = 0.0
+		if position.x > ConstZombiquarium.PET_TURN_X.y and dir_x > 0.0:
+			_vel_z = PI
+		max_speed = ConstZombiquarium.SPEED_BACK_AND_FORTH
+	elif phase == E_PetPhase.Drift or phase == E_PetPhase.Bite:
+		max_speed = ConstZombiquarium.SPEED_DRIFT
+
+	## 原版 Zombie.cpp:3232-3236：加速 + 位移
+	_speed = minf(max_speed, _speed + ConstZombiquarium.SPEED_STEP)
+	dir_x *= _speed
+	dir_y *= _speed
+	position += Vector2(dir_x, dir_y)
+	_update_facing()
+
+
+## 吐阳光：原版 Zombie.cpp:3238-3249
+func _summon_sun() -> void:
+	if is_award_dropped:
 		return
-	_target_brain = null
-	if state == E_PetState.Chase:
-		state = E_PetState.Swim
-		_pick_wander_target()
+	if _summon_counter <= 0:
+		return
+	_summon_counter -= 1
+	if _summon_counter != 0:
+		return
+	## 原版 Zombie.cpp:3245-3247：吐一颗阳光，然后重排下一次的时间
+	## （吐阳光那声由阳光自己的弹出音效负责，见 SunSpawner.pop_up）
+	signal_produce_sun.emit(self, global_position + ConstZombiquarium.PET_MOUTH_OFFSET)
+	_summon_counter = randi_range(
+		ConstZombiquarium.PET_SUMMON_RANGE.x,
+		ConstZombiquarium.PET_SUMMON_RANGE.y
+	)
+
+
+## 掉血：原版 Zombie.cpp:3251-3258（每 100 tick 掉 10 血，掉到 0 就死）
+func _take_age_damage() -> void:
+	if is_award_dropped:
+		return
+	if _age % ConstZombiquarium.PET_DAMAGE_INTERVAL_TICK != 0:
+		return
+	health -= ConstZombiquarium.PET_DAMAGE_VALUE
+	_refresh_tint()
+	if health <= 0:
+		die()
+#endregion
+
+
+#region 对外接口
+## 嘴部锚点（原版 mPos + (50, 40)）：吃脑子、吐阳光都用它
+func get_mouth_pos() -> Vector2:
+	return position + ConstZombiquarium.PET_MOUTH_OFFSET
 
 
 ## 当前在播的动画名（调试 / 探针用，用来确认水族馆那三条动画真的播上了）
@@ -218,80 +297,97 @@ func get_curr_anim_name() -> StringName:
 	return _anim_player.current_animation
 
 
-## 当前正在吃的脑子（供管理器回收该脑子）
-func get_eating_brain() -> ZombiquariumBrain:
-	if state != E_PetState.Eat:
-		return null
-	return _target_brain
+## 血量（调试 / 探针用）
+func get_health() -> int:
+	return health
 
 
-## 饿死：播死亡动画（不再产阳光、不再进食）
+## 已经活了多少 tick（调试 / 探针用）
+func get_alive_tick() -> int:
+	return _age
+
+
+## 死了（血量归零，或外部强制处决）：播死亡动画，动画放完才离场
 func die() -> void:
-	if state == E_PetState.Death:
+	if _is_dead:
 		return
-	state = E_PetState.Death
-	_target_brain = null
-	_death_time_left = DEATH_TIME
-	_play_anim(ANIM_DEATH)
-	## 原版是本关专属的「僵尸溺死」音效（wiki: Zombaquarium die.ogg），仓库里没有这个素材，
-	## 先用僵尸入水的水花音效顶上（音效缺素材不影响玩法）
+	_is_dead = true
+	health = 0
+	_refresh_tint()
+	_play_anim(ANIM_DEATH, ConstZombiquarium.ANIM_RATE_DEATH)
+	## 原版 Zombie.cpp:3256 死亡音效（仓库没有原素材，先用水花音顶上）
 	SoundManager.play_other_SFX("zombie_entering_water")
 #endregion
 
 
 #region 内部
-## 开吃：播咬的动画，饥饿清零
-func _start_eat() -> void:
-	state = E_PetState.Eat
-	_eat_time_left = EAT_TIME
-	hunger_time = 0.0
-	_refresh_hunger_tint()
-	_play_anim(ANIM_BITE)
-
-
-## 朝目标点游过去，并按水平方向翻转身体（水族馆的僵尸面朝左，往右游就翻过来）
-func _move_toward(target: Vector2, speed: float, delta: float) -> void:
-	var to_target := target - position
-	if to_target.length() < 1.0:
+## 死亡动画放完 → 通知管理器 → 离场
+func _update_dead() -> void:
+	if not _is_anim_finished(ANIM_DEATH):
 		return
-	var step := to_target.normalized() * speed * delta
-	if step.length() > to_target.length():
-		step = to_target
-	position += step
-	position = _clamp_in_range(position)
-	_face_to(sign(step.x) if step.x != 0.0 else 0)
+	signal_pet_death.emit(self)
+	queue_free()
 
 
-func _face_to(direction_x: int) -> void:
-	if direction_x == 0 or not is_instance_valid(_zombie):
+## 血量低于 100 就发绿（原版 Zombie.cpp:5712-5714）
+func _refresh_tint() -> void:
+	if not is_instance_valid(_zombie):
 		return
-	_zombie.update_direction_x_root(direction_x)
+	if health < ConstZombiquarium.PET_GREEN_HEALTH:
+		_zombie.body.modulate = ConstZombiquarium.PET_GREEN_COLOR
+	else:
+		_zombie.body.modulate = Color.WHITE
 
 
-## 把点夹回水域内（留一点边距，免得僵尸半个身子贴着缸壁）
-func _clamp_in_range(point: Vector2) -> Vector2:
-	if move_range.size == Vector2.ZERO:
-		return point
-	return Vector2(
-		clampf(point.x, move_range.position.x, move_range.end.x),
-		clampf(point.y, move_range.position.y, move_range.end.y)
-	)
-
-
-## 在游动范围里随机挑一个落脚点
-func _pick_wander_target() -> void:
-	if move_range.size == Vector2.ZERO:
+## 翻面：原版 Zombie.cpp:5079-5085，往右游（速度角不在 [π/2, 3π/2]）时把僵尸翻过来
+func _update_facing() -> void:
+	if not is_instance_valid(_zombie):
 		return
-	_wander_target = Vector2(
-		randf_range(move_range.position.x, move_range.end.x),
-		randf_range(move_range.position.y, move_range.end.y)
-	)
-	_wander_time_left = randf_range(WANDER_CD_RANGE.x, WANDER_CD_RANGE.y)
+	var is_backwards := _vel_z < PI / 2.0 or _vel_z > PI * 1.5
+	## 仓库口径：direction_x = 1 朝左（默认朝向）、-1 镜像朝右
+	_zombie.update_direction_x_root(-1 if is_backwards else 1)
 
 
-func _play_anim(anim_name: StringName) -> void:
+## 脑子列表（管理器注入的 Callable）
+func _get_brains() -> Array:
+	if not brains_getter.is_valid():
+		return []
+	var result: Variant = brains_getter.call()
+	if result is Array:
+		return result
+	return []
+
+
+## 播游泳动画：原版 Zombie.cpp:861 / 3143 `RandRangeFloat(8.0, 10.0)`
+func _play_swim_anim() -> void:
+	_play_anim(ANIM_SWIM, randf_range(
+		ConstZombiquarium.ANIM_RATE_SWIM.x,
+		ConstZombiquarium.ANIM_RATE_SWIM.y
+	))
+
+
+## 只改播放速率、不重播：原版 `aBodyReanim->mAnimRate = RandRangeFloat(15.0, 20.0)`
+func _set_swim_rate(rate: Vector2) -> void:
+	if not is_instance_valid(_anim_player):
+		return
+	_anim_player.speed_scale = randf_range(rate.x, rate.y) / ConstZombiquarium.REANIM_BASE_FPS
+
+
+## 播一段动画：原版 `PlayZombieReanim(名字, 模式, 混合时间, 速率)`
+## 速率换算：仓库的 .tres 是 12fps 基准，原版速率 R → speed_scale = R / 12
+func _play_anim(anim_name: StringName, rate: float) -> void:
 	if not is_instance_valid(_anim_player) or not _anim_player.has_animation(anim_name):
 		Log.error("僵尸水族馆：动画不存在 " + str(anim_name))
 		return
+	_anim_player.speed_scale = rate / ConstZombiquarium.REANIM_BASE_FPS
 	_anim_player.play(anim_name)
+
+
+## 动画是否已经放完（原版：reanim 播完 mLoopCount > 0）
+func _is_anim_finished(anim_name: StringName) -> bool:
+	if not is_instance_valid(_anim_player):
+		return true
+	if _anim_player.current_animation != anim_name:
+		return true
+	return not _anim_player.is_playing()
 #endregion
