@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ulvunu6chx1n"
-path="res://.godot/imported/Tanglekelp_arm 8.png-e45fc877b870efa9ede7dbeb1862dacf.ctex"
+uid="uid://bhpc0pe40b8o8"
+path="res://.godot/imported/background6moon.png-99ff3ae77f03c7cb9a062efe58453f7d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets_custom/reanim/Tanglekelp_arm 8.png"
-dest_files=["res://.godot/imported/Tanglekelp_arm 8.png-e45fc877b870efa9ede7dbeb1862dacf.ctex"]
+source_file="res://pak/images/background6moon.png"
+dest_files=["res://.godot/imported/background6moon.png-99ff3ae77f03c7cb9a062efe58453f7d.ctex"]
 
 [params]
 

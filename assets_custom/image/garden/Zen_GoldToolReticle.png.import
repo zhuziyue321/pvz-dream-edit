@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bggarg6vs83i0"
-path="res://.godot/imported/Zen_GoldToolReticle_Result.png-dc39257d75a1be4c3a900d2a8b7a4bf2.ctex"
+path="res://.godot/imported/Zen_GoldToolReticle.png-374d8f59eab50f14d690d6488201fbc0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets_custom/image/garden/Zen_GoldToolReticle_Result.png"
-dest_files=["res://.godot/imported/Zen_GoldToolReticle_Result.png-dc39257d75a1be4c3a900d2a8b7a4bf2.ctex"]
+source_file="res://assets_custom/image/garden/Zen_GoldToolReticle.png"
+dest_files=["res://.godot/imported/Zen_GoldToolReticle.png-374d8f59eab50f14d690d6488201fbc0.ctex"]
 
 [params]
 

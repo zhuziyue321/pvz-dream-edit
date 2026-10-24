@@ -1,7 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://cr85guhgjht2p"]
 
 [ext_resource type="Script" uid="uid://cgu1dec4leah2" path="res://addons/anim_free_common_tracks/ui/main_panel.gd" id="1_8n2pf"]
-[ext_resource type="StyleBox" uid="uid://bhbqbh8iaph0s" path="res://addons/R2Ga_PVZ/ui/new_style_box_flat.tres" id="2_8ne2t"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_06l7b"]
 bg_color = Color(0.145098, 0.145098, 0.145098, 1)
@@ -14,6 +13,18 @@ corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel_body"]
+content_margin_left = 8.0
+content_margin_top = 5.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.145098, 0.145098, 0.145098, 1)
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="PanelContainer" type="PanelContainer"]
 anchors_preset = 15
@@ -40,7 +51,7 @@ layout_mode = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/PluginIntroductionPanel2/ScrollContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_styles/panel = ExtResource("2_8ne2t")
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel_body")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/PluginIntroductionPanel2/ScrollContainer/VBoxContainer/PanelContainer"]
 layout_mode = 2
@@ -79,7 +90,7 @@ autowrap_mode = 3
 
 [node name="PanelContainer2" type="PanelContainer" parent="HBoxContainer/PluginIntroductionPanel2/ScrollContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_styles/panel = ExtResource("2_8ne2t")
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel_body")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/PluginIntroductionPanel2/ScrollContainer/VBoxContainer/PanelContainer2"]
 layout_mode = 2
