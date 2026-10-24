@@ -78,15 +78,21 @@ var curr_page := 0
 var _is_busy := true
 ## 翻页关箱 / 开箱各占的时间(秒)
 const PAGE_FLIP_TIME := 0.2
-## 进场：招牌滑入 + 开箱，之后才开始接点击(对齐原版前 120 tick 不可操作)
+## 进场：招牌滑入后等戴夫念开场白，讲完才解锁交互
+## （原版 mStoreTime 前 120 tick 不可操作；click-to-continue 期间 CanInteractWithButtons 为 false）
 const INTRO_SIGN_TIME := 0.6
-const INTRO_HATCH_DELAY := 0.4
-const INTRO_AFTER_OPEN_TIME := 0.5
+## 后备箱打开事件：戴夫念到 303 / 3100 时由台词的 on_talk_event 推出（见 _open_hatch）
+## 原版 AdvanceCrazyDaveDialog：aMessage == 3100 / 303 时 mHatchTimer = 150 开箱
+const STORE_OPEN_HATCH_EVENT := &"store_open_hatch"
+## 开后备箱音效（原版 SOUND_HATCHBACK_OPEN）
+const HATCHBACK_OPEN_SFX := preload("res://pak/sounds/hatchback_open.ogg")
 
 ## 进店时要追加在原版开场白(303/304)前面的专属台词
 ## 由通关结算写(见 MGM_RewardManager)：3-4 车钥匙(CRAZY_DAVE_301/302)、5-1 新货(3100)
 ## 场景切换前赋值，StoreManager._ready() 消费一次后清空(静态：切场景不经过调用方)
 static var pending_intro_lines: Array[String] = []
+## 进店开场的第一句是否要触发开后备箱（5-1 的 3100：原版念到这句才开箱）
+static var pending_intro_open_hatch := false
 
 ## 离开商店页信号
 signal siganl_exit_store
@@ -115,7 +121,15 @@ func _ready() -> void:
 	_update_night_variant()
 	_update_back_button_text()
 	store_dialog.confirmed.connect(_on_dialog_confirmed)
+	## 弹窗关闭（确定 / 取消 / ESC）后恢复戴夫的挂机计时（原版 mWaitForDialog 冻结一切）
+	store_dialog.closed.connect(_resume_dave_idle)
+	confirm_goods.closed.connect(_resume_dave_idle)
+	EventBus.subscribe(STORE_OPEN_HATCH_EVENT, _open_hatch)
 	_play_intro_animation()
+
+
+func _exit_tree() -> void:
+	EventBus.unsubscribe(STORE_OPEN_HATCH_EVENT, _open_hatch)
 
 
 ## 生成商店出售的植物卡片商品(紫卡与模仿者),按 PLANT_CARD_ROWS 落到对应的行
@@ -170,12 +184,25 @@ func get_page_num() -> int:
 ##   · 买完     → 商品自己发 request_message / request_confirm / request_dave_text
 func _wire_goods_signals() -> void:
 	for goods in all_goods:
-		goods.look_goods_signal.connect(crazy_dave.external_trigger_dialog)
-		goods.look_end_goods_signal.connect(crazy_dave.external_trigger_dialog_end)
+		goods.look_goods_signal.connect(_on_goods_look)
+		goods.look_end_goods_signal.connect(_on_goods_look_end)
 		goods.signal_pressed_this_goods.connect(_on_goods_pressed.bind(goods))
 		goods.request_message.connect(_on_goods_message)
 		goods.request_confirm.connect(_on_goods_confirm)
 		goods.request_dave_text.connect(_on_goods_dave_text)
+
+
+## 悬停商品：戴夫念商品描述。
+## 进场 / 关箱翻页 / 弹窗期间不响应（原版 CanInteractWithButtons）
+func _on_goods_look(detail: CrazyDaveDialogDetailResource) -> void:
+	if _is_busy or store_dialog.is_open() or confirm_goods.visible:
+		return
+	crazy_dave.show_goods_dialog(detail)
+
+
+## 移出商品：气泡按驻留时间再停一会儿才收（原版 100 tick ≈ 1 秒，见 crazy_dave.gd）
+func _on_goods_look_end() -> void:
+	crazy_dave.schedule_goods_dialog_end()
 
 
 func _on_goods_pressed(goods: Goods) -> void:
@@ -183,14 +210,19 @@ func _on_goods_pressed(goods: Goods) -> void:
 		return
 	if not goods.is_have_goods:
 		return
+	## 原版 PurchaseItem 开头必停戴夫：mBubbleCountDown = 0; CrazyDaveStopTalking()
+	crazy_dave.stop_talking()
 	## 原版：买不起先弹「金币不足」，不是把按钮禁用掉
 	if not goods.can_afford():
+		_pause_dave_idle()
 		store_dialog.appear_message("金币不足", "你现在还无法购买这一物品。打倒更多僵尸，挣更多的钱吧！")
 		return
+	_pause_dave_idle()
 	confirm_goods.appear_canvas_layer(goods)
 
 
 func _on_goods_message(title: String, body: String) -> void:
+	_pause_dave_idle()
 	store_dialog.appear_message(title, body)
 
 
@@ -198,6 +230,7 @@ func _on_goods_message(title: String, body: String) -> void:
 var _pending_confirm := ""
 func _on_goods_confirm(title: String, body: String) -> void:
 	_pending_confirm = "visit_tree"
+	_pause_dave_idle()
 	store_dialog.appear_confirm(title, body)
 
 
@@ -226,9 +259,19 @@ func _on_goods_dave_text(text: String) -> void:
 	var detail := CrazyDaveDialogDetailResource.new()
 	detail.text = text
 	crazy_dave.external_trigger_dialog(detail)
-	await get_tree().create_timer(4.0).timeout
+	## 原版 SetBubbleText(3400, 800)：至少 8 秒，且收气泡时要等语音播完（crazy_dave.gd）
+	await get_tree().create_timer(8.0).timeout
 	if is_instance_valid(crazy_dave):
 		crazy_dave.external_trigger_dialog_end()
+
+
+## 弹窗期间冻结戴夫的挂机计时（原版 mWaitForDialog：整个 Update 冻结，闲话不会弹出来）
+func _pause_dave_idle() -> void:
+	crazy_dave.pause_idle_timer()
+
+
+func _resume_dave_idle() -> void:
+	crazy_dave.restart_idle_timer()
 
 
 ## 追加进店专属开场(消费一次)。原始 resource 是只读导出，复制一份再改
@@ -245,6 +288,10 @@ func apply_pending_intro_lines() -> void:
 		var detail := CrazyDaveDialogDetailResource.new()
 		detail.text = text
 		lines.append(detail)
+	## 原版：5-1 念到 3100 时才打开后备箱（AdvanceCrazyDaveDialog 里 aMessage == 3100）
+	if pending_intro_open_hatch and not lines.is_empty():
+		lines[0].on_talk_event = STORE_OPEN_HATCH_EVENT
+	pending_intro_open_hatch = false
 	for detail in new_res.dialog_detail_list:
 		lines.append(detail)
 	new_res.dialog_detail_list = lines
@@ -265,7 +312,8 @@ func _update_night_variant() -> void:
 	night_bg.visible = is_night
 
 
-## 进场演出：招牌滑入 → 开箱 → 解锁交互(原版开场 120 tick 不可点)
+## 进场演出：招牌滑入 → 戴夫念开场白（后备箱保持关闭，念到 303 / 3100 时由
+## on_talk_event 推 store_open_hatch 事件打开，见 _open_hatch）→ 讲完才解锁货架交互
 func _play_intro_animation() -> void:
 	_is_busy = true
 	car2.visible = false
@@ -279,12 +327,31 @@ func _play_intro_animation() -> void:
 	tween.tween_property(store_sign, "position", sign_target, INTRO_SIGN_TIME)\
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	await tween.finished
-	await get_tree().create_timer(INTRO_HATCH_DELAY).timeout
-	car_closed.visible = false
-	car2.visible = true
-	await get_tree().create_timer(INTRO_AFTER_OPEN_TIME).timeout
+	if crazy_dave.dialog_resource != null:
+		## 等戴夫的开场白讲完（出场动画结束时会调 start_dialog → 发 signal_intro_dialog_end）。
+		## 30 秒兜底：万一出场动画没调 start_dialog，也不把货架永久锁死
+		var intro_ended := [false]
+		var on_intro_end := func() -> void: intro_ended[0] = true
+		crazy_dave.signal_intro_dialog_end.connect(on_intro_end)
+		var waited := 0.0
+		while not intro_ended[0] and waited < 30.0:
+			await get_tree().create_timer(0.1).timeout
+			waited += 0.1
+		if crazy_dave.signal_intro_dialog_end.is_connected(on_intro_end):
+			crazy_dave.signal_intro_dialog_end.disconnect(on_intro_end)
+	## 兜底：万一台词没配 on_talk_event（事件没触发），开场白讲完也把后备箱打开
+	_open_hatch()
 	_is_busy = false
 	_apply_page(curr_page)
+
+
+## 打开后备箱（原版 AdvanceCrazyDaveDialog：念到 3100 / 303 时开箱 + SOUND_HATCHBACK_OPEN）
+func _open_hatch() -> void:
+	if car2.visible:
+		return
+	car_closed.visible = false
+	car2.visible = true
+	SoundManager.play_sfx_with_pool(HATCHBACK_OPEN_SFX)
 
 
 ## 返回按钮文字：独立成场景时回主菜单（"返回"），从花园里打开时回花园（原版 "Back to game"）
@@ -316,6 +383,8 @@ func _show_page(page: int) -> void:
 func _flip_page(delta: int) -> void:
 	if _is_busy or valid_pages.size() <= 1:
 		return
+	## 原版关箱时立刻停戴夫：mBubbleCountDown = 0; CrazyDaveStopTalking()
+	crazy_dave.stop_talking()
 	_is_busy = true
 	_update_page_button_state()
 	car2.visible = false

@@ -13,6 +13,9 @@ class_name CrazyDaveDialogDetailResource
 
 ## 戴夫当前语句是否为选择
 @export var is_choosed:bool = false
+## 该句是否要求「冒险模式已通关」才会出现（商店挂机闲话 2018「我吃掉在地上的东西」：
+## 原版 StoreScreen.cpp 该句权重 = HasFinishedAdventure() ? 20 : 0）
+@export var need_adventure_finished:bool = false
 ## 念到这句时往事件总线推的事件名（空 = 不推）
 ## 原版 1-5：戴夫说到「我们去玩保龄球！」的同一时刻，草坪上的保龄球红线出现
 ## （事件名见 WallnutBowlingStripe.SHOW_STRIPE_EVENT）

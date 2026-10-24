@@ -57,6 +57,8 @@ metadata/_custom_type_script = "uid://7qucqjvdq78q"
 [sub_resource type="Resource" id="Resource_on4af"]
 script = ExtResource("7_36gbm")
 text = "来瞧一瞧！你是否找到了一些你喜欢的东西！"
+## 原版 AdvanceCrazyDaveDialog：念到 303 时打开后备箱（mHatchTimer = 150 + SOUND_HATCHBACK_OPEN）
+on_talk_event = &"store_open_hatch"
 metadata/_custom_type_script = "uid://7qucqjvdq78q"
 
 [sub_resource type="Resource" id="Resource_45f1l"]
@@ -78,6 +80,8 @@ metadata/_custom_type_script = "uid://7qucqjvdq78q"
 [sub_resource type="Resource" id="Resource_idle4"]
 script = ExtResource("7_36gbm")
 text = "我吃掉在地上的东西。"
+## 原版：这句只有通关冒险模式后才会被随机选中（权重 20 : 0）
+need_adventure_finished = true
 metadata/_custom_type_script = "uid://7qucqjvdq78q"
 
 [sub_resource type="Resource" id="Resource_2rser"]

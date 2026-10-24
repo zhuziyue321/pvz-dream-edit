@@ -50,10 +50,27 @@ var all_hand_items:Array[Node2D]
 @export_group("长时间存在戴夫参数（商店）")
 ## 开始长时间存在（戴夫开局讲完开场白之后）
 var start_long_time_dave := false
-## 长时间idle计时器，每10秒随机说一次话，若有与玩家交互，交互结束重新启动计时器
+## 开场白结束后第一次挂机闲话的间隔（原版 mAmbientSpeechCountDown = 200 tick ≈ 2 秒）
+const IDLE_FIRST_INTERVAL := 2.0
+## 挂机闲话的随机间隔区间（原版 RandRangeInt(500, 1000) tick = 5~10 秒）
+const IDLE_MIN_INTERVAL := 5.0
+const IDLE_MAX_INTERVAL := 10.0
+## 鼠标移出商品后气泡的驻留时间（原版 SetBubbleText(..., 100) = 100 tick ≈ 1 秒）
+const HOVER_LINGER_TIME := 1.0
+## 长时间idle计时器，闲话间隔随机（5~10 秒），若有与玩家交互，交互结束重新启动计时器
 @onready var timer_long_time_idle: Timer = $TimerLongTimeIdle
 ## 说话结束信号
 signal talk_end_signal
+## 开场白（click-to-continue 那几段）讲完的信号：商店用它解锁货架交互
+signal signal_intro_dialog_end
+## 是否正在念开场白（原版 mBubbleClickToContinue：期间货架不可点）
+var is_in_intro_dialog := false
+## 当前气泡正在念的那一句（挂机 / 悬停通用），同句悬停只刷新驻留不重念（原版比对 mCrazyDaveMessageIndex）
+var curr_dialog_detail: CrazyDaveDialogDetailResource = null
+## 上一次挂机闲话念的那句（原版：上次说过的权重归零，不连续重复）
+var _last_idle_detail: CrazyDaveDialogDetailResource = null
+## 外部对话（悬停 / 买后念白）收起协程的代次：每次新对话 / 收起都自增，旧协程作废
+var _external_close_generation := 0
 ## 台词里的玩家名占位符（原版 CRAZY_DAVE_201 等台词带该占位符，见 data/strings/lawn_strings.txt）
 const PLACEHOLDER_PLAYER_NAME := "{PLAYER_NAME}"
 ## 当前用户名取不到时的兜底称呼
@@ -72,6 +89,7 @@ signal signal_disagree_choose
 
 ## 开始对话（出场动画结束时动画调用）
 func start_dialog():
+	is_in_intro_dialog = true
 	if dialog_resource:
 		dave_dialog_mouse_press_panel.visible = true
 		for i in range(dialog_resource.dialog_detail_list.size()):
@@ -94,11 +112,26 @@ func start_dialog():
 			set_process_unhandled_input(false)
 			start_long_time_dave = true
 			timer_long_time_idle.timeout.connect(long_time_idle_auto_dialog)
-			## 启动长时间idle检测计时器
-			timer_long_time_idle.start()
+			## 启动长时间idle检测计时器（原版：开场白结束后 200 tick ≈ 2 秒出第一句闲话）
+			restart_idle_timer(IDLE_FIRST_INTERVAL)
 
 	else:
 		is_activate = false
+	## 开场白讲完（有没有台词都广播）：商店用它解锁货架交互（原版 CanInteractWithButtons）
+	is_in_intro_dialog = false
+	signal_intro_dialog_end.emit()
+
+
+## 原版：click-to-continue 的气泡可以用空格 / 回车推进（StoreScreen::KeyDown 的 SPACE / RETURN）
+func _unhandled_input(event: InputEvent) -> void:
+	if not dave_dialog_mouse_press_panel.visible:
+		return
+	var key_event := event as InputEventKey
+	if key_event == null or not key_event.pressed or key_event.echo:
+		return
+	if key_event.keycode == KEY_SPACE \
+			or key_event.keycode == KEY_ENTER or key_event.keycode == KEY_KP_ENTER:
+		dave_dialog_mouse_press_panel.signal_dave_dialog_press.emit()
 
 #region 选项同意与否,button信号连接
 func choose_agree():
@@ -119,31 +152,125 @@ func external_trigger_dialog(dialog_detail:CrazyDaveDialogDetailResource):
 	if start_long_time_dave:
 		curr_external_trigger_talk_id = once_dialog(dialog_detail)
 
+## 原版悬停口径（StoreScreen::UpdateMouse）：同一句重复悬停只刷新驻留时间，换句才重新念
+func show_goods_dialog(dialog_detail: CrazyDaveDialogDetailResource) -> void:
+	if not start_long_time_dave:
+		return
+	_external_close_generation += 1		## 取消还在等待的「收气泡」协程
+	if curr_dialog_detail == dialog_detail and curr_external_trigger_talk_id == curr_talk_id:
+		return
+	curr_external_trigger_talk_id = once_dialog(dialog_detail)
+
+## 鼠标移出商品：气泡按驻留时间再停一会儿才收（原版移出后 100 tick 才到点）
+func schedule_goods_dialog_end() -> void:
+	if curr_external_trigger_talk_id != curr_talk_id:
+		return
+	_external_close_generation += 1
+	var generation := _external_close_generation
+	await get_tree().create_timer(HOVER_LINGER_TIME).timeout
+	if generation != _external_close_generation:
+		return
+	_close_external_dialog(generation)
+
 ## 外部调用对话结束
 func external_trigger_dialog_end():
-	if curr_external_trigger_talk_id == curr_talk_id:
-		is_idle = true
-		## 当前索引为0表示外部未调用动画
-		curr_external_trigger_talk_id = 0
-		## 讲完话之后隐藏对话气泡,重新开始计时器
-		bubble_2.visible = false
-		timer_long_time_idle.start()
+	if curr_external_trigger_talk_id != curr_talk_id:
+		return
+	_external_close_generation += 1
+	_close_external_dialog(_external_close_generation)
+
+## 收起外部触发的气泡并重排挂机计时
+## 原版：气泡计时到点后如果戴夫的语音还在播就继续等（StoreScreen.cpp 734~743 的 IsFoleyPlaying）
+func _close_external_dialog(generation: int) -> void:
+	var player: AudioStreamPlayer = SoundManager.crazy_dave_player
+	while player != null and player.playing:
+		await get_tree().create_timer(0.1).timeout
+		if generation != _external_close_generation:
+			return
+	if generation != _external_close_generation or curr_external_trigger_talk_id != curr_talk_id:
+		return
+	is_idle = true
+	## 当前索引为0表示外部未调用动画
+	curr_external_trigger_talk_id = 0
+	## 讲完话之后隐藏对话气泡,重新开始计时器
+	bubble_2.visible = false
+	restart_idle_timer()
+
+## 原版 CrazyDaveStopTalking：立刻收声、关气泡、回到 idle 并重排挂机计时
+## （买商品 / 翻页关箱时调用，见 StoreScreen::PurchaseItem 与关箱分支）
+func stop_talking() -> void:
+	if not start_long_time_dave:
+		return
+	_external_close_generation += 1		## 作废等待中的收气泡协程
+	SoundManager.crazy_dave_player.stop()
+	curr_external_trigger_talk_id = 0
+	is_idle = true
+	bubble_2.visible = false
+	restart_idle_timer()
+
+## 弹窗期间冻结挂机计时（原版 mWaitForDialog 冻结整个 Update，闲话不会弹出来）
+func pause_idle_timer() -> void:
+	timer_long_time_idle.stop()
+
+## 重排挂机计时；delay <= 0 时用随机区间（原版 500~1000 tick）
+func restart_idle_timer(delay: float = -1.0) -> void:
+	if not start_long_time_dave:
+		return
+	timer_long_time_idle.start(delay if delay > 0.0 else randf_range(IDLE_MIN_INTERVAL, IDLE_MAX_INTERVAL))
 
 
 ## 长时间idle自动说句屁话
 func long_time_idle_auto_dialog():
 	## idle状态，外部未触发对话，长时间挂机状态
 	if is_idle and curr_external_trigger_talk_id == 0 and start_long_time_dave:
-		var dialog_detail:CrazyDaveDialogDetailResource  = dialog_resource.dialog_detail_long_time_idle_list.pick_random()
+		var dialog_detail := _pick_idle_detail()
+		if dialog_detail == null:
+			restart_idle_timer()
+			return
 		var talk_id = once_dialog(dialog_detail)
 		## 等待开始idle动画
 		await talk_end_signal
 		## 如果当前交谈id和本次说话动画id一致，有可能被别的动画打断
-		if talk_id == curr_talk_id:
+		if talk_id == curr_talk_id and curr_external_trigger_talk_id == 0:
+			## 气泡要等戴夫的语音播完才收（原版 StoreScreen.cpp 734~743 的 IsFoleyPlaying）
+			await _wait_dave_voice_end()
+			if talk_id != curr_talk_id or curr_external_trigger_talk_id != 0:
+				return
 			## 说话完成 开始idle
 			## 讲完话之后隐藏对话气泡,重新开始计时器
 			bubble_2.visible = false
-			timer_long_time_idle.start()
+			restart_idle_timer()
+
+
+## 挑一句挂机闲话（原版 StoreScreen.cpp 751~770 的加权随机）：
+##   · 上一次说过的权重归零 —— 不连续重复同一句
+##   · need_adventure_finished 的句子（2018「我吃掉在地上的东西」）通关冒险后才会出现
+func _pick_idle_detail() -> CrazyDaveDialogDetailResource:
+	var pool: Array = []
+	for detail in dialog_resource.dialog_detail_long_time_idle_list:
+		if detail.need_adventure_finished and not _is_adventure_finished():
+			continue
+		pool.append(detail)
+	if pool.is_empty():
+		return null
+	if pool.size() > 1:
+		pool.erase(_last_idle_detail)
+	var picked: CrazyDaveDialogDetailResource = pool.pick_random()
+	_last_idle_detail = picked
+	return picked
+
+
+## 冒险模式是否已通关（原版 HasFinishedAdventure，口径同 Goods.is_adventure_finished）
+func _is_adventure_finished() -> bool:
+	return Global.global_game_state.get_max_success_adventure_level() \
+		>= ConstUnlockLevel.ADVENTURE_FINAL_ADVENTURE_LEVEL
+
+
+## 等戴夫的语音播完（气泡不许先于语音消失）
+func _wait_dave_voice_end() -> void:
+	var player: AudioStreamPlayer = SoundManager.crazy_dave_player
+	while player != null and player.playing:
+		await get_tree().create_timer(0.1).timeout
 
 
 
@@ -164,6 +291,7 @@ func _talk_end_is_hand():
 ## - 如果对话气泡当前不可见，则将其设为可见；
 func once_dialog(dialog_detail:CrazyDaveDialogDetailResource) -> int:
 	curr_talk_id += 1
+	curr_dialog_detail = dialog_detail
 	if not bubble_2.visible:
 		bubble_2.visible = true
 

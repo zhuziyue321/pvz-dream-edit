@@ -10,6 +10,8 @@ class_name StoreDialog
 
 signal confirmed
 signal cancelled
+## 关闭时必发（确定 / 取消 / ESC 都走 hide_dialog）：商店用它恢复戴夫的挂机计时
+signal closed
 
 const PVZ_THEME := preload("res://data/ui/themes/pvz_theme.tres")
 const PANEL_SIZE := Vector2(380, 220)
@@ -130,6 +132,7 @@ func is_open() -> bool:
 
 func hide_dialog() -> void:
 	visible = false
+	closed.emit()
 
 
 func _show(title: String, body: String) -> void:
