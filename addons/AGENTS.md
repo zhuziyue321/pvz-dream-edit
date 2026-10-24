@@ -20,6 +20,8 @@
 
 第三方与自研的**编辑器插件**，不属于游戏运行时业务代码：
 
-`anim_player_refactor`（动画重构）、`R2Ga_PVZ`（原版动画转换）、`script-ide`、`SignalVisualizer`、`sprite_painter`、`todo_controller`、`DragNDropNodes`、`anim_delete_track` / `anim_free_common_tracks` / `calculate_roration`。
+`anim_player_refactor`（动画重构）、`script-ide`、`SignalVisualizer`、`sprite_painter`、`todo_controller`、`DragNDropNodes`、`anim_delete_track` / `anim_free_common_tracks` / `calculate_roration`。
+
+> `R2Ga_PVZ`（reanim → Godot 动画）**已从本仓库移除**（2026-10-18）；需要时从 [上游仓库](https://github.com/hsk-dream/PVZ_reanim2godot_animation) 取回 `addons/R2Ga_PVZ/` 并在 `project.godot` 重新启用。
 
 > **不建议**在这里写业务逻辑；确需改插件代码时**建议**在文件头注明「本仓库改动」，便于后续升级对比。

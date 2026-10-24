@@ -15,9 +15,9 @@
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | 项目          | 用 Godot 复刻原版《植物大战僵尸》的学习 / 同人改版基座（原版素材因版权已移除）                                                                        |
 | 引擎 / 语言     | Godot 4.6 / GDScript（版本口径以 `project.godot` 的 `config/features` 为准）                                                                                              |
-| 规模          | `src/` 643 个 `.gd` + 239 个 `.tscn`；`data/` 122 个 `.tres`；`animation/` 497 段动画；`docs/` 228 份 `.md`；11 个 autoload 单例（2026-10-17 重测；**规模数字的唯一权威来源是 [架构总览.md](./架构总览.md) §15**，本条与之不一致时以后者为准）                                                              |
+| 规模          | `src/` 704 个 `.gd` + 240 个 `.tscn`；`data/` 123 个 `.tres`；`animation/` 497 段动画；`docs/` 253 份 `.md`；11 个 autoload 单例（2026-10-22 重测，口径 = `git ls-files`；**规模数字的唯一权威来源是 [架构总览.md](./架构总览.md) §15**，本条与之不一致时以后者为准）                                                              |
 | 架构主线        | 数据驱动 + 组件化：角色 = base 场景 + 若干 `ComponentNormBase` 组件；资源一律 `res://` 绝对路径引用                                            |
-| 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，**资源根已迁至 `pak/`**：`git ls-files pak` = 5883，2026-10-16 实测；`assets/` 仅残留旧资源 `git ls-files assets` = 201）、`test/`、`docs/`、`tools/` |
+| 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，**资源根已全部迁至 `pak/`**：`git ls-files pak` = 5883，2026-10-16 实测；`assets/` 已无入库文件，`git ls-files assets` = 0，2026-10-22 实测）、`test/`、`docs/`、`tools/` |
 | autoload 单例 | `Log` `Global` `SoundManager` `SceneRegistry` `AllCards` `GlobalUtils` `EventBus` `DamageSystem` `TreePauseManager` `ModManager` `DebugChannel`（共 11 个，见 `project.godot` 的 `[autoload]`） |
 | 验证方式        | **编译门禁必过**：`test/check_scripts.ps1`（硬约束 §1-7）；**打开游戏实测默认不跑（可选）**——完成工作、编译门禁通过后即交付，确有需要时再开，或反馈里附人工验证方法，见 [docs/验证流程.md](./docs/验证流程.md)              |
 
@@ -32,6 +32,7 @@
 | 刚进仓库，还不知道从哪下手                               | 本文 + [架构总览.md](./架构总览.md)（**项目全景测绘**：分层 / 目录 / 注册表 / 运行时链路）+ [docs/README.md](./docs/README.md)（**全仓库文档总目录**）                                                                                          |
 | 已身处某个代码目录（`src/` `data/` `animation/` …）  | **该目录的 `AGENTS.md`**（一眼版指针，见 §6）→ 再回本文取正文                                                                                                 |
 | 改某个具体玩法 / 机制（地图 / 子弹 / 植物种植 / 关卡 / 手持物 / 特殊关 / 波次 / 防具 / 联机 / 模组 / 图鉴 / 禅境花园 / 新手教程 / 选关 / **二周目** / 卡片 / 僵尸热注册 / 运行期植物 / 调试窗口 / 控制台 / 墓碑 / 场景设置 / 创建新角色 / 伤害系统 / 关卡时间轴 / 进度条 / 卡槽传送带 / AI查wiki…） | **单一来源**：[docs/参考存档/README.md §1](./docs/参考存档/README.md)（42 份机制文档明细索引）；本表不再逐份列出，新增 / 改一份机制文档只动那一处，无需同步本表 |
+| 要核对「原版到底怎么做的」（行为 / 数值 / 常量名） | **本机有两份原版 C++ 参照项目**（桌面 `../`，**不在本仓库内，只读代码不搬素材**）：`../PvZ-Portable-main`（C++ 跨平台复刻，玩法接近 100% 还原，**行号基准**）、`../re-plants-vs-zombies-main`（C++ 反编译 + 引擎现代化，交叉验证）。机制明细见 [docs/参考存档/植物僵尸逻辑对照.md §1](./docs/参考存档/植物僵尸逻辑对照.md)；数据源分级与落地规范见 [docs/参考存档/AI查wiki避坑.md](./docs/参考存档/AI查wiki避坑.md) §1 / §2 |
 | 改完代码要交付                                     | [验证流程.md](./docs/验证流程.md)（先判断要不要验证，要验证就打开游戏）                                                                                                  |
 | 需要自己启动游戏、模拟操作、取回运行期证据                       | [AI调试通道.md](./docs/AI调试通道.md)（**打开游戏调试**；无头只做 CI 回归）                                                                                          |
 | 同时有多个 agent 改本仓库                            | [Agent协作协议.md](./docs/Agent协作协议.md)（所有权分区 + 编号段配额）                                                                                            |
@@ -98,8 +99,8 @@
 | `src/` | [AGENTS.md](./src/AGENTS.md) / [README.md](./src/README.md) | 全部 `.gd` 与 `.tscn`（按功能就近放置）：动手前必读 + 子目录速查 |
 | `data/` | [AGENTS.md](./data/AGENTS.md) / [README.md](./data/README.md) | `.tres` 数据层：数值改这里 |
 | `src/levels/` | [AGENTS.md](./src/levels/AGENTS.md) / [README.md](./src/levels/README.md) | 内置关卡（按模式分目录），走 `LevelRegistry` |
-| `mods_builtin/` | [README.md](./mods_builtin/README.md) | **内置模组源码**（手套 / 锤子 / 更多防具 / 自制关卡 / 联机）：两个加载源之一 —— `user://mods/` 优先，那里没有这个模组时才从这里加载（两源不互相复制） |
-| `src/mods/` | [README.md](./src/mods/README.md) | **模组框架**：只剩 `mod_manager.gd`（autoload，必须在 `res://`）；内置模组本身在 `mods_builtin/` |
+| `mods_builtin/` | [README.md](./mods_builtin/README.md) | **内置模组源码**（手套 / 锤子 / 更多防具 / 自制关卡 / 联机 / DLC / PVZ2 / 生态版 / 招笑版 / 明日方舟 / 调试模式）：两个加载源之一 —— `user://mods/` 优先，那里没有这个模组时才从这里加载（两源不互相复制）。**根目录只放模组文件夹**，框架文件在 `src/mods/` |
+| `src/mods/` | [README.md](./src/mods/README.md) | **模组框架**：`mod_manager.gd`（autoload，必须在 `res://`）+ 基类 `mod_base.gd` + 契约 `mod_ids.gd` / `mod_config.gd` / `mod_category.gd`；内置模组本身在 `mods_builtin/` |
 | `animation/` | [AGENTS.md](./animation/AGENTS.md) / [README.md](./animation/README.md) | 动画资源（工具生成） |
 | `test/` | [AGENTS.md](./test/AGENTS.md) / [README.md](./test/README.md) | 自动回归 / 调试通道入口 |
 | `addons/` | [AGENTS.md](./addons/AGENTS.md) / [README.md](./addons/README.md) | 第三方插件，非业务代码 |
