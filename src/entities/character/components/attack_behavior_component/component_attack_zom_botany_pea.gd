@@ -21,14 +21,22 @@ class_name AttackComponentZomBotanyPea
 ##   反过来继承发射组件的话，啃咬的持续掉血 / attack_once() / 攻击力因子要整段抄回来。
 ##   GDScript 没有多继承，这里只抄一份「发射一颗子弹」的最小实现。
 ##
-## 冰冻 / 黄油不影响发射频率（wiki：被寒冰射手、冰瓜减速时它依旧按原频率开火），
-## 所以不重写 owner_update_speed —— 它只改啃咬速度，发射计时器不受影响。
+## 冰冻 / 黄油与发射频率的关系（2026-10-24 按原版代码校正）：
+##   · 寒冰射手 / 冰瓜那种**减速**不影响发射频率 —— 原版 `mPhaseCounter` 每 tick 减 1 与移速无关；
+##   · 但被**完全定住**（寒冰菇冰冻停滞 / 玉米投手黄油，原版 `IsImmobilizied()`）时
+##     `mPhaseCounter` 不递减，定身期间同样不开火 —— 这里表现为发射计时器停表
+##     （见 `owner_update_speed()`，与 `AttackComponentBulletBase` / 大嘴花的 chew_timer 同款处理）。
+## 啃咬速度本身照常受速度因子影响（父类管），发射计时器只在「定住」这一档停。
 ##
 ## 发射表现（2026-10-19）：头顶植物的头有 `Head_Attack` 动画时，计时器只负责**起播**，
 ## 豌豆由动画里「吐出」那一帧的方法轨回调本组件的 `_shoot_bullet()` 打出去（同玩家豌豆射手）；
 ## 静态头兜底时才退回「直接发射 + Tween 后坐」。
 
-## 发射间隔（与玩家的豌豆射手一致）
+## 发射间隔（秒）。
+## 原版口径：`ZombieInitialize()` 里豌豆头僵尸 `mPhaseCounter = 150`，吐豆后重置 150，
+## 逻辑 tick = `SECONDS_PER_UPDATE = 0.01`（100 Hz）→ **150 × 0.01 = 1.5 秒**。
+## ⚠️ 别按 60fps 口算成 2.5s（2026-10-24 踩过）：涉及「原版 tick 数 → 秒」先查 `SECONDS_PER_UPDATE`。
+## （数值上与玩家的豌豆射手一致只是巧合，判据是上面这条原版计数。）
 @export var attack_cd: float = 1.5
 ## 发射的子弹类型
 @export var attack_bullet_type: StringName = BulletIds.PEA
@@ -38,10 +46,15 @@ class_name AttackComponentZomBotanyPea
 ## 发射音效
 @export var attack_sfx: StringName = &"Throw"
 
-## 子弹方向：僵尸朝房子走，豌豆朝左飞。
+## 子弹方向：僵尸朝房子走，豌豆朝左飞（原版 `MOTION_BACKWARDS`）。
+## **被魅惑后朝右飞**：原版 `UpdateZombiePeaHead()` 的 `DO_FIX_BUGS` 分支对 `mMindControlled`
+## 改发**不带 MOTION_BACKWARDS 的植物方豌豆**（`PROJECTILE_PEA`）→ 朝右，打右边还没被魅惑的同类；
+## 阵营已由 `BulletCampConfig.get_owner_camp()` 随 `is_hypno` 翻成植物方，方向在这里跟上即可。
 ## 不能沿用 detect_component.ray_area_direction —— 那是按检测区 rotation 算的，
 ## 僵尸的啃咬检测区 rotation 是 0（等于朝右），拿来用豌豆会往僵尸身后飞
 const C_BULLET_DIRECTION := Vector2.LEFT
+## 魅惑态子弹方向（原版植物方豌豆默认朝向）
+const C_BULLET_DIRECTION_HYPNO := Vector2.RIGHT
 ## 发射点不在本组件里算：原版口径的「头轨道 + 偏移」统一放在 `ZombiePlantComponent`
 ## （`get_head_shoot_global_position()`，偏量常量与原版出处也在那边），
 ## 机枪 / 寒冰僵尸和本组件共用同一份，避免两处各写一遍常量。
@@ -98,6 +111,18 @@ func enable_component(is_enable_factor: E_IsEnableFactor) -> void:
 func disable_component(is_enable_factor: E_IsEnableFactor) -> void:
 	super(is_enable_factor)
 	bullet_attack_cd_timer.stop()
+
+
+## 角色速度因子变化：**完全定住**（冰冻停滞 / 黄油，speed_product == 0）时发射计时器停表
+## （保留剩余时间），对应原版 `Zombie::Update()` 的
+##   `if (mPhaseCounter > 0 && !IsImmobilizied()) mPhaseCounter--;`
+## —— 定身期间 `mPhaseCounter` 不递减，豌豆僵尸同样不开火（`IsImmobilizied()` = 冰冻陷阱 or 黄油）。
+## 寒冰射手 / 冰瓜的**减速**（speed_product ∈ (0,1)）不停表：原版 `mPhaseCounter` 每 tick 减 1
+## 与移速无关，发射频率不随冰冻减速变化（`AttackComponentBulletBase` / 大嘴花 chew_timer 同款处理）。
+## 啃咬速度照常走因子（父类按 speed_product 缩放攻击值）。
+func owner_update_speed(speed_product: float):
+	super(speed_product)
+	bullet_attack_cd_timer.paused = speed_product == 0
 
 
 ## 发射间隔到点：不等检测区、不等啃咬，到点就射（原版「constantly」）
@@ -158,6 +183,14 @@ func _get_shoot_attack_value() -> int:
 	return -1
 
 
+## 子弹方向：普通态朝左飞（朝房子）；被魅惑后僵尸倒着走，改发朝右的植物方豌豆
+## （原版 `DO_FIX_BUGS` 分支不带 `MOTION_BACKWARDS`，见 `C_BULLET_DIRECTION_HYPNO`）
+func _get_bullet_direction() -> Vector2:
+	if owner_character != null and owner_character.is_hypno:
+		return C_BULLET_DIRECTION_HYPNO
+	return C_BULLET_DIRECTION
+
+
 ## 子弹初始化参数：与 AttackComponentBulletBase.get_bullet_paras() 一致，
 ## 只有 Direction 固定朝左（见 C_BULLET_DIRECTION），投手那两个键直线子弹不读。
 ## AttackValue 同样走「宿主角色 attack_value > 子弹场景值」的优先
@@ -168,7 +201,7 @@ func _get_bullet_paras(marker_glo_pos: Vector2) -> Dictionary:
 		Bullet000NormBase.E_InitParasAttr.IsActivateLane: detect_component.is_lane,
 		Bullet000NormBase.E_InitParasAttr.BulletLane: (zombie.lane if zombie != null else -1),
 		Bullet000NormBase.E_InitParasAttr.Position: bullets.to_local(marker_glo_pos),
-		Bullet000NormBase.E_InitParasAttr.Direction: C_BULLET_DIRECTION,
+		Bullet000NormBase.E_InitParasAttr.Direction: _get_bullet_direction(),
 		Bullet000NormBase.E_InitParasAttr.CanAttackPlantState: can_attack_status.can_attack_plant_status,
 		Bullet000NormBase.E_InitParasAttr.CanAttackZombieState: can_attack_status.can_attack_zombie_status,
 		Bullet000NormBase.E_InitParasAttr.BulletCamp: BulletCampConfig.get_owner_camp(owner),

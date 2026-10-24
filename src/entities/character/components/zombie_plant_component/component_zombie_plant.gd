@@ -81,6 +81,14 @@ const C_HEAD_TRACK_PATH := ^"Body/BodyCorrect/Anim_head/Anim_head1"
 ## `mAltitude` 在两式里各出现一次（`- mAltitude` 与 `mBodyY = -mAltitude`），正好抵消；
 ## 跳跃高度体现在头节点自身的世界位置上，不用再减。
 const C_SHOOT_OFFSET := Vector2(-24, 14)
+## 魅惑态（原版 `mMindControlled`）的发射点偏移，同样相对头贴图左上角。
+## 原版两个吐豆僵尸（豌豆 / 机枪头）的 `DO_FIX_BUGS` 分支完全一致：
+##   `aOriginX += 90.0f * mScaleZombie`（豌豆僵尸是普通僵尸，s = 1）后改发**植物方**豌豆
+##   （`PROJECTILE_PEA`，不带 `MOTION_BACKWARDS` → 朝右飞，打右边还没被魅惑的同类）。
+##   → 头贴图左上角 + (-24 + 90, +14) = (66, +14)
+## 仓库侧魅惑同样靠 body 水平镜像实现（`Character000Base.be_hypno()` → `update_direction_x_root(-1)`），
+## 头节点世界位置已含镜像，这里直接叠原版常量，不再走下面的镜像取反（两条路只选一条）。
+const C_SHOOT_OFFSET_HYPNO := Vector2(66, 14)
 
 ## 静态头的待机呼吸：原版植物头是 reanim（idle 有轻微呼吸 / 摆动），
 ## 本仓库除豌豆僵尸外都没有动画头，这里用一个很小的缩放循环让它不完全静止。
@@ -548,11 +556,20 @@ func _build_head_attack_anim(source: Animation, attack_component: Node) -> Anima
 ##
 ## 放在本组件而不是各攻击组件里：这些僵尸的「嘴」本来就是**这颗植物头的属性**，
 ## 只在这里算一份，改常量时不会漏改另一处。取不到头轨道（场景结构被改坏）时返回 [param fallback]。
+##
+## 魅惑态单独一档（见 `C_SHOOT_OFFSET_HYPNO`）：原版对被魅惑的吐豆僵尸改发植物方豌豆、
+## 发射点再前移 90，与普通态不是同一个偏移。
 func get_head_shoot_global_position(fallback: Vector2) -> Vector2:
 	var head := owner.get_node_or_null(C_HEAD_TRACK_PATH) as Node2D
 	if not is_instance_valid(head):
 		return fallback
-	## 头被水平镜像时（被魅惑 / body 朝右）偏移也要翻到另一侧，否则子弹会从脑后飞。
+	## 魅惑（`is_hypno`）：直接用原版「+90 前移 + 植物方豌豆」口径，
+	## 不走下面的镜像取反 —— 魅惑在仓库里同样靠 body 水平镜像实现，两条路只能选一条，
+	## 选与原版数值一致的那条（常量出处见 C_SHOOT_OFFSET_HYPNO）。
+	var zombie := owner as Zombie000Base
+	if is_instance_valid(zombie) and zombie.is_hypno:
+		return head.global_position + C_SHOOT_OFFSET_HYPNO
+	## 头被水平镜像时（非魅惑原因，如模组自定义朝向）偏移也要翻到另一侧，否则子弹会从脑后飞。
 	## ⚠️ 判据用 `global_transform` 的第一列，**不能**用 `global_scale.x`：
 	## 设 `scale.x = -1` 之后 Godot 的分解结果可能是 `(1, -1)`（等价矩阵，符号被挪到 y 上）
 	var offset_x := C_SHOOT_OFFSET.x
