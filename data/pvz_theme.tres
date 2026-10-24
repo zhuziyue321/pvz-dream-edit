@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" path="res://pak/images/options_sliderknob2.png" id="3_1f77c"]
 [ext_resource type="Texture2D" path="res://pak/images/options_sliderslot.png" id="4_0hdwo"]
 [ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/UI_BG/button_BG.png" id="5_e2ehk"]
-[ext_resource type="Texture2D" path="res://pak/images/options_menuback.png" id="6_1f77c"]
+[ext_resource type="Texture2D" path="res://assets_custom/image/ui/ui_main_game_menu/options_menuback.png" id="6_1f77c"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_1f77c"]
 atlas = ExtResource("1_5qcbn")

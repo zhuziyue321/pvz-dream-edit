@@ -1,4 +1,7 @@
-[gd_resource type="CompressedTexture2D" format=3 uid="uid://bnlu4gj7hi2m2"]
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://bnlu4gj7hi2m2"]
+
+[ext_resource type="Texture2D" path="res://pak/images/seeds.png" id="1_norm"]
 
 [resource]
-load_path = "res://.godot/imported/SeedPacket_Larger.png-aa82dec13fb212f502ba570db589d3c8.ctex"
+atlas = ExtResource("1_norm")
+region = Rect2(100, 0, 50, 70)

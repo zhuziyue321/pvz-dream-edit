@@ -104,7 +104,9 @@ const ZOMBIE_INFO = {
 		CharacterRegistry.ZombieInfoAttribute.CoolTime: 0.0,
 		CharacterRegistry.ZombieInfoAttribute.SunCost: 200,
 		CharacterRegistry.ZombieInfoAttribute.ZombieScenes:preload("res://src/entities/character/zombie/zombie_bobsled.tscn"),
-		CharacterRegistry.ZombieInfoAttribute.ZombieRowType:CharacterRegistry.ZombieRowType.Land
+		CharacterRegistry.ZombieInfoAttribute.ZombieRowType:CharacterRegistry.ZombieRowType.Land,
+		## 冰道是硬前提：没有冰的小队一落地就掉血，等于白出（旧写法是选行系统里按类型硬判）
+		CharacterRegistry.ZombieInfoAttribute.ZombieCondition:preload("res://data/character/zombie_condition/zombie_bobsled_condition.tres")
 	},
 	ZombieIds.DOLPHINRIDER:{
 		CharacterRegistry.ZombieInfoAttribute.ZombieName: "ZombieDolphinrider",
@@ -345,6 +347,72 @@ const ZOMBIE_SPAWN_POWER: Dictionary[StringName, int] = {
 	ZombieIds.CATAPULT: 5,		# 投篮
 	ZombieIds.GARGANTUAR: 10,	# 伽刚特尔
 	ZombieIds.IMP: 1,			# 小鬼
+}
+
+## 首次登场的冒险关卡序号（**1 起算**，1 = 1-1、11 = 2-1、50 = 5-10）：原版
+## `ZombieDefinition.mStartingLevel`，`Board::GetIntroducedZombieType()` 用它找「本关新登场的僵尸」，
+## `Board::PickZombieWaves()` 再让这只僵尸**必定**出现在「中间波」与「最后一波」。[br]
+## 数据本体同上（`../PvZ-Portable-main/src/Lawn/Zombie.cpp:80-113` 的 `gZombieDefs[]`）。[br]
+## 取用按 `ZombieIds.ALL` 的顺序先到先得（与原版枚举序一致）：26 关同时有冰车 / 雪橇，取排在前面的冰车。
+const ZOMBIE_STARTING_LEVEL: Dictionary[StringName, int] = {
+	ZombieIds.NORM: 1,
+	ZombieIds.FLAG: 1,
+	ZombieIds.CONE: 3,			# 1-3
+	ZombieIds.POLE_VAULTER: 6,	# 1-6
+	ZombieIds.BUCKET: 8,		# 1-8
+	ZombieIds.PAPER: 11,		# 2-1
+	ZombieIds.SCREEN_DOOR: 13,	# 2-3
+	ZombieIds.FOOTBALL: 16,		# 2-6
+	ZombieIds.JACKSON: 18,		# 2-8（舞王，原版 ZOMBIE_DANCER）
+	ZombieIds.DANCER: 18,		# 2-8（伴舞，原版 ZOMBIE_BACKUP_DANCER，不自然出怪）
+	ZombieIds.DUCKYTUBE: 21,	# 3-1（原版 GetIntroducedZombieType 显式排除它）
+	ZombieIds.SNORKLE: 23,		# 3-3
+	ZombieIds.ZAMBONI: 26,		# 3-6
+	ZombieIds.BOBSLED: 26,		# 3-6
+	ZombieIds.DOLPHINRIDER: 28,	# 3-8
+	ZombieIds.JACKBOX: 31,		# 4-1
+	ZombieIds.BALLOON: 33,		# 4-3
+	ZombieIds.DIGGER: 36,		# 4-6
+	ZombieIds.POGO: 38,			# 4-8
+	ZombieIds.YETI: 40,			# 4-10（原版只在「能放雪人」时认，本仓库雪人不进自然出怪池）
+	ZombieIds.BUNGI: 41,		# 5-1
+	ZombieIds.LADDER: 43,		# 5-3
+	ZombieIds.CATAPULT: 46,		# 5-6
+	ZombieIds.GARGANTUAR: 48,	# 5-8
+	ZombieIds.IMP: 48,
+}
+
+## 首次允许出怪的波次（**1 起算**）：原版 `ZombieDefinition.mFirstAllowedWave`，
+## `Board::PickZombieType()` 里 `theWaveIndex + 1 < mFirstAllowedWave` 的类型直接跳过随机池。[br]
+## 数据本体：`../PvZ-Portable-main/src/Lawn/Zombie.cpp:80-113` 的 `gZombieDefs[]`
+## （`../re-plants-vs-zombies-main` 同源，逐行一致）。未列出的类型（模组 / 运行期热注册）按 1 处理。[br]
+## 植物僵尸（Z031+）不在这张表里：它们的首次允许波次由 `ZomBotanyConfig` 给。
+const ZOMBIE_FIRST_ALLOWED_WAVE: Dictionary[StringName, int] = {
+	ZombieIds.NORM: 1,
+	ZombieIds.FLAG: 1,
+	ZombieIds.CONE: 1,
+	ZombieIds.POLE_VAULTER: 5,	# 1-6 登场后第 5 波起才进池
+	ZombieIds.BUCKET: 1,
+	ZombieIds.PAPER: 1,
+	ZombieIds.SCREEN_DOOR: 5,
+	ZombieIds.FOOTBALL: 5,
+	ZombieIds.JACKSON: 5,		# 舞王
+	ZombieIds.DANCER: 5,		# 伴舞（由舞王召唤，不自然出怪）
+	ZombieIds.DUCKYTUBE: 5,
+	ZombieIds.SNORKLE: 10,
+	ZombieIds.ZAMBONI: 10,
+	ZombieIds.BOBSLED: 10,
+	ZombieIds.DOLPHINRIDER: 10,
+	ZombieIds.JACKBOX: 10,
+	ZombieIds.BALLOON: 10,
+	ZombieIds.DIGGER: 10,
+	ZombieIds.POGO: 10,
+	ZombieIds.YETI: 1,
+	ZombieIds.BUNGI: 10,
+	ZombieIds.LADDER: 10,
+	ZombieIds.CATAPULT: 10,
+	ZombieIds.GARGANTUAR: 15,
+	ZombieIds.IMP: 1,
 }
 
 ## 僵尸初始出怪权重；各出怪系统复制后独立调整，不修改公共基础数据。[br]

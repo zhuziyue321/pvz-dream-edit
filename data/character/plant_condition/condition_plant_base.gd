@@ -35,8 +35,12 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type: StringName) -> bo
 		return judge_special_plants_condition(plant_cell)
 	## 普通植物非紫卡
 	elif not is_purple_card:
-		## 当前可以种植普通植物 and 当前格子地形符合 and 当前格子对应的植物位置为空
-		if plant_cell.can_common_plant and plant_condition & plant_cell.curr_condition and not is_instance_valid(plant_cell.get_plant(place_plant_in_cell)):
+		## 当前可以种植普通植物 and 当前格子地形符合
+		if not plant_cell.can_common_plant or (plant_condition & plant_cell.curr_condition) == 0:
+			return false
+		## 位置为空：正常种植
+		var exist_plant := plant_cell.get_plant(place_plant_in_cell)
+		if not is_instance_valid(exist_plant):
 			## 如果是壳类植物,若当前植物格子中Norm为玉米加农炮
 			if place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Shell \
 			and is_instance_valid(plant_cell.get_plant(CharacterRegistry.PlacePlantInCell.Norm))\
@@ -44,8 +48,8 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type: StringName) -> bo
 				return false
 
 			return true
-		else:
-			return false
+		## 位置已有植物：只有「同种、且还能叠层」时允许再种（同格再种 = 叠一层，见 `Plant000Base.can_stack_up`）
+		return exist_plant.plant_type == curr_plant_type and exist_plant.can_stack_up()
 	else:
 		if get_preplant_purple(plant_cell, curr_plant_type) != null:
 			return true

@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="ModConfig" format=3]
 
-[ext_resource type="Script" path="res://mods_builtin/mod_config.gd" id="1_modcfg"]
+[ext_resource type="Script" path="res://src/mods/mod_config.gd" id="1_modcfg"]
 
 [resource]
 script = ExtResource("1_modcfg")

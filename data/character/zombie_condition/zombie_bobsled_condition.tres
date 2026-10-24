@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="ResourceZombieCondition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/character/zombie_condition/resource_zombie_condition.gd" id="1_zombie_condition"]
+
+[resource]
+script = ExtResource("1_zombie_condition")
+row_type = 0
+require_ice_road = true
