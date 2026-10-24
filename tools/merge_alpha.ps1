@@ -16,6 +16,9 @@
 
     -Name        target WITHOUT extension; base and mask are resolved as siblings
     -Mask        explicit mask path; overrides the automatic lookup
+    -Out         explicit output path (default: <prefix>.png next to the base);
+                 parent directories are created when missing. Use it to keep the
+                 baked PNG under assets_custom/ while the sources stay in pak/
     -All         scan -AssetsRoot for every '*_.png|*_.jpg' mask and bake each pair
     -AssetsRoot  directory scanned by -All (default: assets)
     -Invert      negate the mask (use it when black = opaque)
@@ -36,6 +39,7 @@
 param(
     [string]$Name = '',
     [string]$Mask = '',
+    [string]$Out = '',
     [switch]$All,
     [string]$AssetsRoot = 'assets',
     [switch]$Invert,
@@ -111,6 +115,9 @@ function Merge-AlphaPair {
     ## The temp name keeps the .png extension because ffmpeg infers the muxer
     ## from it.
     $outDir = Split-Path $OutPath -Parent
+    if ($outDir -ne '' -and -not (Test-Path -LiteralPath $outDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+    }
     $outStem = [System.IO.Path]::GetFileNameWithoutExtension($OutPath)
     $tmpOut = Join-Path $outDir ($outStem + '.baking.png')
     ## -update 1 is required by ffmpeg >= 7 when writing a single image with -frames:v 1,
@@ -177,7 +184,8 @@ elseif ($Name -ne '') {
         if (Test-Path -LiteralPath $candidate) { $basePath = $candidate; break }
     }
     if ($basePath -eq '') { Write-Error ("cannot find base image for " + $prefix); exit 1 }
-    [void]$pairs.Add((New-Pair -BasePath $basePath -MaskPath $maskPath -OutPath ($prefix + '.png')))
+    $outPath = if ($Out -ne '') { Resolve-FromRoot $Out } else { $prefix + '.png' }
+    [void]$pairs.Add((New-Pair -BasePath $basePath -MaskPath $maskPath -OutPath $outPath))
 }
 else {
     Write-Host 'nothing to do: pass -Name <path-without-extension> or -All' -ForegroundColor Yellow
