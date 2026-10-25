@@ -60,6 +60,7 @@ class_name ModManagerClass
 ##
 ## 界面：模组的列表与开 / 关在**模组页面**（`src/ui/mod_page/mod_page.tscn`，
 ## 主菜单 → 选项 → 控制台 →「模组」），本管理器不往控制台挂任何东西。
+## 另有一条**直达入口**：任何时候按 **Ctrl+M** 都能呼出 / 收起这一页（见末尾 `#region 模组页面（Ctrl+M）`）。
 ##
 ## 关联：ModIds ｜ ModConfig ｜ [模组机制](../../docs/参考存档/模组机制.md)
 
@@ -104,6 +105,10 @@ const LEGACY_MOD_BASE_PATHS: Array[String] = [
 	"user://mods/mod_base.gd",
 	"res://mods_builtin/mod_base.gd",
 ]
+## 模组页面场景（`ModPage`）：**Ctrl+M 呼出 / 收起**的那一页
+## 主菜单的控制台在场景里挂了一份（入口页那个「模组」按钮打开的就是它）；游戏内没挂 ——
+## 那时按 Ctrl+M 由本管理器现造一份挂在自己下面（见 `toggle_mod_page()`）
+const MOD_PAGE_SCENE := preload("res://src/ui/mod_page/mod_page.tscn")
 
 ## 工程默认开关（`ModConfig`）：**只在存档文件还不存在时播种一次**，之后一律以存档文件为准
 const CONFIG_PATH := "res://data/mods/mod_config.tres"
@@ -130,9 +135,17 @@ var _asset_cache: Dictionary = {}
 ## 已经因为「用的是旧版 ModBase」告警过的模组（每个模组只告警一次，别刷屏）
 ## 用途见 `_warn_legacy_mod()`：删掉三处 `has_method()` 兼容分支之前，先看这里还剩谁（TODO L-29）
 var _legacy_mod_warned: Dictionary[StringName, bool] = {}
+## 当前生效的**模组页面**（`ModPage`）：场景里挂的那份在 `_ready()` 里自己登记上来
+## （主菜单那份），没登记 / 已随场景释放 = 按 Ctrl+M 时现造一份（见 `_ensure_mod_page()`）
+var mod_page: ModPage = null
 
 
 func _ready() -> void:
+	## ★ 本管理器（以及挂在它下面的模组页面）**不受场景树暂停影响**：
+	## 菜单一开 `TreePauseManager` 就把树暂停了，普通 autoload（如 `Global`）那时收不到
+	## `_unhandled_key_input`，而 Ctrl+M 恰恰要在「暂停菜单开着」时也能呼出模组页面
+	## （同一个坑见 `mods_builtin/debug/debug_window.gd` 头部注释）
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	## 换用户时存档要换一份（自己的那份开关与设置）—— 名字在 `set_current_user()` 里先改好，
 	## 信号后发，所以这里读到的已经是新用户
 	if Global != null and Global.user_manager != null:
@@ -635,4 +648,53 @@ func notify_session_reloaded() -> void:
 		var mod = all_mods[mod_id]
 		if mod != null and mod.has_method("on_session_reloaded"):
 			mod.on_session_reloaded()
+#endregion
+
+
+#region 模组页面（Ctrl+M）
+## 模组页面自己登记上来（`ModPage._ready()` 里调一次）：场景里挂的那份优先
+##
+## 为什么要登记而不是让本管理器自己造一份：主菜单的控制台入口（入口页那个「模组」按钮）
+## 打开的是**场景里那份**，Ctrl+M 若另造一份，同一个界面就有两个实例（列表选中项各记各的）。
+## 登记上来之后两条路开的是同一份；那份随场景被释放后（回主菜单 / 换场景）`mod_page` 失效，
+## 下一次按 Ctrl+M 才现造一份全局的 —— 游戏内没有挂页面的场景走的就是这条路。
+func register_mod_page(page: ModPage) -> void:
+	if is_instance_valid(page):
+		mod_page = page
+
+
+## Ctrl+M：呼出 / 收起模组页面（输入映射 `ShortcutKeys_ModPage`，见 `project.godot`）
+##
+## 挂在本管理器而不是 `Global` 上，理由同 `_ready()` 里那句 `process_mode = ALWAYS`：
+## 菜单 / 暂停时树是停的，挂在普通 autoload 上那会儿按不出来。
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_echo() or not event.is_pressed():
+		return
+	if not Input.is_action_just_pressed("ShortcutKeys_ModPage"):
+		return
+	get_viewport().set_input_as_handled()
+	toggle_mod_page()
+
+
+## 开 ⇄ 关：已经开着就收起来（与页面右下角那个关闭按钮同一条路）
+func toggle_mod_page() -> void:
+	var page := _ensure_mod_page()
+	if page == null:
+		return
+	if page.visible:
+		page.close_mod_page()
+	else:
+		page.appear_mod_page()
+
+
+## 当前能用的那一页：登记过且还在树里就直接给；否则现造一份挂在本管理器下
+## （`add_child()` 之后它自己的 `_ready()` 会调 `register_mod_page()` 登记上来）
+func _ensure_mod_page() -> ModPage:
+	if is_instance_valid(mod_page):
+		return mod_page
+	var page := MOD_PAGE_SCENE.instantiate()
+	if not (page is ModPage):
+		return null
+	add_child(page)
+	return mod_page if is_instance_valid(mod_page) else (page as ModPage)
 #endregion

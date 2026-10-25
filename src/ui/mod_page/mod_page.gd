@@ -21,6 +21,10 @@ class_name ModPage
 ##   右侧          —— 当前选中模组的详情（可滚动，含分类一行、末尾一块「依赖的模组」）
 ##   关闭（右下）  —— 藏起本页面，回到控制台（入口在 主菜单 → 选项 → 控制台 →「模组」）
 ##
+## **Ctrl+M 是直达入口**：任何时候（含游戏内）按一下就呼出本页面，再按一下收起来
+## —— 热键挂在 `ModManager` 上（那句 `process_mode = ALWAYS` 的注释解释了为什么不是 `Global`），
+## 场景里挂了本页面的场景（主菜单）用挂的那份，没挂的（游戏内）由它现造一份。
+##
 ## 关联：[模组机制](../../../docs/参考存档/模组机制.md) ｜ [控制台](../../../docs/参考存档/控制台.md) ｜ ModManager ｜ ModBase ｜ ConsoleEntryControl
 
 
@@ -91,6 +95,10 @@ func _ready() -> void:
 	## 滚动条加宽（默认太窄不好拖）
 	for scroll: ScrollContainer in [$OptionBG/ListScroll, $OptionBG/DetailScroll]:
 		scroll.get_v_scroll_bar().custom_minimum_size.x = SCROLLBAR_WIDTH
+	## 登记给 `ModManager`：Ctrl+M 呼出的就是这一份（场景里挂了本页面的场景才走得到这里，
+	## 游戏内那份是管理器现造的，同样在 `_ready()` 里登记 —— 见 `ModManager.register_mod_page()`）
+	if ModManager != null:
+		ModManager.register_mod_page(self)
 
 
 #region 打开 / 关闭
@@ -98,11 +106,20 @@ func _ready() -> void:
 func appear_mod_page() -> void:
 	build_mod_page()
 	visible = true
+	## 自定义光标模式下（游戏内）页面上的按钮要靠系统鼠标点：页面期间一直露出来
+	## （与控制台面板同一条约定，见 `canvas_layer_control.appear_canvas_layer_control()`）
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, true)
+
+
+## 关闭页面：右下角按钮与 Ctrl+M 再按一次都走这里
+func close_mod_page() -> void:
+	visible = false
+	EventBus.push_event(ConstEventName.SET_KEEP_SYSTEM_CURSOR_VISIBLE, false)
 
 
 ## 关闭页面（右下角按钮）
 func _on_close_button_pressed() -> void:
-	visible = false
+	close_mod_page()
 #endregion
 
 

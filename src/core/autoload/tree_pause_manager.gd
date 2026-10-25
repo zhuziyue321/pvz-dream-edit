@@ -8,10 +8,11 @@ extends Node
 ##     调用方共 10 处，集中在菜单 / 游戏结束 / 重新选卡三个因素上
 ##     （`main_game_menu_option_dialog` `mgm_lose_manager` `main_game_manager`
 ##      `zombiquarium_manager` `zm_boss_registry` `mgm_reward_manager`）。
-##   - **`process_mode = ALWAYS` 全仓只有 5 处，且每一处都是「全场暂停时仍要跑」的豁免**：
-##     相机、卡槽（重新选卡时要能操作）、联机准备按钮、调试通道
+##   - **`process_mode = ALWAYS` 全仓只有 6 处，且每一处都是「全场暂停时仍要跑」的豁免**：
+##     相机、卡槽（重新选卡时要能操作）、联机准备按钮、调试通道、
+##     模组管理器（Ctrl+M 在暂停菜单开着时也要能呼出模组页面）
 ##     —— 见 `main_game_manager.gd:589`、`mgm_lose_manager.gd:57`、
-##     `netplay_ready_flow.gd:51`、`debug_channel.gd:67`。
+##     `netplay_ready_flow.gd:51`、`debug_channel.gd:67`、`mod_manager.gd:148`。
 ## 所以别把两者当成「该统一成一套」的东西：一个负责停全场，一个负责把个别节点摘出去。
 enum E_PauseFactor {
 	Menu,			## 菜单
