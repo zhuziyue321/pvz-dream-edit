@@ -235,6 +235,7 @@ func _on_anim_state_frame_changed(state_name: String, frame: int) -> void:
 	if frame < ATTACK_FIRST_SHOT_FRAME:
 		return
 	## 按帧号算出「到这一帧为止该发几颗」：卡顿导致跳帧时也能把该发的补齐
+	@warning_ignore("integer_division")
 	var allowed := 1 + (frame - ATTACK_FIRST_SHOT_FRAME) / ATTACK_SHOT_FRAME_STEP
 	var target := mini(allowed, stack_layers)
 	while _shots_fired < target:

@@ -40,6 +40,7 @@ const MAX_ALPHA := 0.3
 const FLAG_INTERVAL := 10
 ## 血月触发节奏：**每 5 波一次** —— 旗帜波（%10==9）与两旗正中间（%10==4）交替，
 ## 就是旗间隔的一半；波次号从 0 起算，故判据写成 `(wave + 1) % WAVE_INTERVAL == 0`
+@warning_ignore("integer_division")
 const WAVE_INTERVAL := FLAG_INTERVAL / 2
 ## 没有专属血月底图的场景（Night 那类）的退化表现：底图染红（压绿蓝 = 泛红，乘色）
 const BG_TINT := Color(1.0, 0.72, 0.72)

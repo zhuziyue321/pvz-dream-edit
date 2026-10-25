@@ -39,7 +39,9 @@ func component_ready() -> void:
 	## 初始化参数
 	if boundary_value_hp.is_empty():
 		@warning_ignore("integer_division")
+		@warning_ignore("integer_division")
 		boundary_value_hp.append(hp_component.max_hp * 2 / 3 - 1)	## 掉手
+		@warning_ignore("integer_division")
 		@warning_ignore("integer_division")
 		boundary_value_hp.append(hp_component.max_hp * 1 / 3 - 1)	## 掉头
 		if owner is Plant000Base:

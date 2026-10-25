@@ -149,6 +149,7 @@ func apply_stage_from_snapshot(packed_stage: int) -> void:
 func update_mini_zombie_hp() -> void:
 	if max_hp == 0:
 		return
+	@warning_ignore("integer_division")
 	max_hp /= 2
 	for i in boundary_value_hp.size():
 		boundary_value_hp[i] /= 2

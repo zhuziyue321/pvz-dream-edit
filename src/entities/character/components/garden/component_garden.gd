@@ -211,7 +211,8 @@ func _produce_coin() -> void:
 func get_minutes_since_happy() -> int:
 	if is_high_on_chocolate():
 		return 0
-	return int((get_now_time() - last_need_fulfilled_time) / 60)
+	@warning_ignore("integer_division")
+	return (get_now_time() - last_need_fulfilled_time) / 60
 #endregion
 
 

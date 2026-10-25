@@ -165,6 +165,7 @@ func _check_below(a, z: Zombie000Base, comp: CriticalValueComponent) -> void:
 	## 防具为 0，Real 直接进本体。
 	var critical := comp.get_critical_value()
 	var death_hp: int = z.hp_component.death_hp
+	@warning_ignore("integer_division")
 	var target_hp: int = death_hp + maxi((critical - death_hp) / 2, 1)
 	_deal_damage(z, z.hp_component.max_hp - target_hp, ConstDamage.E_DamageMode.Real)
 	await a.wait(0.3)
@@ -242,6 +243,7 @@ func _check_mower_blocked(a) -> void:
 	comp.critical_value_ratio = 0.5
 	var critical := comp.get_critical_value()
 	var death_hp: int = z.hp_component.death_hp
+	@warning_ignore("integer_division")
 	var target_hp: int = death_hp + maxi((critical - death_hp) / 2, 1)
 	_deal_damage(z, z.hp_component.max_hp - target_hp, ConstDamage.E_DamageMode.Real)
 	await a.wait(0.3)

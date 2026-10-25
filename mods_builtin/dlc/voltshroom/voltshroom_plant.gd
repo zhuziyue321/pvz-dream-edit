@@ -173,6 +173,7 @@ func _apply_aoe_damage() -> void:
 		return
 	var total := roundi(discharge_dps * DISCHARGE_PERIOD)
 	## 均分后至少 1 点：目标多到「每人不到 1 点」时不至于变成 0 伤害（整数除法会截断）
+	@warning_ignore("integer_division")
 	var per_target := maxi(1, total / alive.size())
 	for enemy in alive:
 		var info := DamageInfo.create(

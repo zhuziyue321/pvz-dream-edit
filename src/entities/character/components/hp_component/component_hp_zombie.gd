@@ -189,6 +189,7 @@ func get_body_damage(mode: ConstDamage.E_DamageMode, remain: int) -> int:
 
 ## 小僵尸大麻烦更新僵尸血量（本体 + 每层防具一起减半）
 func update_mini_zombie_hp():
+	@warning_ignore("integer_division")
 	max_hp /= 2
 	for armor in armor_list:
 		armor.update_mini_zombie_hp()

@@ -43,6 +43,7 @@ func run(a) -> void:
 		## 关键断言：第 n 关必须落在它该在的位置上（顺序 == 关卡序号）
 		var mismatched: Array[String] = []
 		for n in range(1, ADVENTURE_LEVEL_TOTAL + 1):
+			@warning_ignore("integer_division")
 			var area := (n - 1) / LEVEL_PER_PAGE + 1
 			var small := (n - 1) % LEVEL_PER_PAGE + 1
 			var expected := "adventure_%02d_%02d" % [area, small]

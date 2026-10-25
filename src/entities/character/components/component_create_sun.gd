@@ -36,6 +36,7 @@ const SUN_DROP_STAGE_HP := 40
 ## [param damage] 这次结算打掉的血量
 func drop_sun_on_zombie_mode_hp_loss(before_hp:int, damage:int):
 	var after_hp := before_hp - damage
+	@warning_ignore("integer_division")
 	if after_hp / SUN_DROP_STAGE_HP < before_hp / SUN_DROP_STAGE_HP or after_hp <= 0:
 		_spawn_sun()
 
@@ -43,6 +44,7 @@ func drop_sun_on_zombie_mode_hp_loss(before_hp:int, damage:int):
 ## 原版 `Challenge::IZombiePlantDropRemainingSun`：死亡时掉「剩余血量 / 40 + 1」颗
 ## （正常啃死时剩余血量 ≤ 0，即固定补 1 颗；被秒杀时按剩余血量折算）
 func drop_sun_on_zombie_mode_death(remain_hp:int):
+	@warning_ignore("integer_division")
 	var count := maxi(remain_hp, 0) / SUN_DROP_STAGE_HP + 1
 	for _i in count:
 		_spawn_sun()
