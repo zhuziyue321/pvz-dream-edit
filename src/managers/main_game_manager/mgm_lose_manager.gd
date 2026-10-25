@@ -138,6 +138,8 @@ func get_can_use_sun_on_zombie_mode() -> int:
 func get_min_zombie_sun_cost() -> int:
 	var min_cost := 0
 	for card: Card in main_game.card_manager.card_slot_battle.curr_cards:
+		if card == null:
+			continue
 		if card.card_zombie_type == ZombieIds.NULL:
 			continue
 		if min_cost == 0 or card.sun_cost < min_cost:

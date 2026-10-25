@@ -93,6 +93,8 @@ func update_main_game() -> void:
 	card_slot_battle.main_game_refresh_card()
 	if card_manager.main_game.is_test:
 		for card in card_slot_battle.curr_cards:
+			if card == null:
+				continue
 			card.card_change_cool_time(0)
 
 

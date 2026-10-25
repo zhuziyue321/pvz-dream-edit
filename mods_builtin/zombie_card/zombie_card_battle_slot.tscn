@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="zombie_card_battle_slot.gd" id="1_zslot"]
+
+[node name="ZombieCardBattleSlot" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 90)
+mouse_filter = 1
+script = ExtResource("1_zslot")
+
+[node name="SunLabelControl" type="Control" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CurrSunValue" type="Label" parent="SunLabelControl"]
+layout_mode = 0
+offset_left = 282.0
+offset_top = 41.0
+offset_right = 397.0
+offset_bottom = 69.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "999990"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Marker2DBrainTarget" type="Marker2D" parent="SunLabelControl"]
+unique_name_in_owner = true
+position = Vector2(339, 26)
+
+[node name="CardUiList" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(300, 70)
+layout_mode = 2
+theme_override_constants/separation = 0

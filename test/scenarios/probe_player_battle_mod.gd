@@ -7,7 +7,10 @@ extends RefCounted
 ##   2. 模组**开着**时：牌出现了，且注册表槽位 `ChooseLevelPlayerBattle` 注入的是玩家对战选关界面
 ##   3. 那块牌的常态 / 按下贴图都是多人版，按下能进那一页
 ##   4. 那一页：标题是「玩 家 对 战」，页里挂着**一个**对局条目「玩家对战：白天」
-##   5. 点那一关 ⇒ 进白天的空关卡（草坪上没有僵尸），退回主菜单也没崩
+##   5. 点那一关 ⇒ 进白天的关卡（草坪上没有僵尸），验「12 槽合一」：
+##      一个 12 格出战卡槽（前 6 植物 / 后 6 僵尸，分块分池），右上反转银行只是外观
+##      （僵尸卡模组装的，脑子计数在右）
+##   6. 退回主菜单也没崩
 ##
 ## 无头可跑：`powershell -ExecutionPolicy Bypass -File test/run_autopilot.ps1 -Scenario probe_player_battle_mod`
 
@@ -106,7 +109,9 @@ func run(a) -> void:
 			and btn.curr_level_data_game_para.save_game_name == "106_0_0001",
 		"" if btn.curr_level_data_game_para == null else btn.curr_level_data_game_para.save_game_name)
 
-	## ---- 点那一关 ⇒ 进白天的空关卡 ----
+	## ---- 点那一关 ⇒ 进白天的关卡 ----
+	## 对战的僵尸卡槽由「僵尸卡」模组装：先显式开它（默认开，但玩家存档可能关了）
+	ModManager.set_mod_enabled(ModIds.ZOMBIE_CARD, true)
 	btn.get_node("TextureButton").emit_signal("pressed")
 	var entered: bool = await a.wait_scene("main_game", 20.0)
 	_check(a, "点了那一关进了主游戏", entered)
@@ -123,6 +128,7 @@ func run(a) -> void:
 		if mg.zombie_manager != null:
 			znum = mg.zombie_manager.all_zombies_1d.size()
 		_check(a, "草坪上没有僵尸", znum == 0, "场上 %d 只" % znum)
+		await _check_card_slots(a, mg)
 
 	## ---- 退回主菜单（空关卡没有结束条件，玩家只能自己退出）----
 	GlobalUtils.change_scene(
@@ -132,6 +138,137 @@ func run(a) -> void:
 	_check(a, "退出后主游戏已释放", not is_instance_valid(GameContext.curr_main_game))
 
 	_finish(a)
+
+
+## ---- 一个 12 格出战卡槽（前 6 植物 / 后 6 僵尸）+ 右上银行视图 ----
+func _check_card_slots(a, mg) -> void:
+	var card_manager = mg.card_manager
+	_check(a, "植物侧有常规卡槽", card_manager != null \
+		and card_manager.card_slot_controller != null \
+		and card_manager.card_slot_controller.has_card_slot())
+	var slot = card_manager.card_slot_battle if card_manager != null else null
+	_check(a, "出战卡槽 12 格（前 6 植物 + 后 6 僵尸，一个存储）",
+		slot != null and slot.cards_placeholder.size() == 12,
+		str(slot.cards_placeholder.size()) if slot != null else "no slot")
+	if slot == null:
+		return
+	_check(a, "卡槽配了分块（僵尸 / 僵王卡 → 第 1 块）",
+		slot.card_type_blocks.get(ResourceCardReference.CardType.Zombie, -1) == 1 \
+			and slot.card_type_blocks.get(ResourceCardReference.CardType.ZombieBoss, -1) == 1,
+		str(slot.card_type_blocks))
+	_check(a, "分块宽是 [6, 6]",
+		slot.block_sizes.size() == 2 and slot.block_sizes[0] == 6 and slot.block_sizes[1] == 6,
+		str(slot.block_sizes))
+	_check(a, "对战整槽不占数字快捷键", slot.shortcuts_enabled == false, str(slot.shortcuts_enabled))
+	var slot_root = card_manager.card_slot_root if card_manager != null else null
+	var bank = slot_root.get_node_or_null("ZombieCardBattleSlot") if slot_root != null else null
+	_check(a, "右上装上了反转银行视图（僵尸卡模组装的）", bank != null)
+	if bank == null:
+		return
+	_check(a, "银行贴在右上且收在屏幕上方外（x 应超过屏宽一半，y = -100）",
+		bank.position.x > 400.0 and is_equal_approx(bank.position.y, -100.0),
+		str(bank.position))
+	var zpanel := bank.get_theme_stylebox("panel") as StyleBoxTexture
+	_check(a, "银行底图是翻转后的 ZombieSeedBank（446×87 的 ImageTexture）",
+		zpanel != null and zpanel.texture != null \
+			and zpanel.texture.get_size() == Vector2(446, 87),
+		"" if zpanel == null or zpanel.texture == null else str(zpanel.texture.get_size()))
+	var bank_hbox = bank.get_node_or_null("CardUiList")
+	var zplaceholders: Array = bank_hbox.get_children() if bank_hbox != null else []
+	_check(a, "占位格 6~11 已挪进银行（6 格）", zplaceholders.size() == 6,
+		str(zplaceholders.size()))
+	var in_bank := true
+	for i in range(6, slot.cards_placeholder.size()):
+		if slot.cards_placeholder[i].get_parent() != bank_hbox:
+			in_bank = false
+	_check(a, "槽的占位表后 6 格指向银行里的占位", in_bank)
+	_check(a, "装槽时僵尸块**不发卡**（僵尸卡由选卡面板选进来）",
+		slot.count_cards_in_block(1) == 0, "%d 张" % slot.count_cards_in_block(1))
+	var brains_label = bank.get_node_or_null("SunLabelControl/CurrSunValue")
+	_check(a, "僵尸方起始脑子 150", brains_label != null and brains_label.text == "150",
+		"" if brains_label == null else brains_label.text)
+	await _check_zombie_choose_panel(a, mg, slot, bank)
+
+
+## ---- 选僵尸卡面板（贴在植物待选区右面，一行五张）----
+## 无头探针点不了按钮：选卡走卡的 `signal_card_click`（与点击同一个信号），
+## 收尾直接调 `finish_choose()`（跳过点「开始战斗」那一步）。
+## 出场/收场是阶段驱动的 0.2s 平移：等到选卡阶段后再多等 0.5s 让动画滑完。
+func _check_zombie_choose_panel(a, mg, slot, bank) -> void:
+	var norm = mg.card_manager.card_slot_norm
+	var panel = norm.get_node_or_null("ZombieCardChoosePanel") if norm != null else null
+	_check(a, "选僵尸卡面板装上了（挂在 CardSlotNorm 下）", panel != null)
+	if panel == null:
+		return
+	_check(a, "面板贴在植物待选区右面（x ≥ 465）", panel.position.x >= 465.0, str(panel.position))
+	## 等两块真正滑入到位：出场是跟拍本体待选区（选卡事件、开场相机平移完之后），
+	## 不是进度事件 —— 所以等位置到位，别等进度枚举
+	var waited := 0.0
+	while is_instance_valid(mg) and waited < 20.0 \
+			and (not is_equal_approx(panel.position.y, 89.0) \
+				or not is_equal_approx(bank.position.y, 0.0)):
+		await a.wait(0.25)
+		waited += 0.25
+	_check(a, "选卡阶段两块都滑入到位（面板 y=89 / 银行 y=0）",
+		is_instance_valid(mg) and is_equal_approx(panel.position.y, 89.0) \
+			and is_equal_approx(bank.position.y, 0.0),
+		"panel=%s bank=%s" % [str(panel.position.y), str(bank.position.y)])
+	var card_scroll = panel.get_node("PageHolder/CardScroll")
+	var grid = card_scroll.get_child(0) if card_scroll != null \
+		and card_scroll.get_child_count() > 0 else null
+	_check(a, "面板卡格有内容（全部已登记的僵尸卡）",
+		grid != null and grid.get_child_count() > 6,
+		str(grid.get_child_count()) if grid != null else "no grid")
+	var containers: Array = []
+	if grid != null:
+		for container in grid.get_children():
+			containers.append(container)
+	_check(a, "面板里的候选僵尸卡超过六张", containers.size() > 6, "%d 张" % containers.size())
+	var excluded: Array[StringName] = [ZombieIds.DANCER, ZombieIds.BOBSLED_SINGLE, ZombieIds.DUCKYTUBE]
+	var has_excluded := false
+	var has_doctor := false
+	for container in containers:
+		var candidate_card = container.card
+		if candidate_card == null:
+			continue
+		if candidate_card.card_type == ResourceCardReference.CardType.ZombieBoss \
+				and candidate_card.card_zombie_boss_type == ZombieBossIds.DOCTOR:
+			has_doctor = true
+		elif candidate_card.card_zombie_type in excluded:
+			has_excluded = true
+	_check(a, "面板里没有伴舞 / 单个雪橇车队员 / 鸭子救生圈", not has_excluded)
+	_check(a, "面板里有僵王博士", has_doctor)
+	for i in 6:
+		containers[i].card.signal_card_click.emit()
+	_check(a, "点六张 → 僵尸块六张僵尸卡（占第 6~11 格）",
+		slot.count_cards_in_block(1) == 6 and _block1_all_in_range(slot),
+		"%d 张" % slot.count_cards_in_block(1))
+	_check(a, "植物块还空着（选卡走的僵尸块，没占植物那半）", slot.count_cards_in_block(0) == 0)
+	containers[5].card.signal_card_click.emit()
+	_check(a, "再点最后一张 → 退回容器剩五张", slot.count_cards_in_block(1) == 5,
+		str(slot.count_cards_in_block(1)))
+	containers[5].card.signal_card_click.emit()
+	_check(a, "又点回去 → 恢复六张", slot.count_cards_in_block(1) == 6,
+		str(slot.count_cards_in_block(1)))
+	_check(a, "整槽「卡槽第几格」口径还在（第 6 格查得到那张卡）",
+		slot.index_of_card(slot.curr_cards[6]) == 6)
+	panel.finish_choose()
+	_check(a, "收尾后僵尸块还是玩家选的六张（不发默认牌）", slot.count_cards_in_block(1) == 6,
+		str(slot.count_cards_in_block(1)))
+	var restyled := 0
+	for card in slot.curr_cards:
+		if card != null and card.card_bg != null and card.card_bg.texture != null \
+				and card.card_bg.texture.get_size() == Vector2(50, 70):
+			restyled += 1
+	_check(a, "六张卡都换上 PVZ2 僵尸卡面（50×70）", restyled == 6, "%d 张" % restyled)
+
+
+## 僵尸块（第 6~11 格）是不是每格都有卡
+func _block1_all_in_range(slot) -> bool:
+	for i in range(6, 12):
+		if i >= slot.curr_cards.size() or slot.curr_cards[i] == null:
+			return false
+	return true
 
 
 ## 等主游戏起来（场景切过去之后管理器还要一会儿才建好）

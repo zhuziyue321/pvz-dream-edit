@@ -3,12 +3,17 @@ extends "res://src/mods/mod_base.gd"
 ##
 ## 原版没有对战玩法，所以整条链路都在模组里：
 ##   - 选关界面 `player_battle_choose_level.tscn`（页里挂着本模组自带的对局条目）
-##   - 对局关卡 `levels/player_battle_day.gd`（**玩家对战：白天** —— 空关卡：草坪空着，对战逻辑还没做）
+##   - 对局关卡 `levels/player_battle_day.gd`（**玩家对战：白天** —— 左植物 / 右僵尸两条卡槽已就位，
+##     对战逻辑还没做）
 ##   - 入口：本体主菜单木牌上那张「MULTIPLAYER」牌（本体只留一个枚举槽位）
 ##
 ## 本体留给本模组的只有**一个槽位**（见 ModBase 边界规则 3）：
 ##   - `MainSceneRegistry.MainScenes.ChooseLevelPlayerBattle`（场景路径由本模组在 install() 时注入）
 ## 本体不认识本模组，也不出现本模组里的路径。
+##
+## 依赖「僵尸卡」模组（`get_mod_dependencies()`）：右侧那条反转的僵尸卡槽
+## （六格、脑子计数在右）由僵尸卡模组装 —— 它认 `ChooseLevelPlayerBattle` 这个 game_mode，
+## 见 `mods_builtin/zombie_card/zombie_card_pvp_wiring.gd`；打开本模组会把它一并打开。
 ##
 ## 开关：模组页面里开 / 关（存进 `user://<用户名>/mod_config.ini`）；
 ## `data/mods/mod_config.tres` 是**没有存档文件时播种用的工程默认**。
@@ -33,11 +38,17 @@ func get_mod_name() -> String:
 
 
 func get_mod_description() -> String:
-	return "主菜单木牌上的「MULTIPLAYER」牌：进玩家对战选关界面；目前只有一关「玩家对战：白天」，是空关卡（对战逻辑还没做）"
+	return "主菜单木牌上的「MULTIPLAYER」牌：进玩家对战选关界面；目前只有一关「玩家对战：白天」" \
+		+ "—— 左植物 / 右僵尸两条卡槽已就位（对战逻辑还没做）"
 
 
 func get_mod_categories() -> Array[StringName]:
 	return [ModCategory.ADD_STRUCTURE]
+
+
+## 依赖：右侧那条反转僵尸卡槽由「僵尸卡」模组装（打开本模组把它一并打开）
+func get_mod_dependencies() -> Array[StringName]:
+	return [ModIds.ZOMBIE_CARD]
 
 
 ## 模组页面右侧：现在做到了哪一步
@@ -45,7 +56,10 @@ func create_detail_control() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	box.add_child(ModBase.create_detail_label("入口：主菜单左下木牌上的「MULTIPLAYER」牌"))
-	box.add_child(ModBase.create_detail_label("现状：选关界面已就位，页里有一关「玩家对战：白天」—— 空关卡（草坪空着，对战逻辑还没做）"))
+	box.add_child(ModBase.create_detail_label("现状：选关界面已就位，页里有一关「玩家对战：白天」——"))
+	box.add_child(ModBase.create_detail_label("　· 左上：六格植物卡槽（选卡 / 种植走本体流程）"))
+	box.add_child(ModBase.create_detail_label("　· 右上：六格僵尸卡槽，反转、脑子计数在右（由「僵尸卡」模组装）"))
+	box.add_child(ModBase.create_detail_label("　· 对战逻辑（胜负 / 脑子收入 / 放置限制）还没做"))
 	return box
 
 

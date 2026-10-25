@@ -22,8 +22,9 @@ const GLOVE := &"glove"
 const CUSTOM_LEVEL := &"custom_level"
 
 ## 玩家对战：主菜单木牌上的「MULTIPLAYER」牌 → 玩家对战选关界面。
-## 原版没有对战玩法，所以整条链路都在模组里；**当前只有界面与一个空关卡**
-## （「玩家对战：白天」是空关卡：对战逻辑还没做，页里就这一关）
+## 原版没有对战玩法，所以整条链路都在模组里；**当前是「玩家对战：白天」的卡槽部分**：
+## 左上六格植物卡槽（本体流程）+ 右上六格反转僵尸卡槽（由 [ModIds.ZOMBIE_CARD] 装，
+## 本模组声明了对它的依赖），对战逻辑（胜负 / 收入 / 放置限制）还没做
 const PLAYER_BATTLE := &"player_battle"
 
 ## 联机：多人（先做两人）合作共守一块草坪。原版没有任何联机功能，所以整条链路都在模组里。
@@ -94,9 +95,11 @@ const DEBUG := &"debug"
 ## `.reanim`（已从 PopCap 的 `.compiled` 壳剥出）转换而来，关掉模组 = 回到原版。
 const DLC := &"dlc"
 
-## 僵尸卡：「我是僵尸」关卡发僵尸卡牌，并换上 PVZ2 的僵尸卡槽 / 僵尸卡面 / 脑光。
-## 原版 PVZ1 **有**这个机制（僵尸种子包 `SEED_ZOMBIE_*`，解谜模式「僵尸公敌」就是靠它发牌的），
-## 但本体那条僵尸卡通道默认是关着的（`ConstFeatureSwitch.ZOMBIE_CARD_ENABLED = false`，
-## 开了普通关卡的选卡界面也会冒出僵尸页），所以「我是僵尸」关卡发不出牌。
-## 本模组**不去动**那个全局总开关，只在 `game_para.is_zombie_mode` 的关卡里直接把僵尸卡发进出战卡槽。
+## 僵尸卡：发僵尸卡牌，并换上 PVZ2 的僵尸卡槽 / 僵尸卡面 / 脑光。
+## 原版 PVZ1 的常规关卡没有「在关卡里直接放下僵尸」，但本体留了这条通道（僵尸种子包
+## `SEED_ZOMBIE_*`，解谜模式「僵尸公敌」靠它发牌）—— 只是默认关着
+## （`ConstFeatureSwitch.ZOMBIE_CARD_ENABLED = false`，开了普通关卡的选卡界面也会冒出僵尸页）。
+## 本模组**不去动**那个全局总开关，只在需要僵尸卡的两类关卡里直接发牌：
+## 「我是僵尸」（`game_para.is_zombie_mode`）与「玩家对战」（`ChooseLevelPlayerBattle`，
+## 那里右上装一条反转的六格僵尸卡槽，见玩家对战模组）
 const ZOMBIE_CARD := &"zombie_card"

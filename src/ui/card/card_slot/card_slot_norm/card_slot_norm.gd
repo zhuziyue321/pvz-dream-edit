@@ -80,6 +80,8 @@ func _on_re_card_button_pressed() -> void:
 ## 取消所有已选卡片
 func _on_cancal_card_button_pressed() -> void:
 	for i in range(card_slot_battle.curr_cards.size()-1, -1, -1):
+		if card_slot_battle.curr_cards[i] == null:
+			continue
 		card_slot_battle.curr_cards[i]._on_button_pressed()
 
 ## 开始游戏按钮
@@ -95,6 +97,9 @@ func _on_texture_button_pressed() -> void:
 func save_choosed_cards() -> void:
 	Global.global_game_state.selected_cards.clear()
 	for card:Card in card_slot_battle.curr_cards:
+		## 分块的槽里有空位（null = 这格没选卡）
+		if card == null:
+			continue
 		## 身份统一写成 {card_type, content_id, is_imitater},僵王卡与普通卡走同一份编码
 		if card.card_reference == null or not card.card_reference.is_valid():
 			Log.warn("error:当前卡牌没有合法身份,已跳过保存")
@@ -108,9 +113,6 @@ func save_choosed_cards() -> void:
 ## [param references] 植物 / 普通僵尸 / 僵王共用一份列表,逐个入槽
 func init_pre_choosed_card(references: Array[ResourceCardReference]):
 	for card_reference in references:
-		if len(card_slot_battle.cards_placeholder) <= len(card_slot_battle.curr_cards):
-			Log.warn("预选卡数量超过卡槽占位数，多余的系统预选卡已跳过")
-			break
 		if card_reference == null or not card_reference.is_valid() or not AllCards.is_battle_card(card_reference):
 			Log.warn("预选卡：跳过未注册或不可出战的引用")
 			continue
@@ -130,10 +132,32 @@ func init_pre_choosed_card(references: Array[ResourceCardReference]):
 		if card == null:
 			continue
 
-		card_slot_battle.curr_cards.append(card)
-		pre_choosed_card(card, card_slot_battle.cards_placeholder[len(card_slot_battle.curr_cards)-1])
+		## 放位：分块的槽进「这块卡」那块的第一个空位；不分块照旧 dense 排到队尾
+		if card_slot_battle.card_type_blocks.is_empty():
+			if len(card_slot_battle.cards_placeholder) <= len(card_slot_battle.curr_cards):
+				Log.warn("预选卡数量超过卡槽占位数，多余的已跳过")
+				_release_pre_choosed_card(candidate, card)
+				break
+			card_slot_battle.curr_cards.append(card)
+			pre_choosed_card(card, card_slot_battle.cards_placeholder[len(card_slot_battle.curr_cards)-1])
+		else:
+			var free_index := card_slot_battle.free_index_in_block(
+				card_slot_battle.block_of_card(card))
+			if free_index == -1:
+				Log.warn("预选卡数量超过所在分块的格数，多余的已跳过")
+				_release_pre_choosed_card(candidate, card)
+				break
+			card_slot_battle.put_card_at(card, free_index)
+			pre_choosed_card(card, card_slot_battle.cards_placeholder[free_index])
 	## 预选卡断开鼠标点击信号
 	card_disconnect_click_in_choose()
+
+
+## 预选卡放不下时的收尾：隐藏待选容器里的那张、回收刚造的卡
+func _release_pre_choosed_card(candidate: CardCandidateContainer, card: Card) -> void:
+	candidate.card.visible = true
+	candidate.card.is_choosed_pre_card = false
+	card.queue_free()
 
 
 ## 取某身份在待选区的容器;类别未开放或没有卡位时返回 null
@@ -175,18 +199,34 @@ func _on_card_click(card:Card):
 	if is_instance_valid(card.card_candidate_container) and card.card_candidate_container.is_banned:
 		return
 	SoundManager.play_other_SFX("tap")
-	# 如果card被选择，取消选取，后面的card向前移动
+	# 如果card被选择，取消选取
 	if card.is_choosed_pre_card:
 		card.is_choosed_pre_card = false
-		var card_idx = card_slot_battle.curr_cards.find(card)
-		card_slot_battle.curr_cards.erase(card)
-		for i in range(card_idx, card_slot_battle.curr_cards.size()):
-			move_card_to(card_slot_battle.curr_cards[i], card_slot_battle.cards_placeholder[i])
+		if card_slot_battle.card_type_blocks.is_empty():
+			## 不分块：取消选取，后面的card向前移动
+			var card_idx = card_slot_battle.curr_cards.find(card)
+			card_slot_battle.curr_cards.erase(card)
+			for i in range(card_idx, card_slot_battle.curr_cards.size()):
+				move_card_to(card_slot_battle.curr_cards[i], card_slot_battle.cards_placeholder[i])
+		else:
+			## 分块的槽：只清自己那格，其余卡各就各位不挪窝（块与块互不挤占）
+			card_slot_battle.take_out_card(card)
 		move_card_to(card, card.card_candidate_container)
 
-	## 如果没被选取，放在最后一位
+	## 如果没被选取
 	else:
-		## ★ 上限取 `get_max_choosed()`：联机时卡槽按人数分块（每人一块），
+		## 分块的槽：上限 = 自己那块的宽，放进那块的第一个空位
+		if not card_slot_battle.card_type_blocks.is_empty():
+			var block := card_slot_battle.block_of_card(card)
+			var free := card_slot_battle.free_index_in_block(block)
+			if free == -1:
+				SoundManager.play_other_SFX("buzzer")
+				return
+			card.is_choosed_pre_card = true
+			card_slot_battle.put_card_at(card, free)
+			move_card_to(card, card_slot_battle.cards_placeholder[free])
+			return
+		## ★ 不分块：上限取 `get_max_choosed()`：联机时卡槽按人数分块（每人一块），
 		##   这里限的是"我这一块能放几张"，不是整副卡槽的格数
 		if card_slot_battle.curr_cards.size() >= card_slot_battle.get_max_choosed():
 			SoundManager.play_other_SFX("buzzer")
@@ -206,21 +246,39 @@ func _on_imitater_card_click(card:Card):
 	if is_instance_valid(card.card_candidate_container) and card.card_candidate_container.is_banned:
 		return
 	SoundManager.play_other_SFX("tap")
-	# 如果card被选择，取消选取，后面的card向前移动
+	# 如果card被选择，取消选取
 	if card.is_choosed_pre_card:
 		card.is_choosed_pre_card = false
-		var card_idx = card_slot_battle.curr_cards.find(card)
-		card_slot_battle.curr_cards.erase(card)
-		for i in range(card_idx, card_slot_battle.curr_cards.size()):
-			move_card_to(card_slot_battle.curr_cards[i], card_slot_battle.cards_placeholder[i])
+		if card_slot_battle.card_type_blocks.is_empty():
+			## 不分块：取消选取，后面的card向前移动
+			var card_idx = card_slot_battle.curr_cards.find(card)
+			card_slot_battle.curr_cards.erase(card)
+			for i in range(card_idx, card_slot_battle.curr_cards.size()):
+				move_card_to(card_slot_battle.curr_cards[i], card_slot_battle.cards_placeholder[i])
+		else:
+			## 分块的槽：只清自己那格
+			card_slot_battle.take_out_card(card)
 		await move_card_to(card, card_slot_candidate.card_imitater)
 		card.reparent(card.card_candidate_container, false)
 		card_slot_candidate.imitater_be_choosed_cancel()
 
-	## 如果没被选取，放在最后一位
+	## 如果没被选取
 	else:
-		## ★ 上限取 `get_max_choosed()`：联机时卡槽按人数分块（每人一块），
-		##   这里限的是"我这一块能放几张"，不是整副卡槽的格数
+		## 分块的槽：放进自己那块的第一个空位
+		if not card_slot_battle.card_type_blocks.is_empty():
+			var block := card_slot_battle.block_of_card(card)
+			var free := card_slot_battle.free_index_in_block(block)
+			if free == -1:
+				SoundManager.play_other_SFX("buzzer")
+				card_slot_candidate.imitater_card_slot_disappear()
+				return
+			card.is_choosed_pre_card = true
+			card_slot_battle.put_card_at(card, free)
+			card.reparent(card_slot_candidate.card_imitater, false)
+			move_card_to(card, card_slot_battle.cards_placeholder[free])
+			card_slot_candidate.imitater_be_choosed()
+			return
+		## ★ 不分块：上限取 `get_max_choosed()`（口径见 `_on_card_click` 那条注释）
 		if card_slot_battle.curr_cards.size() >= card_slot_battle.get_max_choosed():
 			SoundManager.play_other_SFX("buzzer")
 			card_slot_candidate.imitater_card_slot_disappear()
@@ -249,6 +307,8 @@ func move_card_to(card: Card, target_parent: CanvasItem) -> void:
 ## 选卡结束后，卡片断开连接，游戏开始后修改点击信号连接
 func card_disconnect_click_in_choose():
 	for card in card_slot_battle.curr_cards:
+		if card == null:
+			continue
 		if card.signal_card_click.is_connected(_on_card_click.bind(card)):
 			card.signal_card_click.disconnect(_on_card_click.bind(card))
 

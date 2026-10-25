@@ -27,6 +27,26 @@ var max_choosed_card_num: int = 0
 ## 单机没人改这一项 ⇒ 照旧全都显示。
 var visible_start: int = -1
 var visible_count: int = -1
+## 卡槽分块（可选）：卡类型 → 块号。空 = 不分块，整槽一条 dense 队（照旧）。
+##
+## ★ 分块后整槽仍是**一个存储**（卡与冷却都在本槽，「卡槽第几格」仍是整槽口径，
+##   见 `index_of_card`）；只是每类卡只进**自己那块**的第一个空位：
+##   块 k 占一段连续占位格（起点 = 前面各块宽之和，宽 = `block_sizes[k]`），
+##   取消时只清自己那格、其余卡不挪窝 —— 两块的卡互不挤占。
+##   例：`{CardType.Zombie: 1, CardType.ZombieBoss: 1}` + `block_sizes = [6, 6]`
+##   ⇒ 前 6 格给植物卡、后 6 格给僵尸 / 僵王卡（左右两条银行各摆各的）。
+var card_type_blocks: Dictionary = {}
+## 各块宽（下标 = 块号）；`card_type_blocks` 为空时不读
+var block_sizes: Array[int] = []
+## 出战卡槽发不发数字快捷键（false = 整槽不占 1~0，只许鼠标点）
+var shortcuts_enabled := true
+## 每张卡判「够不够」用哪个池（不接 = 全用 `sun_value`，照旧）。
+## 参数是卡，返回该卡所在池的当前值 —— 分币制的槽（植物花阳光 / 僵尸花脑子）
+## 由装配方接上；接了之后 `sun_value` 变化也只按各卡**自己的池**重判。
+var currency_of_card: Callable = Callable()
+## 用卡之后从哪个池扣（不接 = 扣 `sun_value`，照旧）。参数是卡，由接的方自己扣；
+## 扣完之后的冷却照旧由 `card_use_end` 统一走。
+var on_card_cost: Callable = Callable()
 ## 阳光值
 var sun_value:
 	set(value):
@@ -34,7 +54,9 @@ var sun_value:
 		curr_sun_value.text = str(value)
 
 		for card in curr_cards:
-			card.judge_sun_enough(value)
+			if card == null:
+				continue
+			card.judge_sun_enough(_pool_for(card))
 
 func _ready() -> void:
 	Global.config_service.signal_change_disappear_spare_card_placeholder.connect(judge_disappear_add_card_bar)
@@ -79,6 +101,68 @@ func get_max_choosed() -> int:
 	return cards_placeholder.size()
 
 
+#region 分块与卡位（`card_type_blocks` 为空时全部按不分块的旧口径走）
+## 卡属于哪一块（不分块 / 字典没登记的类型都算第 0 块）
+func block_of_card(card: Card) -> int:
+	if card == null or card_type_blocks.is_empty():
+		return 0
+	return int(card_type_blocks.get(card.card_type, 0))
+
+
+## 第 [param block] 块的起始占位下标
+func block_begin(block: int) -> int:
+	var begin := 0
+	for i in mini(block, block_sizes.size()):
+		begin += block_sizes[i]
+	return begin
+
+
+## 第 [param block] 块的宽（块号越界按 0 算）
+func block_width(block: int) -> int:
+	return block_sizes[block] if block >= 0 and block < block_sizes.size() else 0
+
+
+## 该块里第一个空位（没有空位 = 这块满了，返回 -1）
+func free_index_in_block(block: int) -> int:
+	var begin := block_begin(block)
+	for i in range(begin, begin + block_width(block)):
+		if i >= curr_cards.size() or curr_cards[i] == null:
+			return i
+	return -1
+
+
+## 该块已经放了几张
+func count_cards_in_block(block: int) -> int:
+	var n := 0
+	var begin := block_begin(block)
+	for i in range(begin, mini(begin + block_width(block), curr_cards.size())):
+		if curr_cards[i] != null:
+			n += 1
+	return n
+
+
+## 把卡放进第 [param index] 格（中部长出的空位补 null）
+func put_card_at(card: Card, index: int) -> void:
+	while curr_cards.size() <= index:
+		curr_cards.append(null)
+	curr_cards[index] = card
+
+
+## 把卡从槽里拿出来：只清自己那格，其余卡**不前移**（分块时各块独立，
+## 空位留在原地）。返回它原来的下标（不在槽里返回 -1）
+func take_out_card(card: Card) -> int:
+	var index := index_of_card(card)
+	if index != -1:
+		curr_cards[index] = null
+	return index
+
+
+## 这张卡判「够不够」用的池（不接 `currency_of_card` 时全部用 sun_value）
+func _pool_for(card: Card) -> int:
+	return currency_of_card.call(card) if currency_of_card.is_valid() else sun_value
+#endregion
+
+
 ## 某张卡在出战卡槽里的下标（不在卡槽里返回 -1）
 ##
 ## ★ 这是「卡在卡槽中的位置」的**唯一口径**：种植时上报这一条，
@@ -121,9 +205,14 @@ func main_game_refresh_card():
 	update_card_purple_sun_cost()
 	for i in range(curr_cards.size()):
 		var card:Card = curr_cards[i]
-		card.judge_sun_enough(sun_value)
-		## 快捷键按**可见序号**给（分块时看不见的那几张不占快捷键）
-		if is_index_visible(i):
+		if card == null:
+			continue
+		card.judge_sun_enough(_pool_for(card))
+		## 快捷键按**可见序号**给（分块时看不见的那几张不占快捷键）；
+		## 整槽关掉快捷键时（对战这种）全部只许鼠标点
+		if not shortcuts_enabled:
+			card.set_shortcut_disappear()
+		elif is_index_visible(i):
 			card.set_shortcut((i - visible_begin() + 1) % 10)
 		else:
 			card.set_shortcut_disappear()
@@ -154,12 +243,24 @@ func set_cards(references: Array[ResourceCardReference]) -> void:
 	for old_card in old_cards:
 		_release_card(old_card)
 
-	curr_cards = new_cards
+	if card_type_blocks.is_empty():
+		## 不分块：照旧一条 dense 队
+		curr_cards = new_cards
+	else:
+		## 分块：各类卡进自己那块的第一个空位（原有空位不动，别的块不受影响）
+		for card in new_cards:
+			var free_index := free_index_in_block(block_of_card(card))
+			if free_index == -1:
+				_release_card(card)
+				continue
+			put_card_at(card, free_index)
 	## 卡槽不够就补占位（主机那一侧可能已经买过卡槽扩充）
 	while cards_placeholder.size() < curr_cards.size():
 		add_one_card_placeholder()
 	for i in range(curr_cards.size()):
 		var card: Card = curr_cards[i]
+		if card == null:
+			continue
 		var holder: CanvasItem = cards_placeholder[i]
 		## ⚠️ `reparent()` 要求调用者**已经在树里**；而 `AllCards.create_card()` 造出来的是棵
 		## 孤儿（只有从 `old_cards` 里复用出来的才带着父节点）。对新造的卡直接 `reparent()`
@@ -217,6 +318,8 @@ func _release_card(card: Card) -> void:
 func start_next_game_card_slot_battle_update():
 	for i in range(curr_cards.size()):
 		var card:Card = curr_cards[i]
+		if card == null:
+			continue
 		## 卡牌冷却结束,可以点击
 		card.set_card_cool_end()
 		card.card_ready()
@@ -226,8 +329,11 @@ func start_next_game_card_slot_battle_update():
 
 ## 卡片种植后信号调用函数
 func card_use_end(card:Card):
-	## 减少阳光，卡片冷却
-	sun_value = sun_value - card.sun_cost
+	## 减少阳光，卡片冷却（分币制的槽由 on_card_cost 自己扣对应的池）
+	if on_card_cost.is_valid():
+		on_card_cost.call(card)
+	else:
+		sun_value = sun_value - card.sun_cost
 	card.card_cool()
 
 #region 控制台相关
@@ -245,6 +351,10 @@ func _placeholder_should_show(index: int) -> bool:
 	## 可见区间之外 ⇒ 不显示
 	if not is_index_visible(index):
 		return false
+	## 分块的槽（左右两条固定银行的摆法）：空位照样显示 ——
+	## 银行宽是固定的，收走空格会把剩下的卡挤到一起、跟底图对不上
+	if not card_type_blocks.is_empty():
+		return true
 	## 在游戏进行阶段
 	if GameContext.curr_main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME:
 		if Global.config_service.disappear_spare_card_Placeholder:
@@ -258,6 +368,8 @@ func _placeholder_should_show(index: int) -> bool:
 func update_card_purple_sun_cost():
 	await get_tree().process_frame
 	for card:Card in curr_cards:
-		if card.is_purple_card and GameContext.curr_main_game.plant_cell_manager.curr_plant_num.has(card.card_plant_type):
+		if card == null or not card.is_purple_card:
+			continue
+		if GameContext.curr_main_game.plant_cell_manager.curr_plant_num.has(card.card_plant_type):
 			card.sun_cost = Global.character_registry.get_plant_info(card.card_plant_type, CharacterRegistry.PlantInfoAttribute.SunCost) + 50 * GameContext.curr_main_game.plant_cell_manager.curr_plant_num[card.card_plant_type]
 			card.judge_sun_enough(sun_value)

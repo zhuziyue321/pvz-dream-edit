@@ -1,0 +1,99 @@
+[gd_scene load_steps=11 format=3]
+
+; 产脑光墓碑（DLC 对战墓碑 VSGravestone）—— 模组「僵尸卡」提供的运行期植物
+; （玩家对战专属：50 脑光，种下去像向日葵一样周期性给僵尸方入账脑子）
+;
+; 结构照 `../../dlc/aloe/plant_aloe.tscn`（同一套 reanim → Godot 动画接法）：
+; 本体 `plant_base.tscn` + DLC 动画节点 + 产脑子组件。
+;
+; 摆放（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   idle 第 0 帧主体 Stone：85×84 @ (-3, 6.3)，墓土 Stone_dirt 同框；
+;   整株内容 ≈ x[-3, 82]、y[6.3, 90.3]，脚底中心 ≈ (39.5, 90.3)。
+;   取 position = -(脚底中心) 再让底边落到 +10（与本体植物「底边对齐」口径一致）= (-39.5, -80.3)。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已经在动画的 `scale` 轨道里。
+;
+; ⚠️ 动画场景 `VSGravestone.tscn` 是 R2Ga 全量产物剪出的「根 + AnimLib + 部件」精简版；
+;   AnimLib 是 root 下最后一个子节点（index = 91），这里把 idle / rise 两段
+;   .tres 合成库注进去（全量产物的内嵌动画与单段播放器已删，别照它引用）。
+;   脑子出生点 Marker2D 挂在 Body 下（脑子阳光从那儿弹出来、落地，点收才入账）。
+;
+; ⚠️ 产脑子组件用的是**模组自己的子类** `component_create_brains.gd`
+;   （继承本体 `component_create_sun.gd`，节奏全复用，只把出阳光换成脑子入账）；
+;   太阳能组件的 `sun_value = 25` 在这里就是「每次入账 25 脑子」。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/plant/plant_base.tscn" id="1_base"]
+[ext_resource type="PackedScene" path="res://mods_builtin/zombie_card/animation/character/plant/VSGravestone/VSGravestone.tscn" id="2_anim"]
+[ext_resource type="Script" path="res://mods_builtin/zombie_card/vsgravestone/vsgravestone_plant.gd" id="3_script"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Animation" path="res://mods_builtin/zombie_card/animation/character/plant/VSGravestone/VSGravestone_idle.tres" id="5_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/zombie_card/animation/character/plant/VSGravestone/VSGravestone_rise.tres" id="6_rise"]
+[ext_resource type="Script" path="res://mods_builtin/zombie_card/vsgravestone/component_create_brains.gd" id="7_createbrains"]
+[ext_resource type="Shader" path="res://mods_builtin/zombie_card/vsgravestone/mask_invisible.gdshader" id="8_maskshader"]
+
+; idle（静帧）+ rise（出土）合成一个库（挂到动画场景里那个 AnimLib 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_vsg"]
+_data = {
+&"VSGravestone_idle": ExtResource("5_idle"),
+&"VSGravestone_rise": ExtResource("6_rise")
+}
+
+; 出土裁剪板：**裁剪模式必须 2；底必须「照常提交绘制、但看不见」**。三条都是 2026-10-25
+; 探针实测（黑底格子逐像素统计，见 docs/工作记录/2026-10-25_产脑光墓碑.md）：
+;   · `clip_children` 用 1（ONLY）→ 裁的是「**直接子节点**」，而本株直接子节点是动画挂点
+;     （自己一个像素都不画）→ 裁剪区域为空 → **整棵动画连同板都不渲染**（墓碑直接消失）；
+;   · 底不画（`StyleBoxEmpty` / 全透明）→ 没有裁剪区 → 石碑出土时整截从地下露出来；
+;   · 底调成低 alpha（1/255、0.02）→ 绘制命令被引擎按透明度剔除 → 同样没有裁剪区 →
+;     连石碑一起被裁没。
+; 正解：底用普通 `StyleBoxFlat`（命令照常提交、矩形被记下 → 裁剪区成立），再挂一个输出
+; 全透明的 shader（剔除发生在光栅化，不影响裁剪区）—— 裁剪照常，板肉眼完全看不见。
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mask"]
+shader = ExtResource("8_maskshader")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mask"]
+
+[node name="ZombieCardVsGravestone" node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_base")]
+script = ExtResource("3_script")
+plant_type = &"zombie_card_vsgravestone"
+node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+; 出土裁剪板：把整段动画裁在「地面以上」（Body 本地 y ≤ +10，即墓碑脚底那条线）——
+; rise 里石碑从 y=78.8 升到 6.3，起始大半截在地面以下，不裁的话出土时会看到
+; 石碑悬空滑上来（本体墓碑的出土就是 Panel clip_children 这么裁的，见 tombstone.tscn）。
+; 墓土（Stone_dirt）在动画部件里本来就画在石碑**上面**（reanim 轨道序即层序），
+; 正好盖住裁剪缝。
+; ⚠️ Panel 挂在 Node2D 下时锚点不生效，矩形就是 offsets 那块（本体墓碑同一口径）。
+[node name="VSGravestoneMask" type="Panel" parent="Body"]
+clip_children = 2
+offset_left = -45.0
+offset_top = -100.0
+offset_right = 45.0
+offset_bottom = 10.0
+mouse_filter = 2
+material = SubResource("ShaderMaterial_mask")
+theme_override_styles/panel = SubResource("StyleBoxFlat_mask")
+
+[node name="VSGravestoneAnim" parent="Body/VSGravestoneMask" instance=ExtResource("2_anim")]
+position = Vector2(5.5, 19.7)
+
+; 动画场景里的 AnimLib 换成本地合成的两段库（原因见文件头）
+[node name="AnimLib" parent="Body/VSGravestoneMask/VSGravestoneAnim" index="91"]
+libraries = {
+&"": SubResource("AnimationLibrary_vsg")
+}
+
+; 脑子出生点：墓碑顶部（动画节点本地坐标，脚底中心 (39.5, 90.3) 往上约 55 px）
+[node name="Marker2DCreateSun" type="Marker2D" parent="Body"]
+position = Vector2(0, -60)
+
+; 产脑子组件：节奏沿用向日葵默认（首次 3~12.5 s，之后 23.5~25 s，每次 25 脑子）
+[node name="CreateSunComponent" type="Node2D" parent="." node_paths=PackedStringArray("marker_2d_create_sun")]
+script = ExtResource("7_createbrains")
+marker_2d_create_sun = NodePath("../Body/Marker2DCreateSun")
+
+[node name="CreateSunTimer" type="Timer" parent="CreateSunComponent"]
+one_shot = true
+
+[connection signal="timeout" from="CreateSunComponent/CreateSunTimer" to="CreateSunComponent" method="_on_create_sun_timer_timeout"]

@@ -62,6 +62,8 @@ static func resolve(main_game: MainGameManager,
 static func get_battle_card(main_game: MainGameManager,
 		plant_type: StringName) -> Card:
 	for card: Card in get_curr_card_list(main_game):
+		if card == null:
+			continue
 		if plant_type == PlantIds.NULL or card.card_plant_type == plant_type:
 			return card
 	return null
