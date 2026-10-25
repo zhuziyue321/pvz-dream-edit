@@ -1,58 +1,93 @@
-## 博士专用状态机：选择五种技能、同步计时倍率和校验配置，死亡始终优先。
+## 博士专用状态机：按原版四计数器优先级选择技能、同步计时倍率和校验配置，死亡始终优先。
 ## 由博士正常出战初始化显式启动；状态请求动画，专用控制器负责播放，速度仍由原动画组件处理。
 ## 每个技能管理自己的内部阶段与共享数据，根层不决定技能如何收尾。
 ## 场景中绑定角色、播放器、入场、待机、五技能和死亡状态。
+##
+## 技能调度完全照原版《植物大战僵尸》移植（参照 `../PvZ-Portable-main/src/Lawn/Zombie.cpp`
+## 的 `UpdateBoss()` / `Boss*Attack()` 系列，行号基准见 `docs/参考存档/植物僵尸逻辑对照.md`）：
+## 四条技能线（放置 / 脚踩 / 蹦极 / 吐球）各自持有倒计时计数器，并行倒计时；
+## 每轮空闲按原版 else-if 链的固定优先级发招：
+##   ① 破损阶段变化（<80% 进阶段 1 立即蹦极一次，<50% 进阶段 2 立即砸车一次）
+##   ② 脚踩计数到 0 → 踩踏（无目标也消耗本轮并重置计数）
+##   ③ 蹦极计数到 0 → 冒险 1/4、其余 1/2 概率改砸车，否则蹦极
+##   ④ 吐球计数到 0 → 低头吐球
+##   ⑤ 放置计数到 0 → 召唤一只僵尸（间隔随破损阶段递减）
+## 踩踏与蹦极在首次砸车落地 / 首次进入阶段 1 前锁定（计数器为 -1，永不满足 == 0）。
 extends CharacterStateMachine
 class_name ZB001DoctorStateMachine
 
-## 主层只选择完整技能，内部动画阶段与收尾由各复合技能管理。
-## 普通待机状态引用；入场或技能收尾后进入，等待下一次技能选择。
-@export var idle_state: ZB001DoctorStateIdle
-## 键为直属技能节点名，值为选择权重；名称必须与当前实例的技能节点完全一致。
-## 默认放置权重为 3，其余为 1，可直接在编辑器调整；零权重或不满足触发条件时不参与 Idle 随机选择。
-## 权重由主状态机配置，技能自身提供可用性查询并管理动作；初始顺序与吐球保底不受零权重限制。
-## 必须保留五个技能配置，空字典不自动补齐；修改节点名或字典键后需要重新初始化。
-@export var skill_state_weights: Dictionary[StringName, float] = {
-	&"Spawn": 3.0,
-	&"HeadSkill": 1.0,
-	&"Bungee": 1.0,
-	&"ThrowRV": 1.0,
-	&"Stomp": 1.0,
-}
-## 开场按数组顺序选择完整技能，不可用项直接跳过；耗尽后改为加权随机，空数组直接随机。
-## 可重复配置同一技能，固定顺序不执行随机去重；吐球保底插队时保留尚未执行的下一项。
-@export var initial_skill_sequence: Array[ZB001DoctorSkillState] = []
+## 技能开跑即重置对应计数，不在此层保存跨技能的选择历史。
+
+## 放置间隔按破损阶段递减，单位为秒，x 到 y 闭区间随机；原版 mSummonCounter
+## 450~550 / 350~450 / 150~250 tick（100 tick = 1 秒）。
+@export var summon_interval_by_stage: Array[Vector2] = [
+	Vector2(4.5, 5.5), Vector2(3.5, 4.5), Vector2(1.5, 2.5),
+]
+## 脚踩重复间隔区间，单位为秒；原版 mBossStompCounter 5500~6500 tick。
+@export var stomp_interval_range: Vector2 = Vector2(55.0, 65.0)
+## 蹦极重复间隔区间，单位为秒；原版 mBossBungeeCounter 4000~5000 tick。
+@export var bungee_interval_range: Vector2 = Vector2(40.0, 50.0)
+## 吐球重复间隔区间，单位为秒；原版 mBossHeadCounter 4000~5000 tick。
+@export var head_interval_range: Vector2 = Vector2(40.0, 50.0)
+## 蹦极计数到 0 时改砸车的概率；原版 Rand(IsAdventureMode ? 4 : 2) == 0。
+@export_range(0.0, 1.0, 0.05) var rv_chance_adventure: float = 0.25
+@export_range(0.0, 1.0, 0.05) var rv_chance_other: float = 0.5
+## 每轮空闲决策前的等待区间，单位为秒；原版 mPhaseCounter 100~200 tick。
+@export var idle_duration_range: Vector2 = Vector2(1.0, 2.0)
+
+## 开局首次放置的等待秒数；原版入场时 mSummonCounter = 500 tick。
+const FIRST_SUMMON_DELAY: float = 5.0
+## 开局首次吐球的等待秒数；原版入场时 mBossHeadCounter = 5000 tick。
+const FIRST_HEAD_DELAY: float = 50.0
+## 砸车落地后的统一重置；原版 BossRVLanding：
+## summon 500 / head 5000 / stomp 4000（阶段 ≥1）/ bungee 6500（阶段 ≥2）tick。
+const RV_SUMMON_DELAY: float = 5.0
+const RV_HEAD_DELAY: float = 50.0
+const RV_STOMP_DELAY: float = 40.0
+const RV_BUNGEE_DELAY: float = 65.0
+
 ## 死亡演出状态引用，死亡请求会优先切换到此状态。
 @export var dying_state: ZB001DoctorStateDying
 ## 死亡演出完成后的终止状态引用，负责停止行动并清理角色。
 @export var dead_state: ZB001DoctorStateDead
 ## 博士自身的动画控制器，负责姿势过渡、实例动画副本及本体联动。
 @export var animation_controller: ZB001DoctorAnimationController
-## 返回 Idle 后的最短待机动作秒数；到期仍等待当前动画周期结束，随主体倍率变化，必须为有限正数。
-@export_range(0.1, 60.0, 0.1) var idle_duration := 2.0
-## 连续未选择吐球的技能回合上限；达到后下一回合强制吐球，默认 5 表示第 6 回合保底。
-## 一整轮放置僵尸只计 1 回合；首次吐球前也从入场后的技能选择开始累计。
-@export_range(1, 20, 1, "or_greater") var max_rounds_without_head_skill: int = 5
+## 普通待机状态引用；入场或技能收尾后进入，等待下一轮技能调度。
+@export var idle_state: ZB001DoctorStateIdle
 
 ## 是否已接收逻辑死亡请求；置位后禁止新的普通技能转换与释放。
 var _death_requested := false
 ## 死亡演出是否已经启动，用于阻止 stop/start 重复播放死亡流程。
 var _death_started := false
-## 记录上次最终抽中的技能；重新初始化时清空，普通技能结束后保留。
-var _last_selected_skill: ZB001DoctorSkillState
-## 连续选中的非吐球技能次数；选择吐球或重新初始化时清零，空池重试不计回合。
-var _rounds_without_head_skill: int = 0
-## 初始技能数组中下一项的下标；取用或跳过不可用项时递增，重新初始化时归零。
-var _initial_skill_index: int = 0
 ## 实际连接的动画控制器，重新初始化或离树时据此清理旧连接。
 var _connected_animation_controller: ZB001DoctorAnimationController
 ## 初始化时收集的动作计时器；仅含状态机子树，不含博士根节点的 DeathRemainTimer。
 var _action_timers: Array[SpeedTimer] = []
 ## 上次已同步给动作计时器的实际倍率；合法值非负，-1 表示缓存失效，需重新同步全部计时器。
 var _last_action_speed: float = -1.0
-## 初始化时解析的技能节点引用，键与导出权重表一致；只缓存节点，选择时仍读取最新权重。
-## 重新初始化或断开播放器时清空，避免继续引用旧状态树中的技能。
-var _skill_states: Dictionary[StringName, ZB001DoctorSkillState] = {}
+## 初始化时解析的直属技能状态；按子节点顺序缓存，技能开跑时据此重置对应计数器。
+var _skill_states: Array[ZB001DoctorSkillState] = []
+
+## —— 原版技能计数器（单位：秒；-1 表示该技能线尚未解锁）——
+## 放置计数；开局 FIRST_SUMMON_DELAY，每次召唤开始时按破损阶段重置。
+var summon_counter: float = FIRST_SUMMON_DELAY
+## 吐球计数；开局 FIRST_HEAD_DELAY，每次吐球开始时重置。
+var head_counter: float = FIRST_HEAD_DELAY
+## 脚踩计数；首次砸车落地前为 -1（锁定），砸车落地后每次踩踏重置 55~65 秒。
+var stomp_counter: float = -1.0
+## 蹦极计数；首次进入破损阶段 1 前为 -1（锁定），此后每次蹦极 / 蹦极轮砸车重置 40~50 秒。
+var bungee_counter: float = -1.0
+## 当前破损阶段（原版 mBossMode / GetBodyDamageIndex：0 满血、1 低于 80%、2 低于 50%）。
+var boss_damage_stage: int = 0
+## 博士本局存活时长（原版 mZombieAge，秒）；放置类型按它分段，不受冻结影响。
+var battle_age: float = 0.0
+
+## 五个技能的缓存引用；初始化时按类型解析，缺失会在配置检查中报告。
+var spawn_skill: ZB001DoctorStateSpawn
+var head_skill: ZB001DoctorStateHeadSkill
+var bungee_skill: ZB001DoctorStateBungee
+var rv_skill: ZB001DoctorStateThrowRV
+var stomp_skill: ZB001DoctorStateStomp
 
 ## 提供博士类型引用，避免各状态重复转换；原始引用仍由通用状态机统一维护。
 var boss: ZB001Doctor:
@@ -85,29 +120,151 @@ func initialize(actor: Character000Base = null, player: AnimationPlayer = null) 
 		_disconnect_animation_player()
 		_initialized = false
 		return false
-	_last_selected_skill = null
-	_rounds_without_head_skill = 0
-	_initial_skill_index = 0
+	_reset_skill_counters()
 	# 只有全部校验通过后才修正技能运行时配置，查询错误不会改变战力预算。
-	# 当前已解析并通过校验的技能名称，按缓存引用初始化本实例的效果组件。
-	for state_name: StringName in _skill_states:
-		_skill_states[state_name].effect_component.initialize_skill()
+	# 当前已解析并通过校验的技能，按缓存引用初始化本实例的效果组件。
+	for skill: ZB001DoctorSkillState in _skill_states:
+		skill.effect_component.initialize_skill()
 	_connected_animation_controller = animation_controller
 	_connected_animation_controller.driver_animation_finished.connect(_on_driver_animation_finished)
 	animation_controller.initialize(animation_player)
 	return true
 
 
-## 按导出的技能名称解析当前实例节点；每次初始化重建，不改变编辑器权重或自动补齐配置。
-## 缺失、类型不符的节点不写入缓存，后续配置校验在具体分支报告名称并阻止启动。
+## 按类型解析当前实例的直属技能节点；每次初始化重建，缺失或重复的技能由配置检查报告。
 func _cache_skill_states() -> void:
 	_skill_states.clear()
-	# 当前配置的技能名称，正常情况下是本状态机直属子节点的名称。
-	for state_name: StringName in skill_state_weights:
-		# 名称对应的实例技能；所属状态机及名称一致性由后续配置校验检查。
-		var skill: ZB001DoctorSkillState = get_node_or_null(NodePath(state_name)) as ZB001DoctorSkillState
-		if is_instance_valid(skill):
-			_skill_states[state_name] = skill
+	spawn_skill = null
+	head_skill = null
+	bungee_skill = null
+	rv_skill = null
+	stomp_skill = null
+	# 直属子节点；技能必须挂在本状态机下，孙层子状态不参与调度。
+	for child: Node in get_children():
+		var skill := child as ZB001DoctorSkillState
+		if skill == null:
+			continue
+		_skill_states.append(skill)
+		if skill is ZB001DoctorStateSpawn:
+			spawn_skill = skill
+		elif skill is ZB001DoctorStateHeadSkill:
+			head_skill = skill
+		elif skill is ZB001DoctorStateBungee:
+			bungee_skill = skill
+		elif skill is ZB001DoctorStateThrowRV:
+			rv_skill = skill
+		elif skill is ZB001DoctorStateStomp:
+			stomp_skill = skill
+
+
+## 按原版入场初始化重置技能计数器（原版 ZombieInitialize BOSS 分支：
+## mSummonCounter = 500、mBossHeadCounter = 5000，踩踏 / 蹦极保持 -1 锁定）。
+func _reset_skill_counters() -> void:
+	summon_counter = FIRST_SUMMON_DELAY
+	head_counter = FIRST_HEAD_DELAY
+	stomp_counter = -1.0
+	bungee_counter = -1.0
+	battle_age = 0.0
+	# 当前阶段直接采信，不把初始化时的既有破损当作「阶段变化」。
+	boss_damage_stage = _get_damage_stage()
+
+
+## 原版 UpdateBoss 的技能优先级；返回 null 表示本轮不选技能，Idle 继续等待。
+func select_skill() -> ZB001DoctorSkillState:
+	# ① 破损阶段变化优先：进入阶段 1 立即放一次蹦极，进入阶段 2 立即扔一次房车。
+	var stage: int = _get_damage_stage()
+	if stage != boss_damage_stage:
+		boss_damage_stage = stage
+		if stage == 1 and bungee_skill != null:
+			if bungee_skill.can_be_selected():
+				return bungee_skill
+			# 无偷取目标时仍按原版重置蹦极计数（BossBungeeAttack 一进来就写回计数器），
+			# 之后按普通间隔重试，避免首次进入阶段 1 永久锁死蹦极线。
+			bungee_counter = _rand_in_range(bungee_interval_range)
+			return null
+		if stage >= 2 and rv_skill != null:
+			return rv_skill
+	# ② 脚踩计数到 0：无目标时仍重置计数并消耗本轮（原版 BossStompAttack 提前返回）。
+	if stomp_counter == 0.0:
+		if stomp_skill != null and stomp_skill.can_be_selected():
+			return stomp_skill
+		stomp_counter = _rand_in_range(stomp_interval_range)
+		return null
+	# ③ 蹦极计数到 0：按模式概率改砸车，否则放蹦极；两种结果都先重置蹦极计数。
+	if bungee_counter == 0.0:
+		bungee_counter = _rand_in_range(bungee_interval_range)
+		var rv_chance: float = rv_chance_adventure if _is_adventure_level() else rv_chance_other
+		if rv_skill != null and randf() < rv_chance:
+			return rv_skill
+		if bungee_skill != null and bungee_skill.can_be_selected():
+			return bungee_skill
+		return null
+	# ④ 吐球计数到 0。
+	if head_counter == 0.0 and head_skill != null:
+		head_counter = _rand_in_range(head_interval_range)
+		return head_skill
+	# ⑤ 放置计数到 0；间隔按当前破损阶段取区间。
+	if summon_counter == 0.0 and spawn_skill != null:
+		summon_counter = _get_summon_interval()
+		return spawn_skill
+	return null
+
+
+## 技能请求提交成功即视为开跑；原版各 BossXxxAttack 在动画开始时写回自己的计数器。
+## [param next_state] 已提交切换的目标状态；普通待机与死亡状态不重置任何计数。
+func _on_skill_started(next_state: CharacterState) -> void:
+	if next_state is ZB001DoctorStateSpawn:
+		summon_counter = _get_summon_interval()
+	elif next_state is ZB001DoctorStateStomp:
+		stomp_counter = _rand_in_range(stomp_interval_range)
+	elif next_state is ZB001DoctorStateBungee:
+		bungee_counter = _rand_in_range(bungee_interval_range)
+	elif next_state is ZB001DoctorStateHeadSkill:
+		head_counter = _rand_in_range(head_interval_range)
+
+
+## 原版 BossRVLanding：砸车落地统一重置技能线；
+## 踩踏只在阶段 1 之后解锁，蹦极只在阶段 2 之后重新计时。
+func on_rv_landed() -> void:
+	summon_counter = RV_SUMMON_DELAY
+	head_counter = RV_HEAD_DELAY
+	if boss_damage_stage >= 1:
+		stomp_counter = RV_STOMP_DELAY
+	if boss_damage_stage >= 2:
+		bungee_counter = RV_BUNGEE_DELAY
+
+
+## 按当前破损阶段返回放置间隔；间隔区间见 summon_interval_by_stage。
+func _get_summon_interval() -> float:
+	var stage: int = clampi(boss_damage_stage, 0, summon_interval_by_stage.size() - 1)
+	return _rand_in_range(summon_interval_by_stage[stage])
+
+
+## 返回区间内随机秒数；x、y 顺序无关。
+func _rand_in_range(range_value: Vector2) -> float:
+	return randf_range(minf(range_value.x, range_value.y), maxf(range_value.x, range_value.y))
+
+
+## 当前破损阶段（原版 GetBodyDamageIndex 的 BOSS 特判：<50% 为 2、<80% 为 1、其余 0）。
+## 博士的破损阈值由场景按比例缩放（见 zb_base.gd），阶段索引直接复用 hp_stage_change 的结果。
+func _get_damage_stage() -> int:
+	if not is_instance_valid(boss) or not is_instance_valid(boss.hp_stage_change_component):
+		return 0
+	return clampi(boss.hp_stage_change_component.curr_hp_stage + 1, 0, 2)
+
+
+## 本关是否冒险模式；原版砸车概率在冒险为 1/4、其余模式 1/2。
+func _is_adventure_level() -> bool:
+	if not is_instance_valid(boss):
+		return false
+	var game: MainGameManager = boss.get_main_game()
+	var level_data := game.game_para if is_instance_valid(game) else null
+	return level_data != null and level_data.game_mode == MainSceneRegistry.MainScenes.ChooseLevelAdventure
+
+
+## 返回本轮空闲等待秒数；每轮在区间内独立随机（原版 mPhaseCounter 100~200 tick）。
+func get_idle_duration() -> float:
+	return _rand_in_range(idle_duration_range)
 
 
 ## [param animation_name] 为已结束的本体动作；只有死亡状态可以推进本体死亡序列。
@@ -124,6 +281,11 @@ func _disconnect_animation_player() -> void:
 		_connected_animation_controller.disconnect_players()
 	_connected_animation_controller = null
 	_skill_states.clear()
+	spawn_skill = null
+	head_skill = null
+	bungee_skill = null
+	rv_skill = null
+	stomp_skill = null
 	_action_timers.clear()
 	_last_action_speed = -1.0
 	super._disconnect_animation_player()
@@ -191,7 +353,10 @@ func change_state(next_state: CharacterState) -> bool:
 				return false
 		elif next_state != dying_state:
 			return false
-	return super.change_state(next_state)
+	var changed: bool = super.change_state(next_state)
+	if changed:
+		_on_skill_started(next_state)
+	return changed
 
 
 ## 停止、重新初始化与离树都会经过此入口，清理共享计时和非当前状态的遗留任务。
@@ -200,110 +365,6 @@ func stop() -> void:
 		animation_controller.set_active(false)
 	_stop_action_timers()
 	super.stop()
-
-
-## 先执行初始顺序并跳过不可用项，耗尽后使用 RandomPicker 按权重选择。
-## 随机池只包含正权重且满足触发条件的技能，跳过技能不改变回合与上次技能记录。
-## 每次从当前字典构建池，使运行中调整权重立即生效，无需额外维护缓存同步。
-## 有多个可用技能且抽到上次技能时，移除它再重抽；唯一可用技能允许连续使用。
-## 连续非吐球回合达到上限时优先返回吐球技能，保证周期性开放受击窗口。
-func select_skill() -> ZB001DoctorSkillState:
-	# 本轮 RandomPicker 输入项，只包含正且有限权重、满足触发条件的技能。
-	var items: Array[Dictionary] = []
-	# 候选收集完成后得到本轮吐球保底目标；不缓存到成员，也不延后可用性查询。
-	var head_skill: ZB001DoctorStateHeadSkill = _collect_skill_candidates(items)
-	# 按保底、开场、随机优先级得到本轮技能；各选择分支自行记录成功选择。
-	var selected: ZB001DoctorSkillState = _select_guaranteed_head_skill(head_skill)
-	if selected != null:
-		return selected
-	selected = _select_initial_skill()
-	if selected != null:
-		return selected
-	return _select_random_skill(items)
-
-
-## 一次遍历中先识别吐球，再按当前权重和触发条件收集候选；必须在任何选择分支之前完成。
-## [param items] 为本轮新建的输出数组；按配置遍历顺序追加 RandomPicker 项，不清空或修改已有项。
-## 返回本轮识别的吐球技能；没有有效引用时返回 null，零权重仍可作为保底目标。
-func _collect_skill_candidates(items: Array[Dictionary]) -> ZB001DoctorStateHeadSkill:
-	# 从已解析的配置中识别唯一的吐球技能；即使权重为 0，也保留它作为保底目标。
-	var head_skill: ZB001DoctorStateHeadSkill
-	# 当前配置的技能名称；权重每轮重新读取，运行中调整数值无需重建节点缓存。
-	for state_name: StringName in skill_state_weights:
-		# 初始化时解析的当前实例技能；运行中新增键要重新初始化，不能临时接管未校验的节点。
-		var skill: ZB001DoctorSkillState = _skill_states.get(state_name)
-		if not is_instance_valid(skill):
-			continue
-		if skill is ZB001DoctorStateHeadSkill:
-			head_skill = skill
-		# 当前技能的选择权重；0 表示禁用，负数及非有限值属于非法配置。
-		var weight: float = skill_state_weights[state_name]
-		if not is_finite(weight) or weight <= 0:
-			continue
-		if not skill.can_be_selected():
-			continue
-		items.append({"data": skill, "weight": weight})
-	return head_skill
-
-
-## 检查吐球保底；成功时记录回合，下一开场项相同则同时消费该项，未触发时返回 null。
-## [param head_skill] 为本轮候选遍历识别的吐球引用；无效引用不触发保底，不再查询可用性。
-func _select_guaranteed_head_skill(head_skill: ZB001DoctorStateHeadSkill) -> ZB001DoctorSkillState:
-	# 尚未消耗的开场技能；空数组或序列耗尽后为 null，不改变后续随机权重。
-	var initial_skill: ZB001DoctorSkillState = null
-	if _initial_skill_index < initial_skill_sequence.size():
-		initial_skill = initial_skill_sequence[_initial_skill_index]
-	# 保底优先于固定顺序与随机选择；若下一项本来就是吐球，直接消费该项，避免重复插入。
-	if _rounds_without_head_skill >= max_rounds_without_head_skill and is_instance_valid(head_skill):
-		if initial_skill == head_skill:
-			_initial_skill_index += 1
-		_record_selected_skill(head_skill)
-		return head_skill
-	return null
-
-
-## 消费开场顺序，跳过无效或不可用项；成功时记录回合，空数组或耗尽后返回 null。
-## 每项都先推进索引再查询可用性，保留重复项与零随机权重项的固定顺序语义。
-func _select_initial_skill() -> ZB001DoctorSkillState:
-	# 本次消费的开场技能；无效或不可用时继续检查下一项。
-	var initial_skill: ZB001DoctorSkillState
-	# 固定顺序仍允许重复和零随机权重，但没有目标的技能直接跳过，不占用一个回合。
-	while _initial_skill_index < initial_skill_sequence.size():
-		initial_skill = initial_skill_sequence[_initial_skill_index]
-		_initial_skill_index += 1
-		if not is_instance_valid(initial_skill) or not initial_skill.can_be_selected():
-			continue
-		_record_selected_skill(initial_skill)
-		return initial_skill
-	return null
-
-
-## 从已收集的临时池加权抽取；多候选重复上次技能时移除后重抽一次，成功时记录回合。
-## [param items] 为本轮按当前权重和可用性构建的 RandomPicker 项；不重新查询技能或配置。
-## 空池仍交由 RandomPicker 处理并返回 null，保留其空池行为及上次选择记录。
-func _select_random_skill(items: Array[Dictionary]) -> ZB001DoctorSkillState:
-	# 字典键天然唯一；重抽只修改临时池，不改变检查器中的配置权重。
-	# 本轮临时加权选择器；重抽仅修改该实例，不改变导出的技能权重字典。
-	var picker := RandomPicker.new(items, false)
-	# 本轮抽中的技能；空池时为 null，满足重抽条件时会替换为另一项技能。
-	var selected := picker.get_random_item() as ZB001DoctorSkillState
-	if selected != null and selected == _last_selected_skill and picker.get_remaining_count() > 1:
-		picker.remove_item(selected)
-		selected = picker.get_random_item() as ZB001DoctorSkillState
-	# 单个可用技能直接沿用；空池才返回 null，并保留上次记录供 Idle 稍后重试。
-	if selected != null:
-		_record_selected_skill(selected)
-	return selected
-
-
-## 统一记录初始顺序、随机与保底选择，子状态循环不调用此方法，因此不会重复累计回合。[br]
-## [param selected] 本回合最终选择的有效技能；吐球重置保底计数，其他技能累计一次。
-func _record_selected_skill(selected: ZB001DoctorSkillState) -> void:
-	_last_selected_skill = selected
-	if selected is ZB001DoctorStateHeadSkill:
-		_rounds_without_head_skill = 0
-	else:
-		_rounds_without_head_skill += 1
 
 
 ## 内部子状态改变受击规则后补发根节点通知，主层切换期间已有统一通知。
@@ -378,11 +439,30 @@ func advance(delta: float) -> void:
 	# 仍保留状态逐帧行为的动作时间语义；零速也必须处理死亡等待切换请求。
 	# 动作秒只在主层换算一次，状态更新和视觉复位共用同一时间尺度。
 	var action_delta: float = maxf(delta, 0.0) * action_speed
+	# 技能计数器跟随动作时间推进；动画暂停（冻结等）时四条技能线同步停住，
+	# 对应原版 mIceTrapCounter > 0 时不递减计数器的口径。存活时长按真实秒累计。
+	_tick_skill_counters(action_delta)
+	battle_age += maxf(delta, 0.0)
 	super.advance(action_delta)
 	if is_instance_valid(animation_controller):
 		animation_controller.advance_visual_returns(action_delta)
 	if current_state == dying_state or current_state == dead_state:
 		_death_started = true
+
+
+## 四条技能线并行倒计时；锁定线（-1）与已到期的 0 不再递减。
+## [param delta] 本帧动作秒；零或负数时跳过。
+func _tick_skill_counters(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	if summon_counter > 0.0:
+		summon_counter = maxf(0.0, summon_counter - delta)
+	if stomp_counter > 0.0:
+		stomp_counter = maxf(0.0, stomp_counter - delta)
+	if bungee_counter > 0.0:
+		bungee_counter = maxf(0.0, bungee_counter - delta)
+	if head_counter > 0.0:
+		head_counter = maxf(0.0, head_counter - delta)
 
 
 ## 死亡已请求但还未切换时，禁止旧动画继续分发技能关键帧。
@@ -425,62 +505,47 @@ func _get_configuration_error() -> String:
 		detected_error = "idle_state 必须绑定直属的 ZB001DoctorStateIdle 待机状态。"
 		Log.error("%s：%s" % [get_path(), detected_error])
 		return detected_error
-	if not is_finite(idle_duration) or idle_duration <= 0:
-		detected_error = "待机时间必须为有限正数。"
+	if not _has_valid_range(idle_duration_range) or idle_duration_range.x <= 0.0:
+		detected_error = "空闲等待区间必须为有限正数且下限不大于上限。"
 		Log.error("%s：%s" % [get_path(), detected_error])
 		return detected_error
-	if max_rounds_without_head_skill < 1:
-		detected_error = "吐球保底的非吐球回合上限必须至少为 1。"
-		Log.error("%s：%s" % [get_path(), detected_error])
-		return detected_error
-	if skill_state_weights.size() != 5:
-		detected_error = "技能权重字典必须配置五个直属复合技能的节点名称。"
-		Log.error("%s：%s" % [get_path(), detected_error])
-		return detected_error
-	# 所有已校验技能权重的累加值；必须有限且大于 0 才能启动战斗。
-	var total_weight := 0.0
-	# 字典中吐球技能的数量，必须恰好为 1，避免保底目标缺失或产生歧义。
-	var head_skill_count := 0
-	# 字典天然保证名称唯一；同时检查节点名称和注册归属，拒绝路径别名及其他状态机的节点。
-	# 当前配置的技能名称，必须与已经注册的直属技能节点名称一致。
-	for state_name: StringName in skill_state_weights:
-		# 名称对应的实例技能；缓存缺失或节点类型不符时为 null。
-		var skill: ZB001DoctorSkillState = _skill_states.get(state_name)
-		if not _is_registered(skill) or skill.name != state_name:
-			detected_error = "技能权重名称 \"%s\" 必须对应已注册的直属复合技能节点。" % state_name
+	# 五个技能各缓存一个实例；缺失说明场景少了节点或类型绑定错误。
+	for skill: ZB001DoctorSkillState in [spawn_skill, head_skill, bungee_skill, rv_skill, stomp_skill]:
+		if skill == null or not _is_registered(skill):
+			detected_error = "必须配置放置、吐球、蹦极、砸车、脚踩五个直属技能各一个。"
 			Log.error("%s：%s" % [get_path(), detected_error])
 			return detected_error
+	# 吐球技能必须唯一，供阶段 1 保底与计数器重置使用。
+	var head_count: int = 0
+	for skill: ZB001DoctorSkillState in _skill_states:
 		if skill is ZB001DoctorStateHeadSkill:
-			head_skill_count += 1
-		# 当前技能的选择权重；0 表示禁用，负数及非有限值属于非法配置。
-		var weight: float = skill_state_weights[state_name]
-		if not is_finite(weight) or weight < 0:
-			detected_error = "%s 的技能权重必须为有限非负数。" % skill.name
-			Log.error("%s：%s" % [get_path(), detected_error])
-			return detected_error
-		# 当前技能及其子状态的配置错误；非空时阻止主状态机启动。
+			head_count += 1
+	if head_count != 1:
+		detected_error = "吐球技能必须恰好配置一个。"
+		Log.error("%s：%s" % [get_path(), detected_error])
+		return detected_error
+	# 调度区间与概率配置；非法值会在随机取值时表现异常，启动前拦截。
+	if not _has_valid_range(summon_interval_by_stage[0]) or not _has_valid_range(summon_interval_by_stage[1]) \
+		or not _has_valid_range(summon_interval_by_stage[2]) or summon_interval_by_stage.size() != 3:
+		detected_error = "放置间隔必须为三个有限区间，且下限不大于上限。"
+		Log.error("%s：%s" % [get_path(), detected_error])
+		return detected_error
+	if not _has_valid_range(stomp_interval_range) or not _has_valid_range(bungee_interval_range) \
+		or not _has_valid_range(head_interval_range):
+		detected_error = "脚踩、蹦极、吐球的重复间隔必须为有限区间，且下限不大于上限。"
+		Log.error("%s：%s" % [get_path(), detected_error])
+		return detected_error
+	if not is_finite(rv_chance_adventure) or not is_finite(rv_chance_other) \
+		or rv_chance_adventure < 0.0 or rv_chance_adventure > 1.0 \
+		or rv_chance_other < 0.0 or rv_chance_other > 1.0:
+		detected_error = "砸车概率必须位于 0 到 1 之间。"
+		Log.error("%s：%s" % [get_path(), detected_error])
+		return detected_error
+	# 当前技能及其子状态的配置错误；非空时阻止主状态机启动。
+	for skill: ZB001DoctorSkillState in _skill_states:
 		var skill_error := skill.get_configuration_error()
 		if not skill_error.is_empty():
 			return skill_error
-		total_weight += weight
-	if head_skill_count != 1:
-		detected_error = "技能权重字典必须包含唯一的吐球技能，供保底选择使用。"
-		Log.error("%s：%s" % [get_path(), detected_error])
-		return detected_error
-	if not is_finite(total_weight) or total_weight <= 0:
-		detected_error = "至少启用一种有效权重的技能。"
-		Log.error("%s：%s" % [get_path(), detected_error])
-		return detected_error
-	# 开场数组中的当前技能，允许重复但必须来自已注册且通过配置检查的五种技能。
-	for skill: ZB001DoctorSkillState in initial_skill_sequence:
-		if not _is_registered(skill) or _skill_states.get(skill.name) != skill:
-			detected_error = "初始技能顺序必须绑定权重表中名称对应的直属技能，不能留空或引用其他节点。"
-			Log.error("%s：%s" % [get_path(), detected_error])
-			return detected_error
-	if not idle_state.get_node_or_null("IdleWaitTimer") is SpeedTimer:
-		detected_error = "Idle 必须配置 IdleWaitTimer。"
-		Log.error("%s：%s" % [get_path(), detected_error])
-		return detected_error
 	# 当前待停止、同步倍率或校验配置的动作计时器。
 	for timer: SpeedTimer in _action_timers:
 		if not timer.one_shot or timer.autostart or timer.process_callback != Timer.TIMER_PROCESS_PHYSICS \
@@ -497,3 +562,8 @@ func _get_configuration_error() -> String:
 	if not dying_error.is_empty():
 		return dying_error
 	return boss.get_death_configuration_error()
+
+
+## 区间是否有限且下限不大于上限。
+func _has_valid_range(range_value: Vector2) -> bool:
+	return is_finite(range_value.x) and is_finite(range_value.y) and range_value.x <= range_value.y

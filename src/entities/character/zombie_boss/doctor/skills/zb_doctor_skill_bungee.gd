@@ -1,4 +1,5 @@
 ## 蹦极技能按场地资源选择连续列组并管理整批实例；默认覆盖三列，状态机等待整批结束。
+## 原版无血量门槛：蹦极由主状态机计数器调度（首次进入破损阶段 1 立即一次，之后 40~50 秒一轮）。
 extends ZB001DoctorSkillBase
 class_name ZB001DoctorSkillBungee
 
@@ -54,8 +55,6 @@ enum BatchState {
 @export var anchor_middle: Marker2D
 ## 本轮第三列对应的右侧手部连接点。
 @export var anchor_right: Marker2D
-## 允许使用蹦极的剩余血量比例上限；当前血量比例不低于此值时不参与随机选择，1 表示始终可用。
-@export_range(0.0, 1.0, 0.01) var bungee_hp_ratio: float = 0.8
 ## 尚未结束偷取的实例，使用 ID 作为键，信号回调不携带可能已释放的角色引用。
 var _pending_zombies: Dictionary[int, Zombie021Bungi] = {}
 ## 每次准备或取消批次都会递增，旧批次回调不能影响新批次。
@@ -64,9 +63,9 @@ var _batch_id: int = 0
 var batch_state: BatchState = BatchState.NOT_STARTED
 
 
-## 技能选择条件只读取血量与目标，不消耗随机数，也不改变手臂位置。
+## 技能选择条件只读取目标，不消耗随机数，也不改变手臂位置。
 func can_start() -> bool:
-	return is_hp_below_ratio(bungee_hp_ratio) and not _collect_ranges().is_empty()
+	return not _collect_ranges().is_empty()
 
 
 ## 抽取配置宽度的连续列组后逐列锁定一个目标；返回固定进入动画，无目标返回空名称。
@@ -287,9 +286,6 @@ func get_configuration_error() -> String:
 	if anchor_left == anchor_middle or anchor_left == anchor_right or anchor_middle == anchor_right:
 		Log.error("BungeeSkill：左、中、右定位点不能绑定同一个节点。")
 		return "蹦极绳子定位点重复。"
-	if not is_finite(bungee_hp_ratio) or bungee_hp_ratio < 0.0 or bungee_hp_ratio > 1.0:
-		Log.error("BungeeSkill：蹦极可用血量阈值必须位于 0 到 1 之间。")
-		return "蹦极血量阈值配置无效。"
 	if scene_config.bungee_start_column_range.x < 1 \
 		or scene_config.bungee_start_column_range.y < scene_config.bungee_start_column_range.x \
 		or scene_config.bungee_column_count < 1 or scene_config.bungee_column_count > 3 \

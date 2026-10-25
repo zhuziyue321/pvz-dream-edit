@@ -1550,15 +1550,13 @@ shape = SubResource("CapsuleShape2D_kx48i")
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." index="7" unique_id=1933216347]
 libraries/ = SubResource("AnimationLibrary_i61bf")
 
-[node name="StateMachine" type="Node" parent="." index="8" unique_id=979168503 node_paths=PackedStringArray("idle_state", "initial_skill_sequence", "dying_state", "dead_state", "animation_controller", "character", "animation_player", "initial_state")]
+[node name="StateMachine" type="Node" parent="." index="8" unique_id=979168503 node_paths=PackedStringArray("idle_state", "dying_state", "dead_state", "animation_controller", "character", "animation_player", "initial_state")]
 unique_name_in_owner = true
 script = ExtResource("61_state_machine")
 idle_state = NodePath("Idle")
-initial_skill_sequence = [NodePath("Spawn"), NodePath("Spawn"), NodePath("Spawn")]
 dying_state = NodePath("Dying")
 dead_state = NodePath("Dead")
 animation_controller = NodePath("../AnimationController")
-idle_duration = 3.0
 character = NodePath("..")
 animation_player = NodePath("../AnimationPlayer")
 initial_state = NodePath("Enter")
@@ -1630,6 +1628,7 @@ script = ExtResource("68_state_head_enter")
 
 [node name="BeforeSpitIdle" type="Node" parent="StateMachine/HeadSkill/StateMachine" index="2" unique_id=2078124716 node_paths=PackedStringArray("wait_timer", "next_state")]
 script = ExtResource("head_idle")
+wait_duration = 5.0
 wait_timer = NodePath("BeforeSpitWaitTimer")
 next_state = NodePath("../SpitBall")
 
@@ -1644,7 +1643,7 @@ next_state = NodePath("../AfterSpitIdle")
 
 [node name="AfterSpitIdle" type="Node" parent="StateMachine/HeadSkill/StateMachine" index="4" unique_id=2078129558 node_paths=PackedStringArray("wait_timer", "next_state")]
 script = ExtResource("head_idle")
-wait_duration = 2.0
+wait_duration = 3.0
 wait_timer = NodePath("AfterSpitWaitTimer")
 next_state = NodePath("../RaiseHead")
 
@@ -1749,7 +1748,6 @@ script = ExtResource("74_state_dead")
 [node name="SpawnSkill" type="Node" parent="Skills" index="0" unique_id=1531831246 node_paths=PackedStringArray("spawn_marker", "part_motion")]
 script = ExtResource("effect_spawn")
 spawn_marker = NodePath("../../Body/BodyCorrect/OuterArm/Boss-outerarm_finger4/Marker2DSpawnZombie")
-zombie_types = Array[StringName]([&"norm", &"cone", &"pole_vaulter", &"bucket", &"paper", &"screen_door", &"football"])
 part_motion = NodePath("../../PartMotions/OuterArmMotion")
 
 [node name="SpawnChooseRowSystem" type="Node" parent="Skills/SpawnSkill" index="0" unique_id=1648364301]

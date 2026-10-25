@@ -1,14 +1,8 @@
 ## 砸车效果：准备时锁定格子并平移整条内侧手臂，落地关键帧碾压目标区域。
+## 原版无血量门槛：砸车由主状态机调度（破损阶段 2 立即一次，之后挂在蹦极轮换的 1/4 概率上），
+## 落地时按 BossRVLanding 统一重置四条技能线。
 extends ZB001DoctorSkillAreaCrush
 class_name ZB001DoctorSkillThrowRV
-
-## 允许使用砸车的剩余血量比例上限；当前血量比例不低于此值时不参与随机选择，1 表示始终可用。
-@export_range(0.0, 1.0, 0.01) var throw_rv_hp_ratio: float = 0.5
-
-
-## 血量未跌破阈值时不砸车，砸车是残血阶段才追加的招式；区域本身允许空砸。
-func can_start() -> bool:
-	return is_hp_below_ratio(throw_rv_hp_ratio)
 
 
 ## 锁定区域并定位手臂；返回动画名，失败时返回空名称，由状态收尾。
@@ -69,9 +63,6 @@ func get_configuration_error() -> String:
 	var placement_error: String = super.get_configuration_error()
 	if not placement_error.is_empty():
 		return placement_error
-	if not is_finite(throw_rv_hp_ratio) or throw_rv_hp_ratio < 0.0 or throw_rv_hp_ratio > 1.0:
-		Log.error("ThrowRVSkill：砸车可用血量阈值必须位于 0 到 1 之间。")
-		return "砸车血量阈值配置无效。"
 	if not scene_config.throw_rv_cell_one_position.is_finite() \
 		or scene_config.throw_rv_size.x < 1 or scene_config.throw_rv_size.y < 1 \
 		or scene_config.throw_rv_top_left_min.x < 1 or scene_config.throw_rv_top_left_min.y < 1 \
@@ -80,6 +71,15 @@ func get_configuration_error() -> String:
 		Log.error("ThrowRVSkill：行列从 1 开始，攻击大小必须为正，候选上限不能小于下限。")
 		return "砸车格子范围配置无效。"
 	return ""
+
+
+## 落地关键帧：先碾压锁定区域，再按原版 BossRVLanding 统一重置主状态机的技能计数器。
+func _release_action() -> void:
+	super._release_action()
+	# 状态机无效时（展示实例等）没有技能调度需要重置。
+	var doctor: ZB001Doctor = owner as ZB001Doctor
+	if is_instance_valid(doctor) and is_instance_valid(doctor.state_machine):
+		doctor.state_machine.on_rv_landed()
 
 
 ## 砸车只有一个动作，直接返回共享动画常量；场地资源不保存重复动画配置。

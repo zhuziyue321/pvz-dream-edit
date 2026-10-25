@@ -1,4 +1,5 @@
 ## 脚踩触发要求有植物；准备时目标全部消失则随机踩空，关键帧仍按锁定区域处理碾压。
+## 原版无血量门槛：脚踩由主状态机计数器解锁（首次砸车落地后启用），间隔 55~65 秒。
 extends ZB001DoctorSkillAreaCrush
 class_name ZB001DoctorSkillStomp
 
@@ -18,8 +19,6 @@ class StompCandidate extends RefCounted:
 
 ## 脚踩动画 1、2 的内侧腿控制器；动画 3、4 使用基类 part_motion 绑定的外侧腿控制器。
 @export var inner_leg_motion: ZB001DoctorPartMotion
-## 允许使用脚踩的剩余血量比例上限；当前血量比例不低于此值时不参与随机选择，1 表示始终可用。
-@export_range(0.0, 1.0, 0.01) var stomp_hp_ratio: float = 0.5
 
 
 ## 分别保存两条腿的待机位置；控制器目标固定，不在切换脚踩动画时重新绑定或采集位置。
@@ -37,9 +36,9 @@ func get_part_motion_for_animation(animation_name: StringName) -> ZB001DoctorPar
 
 
 ## 只查询有无目标，不抽取随机数、不锁定参数，供主状态机过滤脚踩技能。
-## 血量未跌破阈值时不踩踏，踩踏是残血阶段才追加的招式。
+## 原版脚踩没有血量门槛，是否解锁由主状态机的脚踩计数器（砸车落地后才启用）控制。
 func can_start() -> bool:
-	return is_hp_below_ratio(stomp_hp_ratio) and not _get_candidates().is_empty()
+	return not _get_candidates().is_empty()
 
 
 ## 优先选择有植物的完整区域；目标全部消失时从所有完整区域中随机选择，允许踩空。
@@ -126,9 +125,6 @@ func get_configuration_error() -> String:
 	if inner_leg_motion.target_node == part_motion.target_node:
 		Log.error("%s：内侧腿与外侧腿平移控制器必须绑定不同的部件节点。" % get_path())
 		return "脚踩腿部平移目标重复。"
-	if not is_finite(stomp_hp_ratio) or stomp_hp_ratio < 0.0 or stomp_hp_ratio > 1.0:
-		Log.error("StompSkill：脚踩可用血量阈值必须位于 0 到 1 之间。")
-		return "脚踩血量阈值配置无效。"
 	if scene_config.stomp_actions.is_empty():
 		Log.error("StompSkill：必须配置至少一个区域动作。")
 		return "脚踩动作配置为空。"

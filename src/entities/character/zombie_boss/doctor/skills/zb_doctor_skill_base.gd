@@ -59,23 +59,6 @@ func reset_visual_offset() -> void:
 		position_node.position = _rest_visual_position
 
 
-## 剩余血量比例是否已经低于 [param ratio]；无法取得血量时不放行，避免满血阶段提前使用残血技能。
-## [param ratio] 为允许使用技能的剩余血量比例上限，1 表示始终可用，0 表示只有空血才可用。
-## 各技能自带阈值导出，共用这一判定，避免同一口径在不同技能里各算一遍。
-func is_hp_below_ratio(ratio: float) -> bool:
-	if not is_finite(ratio):
-		return false
-	# 场景 owner 可能不是博士或血量组件尚未就绪，此时不认为处于残血。
-	var doctor: ZB001Doctor = owner as ZB001Doctor
-	if not is_instance_valid(doctor) or not is_instance_valid(doctor.hp_component):
-		return false
-	# 最大血量非正时无法计算比例，按未达标处理，避免误判成残血。
-	var max_hp: int = doctor.hp_component.max_hp
-	if max_hp <= 0:
-		return false
-	return float(doctor.hp_component.curr_hp) / float(max_hp) < ratio
-
-
 ## 只读查询技能是否可被选择；默认允许，目标要求由具体技能覆盖。
 func can_start() -> bool:
 	return true

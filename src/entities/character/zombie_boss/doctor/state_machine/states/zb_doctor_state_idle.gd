@@ -1,4 +1,5 @@
-## 普通待机关闭受击；达到最短待机时间后，等当前动画周期结束再选择完整技能。
+## 普通待机关闭受击；达到本轮随机等待时间后，等当前动画周期结束再选择完整技能。
+## 等待时长由主状态机每轮在区间内随机（原版 mPhaseCounter 100~200 tick）。
 extends ZB001DoctorState
 class_name ZB001DoctorStateIdle
 
@@ -17,7 +18,7 @@ func enter() -> void:
 	doctor_state_machine.animation_controller.play_idle_loop(ZB001DoctorAnimationController.DriverReaction.DRIVE)
 	# 先播放再同步实际倍率，保证冻结入场及暂停恢复时计时与动画一致。
 	doctor_state_machine.sync_action_timer_speed()
-	idle_wait_timer.start_scaled(doctor_state_machine.idle_duration)
+	idle_wait_timer.start_scaled(doctor_state_machine.get_idle_duration())
 
 
 ## 正常切换、停止及死亡中断都清理计时，并恢复循环，供下次 Idle 或放置间隔使用。
@@ -53,4 +54,4 @@ func on_animation_finished(anim_name: StringName) -> void:
 	# 当前动画已经停止；空池时重新播放循环，而不是只重启计时器后停在待机末帧。
 	doctor_state_machine.animation_controller.play_idle_loop(ZB001DoctorAnimationController.DriverReaction.KEEP, 0.0)
 	doctor_state_machine.sync_action_timer_speed()
-	idle_wait_timer.start_scaled(doctor_state_machine.idle_duration)
+	idle_wait_timer.start_scaled(doctor_state_machine.get_idle_duration())
