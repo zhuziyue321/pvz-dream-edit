@@ -782,6 +782,7 @@ func _apply_pot_gargantuar_grow(round_index: int) -> void:
 	## 没有第 1 批的快照就无从「从原始配置重算」，跳过（否则会在上一轮的结果上继续减）
 	if pot_config_first_round.is_empty():
 		return
+	@warning_ignore("integer_division")
 	var extra: int = mini(
 		pot_extra_gargantuar_max,
 		int((round_index - 1) / pot_extra_gargantuar_per_round)

@@ -82,6 +82,7 @@ func get_zombie_mode_plant_layout() -> Array[Dictionary]:
 	var layout: Array[Dictionary] = []
 	var stage: int = _get_endless_stage()
 	## 小喷菇数量：原版按轮次递增（第 1 轮 0 个、第 2 轮 1 个，第 10 轮起上限再放宽）
+	@warning_ignore("integer_division")
 	var puff_shroom_count: int = randi_range(
 		clampi(2 + stage / 3, 2, 4), clampi(3 + stage / 2, 2, 6))
 	if stage == 0:
@@ -89,6 +90,7 @@ func get_zombie_mode_plant_layout() -> Array[Dictionary]:
 	elif stage == 1:
 		puff_shroom_count = 1
 	elif stage >= 10:
+		@warning_ignore("integer_division")
 		puff_shroom_count = randi_range(
 			clampi(2 + stage / 3, 2, 5), clampi(3 + stage / 2, 2, 7))
 	## 向日葵 + 小喷菇合计 8 株（原版 aSunflowerCount = 8 - aPuffshroomCount）
