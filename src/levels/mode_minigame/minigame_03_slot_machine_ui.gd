@@ -9,6 +9,12 @@ class_name SlotMachineUI
 ## 原版口径（行号见各常量注释，来源：本机 `../PvZ-Portable-main`）：
 ##   · 机器排在屏幕左上角：阳光银行 + 3 个种子包当转轮 + 覆盖层 + 右侧拉杆
 ##     （SeedBank::Draw / Board::GetSeedPacketPositionX / Challenge::SlotMachineGetHandleRect）；
+##   · 根 Control 不吃鼠标（mouse_filter = IGNORE）：它只是全屏坐标系，挡住它就点不到菜单；
+##   · 转轮贴图 = 种子包卡面：植物符号走 AllCards 的卡面工厂（包底 + 植物立绘，与出战卡同源），
+##     太阳 / 钻石用 seeds.png（原版 IMAGE_SEEDS 包底图集）的专用整图格；
+##     滚动只画在包自身 50x70 矩形里（SeedPacket::Draw 的 ClipRect(0,0,mWidth,mHeight)），
+##     上一个包向上滑出、下一个包只从底边露头；
+##   · 拉杆 = SlotMachine.reanim 关键帧（含 kx 旋转角，摆臂式拉杆），拉下 / 回弹各播一段；
 ##   · 点拉杆扣 25 阳光，三个转轮同时开转（各 300 帧，每秒翻转 5 → 2 次），
 ##     全部停下后按「三个相同 / 两个相同」结算（Challenge::UpdateSlotMachine）；
 ##   · 符号权重：向日葵 / 豌豆 / 寒冰豆 / 坚果 / 太阳各 100、钻石 30，
@@ -37,39 +43,71 @@ const WINNING_SCORE := 2000
 const ALMOST_THERE_SCORE := 1900
 ## 转轮（种子包）尺寸：50x70，与出战卡片一致
 const PACKET_SIZE := Vector2i(50, 70)
-## 种子包 x = index * 59 + 247（Board.cpp GetSeedPacketPositionX）
-const PACKET_START_X := 247
+## 种子包 x = index * 59 + 257。
+## 注意：PvZ-Portable 的 GetSeedPacketPositionX 写的是 247，但原版实机截图
+## （wiki PC 版 w1/w3/w4/w5）面板红框 200..480、窗口/包整体在 +10 处 ——
+## 整条机器系（覆盖层 / 种子包 / 拉杆 / 阳光数字）按截图统一 +10 校准
+const PACKET_START_X := 257
 const PACKET_STEP_X := 59
 ## 种子包 y = 8（Board.cpp InitLevel: aPacket->mY = 8）
 const PACKET_Y := 8
-## 阳光银行底图位置与尺寸（SeedBank::Draw: IMAGE_SUNBANK 画在 (0,0)）
+## 阳光银行底图位置与尺寸（SeedBank::Draw: IMAGE_SUNBANK 画在 (0,0)；贴图自带左边距）
 const SUN_BANK_SIZE := Vector2(78, 87)
-## 阳光数值文字位置（SeedBank::Draw: PvzpDrawString(..., 34, 78, ...居中)）
-const SUN_VALUE_LABEL_RECT := Rect2(4, 68, 70, 18)
-## 拉霸覆盖层位置与尺寸（SeedBank::Draw: IMAGE_SLOTMACHINE_OVERLAY 画在 (189,-2)）
-const OVERLAY_POS := Vector2(189, -2)
+## 阳光数值文字位置（原版 PvzpDrawString(..., 34, 78, 居中)；按截图 +8 校准 → 中心 47）
+const SUN_VALUE_LABEL_RECT := Rect2(12, 68, 70, 18)
+## 拉霸覆盖层位置与尺寸（SeedBank::Draw: IMAGE_SLOTMACHINE_OVERLAY 画在 (189,-2)，截图校准 +10）
+const OVERLAY_POS := Vector2(199, -2)
 const OVERLAY_SIZE := Vector2(285, 108)
-## 拉杆可点区域（Challenge.cpp SlotMachineGetHandleRect）
-const HANDLE_RECT := Rect2(473, 0, 55, 80)
-## 拉杆三块零件（pak/reanim/SlotMachine.reanim 的 base / shaft / ball 三条轨，
-## reanim 原点在机器坐标 (96,-20)，下面是换算到机器坐标后的中心点与缩放）
-const LEVER_SCALE := 0.6
-const LEVER_BASE_CENTER := Vector2(474.5, 14.3)
+## 拉杆可点区域（Challenge.cpp SlotMachineGetHandleRect，截图校准 +10）
+const HANDLE_RECT := Rect2(483, 0, 55, 80)
+## 拉杆三块零件（pak/reanim/SlotMachine.reanim 的 base / shaft / ball 三条轨）：
+## reanim 摆放原点 = 机器坐标 (106,-20)（Challenge.cpp AddReanimation(handleRect.mX-377, mY-20)
+## 的口径 + 上述 +10 校准），下面全部是换算到机器坐标后的**中心点**；缩放直接用轨道值（已含 0.6），
+## 摆放 / 旋转 / 缩放全部围绕贴图中心（对齐 Reanimator.cpp MatrixFromTransform 的矩阵口径）
+const LEVER_BASE_CENTER := Vector2(484.5, 14.3)
 const LEVER_BASE_SIZE := Vector2(57, 156)
-const LEVER_SHAFT_CENTER := Vector2(474.3, 63.3)
+const LEVER_BASE_SCALE := 0.6
 const LEVER_SHAFT_SIZE := Vector2(95, 18)
-## 连杆拉下时的横向压缩（reanim shaft 轨：静止 0.599、拉下 0.464）
-const LEVER_SHAFT_SCALE_PULLED := 0.464
-const LEVER_BALL_CENTER_REST := Vector2(486.4, 11.2)
-const LEVER_BALL_CENTER_PULLED := Vector2(486.4, 81.1)
 const LEVER_BALL_SIZE := Vector2(44, 44)
-## 拉杆拉下 / 回弹用时（原版 anim_pull 速率 36、anim_return 速率 24，12fps）
-const LEVER_PULL_DURATION := 0.15
-const LEVER_RETURN_DURATION := 0.25
-## 前 3 次拉杆之前手柄闪烁（Challenge::DrawSlotMachine 的 GetFlashingColor）
+## shaft / ball 的 9 帧关键帧（换算自 reanim 轨道，帧序与轨道一致）：
+##   shaft 每帧 = [中心点, 旋转角(=轨道 kx 度, Godot rotation 同口径), 缩放(sx, sy)]
+##   ball  每帧 = [中心点, 整体缩放]
+## 动画段：anim_pull = 帧 0..5（拉下并带回弹）、anim_return = 帧 4..0（环绕回位）
+## 球的待机帧（0 / 8）y 按原版截图再校 +13（原版待机球心 (505,21)、杆上端 (497,38)，
+## 球要压住杆端才不会有缝；其余帧保持轨道值，中段本来就与杆相连）
+const LEVER_SHAFT_FRAMES: Array = [
+	[Vector2(484.3, 63.3), 296.0, Vector2(0.599, 0.599)],
+	[Vector2(482.4, 60.3), 317.7, Vector2(0.355, 0.598)],
+	[Vector2(484.4, 56.1), 356.0, Vector2(0.263, 0.599)],
+	[Vector2(489.4, 53.8), 400.8, Vector2(0.336, 0.598)],
+	[Vector2(494.0, 53.4), 422.2, Vector2(0.464, 0.598)],
+	[Vector2(489.4, 53.8), 400.8, Vector2(0.336, 0.598)],
+	[Vector2(484.4, 56.1), 356.0, Vector2(0.263, 0.599)],
+	[Vector2(482.4, 60.3), 317.7, Vector2(0.355, 0.598)],
+	[Vector2(484.3, 63.3), 296.0, Vector2(0.599, 0.599)],
+]
+const LEVER_BALL_FRAMES: Array = [
+	[Vector2(496.4, 24.4), 0.6],
+	[Vector2(494.9, 26.4), 0.67],
+	[Vector2(493.3, 41.6), 0.741],
+	[Vector2(497.0, 67.7), 0.643],
+	[Vector2(496.4, 81.1), 0.6],
+	[Vector2(497.0, 67.7), 0.643],
+	[Vector2(493.3, 41.6), 0.741],
+	[Vector2(494.9, 26.4), 0.67],
+	[Vector2(496.4, 24.4), 0.6],
+]
+const LEVER_FRAME_COUNT := 9
+## 拉杆拉下 / 回弹用时（原版 PlayReanim 速率 36 / 24，定义 fps=12：两段各跨 5 格）
+const LEVER_PULL_DURATION := 5.0 / 36.0
+const LEVER_RETURN_DURATION := 5.0 / 24.0
+## 前 3 次拉杆之前手柄闪烁（Challenge::DrawSlotMachine：待机时整个拉杆 reanim
+## 用 GetFlashingColor(mMainCounter, 75) 着色 —— 灰度三角波在 55..255 间脉动
+## （PvzpCommon.cpp 969，1 tick = 10ms），滚动 / 奖杯掉落时不着色）
 const LEVER_FLASH_ROLL_COUNT := 3
-const LEVER_FLASH_COLOR := Color(1.5, 1.35, 0.9)
-const LEVER_FLASH_PERIOD := 1.25
+const LEVER_FLASH_TICKS := 75
+const LEVER_FLASH_GRAY_MIN := 55.0
+const LEVER_FLASH_GRAY_MAX := 255.0
 ## 一颗太阳币的价值（原版 COIN_SUN）
 const SUN_COIN_VALUE := 25
 ## 一枚钻石的价值（原版 COIN_DIAMOND = 100 阳光）
@@ -93,8 +131,13 @@ enum Symbol {
 	DIAMOND,
 }
 const SYMBOL_COUNT := 6
-## seeds.png 里的帧号（与原版种子包图标一一对应）
-const SYMBOL_FRAMES: Array[int] = [1, 2, 4, 3, 5, 6]
+## pak/images/seeds.png = 原版 IMAGE_SEEDS 包底图集（50x70 一格），格号口径 =
+## SeedPacket.cpp DrawSeedPacket 的 aPacketBackground：2 普通包底 / 5 太阳 / 6 钻石
+## （0 模仿者底、1 升级底、3 弹坑、4 刷新、7 潜水、8 奖杯 —— 都不是转轮符号，别拿来当卡面）。
+## 植物符号的卡面 = 包底 + 植物立绘，走 AllCards 卡面工厂，见 _make_symbol_face()
+const SEEDS_BG_CELL_NORMAL := 2
+const SEEDS_BG_CELL_SUN := 5
+const SEEDS_BG_CELL_DIAMOND := 6
 ## 植物符号对应的植物（太阳 / 钻石不是植物，用 NULL 占位）
 const SYMBOL_PLANTS: Array[StringName] = [
 	PlantIds.SUN_FLOWER,
@@ -158,12 +201,19 @@ var _countdowns: Array[int] = []
 var _frame_accumulator: float = 0.0
 
 ## ---------- 节点 ----------
-var _symbol_textures: Array[Texture2D] = []
-var _reel_current_icons: Array[TextureRect] = []
-var _reel_next_icons: Array[TextureRect] = []
+## 六种符号的 50x70 卡面（植物 = AllCards 卡面实例，太阳 / 钻石 = 包底整图）
+var _symbol_faces: Array[Control] = []
+## 每个转轮的「当前包 / 下一个包」两个槽位容器（滚动 = 移动槽位，裁剪由 Reel 承担）
+var _reel_curr_slots: Array[Control] = []
+var _reel_next_slots: Array[Control] = []
+## 两个槽位当前显示的符号（-1 = 全藏；与滚动状态同步，避免每帧翻可见性）
+var _curr_slot_shown: Array[int] = []
+var _next_slot_shown: Array[int] = []
 var _lever_base: TextureRect
 var _lever_shaft: TextureRect
 var _lever_ball: TextureRect
+## 拉杆动画的当前 tween（拉杆只在静止时能拉，同时只有一段在跑）
+var _lever_tween: Tween
 var _handle_button: Button
 var _sun_value_label: Label
 ## 结果提示的停留计时器（到点回到待机提示）
@@ -177,7 +227,9 @@ var _almost_there_advice_shown: bool = false
 
 func _ready() -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
-	_build_symbol_textures()
+	## 全屏根节点只当坐标系用：默认 STOP 会把整个屏幕的点击吞掉
+	## （菜单按钮、阳光、草坪全点不到，实机悬停探测证实过），改成穿透
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	EventBus.subscribe(ConstEventName.ADD_SUN_VALUE, _on_sun_added)
 
@@ -201,6 +253,7 @@ func init(main_game: MainGameManager, start_sun: int, target_sun: int) -> void:
 		_countdowns[i] = 0
 	_update_reel_visuals()
 	_update_sun_value_label()
+	_apply_lever_pose(0.0)
 	_handle_button.disabled = false
 	## 开场提示（原版 TUTORIAL_SLOT_MACHINE_PULL，第一次拉杆后清掉）
 	_set_advice(ADVICE_PULL)
@@ -224,14 +277,46 @@ func _process(_delta: float) -> void:
 
 
 #region 搭场景
-func _build_symbol_textures() -> void:
-	_symbol_textures.clear()
-	for i in range(SYMBOL_COUNT):
-		var atlas := AtlasTexture.new()
-		atlas.atlas = SEEDS_ATLAS
-		var frame_x := SYMBOL_FRAMES[i] * PACKET_SIZE.x
-		atlas.region = Rect2(Vector2(frame_x, 0), Vector2(PACKET_SIZE))
-		_symbol_textures.append(atlas)
+## 单个符号的 50x70 卡面（原版转轮 = SeedPacket::Draw 的 DrawSeedPacket：
+## 包底 + 植物立绘；太阳 / 钻石是专用整图，不叠立绘）。
+## 植物符号直接复用 AllCards 的卡面工厂 —— 与出战卡 / 传送带同一套，
+## 不再从 seeds.png 的包底格硬凑（那里根本没有植物立绘，之前寒冰豆错显示成刷新箭头）。
+func _make_symbol_face(symbol: int) -> Control:
+	if SYMBOL_PLANTS[symbol] == PlantIds.NULL:
+		var cell := SEEDS_BG_CELL_SUN if symbol == Symbol.SUN else SEEDS_BG_CELL_DIAMOND
+		return _make_ignore_texture_rect("Face%d" % symbol, _make_seeds_cell(cell),
+			Vector2(PACKET_SIZE))
+	var reference := ResourceCardReference.create(
+		ResourceCardReference.CardType.Plant, SYMBOL_PLANTS[symbol])
+	var card := AllCards.create_card(reference, Card.CardContext.Catalog)
+	if card == null:
+		Log.error("拉霸：植物卡面建不出来，植物 = " + str(SYMBOL_PLANTS[symbol]))
+		return _make_ignore_texture_rect("Face%d" % symbol,
+			_make_seeds_cell(SEEDS_BG_CELL_NORMAL), Vector2(PACKET_SIZE))
+	return card
+
+
+## seeds.png 的某一格 50x70 包底
+func _make_seeds_cell(cell: int) -> AtlasTexture:
+	var atlas := AtlasTexture.new()
+	atlas.atlas = SEEDS_ATLAS
+	atlas.region = Rect2(Vector2(cell * PACKET_SIZE.x, 0), Vector2(PACKET_SIZE))
+	return atlas
+
+
+## 卡面入树后的收尾：拉霸关的种子包不画阳光费用（SeedPacket.cpp aDrawCost = false），
+## 也不吃任何点击（原版机器只吃拉杆）
+func _configure_face(face: Control) -> void:
+	if face is Card:
+		(face as Card).cost.visible = false
+	_set_mouse_ignore_recursive(face)
+
+
+func _set_mouse_ignore_recursive(node: Node) -> void:
+	if node is Control:
+		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_set_mouse_ignore_recursive(child)
 
 
 func _build_ui() -> void:
@@ -243,8 +328,8 @@ func _build_ui() -> void:
 
 	_build_sun_bank()
 	_build_reels()
-	_build_overlay()
 	_build_lever()
+	_build_overlay()
 	_build_handle_button()
 
 	_advice_timer = Timer.new()
@@ -272,7 +357,9 @@ func _build_sun_bank() -> void:
 	add_child(_sun_value_label)
 
 
-## 三个转轮：每个转轮是「当前包 + 下一个包」上下两块，滚动时一起位移
+## 三个转轮：每个转轮是「当前包 + 下一个包」两个槽位，滚动时一起位移；
+## 裁剪在转轮容器（= 包自身 50x70 矩形，原版 ClipRect 口径），
+## 槽位里预放 6 种卡面、按需翻可见性（同一符号可能同时出现在当前 / 下一个槽位）
 func _build_reels() -> void:
 	for i in range(REEL_COUNT):
 		var reel := Control.new()
@@ -280,19 +367,32 @@ func _build_reels() -> void:
 		reel.position = Vector2(PACKET_START_X + i * PACKET_STEP_X, PACKET_Y)
 		reel.size = Vector2(PACKET_SIZE)
 		reel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		reel.clip_contents = true
 		add_child(reel)
 
-		var curr_icon := _make_ignore_texture_rect("Curr", _symbol_textures[0], Vector2(PACKET_SIZE))
-		reel.add_child(curr_icon)
-		_reel_current_icons.append(curr_icon)
+		for slot_i in range(2):
+			var slot := Control.new()
+			slot.name = "Curr" if slot_i == 0 else "Next"
+			slot.size = Vector2(PACKET_SIZE)
+			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			if slot_i == 1:
+				slot.position = Vector2(0, PACKET_SIZE.y)
+			reel.add_child(slot)
+			if slot_i == 0:
+				_reel_curr_slots.append(slot)
+				_curr_slot_shown.append(-1)
+			else:
+				_reel_next_slots.append(slot)
+				_next_slot_shown.append(-1)
+			for symbol in range(SYMBOL_COUNT):
+				var face := _make_symbol_face(symbol)
+				slot.add_child(face)
+				_configure_face(face)
+				face.visible = false
 
-		var next_icon := _make_ignore_texture_rect("Next", _symbol_textures[0], Vector2(PACKET_SIZE))
-		next_icon.position = Vector2(0, PACKET_SIZE.y)
-		reel.add_child(next_icon)
-		_reel_next_icons.append(next_icon)
 
-
-## 覆盖层：画在转轮之后 = 盖在转轮上（与原版绘制顺序一致）
+## 覆盖层：画在转轮与拉杆之后 = 盖住两者
+## （原版 Board::Draw：DrawBackdrop（含拉杆 reanim）先画、种子银行（含覆盖层）后画 —— 拉杆被机器面板挡住）
 func _build_overlay() -> void:
 	var overlay := _make_ignore_texture_rect("Overlay", OVERLAY_TEXTURE, OVERLAY_SIZE)
 	overlay.position = OVERLAY_POS
@@ -300,25 +400,22 @@ func _build_overlay() -> void:
 	add_child(overlay)
 
 
-## 拉杆三块：底座 / 连杆 / 球柄（原版是 SlotMachine.reanim，本仓没有转好的场景，
-## 照 src/items/mini_game/portal.gd 的先例用贴图 + Tween 复现 pull / return）
+## 拉杆三块：底座 / 摆臂 / 球柄（原版是 SlotMachine.reanim：
+## 摆臂绕自身中心旋转 kx 度、球柄骑在摆臂上端，拉动时整体摆下一个来回；
+## 关键帧见 LEVER_SHAFT_FRAMES / LEVER_BALL_FRAMES）
 func _build_lever() -> void:
 	_lever_base = _make_lever_part("LeverBase", LEVER_BASE_TEXTURE, LEVER_BASE_SIZE,
-		LEVER_BASE_CENTER)
+		LEVER_BASE_CENTER, LEVER_BASE_SCALE)
 	add_child(_lever_base)
 
 	_lever_shaft = _make_lever_part("LeverShaft", LEVER_SHAFT_TEXTURE, LEVER_SHAFT_SIZE,
-		LEVER_SHAFT_CENTER)
-	## 连杆右端不动（原版 shaft 轨的旋转中心在右侧）：缩放时以右端为轴
-	_lever_shaft.pivot_offset = Vector2(LEVER_SHAFT_SIZE.x, LEVER_SHAFT_SIZE.y * 0.5)
-	var shaft_right_x: float = LEVER_SHAFT_CENTER.x + LEVER_SHAFT_SIZE.x * LEVER_SCALE * 0.5
-	_lever_shaft.position = Vector2(shaft_right_x - LEVER_SHAFT_SIZE.x,
-		LEVER_SHAFT_CENTER.y - LEVER_SHAFT_SIZE.y * 0.5)
+		LEVER_SHAFT_FRAMES[0][0], 1.0)
 	add_child(_lever_shaft)
 
 	_lever_ball = _make_lever_part("LeverBall", LEVER_BALL_TEXTURE, LEVER_BALL_SIZE,
-		LEVER_BALL_CENTER_REST)
+		LEVER_BALL_FRAMES[0][0], 1.0)
 	add_child(_lever_ball)
+	_apply_lever_pose(0.0)
 
 
 ## 拉杆点热区：透明按钮 + 无文字（Button 不支持 label_settings，见工作记录踩坑）
@@ -348,16 +445,17 @@ func _make_ignore_texture_rect(node_name: String, texture: Texture2D,
 	return rect
 
 
-## 拉杆零件：按原版缩放摆在机器坐标上（position 是左上角，要按中心点换算）
+## 拉杆零件：中心点摆位、pivot = 贴图中心（旋转 / 缩放围绕中心，缩放值由关键帧驱动）
 func _make_lever_part(node_name: String, texture: Texture2D, part_size: Vector2,
-		center: Vector2) -> TextureRect:
+		center: Vector2, part_scale: float) -> TextureRect:
 	var part := TextureRect.new()
 	part.name = node_name
 	part.size = part_size
 	part.texture = texture
-	part.scale = Vector2(LEVER_SCALE, LEVER_SCALE)
+	part.pivot_offset = part_size * 0.5
+	part.scale = Vector2(part_scale, part_scale)
 	part.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	part.position = center - part_size * LEVER_SCALE * 0.5
+	part.position = center - part_size * 0.5
 	return part
 
 
@@ -449,16 +547,33 @@ func _is_any_reel_spinning() -> bool:
 	return false
 
 
-## 把三个转轮的当前 / 下一个包画到位（原版 SeedPacket::Draw 的两层堆叠）
+## 把三个转轮的当前 / 下一个包画到位（原版 SeedPacket::Draw 的两层堆叠；
+## 溢出裁剪由 Reel 容器的 clip_contents 承担）
 func _update_reel_visuals() -> void:
 	for i in range(REEL_COUNT):
 		var offset := -float(PACKET_SIZE.y) * _scroll_positions[i]
-		_reel_current_icons[i].position = Vector2(0, offset)
-		_reel_current_icons[i].texture = _symbol_textures[_curr_symbols[i]]
-		_reel_next_icons[i].position = Vector2(0, PACKET_SIZE.y + offset)
-		_reel_next_icons[i].texture = _symbol_textures[_next_symbols[i]]
-		## 停稳之后不画下一个包（原版 countdown <= 0 时只画当前包）
-		_reel_next_icons[i].visible = _countdowns[i] > 0
+		_reel_curr_slots[i].position = Vector2(0, offset)
+		_reel_next_slots[i].position = Vector2(0, PACKET_SIZE.y + offset)
+		_show_slot_symbol(i, true, _curr_symbols[i])
+		if _countdowns[i] > 0:
+			_show_slot_symbol(i, false, _next_symbols[i])
+		else:
+			## 停稳之后不画下一个包（原版 countdown <= 0 时只画当前包）
+			_show_slot_symbol(i, false, -1)
+
+
+## 槽位里显示哪个符号（-1 = 全藏）；与上次相同就跳过，不在滚动时每帧翻可见性
+func _show_slot_symbol(reel_index: int, is_curr_slot: bool, symbol: int) -> void:
+	var shown: int = _curr_slot_shown[reel_index] if is_curr_slot else _next_slot_shown[reel_index]
+	if shown == symbol:
+		return
+	var slot: Control = _reel_curr_slots[reel_index] if is_curr_slot else _reel_next_slots[reel_index]
+	for symbol_i in range(SYMBOL_COUNT):
+		slot.get_child(symbol_i).visible = symbol_i == symbol
+	if is_curr_slot:
+		_curr_slot_shown[reel_index] = symbol
+	else:
+		_next_slot_shown[reel_index] = symbol
 
 
 ## 符号权重表（原版 SeedPacket::PickNextSlotMachineSeed）：按符号下标给出权重。
@@ -654,37 +769,63 @@ func _spawn_free_plant_card(plant_type: StringName, screen_pos: Vector2) -> void
 
 
 #region 拉杆表现
-## 拉杆拉下（原版 anim_pull）
+## 摆到关键帧位置 frame_pos（0..8，小数 = 两帧间线性插值；回弹段经帧 8 环绕回 0）
+func _apply_lever_pose(frame_pos: float) -> void:
+	var f0 := clampi(int(floor(frame_pos)), 0, LEVER_FRAME_COUNT - 1)
+	var frac := clampf(frame_pos - float(f0), 0.0, 1.0)
+	var f1 := (f0 + 1) % LEVER_FRAME_COUNT
+	var shaft_a: Array = LEVER_SHAFT_FRAMES[f0]
+	var shaft_b: Array = LEVER_SHAFT_FRAMES[f1]
+	_lever_shaft.position = (shaft_a[0] as Vector2).lerp(shaft_b[0], frac) - LEVER_SHAFT_SIZE * 0.5
+	_lever_shaft.rotation_degrees = lerpf(shaft_a[1], shaft_b[1], frac)
+	_lever_shaft.scale = (shaft_a[2] as Vector2).lerp(shaft_b[2], frac)
+	var ball_a: Array = LEVER_BALL_FRAMES[f0]
+	var ball_b: Array = LEVER_BALL_FRAMES[f1]
+	_lever_ball.position = (ball_a[0] as Vector2).lerp(ball_b[0], frac) - LEVER_BALL_SIZE * 0.5
+	_lever_ball.scale = Vector2.ONE * lerpf(ball_a[1], ball_b[1], frac)
+
+
+## 拉杆拉下（原版 PlayReanim("anim_pull", ONCE_AND_HOLD, 0, 36) = 帧 0..5）
 func _play_lever_pull() -> void:
-	var pulled_y: float = LEVER_BALL_CENTER_PULLED.y - LEVER_BALL_SIZE.y * LEVER_SCALE * 0.5
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(_lever_ball, "position:y", pulled_y, LEVER_PULL_DURATION) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_lever_shaft, "scale:x", LEVER_SHAFT_SCALE_PULLED, LEVER_PULL_DURATION) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_run_lever_tween(_lever_pull_step, LEVER_PULL_DURATION)
 
 
-## 拉杆回弹（原版 anim_return）
+func _lever_pull_step(progress: float) -> void:
+	_apply_lever_pose(progress * 5.0)
+
+
+## 拉杆回弹（原版 PlayReanim("anim_return", ONCE_AND_HOLD, 0, 24) = 帧 4..0 环绕）
 func _play_lever_return() -> void:
-	var rest_y: float = LEVER_BALL_CENTER_REST.y - LEVER_BALL_SIZE.y * LEVER_SCALE * 0.5
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(_lever_ball, "position:y", rest_y, LEVER_RETURN_DURATION) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_lever_shaft, "scale:x", LEVER_SCALE, LEVER_RETURN_DURATION) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_run_lever_tween(_lever_return_step, LEVER_RETURN_DURATION)
 
 
-## 前 3 次拉杆之前手柄闪烁（原版 Challenge::DrawSlotMachine 的 GetFlashingColor）
+func _lever_return_step(progress: float) -> void:
+	_apply_lever_pose(4.0 + progress * 5.0)
+
+
+func _run_lever_tween(step: Callable, duration: float) -> void:
+	if _lever_tween != null and _lever_tween.is_valid():
+		_lever_tween.kill()
+	_lever_tween = create_tween()
+	_lever_tween.tween_method(step, 0.0, 1.0, duration)
+
+
+## 前 3 次拉杆之前手柄闪烁（原版 Challenge::DrawSlotMachine：
+## 待机时整个拉杆 reanim 用 GetFlashingColor(mMainCounter, 75) 着色，
+## 灰度三角波 55..255（PvzpCommon.cpp 969，1 tick = 10ms）；滚动 / 奖杯时不着色）
 func _update_lever_flash() -> void:
 	var should_flash: bool = _roll_count < LEVER_FLASH_ROLL_COUNT \
 		and not _is_spinning and not _has_won
 	if not should_flash:
 		_set_lever_modulate(Color.WHITE)
 		return
-	var phase: float = sin(Time.get_ticks_msec() / 1000.0 * TAU / LEVER_FLASH_PERIOD) * 0.5 + 0.5
-	_set_lever_modulate(Color.WHITE.lerp(LEVER_FLASH_COLOR, phase))
+	@warning_ignore("integer_division")
+	var age := (Time.get_ticks_msec() / 10) % LEVER_FLASH_TICKS
+	var half := LEVER_FLASH_TICKS / 2.0
+	var gray := clampf(LEVER_FLASH_GRAY_MIN \
+		+ (LEVER_FLASH_GRAY_MAX - LEVER_FLASH_GRAY_MIN) * absf(half - age) / half,
+		0.0, 255.0) / 255.0
+	_set_lever_modulate(Color(gray, gray, gray))
 
 
 func _set_lever_modulate(color: Color) -> void:
