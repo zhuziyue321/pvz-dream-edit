@@ -56,7 +56,6 @@
 [ext_resource type="Texture2D" uid="uid://b7o4ahh4s4bq8" path="res://pak/images/SelectorScreen_StoreHighlight.png" id="54_ojqr6"]
 [ext_resource type="Texture2D" uid="uid://bt8sr43vbvnna" path="res://pak/images/reloaded/mainmenu/SelectorScreen_WoodSign2_press.png" id="54_yl4bl"]
 [ext_resource type="Texture2D" uid="uid://c4m1e8eegrhq6" path="res://pak/images/SelectorScreen_WoodSign3.png" id="56_b7wor"]
-[ext_resource type="Texture2D" uid="uid://cyag3b0l8quu3" path="res://pak/images/SelectorScreen_WoodSign3_press.png" id="84_pbsign"]
 [ext_resource type="PackedScene" uid="uid://cp0kgnsx20pyh" path="res://src/ui/dialog.tscn" id="57_ry5e1"]
 [ext_resource type="PackedScene" uid="uid://cngkuh03v6yty" path="res://src/ui/dialog_confirm.tscn" id="58_confirm"]
 [ext_resource type="Theme" uid="uid://em12la0rqibq" path="res://data/ui/themes/pvz_theme.tres" id="59_e0j7q"]
@@ -72,7 +71,7 @@
 [ext_resource type="Script" uid="uid://b6dhsamdijupk" path="res://src/menus/start_menu/panel_rename_user.gd" id="81_dj5t5"]
 [ext_resource type="Script" uid="uid://cwusfudks6mhf" path="res://src/ui/dialog_error.gd" id="82_krdmy"]
 [ext_resource type="PackedScene" uid="uid://dm0dpage7kq3v" path="res://src/ui/mod_page/mod_page.tscn" id="83_modpage"]
-[ext_resource type="Texture2D" uid="uid://hl74vdgxdih2" path="res://assets_custom/image/main_game_item/Tombstones.png" id="85_tomb"]
+[ext_resource type="Texture2D" uid="uid://cyag3b0l8quu3" path="res://pak/images/SelectorScreen_WoodSign3_press.png" id="84_pbsign"]
 
 [sub_resource type="Animation" id="Animation_xll4c"]
 resource_name = "Idle"
@@ -1581,13 +1580,6 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 texture = ExtResource("2_jjhxv")
-
-[node name="MenuTombstone" type="Sprite2D" parent="."]
-position = Vector2(250, 415)
-texture = ExtResource("85_tomb")
-hframes = 5
-vframes = 4
-frame = 18
 
 [node name="BG_Left" type="TextureRect" parent="." unique_id=1417766778]
 layout_mode = 1

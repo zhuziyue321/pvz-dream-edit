@@ -45,12 +45,12 @@ func apply_anim_index(anim_index: int) -> void:
 
 
 ## 远端驱动：本体对齐相位后，附属里正在播同名动画的也对齐
-func apply_anim_phase(position: float) -> void:
-	super(position)
-	_sync_sub_players(anim_name_now, position)
+func apply_anim_phase(phase: float) -> void:
+	super(phase)
+	_sync_sub_players(anim_name_now, phase)
 
 
-func _sync_sub_players(anim_name: StringName, position: float = -1.0) -> void:
+func _sync_sub_players(anim_name: StringName, phase: float = -1.0) -> void:
 	if anim_name == &"":
 		return
 	for node in all_sub_bobsled_anim_player:
@@ -59,8 +59,8 @@ func _sync_sub_players(anim_name: StringName, position: float = -1.0) -> void:
 			continue
 		if player.current_animation != anim_name:
 			player.play(anim_name)
-		if position >= 0.0:
-			player.seek(clampf(position, 0.0, maxf(player.current_animation_length, 0.0)), true)
+		if phase >= 0.0:
+			player.seek(clampf(phase, 0.0, maxf(player.current_animation_length, 0.0)), true)
 
 
 ## 更新动画速度(根据速度倍率)

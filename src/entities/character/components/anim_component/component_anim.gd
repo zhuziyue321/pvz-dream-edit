@@ -174,29 +174,29 @@ func apply_anim_index(anim_index: int) -> void:
 ## ⚠️ 只在偏得明显时才拉（`PHASE_RESYNC_EPS`）：播放头本来每帧都在往前走，
 ##   每帧硬拉会跟它打架，表现为动画抖动。
 ## ⚠️ 空播放头不能动（`current_animation` 为空时读位置 / 长度会刷 ERROR）。
-func apply_anim_phase(position: float) -> void:
-	if position < 0.0:
+func apply_anim_phase(phase: float) -> void:
+	if phase < 0.0:
 		return
 	take_over()
 	var player := get_animation_player()
 	if player == null or player.current_animation == &"":
 		return
-	if absf(player.current_animation_position - position) < PHASE_RESYNC_EPS:
+	if absf(player.current_animation_position - phase) < PHASE_RESYNC_EPS:
 		return
-	player.seek(clampf(position, 0.0, maxf(player.current_animation_length, 0.0)), true)
+	player.seek(clampf(phase, 0.0, maxf(player.current_animation_length, 0.0)), true)
 
 
 ## **远端驱动 · 一次应用"播哪条 + 播到第几秒 + 速度"**
 ##
 ## speed_scale <= 0 表示沿用当前速度（现行协议不下发速度，靠相位硬拉对齐）。
-func apply_packet(anim_index: int, position: float = -1.0, speed_scale: float = -1.0) -> void:
+func apply_packet(anim_index: int, phase: float = -1.0, speed_scale: float = -1.0) -> void:
 	if speed_scale > 0.0:
 		take_over()
 		var player := get_animation_player()
 		if player != null:
 			player.speed_scale = speed_scale
 	apply_anim_index(anim_index)
-	apply_anim_phase(position)
+	apply_anim_phase(phase)
 
 
 ## 动画名 → 下标（采集侧用；拿不到返回 `ANIM_NONE`）

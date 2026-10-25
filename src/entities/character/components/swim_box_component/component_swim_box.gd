@@ -52,4 +52,3 @@ func appear_splash_at(pos_node: Node2D) -> void:
 	var splash = SceneRegistry.SPLASH.instantiate()
 	splash.position = pos_node.global_position - owner.get_sibling_layer().global_position + Vector2(0, 15)
 	owner.get_sibling_layer().add_child.call_deferred(splash)
-
