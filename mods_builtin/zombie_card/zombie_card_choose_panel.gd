@@ -21,7 +21,7 @@ extends PanelContainer
 ## 收场仍走进度事件（选卡收尾推 PREPARE，与本体待选区滑出同一拍）。
 ##
 ## 选卡结束（`signal_choose_card_finished`）由接线转成 `finish_choose()`：
-## 只管发牌收尾（一张都没选就发默认六张，见 `zombie_card_settings.gd`），滑出交给阶段事件。
+## 只管收尾发牌（花费 / 冷却 / 卡面；**没有默认牌兜底**，没点就是没卡），滑出交给阶段事件。
 
 const Settings := preload("zombie_card_settings.gd")
 const PvpWiring := preload("zombie_card_pvp_wiring.gd")
@@ -47,6 +47,7 @@ const CHOOSE_UI_TRIGGER_Y := 595.0
 
 ## 选中的卡放进出战卡槽的僵尸块（第 6~11 格；存储、冷却、点卡全走本体那套）
 var _zombie_slot: CardSlotBattle = null
+## 僵尸 / 僵王卡的卡面底图（对战那张 `Seeds_ZombieSun` 50×70，由接线传进来）
 var _zombie_seed_tex: Texture2D = null
 ## 飞行卡片的临时存放点（借用本体 `CardSlotNorm` 的 `TemporaryCard`：
 ## 画在整组卡槽的最上层，飞行途中不被面板 / 卡槽挡住）
@@ -95,19 +96,15 @@ func setup(zombie_slot: CardSlotBattle, zombie_seed_tex: Texture2D, chooser_bg: 
 
 
 ## 选卡结束（由接线挂在 `MainGameManager.signal_choose_card_finished` 上转进来）：
-## 玩家一张僵尸卡都没选就发默认六张（`set_cards` 按块放位，不动植物那半）；
+## **僵尸块就保持玩家点出来的那些**（一张没点 = 空着，没有默认牌兜底）；
 ## 给僵尸块所有卡换卡面并刷一遍战斗状态
 ## （滑出屏幕不在这里做 —— 由阶段变化事件驱动，与本体待选区同拍）
 func finish_choose() -> void:
-	if _count_zombie_cards() == 0:
-		_zombie_slot.set_cards(ResourceCardReference.create_zombie_list(Settings.PLAYER_BATTLE_ZOMBIE_CARDS))
+	## 花费 / 冷却统一换成对战口径（面板造出来的卡带的是角色注册表原值）
+	PvpWiring.sync_versus_costs(_zombie_slot)
+	PvpWiring.sync_versus_cooldowns(_zombie_slot)
 	PvpWiring.restyle_zombie_cards(_zombie_slot, _zombie_seed_tex)
 	_zombie_slot.main_game_refresh_card()
-
-
-## 僵尸块里已经放了几张（空位不算）
-func _count_zombie_cards() -> int:
-	return _zombie_slot.count_cards_in_block(ZOMBIE_BLOCK)
 
 
 #region 外观 / 出场收场
@@ -146,6 +143,9 @@ func _slide_to(target_y: float) -> void:
 ## 建卡格：全部已登记的僵尸卡（去掉没选卡资格的，末尾补僵王），一行五张
 ## （容器从池里取，关卡销毁自动还池）
 ##
+## 显示顺序 = `AllCards.zombie_card_ids` 的登记顺序，**只**按 `PLAYER_BATTLE_MOVE_AFTER`
+## 挪那几张卡（2026-10-25：墓碑→普僵后、旗帜→海豚后，见那条常量）。
+##
 ## ⚠️ 挂进格子要用 `reparent()`：池取出的容器**还挂在池存放节点下**
 ## （`CardCandidatePoolStorage`），裸 `add_child` 会炸 already has a parent ——
 ## 本体待选区取件后也是同一招（见 `CardSlotCandidate._build_plant_page_slots`）
@@ -155,25 +155,38 @@ func _build_grid() -> void:
 	grid.add_theme_constant_override("h_separation", 5)
 	grid.add_theme_constant_override("v_separation", 5)
 	card_scroll.add_child(grid)
+	## 先排一份类型表（`AllCards.zombie_card_ids` 的顺序 = 源目录节点顺序 + 运行期插卡），
+	## 再按 `PLAYER_BATTLE_MOVE_AFTER` 挪那几张卡的**显示位置**（见那条常量的注释）
+	var types: Array[StringName] = []
 	for zombie_type: StringName in AllCards.zombie_card_ids:
 		if zombie_type in Settings.PLAYER_BATTLE_EXCLUDED_ZOMBIES:
 			continue
-		var source: Card = AllCards.all_zombie_card_prefabs.get(zombie_type)
-		if source == null:
+		if AllCards.all_zombie_card_prefabs.get(zombie_type) == null:
 			continue
-		_add_candidate_to_grid(grid, source)
+		types.append(zombie_type)
+	_apply_display_moves(types)
+	for zombie_type in types:
+		_add_candidate_to_grid(grid, AllCards.all_zombie_card_prefabs[zombie_type])
 	## 僵王卡接在普通僵尸后面（选卡层两者同一个连续编号空间，见 `AllCards.rebuild`）
+	##
+	## ★ 产脑光墓碑不用在这里补格：它是**玩家对战模组**用 `ZombieRuntimeKit` 插进僵尸卡目录的
+	##   运行期僵尸（2026-10-25 从植物改成僵尸），上面这圈 `AllCards.zombie_card_ids`
+	##   自然会把它排进来 —— 本面板只按 id 认它做显示排序（`PLAYER_BATTLE_MOVE_AFTER`），
+	##   不拥有它、不给它开别的特判。
 	for boss_source: Card in AllCards.all_boss_card_prefabs.values():
 		_add_candidate_to_grid(grid, boss_source)
-	## 产脑光墓碑接在最后：**植物类卡**但花脑子（僵尸方的产钱单位，50 脑光）——
-	## 选中 / 退回 / 用卡全走同一套（它落僵尸块、由接线的货币路由扣脑子），
-	## 卡面用运行期注册时画好的墓碑形象，不换 PVZ2 僵尸卡面
-	var tombstone_ref := ResourceCardReference.create(
-		ResourceCardReference.CardType.Plant, Settings.TOMBSTONE_PLANT_ID)
-	if AllCards.has_template(tombstone_ref):
-		_add_candidate_to_grid(grid, AllCards.get_template(tombstone_ref))
-	else:
-		Log.warn("僵尸卡模组：产脑光墓碑没注册上（模组入口 install 失败？），选卡面板不放它")
+
+
+## 按 `Settings.PLAYER_BATTLE_MOVE_AFTER`（每项 `[要挪的卡, 挪到谁的后面]`）调显示顺序
+## （要挪的卡或目标卡不在表里就跳过：比如玩家对战模组没开，墓碑根本没装进僵尸卡目录）
+func _apply_display_moves(types: Array[StringName]) -> void:
+	for rule: Array in Settings.PLAYER_BATTLE_MOVE_AFTER:
+		var moved: StringName = rule[0]
+		var after: StringName = rule[1]
+		if moved == after or types.find(moved) < 0 or types.find(after) < 0:
+			continue
+		types.erase(moved)
+		types.insert(types.find(after) + 1, moved)
 
 
 func _add_candidate_to_grid(grid: GridContainer, source: Card) -> void:
@@ -183,7 +196,16 @@ func _add_candidate_to_grid(grid: GridContainer, source: Card) -> void:
 		grid.add_child(container)
 	else:
 		container.reparent(grid, false)
+	## 花费：候选阶段就换成对战口径（面板显示的数字在容器上，选中带走的数字在内层卡上）
+	PvpWiring.apply_versus_cost_to_container(container)
+	## 冷却：同样候选阶段就换（选中时带走的是内层卡，`card_cool()` 读它的 `cool_time`）
+	PvpWiring.apply_versus_cooldown_to_container(container)
 	container.card.signal_card_click.connect(_on_card_click.bind(container.card))
+	## 卡面：所有花脑子的卡（僵尸 / 僵王，含产脑光墓碑这只僵尸）在候选阶段就换成
+	## 模组共用那张底图（`Settings.ASSET_ZOMBIE_CARD_BG` = `Seeds_ZombieSun`）——
+	## 别等收尾才换，否则选卡时面板与银行里还是本体那张底图。
+	if _zombie_seed_tex != null and PvpWiring.costs_brains(container.card):
+		container.card.card_bg.texture = _zombie_seed_tex
 	## ⚠️ 必须用 `bind(card)` 把卡绑上去：`signal_card_click` 声明了 `(card)` 参数
 	## 但卡发射时不带参（见 `Card._on_button_pressed`），直接连的话处理函数
 	## 收不到卡 —— 点卡选不进卡槽（本体 `CardSlotNorm` 也是同一套 bind 接法）
@@ -203,6 +225,8 @@ func _on_card_click(card: Card) -> void:
 		SoundManager.play_other_SFX("buzzer")
 		return
 	card.is_choosed_pre_card = true
+	## 冷却再兜一次底（容器建格时已换过；这里挡住「容器被别的关卡复用后源值回写」的情况）
+	PvpWiring.apply_versus_cooldown(card)
 	_zombie_slot.put_card_at(card, free)
 	_move_card_to_holder(card, _zombie_slot.cards_placeholder[free])
 	SoundManager.play_other_SFX("tap")

@@ -9,10 +9,11 @@ const ModScript := preload("res://mods_builtin/zombie_card/zombie_card_mod.gd")
 const Wiring := preload("res://mods_builtin/zombie_card/zombie_card_wiring.gd")
 const BrainGlow := preload("res://mods_builtin/zombie_card/zombie_card_brain_glow.gd")
 const BrainSun := preload("res://mods_builtin/zombie_card/zombie_card_brain_sun.gd")
+## 卡面底图问模组自己的共享常量（所有僵尸卡同一张），探针别另抄一份文件名
+const Settings := preload("res://mods_builtin/zombie_card/zombie_card_settings.gd")
 
 const LEVEL_PATH := "res://data/levels/params/vase_zombie.gd"
 const ASSET_SEED_BANK := "ZombieSeedBank.png"
-const ASSET_ZOMBIE_SEED := "ZombieSeed.png"
 const ASSET_CHOOSER := "SeedChooser_Background_I_Zombie.png"
 
 var _failed := 0
@@ -23,7 +24,7 @@ func run(a) -> void:
 	a.log("========== 探针：僵尸卡（我是僵尸） ==========")
 	_check(a, "模组入口脚本可加载", ModScript != null, "mods_builtin/zombie_card/")
 	_check(a, "模组 id 已登记", ModManager.MOD_SCRIPT_PATHS.has(ModIds.ZOMBIE_CARD), str(ModIds.ZOMBIE_CARD))
-	for asset in [ASSET_SEED_BANK, ASSET_ZOMBIE_SEED, ASSET_CHOOSER, "BrainGlowBig.png", "BrainGlowSmall.png", "BrainSun.png"]:
+	for asset in [ASSET_SEED_BANK, Settings.ASSET_ZOMBIE_CARD_BG, ASSET_CHOOSER, "BrainGlowBig.png", "BrainGlowSmall.png", "BrainSun.png"]:
 		var tex := ModManager.load_mod_asset(ModIds.ZOMBIE_CARD, str(asset)) as Texture2D
 		_check(a, "素材可加载：%s" % str(asset), tex != null, "" if tex == null else str(tex.get_size()))
 	ModManager.set_mod_enabled(ModIds.ZOMBIE_CARD, true)
@@ -59,14 +60,20 @@ func _check_skin(a, mg) -> void:
 	var seed_bank_tex := ModManager.load_mod_asset(ModIds.ZOMBIE_CARD, ASSET_SEED_BANK) as Texture2D
 	var panel := battle.get_theme_stylebox("panel") as StyleBoxTexture
 	_check(a, "出战卡槽底图换成僵尸卡槽", panel != null and panel.texture == seed_bank_tex)
-	var zombie_seed_tex := ModManager.load_mod_asset(ModIds.ZOMBIE_CARD, ASSET_ZOMBIE_SEED) as Texture2D
-	var face_ok := false
+	var zombie_seed_tex := ModManager.load_mod_asset(ModIds.ZOMBIE_CARD, Settings.ASSET_ZOMBIE_CARD_BG) as Texture2D
+	var zombie_cards := 0
+	var face_ok := 0
 	for card in battle.curr_cards:
-		if card == null or card.card_type != ResourceCardReference.CardType.Zombie:
+		if card == null:
 			continue
+		if card.card_type != ResourceCardReference.CardType.Zombie \
+				and card.card_type != ResourceCardReference.CardType.ZombieBoss:
+			continue
+		zombie_cards += 1
 		if is_instance_valid(card.card_bg) and card.card_bg.texture == zombie_seed_tex:
-			face_ok = true
-	_check(a, "僵尸卡卡面换成僵尸卡牌", face_ok)
+			face_ok += 1
+	_check(a, "僵尸卡卡面全换成模组共用那张（Seeds_ZombieSun）",
+		zombie_cards > 0 and face_ok == zombie_cards, "%d/%d" % [face_ok, zombie_cards])
 	var norm: CardSlotNorm = mg.card_manager.card_slot_norm
 	var chooser_tex := ModManager.load_mod_asset(ModIds.ZOMBIE_CARD, ASSET_CHOOSER) as Texture2D
 	_check(a, "选卡界面背景换成「我是僵尸」那张",

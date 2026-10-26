@@ -1019,12 +1019,23 @@ tracks/84/path = NodePath("MoveComponent")
 tracks/84/interp = 1
 tracks/84/loop_wrap = true
 tracks/84/keys = {
-"times": PackedFloat32Array(0, 11.3333),
-"transitions": PackedFloat32Array(1, 1),
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
 "values": [{
 "args": [],
 "method": &"_walking_start"
-}, {
+}]
+}
+tracks/85/type = "method"
+tracks/85/imported = false
+tracks/85/enabled = true
+tracks/85/path = NodePath(".")
+tracks/85/interp = 1
+tracks/85/loop_wrap = true
+tracks/85/keys = {
+"times": PackedFloat32Array(11.3333),
+"transitions": PackedFloat32Array(1),
+"values": [{
 "args": [],
 "method": &"_fade_and_remove"
 }]

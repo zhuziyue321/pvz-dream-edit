@@ -138,6 +138,7 @@ var crater:DoomShroomCrater
 @export var can_common_zombie := true
 enum E_SpecialStateZombie {
 	IsNoPlantBowling,		## 不能种植（保龄球红线模式不能种植）
+	IsOccupied,				## 该格已被一只**占格僵尸单位**占着（建筑型僵尸，如对战里的产脑光墓碑）
 }
 ## 当前特殊状态
 @export var curr_special_state_zombie:Dictionary[E_SpecialStateZombie, bool]
@@ -738,6 +739,20 @@ func set_bowling_no_plant():
 ## 设置保龄球不能僵尸
 func set_bowling_no_zombie():
 	update_special_state_zombie(true, E_SpecialStateZombie.IsNoPlantBowling)
+
+
+## 本格是否已被一只「占格僵尸单位」占住
+func is_occupied_by_zombie() -> bool:
+	return curr_special_state_zombie.get(E_SpecialStateZombie.IsOccupied, false)
+
+
+## 标记本格被一只占格僵尸单位占住 / 放开（建筑型僵尸放下时占格，死亡或离场时放开）
+##
+## 与本体墓碑的植物侧 `IsTombstone` 对称：那一套管「这块地不能种植物」，
+## 这一套管「这块地不能再放僵尸」（僵尸放置判定读的就是 `can_common_zombie`，
+## 见 `hand_component_character.gd` 的僵尸分支）。
+func set_occupied_by_zombie(value: bool) -> void:
+	update_special_state_zombie(value, E_SpecialStateZombie.IsOccupied)
 #endregion
 
 #region 按植物类型限制种植（观星）

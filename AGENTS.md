@@ -15,9 +15,9 @@
 | ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | 项目          | 用 Godot 复刻原版《植物大战僵尸》的学习 / 同人改版基座（原版素材因版权已移除）                                                                        |
 | 引擎 / 语言     | Godot 4.6 / GDScript（版本口径以 `project.godot` 的 `config/features` 为准）                                                                                              |
-| 规模          | `src/` 704 个 `.gd` + 240 个 `.tscn`；`data/` 123 个 `.tres`；`animation/` 497 段动画；`docs/` 253 份 `.md`；11 个 autoload 单例（2026-10-22 重测，口径 = `git ls-files`；**规模数字的唯一权威来源是 [架构总览.md](./架构总览.md) §15**，本条与之不一致时以后者为准）                                                              |
+| 规模          | `src/` 719 个 `.gd` + 251 个 `.tscn`；`data/` 125 个 `.tres`；`animation/` 548 段动画；`docs/` 325 份 `.md`；11 个 autoload 单例（2026-10-25 重测，口径 = `git ls-files`；**规模数字的唯一权威来源是 [架构总览.md](./架构总览.md) §15**，本条与之不一致时以后者为准）                                                              |
 | 架构主线        | 数据驱动 + 组件化：角色 = base 场景 + 若干 `ComponentNormBase` 组件；资源一律 `res://` 绝对路径引用                                            |
-| 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，**资源根已全部迁至 `pak/`**：`git ls-files pak` = 5883，2026-10-16 实测；`assets/` 已无入库文件，`git ls-files assets` = 0，2026-10-22 实测）、`test/`、`docs/`、`tools/` |
+| 顶层排布        | `src/`（代码 + 场景，按功能就近放置）、`data/`（`.tres` 数据层）、`animation/`、`shaders/`、`assets/`（图片/音频/字体/reanim，**资源根已全部迁至 `pak/`**：`git ls-files pak` = 5919，2026-10-25 实测；`assets/` 已无入库文件，`git ls-files assets` = 0，2026-10-25 实测）、`test/`、`docs/`、`tools/` |
 | autoload 单例 | `Log` `Global` `SoundManager` `SceneRegistry` `AllCards` `GlobalUtils` `EventBus` `DamageSystem` `TreePauseManager` `ModManager` `DebugChannel`（共 11 个，见 `project.godot` 的 `[autoload]`） |
 | 验证方式        | **编译门禁必过**：`test/check_scripts.ps1`（硬约束 §1-7）；**打开游戏实测默认不跑（可选）**——完成工作、编译门禁通过后即交付，确有需要时再开，或反馈里附人工验证方法，见 [docs/验证流程.md](./docs/验证流程.md)              |
 

@@ -21,7 +21,7 @@
 |---|---|
 | 发僵尸卡 | 关卡自己写的僵尸预选卡优先，没有就用默认四张（普通 / 路障 / 撑杆 / 铁桶） |
 | 僵尸卡槽 | 出战卡槽底图 → PVZ2 `ZombieSeedBank`（446×87） |
-| 僵尸卡牌 | 僵尸卡卡面 → PVZ2 `ZombieSeed`（50×70） |
+| 僵尸卡牌 | 僵尸卡卡面 → PVZ2 `Seeds_ZombieSun`（50×70，全模组共用一张） |
 | 选卡界面背景 | 待选区 → PVZ2 `SeedChooser_Background_I_Zombie`（465×513） |
 | 脑光 | 脑子旁冒粉色星芒：被啃一口闪一下，脑子被吃掉时爆一下 |
 | 脑子阳光 | 天上掉的阳光 → PVZ2 `BrainSun`（只换外观，收集行为不变） |
@@ -35,11 +35,14 @@
 |---|---|
 | 12 槽合一 | 给本体出战卡槽配 `card_type_blocks` / `block_sizes = [6, 6]`（僵尸 / 僵王卡进后 6 格，各回各块的空位）、`shortcuts_enabled = false`（对战没有 1~0 快捷键）、`currency_of_card` / `on_card_cost`（分池：植物花阳光、僵尸花脑子）——三个口子都是本体通用件（见 `card_slot_battle.gd`），不带对战字样 |
 | 银行视图 | 右上装一条**纯外观**的银行（`zombie_card_battle_slot.tscn`，不存卡）：底图 `ZombieSeedBank` **水平翻转**，脑子计数在**右面**；占位格 6~11 由接线从本体卡槽挪进来当宿主；出场/收场照植物卡槽同款 0.2s 平移 |
-| 选僵尸卡面板 | 选卡阶段贴在植物待选区**右面**（`zombie_card_choose_panel.tscn`）：一行五张，全部已登记的僵尸卡**去掉**没选卡资格的（伴舞 / 单个雪橇车队员 / 鸭子救生圈，见 `zombie_card_settings.gd`）**再补上**僵王博士（不做解锁门槛），超高走滚动条（无翻页按钮），点卡飞进僵尸块第一个空位（上限六张），再点退回（空位不挤占）；飞行动画与本体选卡同款（经 `TemporaryCard` 中转 0.2s） |
-| 发僵尸卡 | 玩家选的优先；一张都没选时选卡结束发默认六张（普通 / 路障 / 撑杆 / 铁桶 / 铁网门 / 橄榄球，见 `zombie_card_settings.gd`，按块放位不动植物那半），卡面 → PVZ2 `ZombieSeed` |
+| 选僵尸卡面板 | 选卡阶段贴在植物待选区**右面**（`zombie_card_choose_panel.tscn`）：一行五张，全部已登记的僵尸卡**去掉**没选卡资格的（单个雪橇车队员 / 鸭子救生圈，见 `zombie_card_settings.gd`；**伴舞僵尸 2026-10-25 放开可选**）**再补上**僵王博士（不做解锁门槛），超高走滚动条（无翻页按钮），点卡飞进僵尸块第一个空位（上限六张），再点退回（空位不挤占）；飞行动画与本体选卡同款（经 `TemporaryCard` 中转 0.2s）。**显示顺序**沿用 `AllCards.zombie_card_ids` 的登记顺序，再按 `PLAYER_BATTLE_MOVE_AFTER`（每项 `[要挪的卡, 挪到谁的后面]`）挪几张（2026-10-25：产脑光墓碑→普僵后、旗帜→海豚骑士后；只动这一面的排法，编号 / 卡槽换算不动） |
+| 发僵尸卡 | **只发玩家点的那些**：僵尸块空着就是这一局没有僵尸卡（2026-10-25 删掉了「一张都没选发默认六张」的兜底，原常量 `PLAYER_BATTLE_ZOMBIE_CARDS` 一并删）；收尾只统一花费 / 冷却 / 卡面 |
+| 僵尸卡面 | 同上那张 **`Seeds_ZombieSun`**（所有僵尸卡统一：`zombie_card_settings.gd` 的 `ASSET_ZOMBIE_CARD_BG`）；**候选阶段就换**（面板里的卡一出现就是僵尸卡面，不等收尾）。判据是 `costs_brains()`（= `is_zombie_card()`）：产脑光墓碑本身就是僵尸卡，一并走这条线（卡面形象仍是墓碑自己那套） |
 | 分池 | 植物卡花阳光（收阳光照旧只进植物那半）；僵尸 / 僵王卡花脑子，**不随阳光涨** |
-| 起始脑子 | 150（脑子收入是对战逻辑的事，还没做；目前唯一的收入口是下面的产脑光墓碑） |
-| 产脑光墓碑 | DLC 对战墓碑 **VSGravestone** 接成的运行期植物（`vsgravestone/`，50 脑光、冷却 7.5 s）：选卡面板**末尾**那格，选中后落僵尸块、**花脑子**（`costs_brains()` 单独判它），种下去行为类似向日葵 —— 周期性从头顶弹出一颗**脑子阳光**（`SunSpawner.pop_up`，向日葵同款弹跳落地，PVZ2 BrainSun 皮），点收时入僵尸方脑子账（25 / 次，`add_brains()`；不进植物方阳光池）并飞向**右上银行的脑子计数**（银行里的 `%Marker2DBrainTarget`，与植物阳光飞自己的计数器同一套规则）；出土用 `Panel clip_children = 2` 裁在地面以上（同本体墓碑）。⚠️ 这块板配起来有讲究，四种配法只有最后一种对：模式 `1` 裁「直接子节点」（= 动画挂点、自己不画东西）→ 裁剪区为空、整棵不渲染；模式 `2` + `StyleBoxEmpty`/全透明底 → 没有裁剪区、完全不裁；模式 `2` + 低 alpha 底 → 绘制被剔除、连石碑一起裁没；**正解 = 模式 `2` + `StyleBoxFlat` + 输出全透明的 `mask_invisible.gdshader`**（命令照常提交所以裁剪区成立，光栅化被 shader 抹掉所以看不见）。落位资格跟僵尸走（`vsgravestone/condition_zombie_side_plant.gd`）。动画是从 DLC 反编译 reanim 转的两段：`animation/character/plant/VSGravestone/`（idle 静帧 + rise 出土） |
+| 僵尸卡花费 | **对战口径**（`zombie_card_settings.gd` 的 `PLAYER_BATTLE_ZOMBIE_COSTS`，2026-10-26 平衡性重调）：普僵 25 / 旗帜 25 / 路障 50 / 撑杆 50 / 铁桶 125 / 报纸 50 / 铁网门 125 / 橄榄球 150 / 舞王 100 / 伴舞 50 / 潜水 50 / 冰车 175 / 雪橇 100 / 海豚 100 / 小丑 75 / 气球 150 / 矿工 175 / 蹦蹦 175 / 蹦极 100 / 扶梯 125 / 投石车 150 / 巨人 300 / 小鬼 25；定费口径 = 普僵 25 为基准（270 EHP / 速度 20），坦度按 EHP、越线（矿工 / 气球 / 蹦蹦）/ 拆植物（投石车 / 小丑 / 蹦极）/ 支援（扶梯 / 舞王）逐项加价，旗帜无波次功能故等同普僵；候选容器与槽里的卡都换，角色注册表（我是僵尸口径）不动 |
+| 僵尸卡冷却 | **对战口径**（`zombie_card_settings.gd` 的 `PLAYER_BATTLE_ZOMBIE_COOLDOWNS`，2026-10-25 从 PVZ DLC Edition wiki 同步）：普僵 7.5 / 报纸·铁网门 15 / 旗帜·路障·撑杆·铁桶·橄榄球·舞王·小丑·矿工·蹦极·扶梯 30 / 冰车·蹦蹦·投石车·巨人 60 s。**wiki 只在撑杆跳词条写了 `recharge=30 seconds`**，其余按同 wiki「Versus: Legacy 复刻主机版对战口径」取主机版表（`pvzvm.fandom.com` 的 `Almanac PVZVM`）；**潜水 / 雪橇 / 海豚 / 气球 / 小鬼**这 5 只主机版没有、wiki 也没写，先按 30 s 填并标「待核实」。只改卡自己的 `cool_time`，角色注册表（我是僵尸口径）不动 |
+| 起始脑子 | 150（脑子收入是对战逻辑的事，还没做；目前唯一的收入口是玩家对战模组的产脑光墓碑） |
+| 产脑光墓碑 | 归**玩家对战模组**（`mods_builtin/player_battle/vsgravestone/`，2026-10-25 从本模组迁过去、同日由植物改成**僵尸单位**）：它由那边 `ZombieRuntimeKit` 插进僵尸卡目录，本模组按普通僵尸卡处理 —— 选卡面板自动排进列表、`costs_brains()` 走 `is_zombie_card()`，不再有专门接线；脑子的入账口仍是本接线的 `add_brains()`（墓碑按节点名 `ZombieCardPvpWiring` 找过来） |
 
 ## 素材
 
@@ -50,4 +53,5 @@
 
 - 机制正文：[../../docs/参考存档/模组机制.md](../../docs/参考存档/模组机制.md) §6.12
 - 僵尸卡通道本体口径：[../../docs/参考存档/卡片与选卡流程.md](../../docs/参考存档/卡片与选卡流程.md) §僵尸卡片
-- 回归探针：`test/scenarios/probe_zombie_card_mod.gd`（我是僵尸）/ `probe_player_battle_mod.gd`（玩家对战的卡槽部分）/ `probe_zombie_card_vsgravestone.gd`（产脑光墓碑）
+- 回归探针：`test/scenarios/probe_zombie_card_mod.gd`（我是僵尸）/ `probe_player_battle_mod.gd`（玩家对战的卡槽部分）；
+  产脑光墓碑的探针随墓碑迁到 `probe_player_battle_vsgravestone.gd`（玩家对战模组，墓碑改成僵尸后同一份探针跟着改口径）

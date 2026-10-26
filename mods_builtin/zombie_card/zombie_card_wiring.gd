@@ -14,8 +14,8 @@ const BrainGlow := preload("zombie_card_brain_glow.gd")
 const BrainSun := preload("zombie_card_brain_sun.gd")
 
 ## 模组素材（相对模组目录；`ModManager.load_mod_asset()` 两个加载根都认）
+## 僵尸卡卡面不在这里：全模组共用 `Settings.ASSET_ZOMBIE_CARD_BG`（所有僵尸卡一张底图）
 const ASSET_SEED_BANK := "ZombieSeedBank.png"
-const ASSET_ZOMBIE_SEED := "ZombieSeed.png"
 const ASSET_CHOOSER_BACKGROUND := "SeedChooser_Background_I_Zombie.png"
 const ASSET_BRAIN_GLOW_BIG := "BrainGlowBig.png"
 const ASSET_BRAIN_GLOW_SMALL := "BrainGlowSmall.png"
@@ -111,16 +111,19 @@ func _deal_zombie_cards() -> void:
 	_restyle_zombie_cards()
 
 
-## 僵尸卡的卡面换成 PVZ2 的僵尸卡牌
+## 僵尸 / 僵王卡的卡面换成模组共用那张底图（`Settings.ASSET_ZOMBIE_CARD_BG`，所有僵尸卡同一张）
 func _restyle_zombie_cards() -> void:
 	var battle: CardSlotBattle = _main_game.card_manager.card_slot_battle
 	if battle == null:
 		return
-	var zombie_seed_tex := _load_texture(ASSET_ZOMBIE_SEED)
+	var zombie_seed_tex := _load_texture(Settings.ASSET_ZOMBIE_CARD_BG)
 	if zombie_seed_tex == null:
 		return
 	for card in battle.curr_cards:
-		if card == null or card.card_type != ResourceCardReference.CardType.Zombie:
+		if card == null:
+			continue
+		if card.card_type != ResourceCardReference.CardType.Zombie \
+				and card.card_type != ResourceCardReference.CardType.ZombieBoss:
 			continue
 		if is_instance_valid(card.card_bg):
 			card.card_bg.texture = zombie_seed_tex

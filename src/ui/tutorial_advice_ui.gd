@@ -36,17 +36,27 @@ var _follow_plant_type: StringName = PlantIds.NULL
 ## 箭头快捷工具：解析目标要用的主游戏（目标可能是阳光 / 卡片 / 草坪格子）
 var _follow_main_game: MainGameManager
 
-## 提示条最小高度（单行短提示够用）
-const ADVICE_PANEL_MIN_HEIGHT := 64.0
-## 面板上下 content_margin 之和（tscn 里各 10）
-const ADVICE_PANEL_MARGIN_Y := 20.0
-## 面板左右 content_margin 之和（tscn 里各 14）
-const ADVICE_PANEL_MARGIN_X := 28.0
-## 提示条左右各留的边距（与 tscn 的 offset_left / offset_right 一致）
-const ADVICE_PANEL_SIDE_MARGIN := 24.0
+## 提示条最小高度 = 原版 HINT_LONG 的条高（`MessageWidget::Draw` 里 aRectHeight = 55）
+const ADVICE_PANEL_MIN_HEIGHT := 55.0
+## 面板上下 content_margin 之和（原版条里没有内边距，文字在条里垂直居中）
+const ADVICE_PANEL_MARGIN_Y := 0.0
+## 面板左右 content_margin 之和（同上：原版条里文字直接铺满整条）
+const ADVICE_PANEL_MARGIN_X := 0.0
+## 提示条左右各留的边距（通栏 = 0，与 tscn 的 offset_left / offset_right 一致）
+const ADVICE_PANEL_SIDE_MARGIN := 0.0
 ## Label 还没拿到布局宽度时（节点刚 add_child、还没跑过一次布局）用它兜底：
-## 800 设计分辨率下 屏幕宽 - 左右边距共 48 - content_margin 28
-const ADVICE_LABEL_FALLBACK_WIDTH := 724.0
+## 800 设计分辨率下通栏（屏幕宽 - 左右边距 0）
+const ADVICE_LABEL_FALLBACK_WIDTH := 800.0
+
+## 提示文字「呼吸」脉动的周期：原版 `AnimateCurve(75, 0, counter % 75, …)`，75 tick = 0.75 秒
+## （1 tick = 10ms，见 [控制台] / 槽位等处的同一口径）
+const HINT_PULSE_SECONDS := 0.75
+## 脉动的最暗 / 最亮 alpha（原版 aMinAlpha = 192、最亮 255）
+const HINT_ALPHA_MIN := 192.0
+const HINT_ALPHA_MAX := 255.0
+
+## 提示文字脉动用的循环 Tween（没有提示在显示时为 null）
+var _pulse_tween: Tween
 
 
 ## 显示提示文本（箭头由 update_pointer / hide_pointer 单独控制）
@@ -56,7 +66,37 @@ func show_advice(text: String) -> void:
 	advice_panel.visible = true
 	_ensure_label_width()
 	_refresh_advice_height()
+	_start_hint_pulse()
 	signal_advice_changed.emit(text)
+
+
+#region 提示文字脉动（原版 MessageWidget 的 aMinAlpha）
+## 原版 `MessageWidget::Draw` 对 HINT_* / TUTORIAL_* 这几档都做同一件事：
+## alpha 在 192..255 之间走 `AnimateCurve(75, 0, counter % 75, 192, 255, CURVE_BOUNCE_SLOW_MIDDLE)` ——
+## CURVE_BOUNCE_SLOW_MIDDLE = InvQuad(Bounce(t))，`InvQuad(x) = 2x - x²`、`Bounce(t) = 1 - |2t - 1|`：
+## t = 0 / 1 时最暗、t = 0.5 时最亮（两端低谷、中间峰）。
+## 只动 `modulate.a`：文字色 / 字号仍归 tscn 管，这里不覆写 theme。
+func _start_hint_pulse() -> void:
+	_stop_hint_pulse()
+	_pulse_tween = create_tween().set_loops()
+	_pulse_tween.tween_method(_apply_hint_pulse, 0.0, 1.0, HINT_PULSE_SECONDS)
+
+
+func _stop_hint_pulse() -> void:
+	if _pulse_tween != null and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	_pulse_tween = null
+	## 停在最亮那一档：收提示时留着最暗的半透明字会让「隐藏」看起来像没关干净
+	_apply_hint_pulse(0.5)
+
+
+func _apply_hint_pulse(t: float) -> void:
+	if not is_instance_valid(advice_label):
+		return
+	var bounce := 1.0 - absf(2.0 * t - 1.0)
+	var warped := 2.0 * bounce - bounce * bounce
+	advice_label.modulate.a = lerpf(HINT_ALPHA_MIN, HINT_ALPHA_MAX, warped) / 255.0
+#endregion
 
 
 #region 关卡快捷工具：提示条与箭头的取用
@@ -229,6 +269,7 @@ func _update_once_pointer() -> void:
 ## 一并清空文本：get_advice_text() 是「当前有没有在提示」的判定依据，藏着旧文本会误判
 func hide_advice() -> void:
 	_curr_text = ""
+	_stop_hint_pulse()
 	advice_label.text = ""
 	advice_panel.visible = false
 	signal_advice_changed.emit("")

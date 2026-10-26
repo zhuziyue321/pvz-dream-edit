@@ -24,7 +24,10 @@
     This file is ASCII-only on purpose (PowerShell 5.1 reads BOM-less scripts as ANSI).
 #>
 param(
-    [string]$Godot = 'C:\Users\a a\Desktop\Godot_v4.6.2-stable_win64.exe',
+    ## Unified with run_autopilot.ps1 / check_scripts.ps1 on 2026-10-25: the old
+    ## 'Godot_v4.6.2-stable_win64.exe' does not exist on this machine (the real
+    ## binary is 'godot.exe'), so Start-Process failed before any instance ran.
+    [string]$Godot = 'C:\Users\a a\Desktop\godot.exe',
     [string]$Project = '',
     [int]$HostMaxSeconds = 150,
     [int]$ClientMaxSeconds = 140,
@@ -33,6 +36,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+## Fail loudly when the engine binary is missing (same guard as run_autopilot.ps1):
+## otherwise Start-Process throws and the run looks like a netplay failure.
+if (-not (Test-Path -LiteralPath $Godot)) {
+    Write-Host ('[pair] Godot executable not found: {0}' -f $Godot) -ForegroundColor Red
+    Write-Host '[pair] pass -Godot "<real path>" or fix the default in this script' -ForegroundColor Red
+    exit 2
+}
 if (-not $Project) {
     if ($PSScriptRoot) { $Project = (Split-Path $PSScriptRoot -Parent) } else { $Project = (Get-Location).Path }
 }

@@ -1,4 +1,4 @@
-[gd_scene load_steps=867 format=3 uid="uid://bb24ydyvk8c3u"]
+[gd_scene load_steps=877 format=3 uid="uid://bb24ydyvk8c3u"]
 
 [ext_resource type="Script" uid="uid://bh1ixrlfb6jr4" path="res://src/ui/card/all_cards.gd" id="1_qtbte"]
 [ext_resource type="PackedScene" uid="uid://cjuiaaq33o5aa" path="res://src/ui/card/card.tscn" id="2_5pqky"]
@@ -767,6 +767,16 @@
 [ext_resource type="Script" path="res://data/character/card/card_reference.gd" id="99_cardref"]
 [ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_head.png" id="99_bosshead"]
 [ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_upperbody.png" id="99_bossbody"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_head2.png" id="99_bosshead2"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_jaw.png" id="99_bossjaw"]
+[ext_resource type="Texture2D" path="res://assets_custom/reanim/Zombie_boss_neck.png" id="99_bossneck"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_innerjaw.png" id="99_bossinnerjaw"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_mouthglow.png" id="99_bossmouthglow"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_boss_eyeglow.png" id="99_bosseeyeglow"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_body.png" id="99_driverbody"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_brain.png" id="99_driverbrain"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_face.png" id="99_driverface"]
+[ext_resource type="Texture2D" path="res://pak/reanim/Zombie_bossdriver_jaw.png" id="99_driverjaw"]
 
 [sub_resource type="CurveTexture" id="CurveTexture_p2ylm"]
 
@@ -12082,15 +12092,94 @@ card_reference = SubResource("CardRef_Boss1")
 [node name="CardBg" parent="BossCards/Card1" index="0"]
 texture = ExtResource("3_m4n4y")
 
+; 僵王博士卡面：内容包围盒（本文件里那 8 个 Sprite2D 的并集）原来中心在卡片右下 (25, 31) px，
+; 2026-10-25 往左上补 → 现在内容中心与 50×70 卡底图中心重合（视觉上整只居中，左右各裁掉约 8px）
 [node name="ZB001Doctor" type="Node2D" parent="BossCards/Card1/CardBg/CharacterStatic" index="0"]
-position = Vector2(24, 42)
-scale = Vector2(0.22, 0.22)
+position = Vector2(-98.2836, -30.7491)
+scale = Vector2(0.127891, 0.127891)
 
 [node name="UpperBody" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(527.8, 156.1)
+rotation = -0.29
+scale = Vector2(0.797, 0.797)
 texture = ExtResource("99_bossbody")
 centered = false
 
+[node name="Neck" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(553.5, 174.2)
+rotation = -0.033
+scale = Vector2(0.797, 0.797)
+texture = ExtResource("99_bossneck")
+centered = false
+
+[node name="InnerJaw" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(551.4, 248.1)
+rotation = -0.016
+scale = Vector2(0.996, 0.996)
+texture = ExtResource("99_bossinnerjaw")
+centered = false
+
+[node name="MouthGlow" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(558.3, 248.1)
+rotation = -0.016
+scale = Vector2(0.996, 0.996)
+texture = ExtResource("99_bossmouthglow")
+centered = false
+
+[node name="Jaw" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(528.2, 264.4)
+rotation = -0.016
+scale = Vector2(0.796, 0.796)
+texture = ExtResource("99_bossjaw")
+centered = false
+
+[node name="EyeGlow" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(523.8, 250.9)
+rotation = -0.016
+scale = Vector2(0.796, 0.796)
+texture = ExtResource("99_bosseeyeglow")
+centered = false
+
+[node name="HeadPanel" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(547.4, 184.3)
+rotation = -0.016
+scale = Vector2(0.796, 0.796)
+texture = ExtResource("99_bosshead2")
+centered = false
+
+[node name="Driver" type="Node2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor/HeadPanel"]
+position = Vector2(46.159447, -64.06694)
+
+[node name="DriverBody" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor/HeadPanel/Driver"]
+position = Vector2(35.2, 44.8)
+rotation = -0.099
+scale = Vector2(0.799, 0.979)
+texture = ExtResource("99_driverbody")
+centered = false
+
+[node name="DriverBrain" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor/HeadPanel/Driver"]
+position = Vector2(8.3, 20.8)
+rotation = -0.099
+scale = Vector2(0.799, 0.799)
+texture = ExtResource("99_driverbrain")
+centered = false
+
+[node name="DriverFace" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor/HeadPanel/Driver"]
+position = Vector2(10.4, 42.1)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("99_driverface")
+centered = false
+
+[node name="DriverJaw" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor/HeadPanel/Driver"]
+position = Vector2(25.1, 56.4)
+scale = Vector2(0.8, 0.8)
+texture = ExtResource("99_driverjaw")
+centered = false
+
 [node name="Head" type="Sprite2D" parent="BossCards/Card1/CardBg/CharacterStatic/ZB001Doctor"]
+position = Vector2(517, 190.3)
+rotation = -0.016
+scale = Vector2(0.796, 0.796)
 texture = ExtResource("99_bosshead")
 centered = false
 

@@ -45,6 +45,13 @@ const BODY_PATH := ^"Body"
 const FACE_SCALE := Vector2(0.3, 0.3)
 const FACE_POSITION := Vector2(2, 17)
 
+## 本 Kit 画卡面时用的落点（默认 `FACE_POSITION`，即「标准僵尸体型」）——
+## 体型不标准的单位装之前改这个：卡面是把 `Body` 整枝原样搬进卡里的，
+## 身体 / 招牌若整体偏在原点左上（如墓碑），用默认落点就会偏到卡片左上角。
+## 量法见 `docs/参考存档/模组机制.md`：把卡面里所有可见 Sprite2D 的矩形取并集，
+## 内容中心与卡片中心的差 ÷ 父节点缩放 = 要补的位移。
+var face_position := FACE_POSITION
+
 ## 当前装着的僵尸（没装 = Null）
 var zombie_type: StringName = ZombieIds.NULL
 ## 插进源目录的那张卡（卸的时候摘掉）
@@ -125,7 +132,7 @@ func _install_card() -> void:
 func _build_card_face() -> void:
 	if _card == null or not is_instance_valid(_card):
 		return
-	var face := create_card_face(zombie_type)
+	var face := create_card_face(zombie_type, face_position)
 	if face == null:
 		## 卡面一空，手持会直接报「卡片静态角色为空」拿不起来 —— 留一行 warn 好排查
 		Log.warn("运行期僵尸卡：%s 的卡面没画出来（%s 下没有 %s）"
@@ -136,8 +143,9 @@ func _build_card_face() -> void:
 
 ## 取一只僵尸的卡面形象：让它先活一次（进树走 `ready_show()`，脚本在这一步换好贴图与防具），
 ## 再把 `Body` 那一枝摘下来剥成纯精灵树
+## [param at] 外形包装节点的落点（默认 `FACE_POSITION`；非标准体型见 `face_position`）
 ## [return] 没有这一枝 / 临时容器没挂进树时返回 null
-static func create_card_face(new_zombie_type: StringName) -> Node2D:
+static func create_card_face(new_zombie_type: StringName, at: Vector2 = FACE_POSITION) -> Node2D:
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null:
 		Log.error("运行期僵尸卡：取不到 SceneTree，%s 的卡面画不出来" % str(new_zombie_type))
@@ -168,7 +176,7 @@ static func create_card_face(new_zombie_type: StringName) -> Node2D:
 	AnimationFrameUtil.detach_scene_identity(body)
 	var wrapper := Node2D.new()
 	wrapper.name = str(new_zombie_type)
-	wrapper.position = FACE_POSITION
+	wrapper.position = at
 	wrapper.scale = FACE_SCALE
 	wrapper.add_child(body)
 	return wrapper

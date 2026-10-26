@@ -106,6 +106,13 @@ static func _register_display_entries(registry) -> void:
 		.bind(func() -> bool: return Global.config_service.plant_be_shovel_front,
 			func(value: bool) -> void: Global.config_service.plant_be_shovel_front = value))
 
+	_add(registry, ConsoleEntry.create_toggle(&"display_zombie_sum_label", "显示当前僵尸数量")
+		.set_tooltip("在屏幕左下角显示「当前僵尸数量：N」这一行（默认关）")
+		.set_category(CATEGORY_DISPLAY)
+		.set_order(80)
+		.bind(func() -> bool: return Global.config_service.display_zombie_sum_label,
+			func(value: bool) -> void: Global.config_service.display_zombie_sum_label = value))
+
 
 static func _register_debug_entries(registry) -> void:
 	_add(registry, ConsoleEntry.create_toggle(&"open_all_level", "开放所有关卡")

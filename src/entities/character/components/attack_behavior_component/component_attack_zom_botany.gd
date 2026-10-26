@@ -36,6 +36,13 @@ func _on_bullet_attack_cd_timer_timeout() -> void:
 	await shoot_burst()
 
 
+## 啃咬事件：僵尸共享的 `Zombie_eat` 动画会在两口之间调 `attack_once()`，但植物僵尸**不啃植物**
+## （发射挂在 `is_attack_res` 上、走到植物前就停住，口径见 docs/参考存档/植物僵尸.md §3.1）。
+## 这里留空实现只为接住那条方法轨 —— 否则僵尸一进啃咬状态就每口刷一次「方法不存在」。
+func attack_once() -> void:
+	pass
+
+
 ## 单发之后补一个「发射」表现（连发循环在基类的 `shoot_burst()` 里，这里只管表现）
 func _shoot_bullet_once() -> void:
 	super()

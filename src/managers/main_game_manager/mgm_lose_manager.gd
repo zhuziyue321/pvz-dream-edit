@@ -47,6 +47,12 @@ func roof_zombie_go_home(zombie:Zombie000Base):
 
 ## 僵尸进房
 func on_zombie_go_home(zombie:Zombie000Base):
+	## 这一局已经有结果了（判胜的奖杯 / 奖励正在掉，或者已经判过负）：不再走第二遍失败流程。
+	## 不挡的话，「场上有僵尸的时候赢下来」的玩法（玩家对战：击破 3 只靶子的同一刻，
+	## 对面还有僵尸在往房子里走）会被随后进家的僵尸覆写成判负 —— 通关存档也会被
+	## `re_main_game()` 冲掉。与 `MgmRewardManager` 判胜时用的 `GAME_OVER` 判据同一个口径。
+	if main_game.main_game_progress == MainGameManager.E_MainGameProgress.GAME_OVER:
+		return
 	main_game.save_manager.re_main_game()
 
 	main_game.main_game_progress = MainGameManager.E_MainGameProgress.GAME_OVER

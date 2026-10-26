@@ -7,6 +7,8 @@ class_name ConfigService
 signal signal_change_disappear_spare_card_placeholder
 signal signal_change_display_plant_HP_label(value: bool)
 signal signal_change_display_zombie_HP_label(value: bool)
+## 「当前僵尸数量」那一行的显示开关
+signal signal_change_display_zombie_sum_label(value: bool)
 signal signal_change_card_slot_top_mouse_focus
 signal signal_fog_is_static
 ## 子弹无目标时追踪鼠标
@@ -40,6 +42,14 @@ var display_zombie_HP_label := false:
 			return
 		display_zombie_HP_label = value
 		signal_change_display_zombie_HP_label.emit(display_zombie_HP_label)
+
+## 屏幕左下角「当前僵尸数量：N」那一行是否显示（默认关）
+var display_zombie_sum_label := false:
+	set(value):
+		if display_zombie_sum_label == value:
+			return
+		display_zombie_sum_label = value
+		signal_change_display_zombie_sum_label.emit(display_zombie_sum_label)
 
 var card_slot_top_mouse_focus := false:
 	set(value):
@@ -110,6 +120,7 @@ func load_and_apply_config() -> void:
 	disappear_spare_card_Placeholder = config.get_value("user_control", "disappear_spare_card_Placeholder", false)
 	display_plant_HP_label = config.get_value("user_control", "display_plant_HP_label", false)
 	display_zombie_HP_label = config.get_value("user_control", "display_zombie_HP_label", false)
+	display_zombie_sum_label = config.get_value("user_control", "display_zombie_sum_label", false)
 	card_slot_top_mouse_focus = config.get_value("user_control", "card_slot_top_mouse_focus", false)
 	fog_is_static = config.get_value("user_control", "fog_is_static", false)
 	plant_be_shovel_front = config.get_value("user_control", "plant_be_shovel_front", true)
@@ -137,6 +148,7 @@ func save_config() -> void:
 	config.set_value("user_control", "disappear_spare_card_Placeholder", disappear_spare_card_Placeholder)
 	config.set_value("user_control", "display_plant_HP_label", display_plant_HP_label)
 	config.set_value("user_control", "display_zombie_HP_label", display_zombie_HP_label)
+	config.set_value("user_control", "display_zombie_sum_label", display_zombie_sum_label)
 	config.set_value("user_control", "card_slot_top_mouse_focus", card_slot_top_mouse_focus)
 	config.set_value("user_control", "fog_is_static", fog_is_static)
 	config.set_value("user_control", "plant_be_shovel_front", plant_be_shovel_front)

@@ -1,0 +1,160 @@
+[gd_scene load_steps=18 format=3]
+
+; 产脑光墓碑（DLC 对战墓碑 VSGravestone）—— 模组「玩家对战」提供的**僵尸单位**
+; （50 脑光，放下去像向日葵一样周期性给僵尸方入账脑子；2026-10-25 由植物改成僵尸）
+;
+; 结构照 `../../targetzombie/zombie_target.tscn`（同一套「静止僵尸」接法）：
+; 本体 `zombie_base.tscn` + DLC 动画节点 + 产脑子组件，
+; 差别只在动画：DLC 动画是转换器逐帧烘焙的 Sprite 组、没有 AnimationTree，
+; 所以把 `AnimComponent` 换成 `AnimComponentEmpty`，由 `vsgravestone_zombie.gd` 直接播 `AnimLib`。
+;
+; 站位（`Sprite2D` 全是 `centered = false`，`position` 是部件**左上角**，画布原点在左上）：
+;   idle 第 0 帧主体 Stone：85×84 @ (-3, 6.3)，墓土 Stone_dirt 同框；
+;   整株内容 ≈ x[-3, 82]、y[6.3, 90.3]，脚底中心 ≈ (39.5, 90.3)。
+;   ⚠️ 动画节点挂在**裁剪板**下面，它的 `position` 是**板本地坐标**，板自己的左上角必须折进去：
+;     动画节点 = (Body 里的脚底落点) − 脚底中心 − 板左上角
+;     想要脚底中心落在 Body 原点下方 10 px（墓土埋进地里一点）⇒
+;     (0, 10) − (39.5, 90.3) − (−80, −150) = **(40.5, 69.7)**。
+;     **板每往左 / 往上挪多少，这里就得补回多少** —— 2026-10-25 把板从 x[-45,45]/y[-100,10]
+;     放宽到 x[-80,100]/y[-150,10]（罩住 break 碎块）时漏补，整株就偏左上 (35, 50) px。
+;   **不要给动画节点加缩放** —— 每部件的原版缩放已经在动画的 `scale` 轨道里。
+;
+; ⚠️ 动画场景 `VSGravestone.tscn` 是 R2Ga 全量产物剪出的「根 + AnimLib + 部件」精简版；
+;   AnimLib 是 root 下最后一个子节点（index = 91），这里把 idle / rise / break1~5 合成库
+;   注进去（全量产物的内嵌动画与单段播放器已删，别照它引用）。
+;   脑子出生点 Marker2D 挂在 Body 下（脑子阳光从那儿弹出来、落地，点收才入账）。
+;
+; ⚠️ **受损动画 = `break1`~`break5` 五段**：每段是一整套「第 N 阶裂纹外观
+;   + 这一下崩飞的碎块」，所以**只播一段就自洽**（其余阶段的碎块在每段里都显式 `visible = false`）。
+;   演完**停在最后一帧**（碎块淡出、裂纹留下），不回待机 —— 切换时机在
+;   `vsgravestone_zombie.gd` 的 `_on_hp_loss()`（按血量分 5 档）。
+;
+; ⚠️ 产脑子组件用的是**模组自己的子类** `component_create_brains.gd`
+;   （继承本体 `component_create_sun.gd`，节奏全复用，只把出阳光换成脑子入账）；
+;   太阳能组件的 `sun_value = 25` 在这里就是「每次入账 25 脑子」。
+;
+; ⚠️ 血量 **300**：覆盖僵尸本体的 270（与改造成僵尸之前的植物版一致）。
+;
+; ⚠️ 受击 / 检测层**不用补**：僵尸本体本来就是 `4`（ZombieHurtBoxDetection）/
+;   `512`（ZombieHurtBoxReal），植物索敌框与植物子弹天然打得到它 ——
+;   改僵尸之前那两行补丁（2→6、256→768）连同 `is_enemy_to_all_camps` 一起删掉了。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/zombie/zombie_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://mods_builtin/player_battle/vsgravestone/vsgravestone_zombie.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone.tscn" id="3_anim"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Script" path="res://src/entities/character/components/charred_component/component_charred.gd" id="5_charred"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_idle.tres" id="6_idle"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_rise.tres" id="7_rise"]
+[ext_resource type="Script" path="res://mods_builtin/player_battle/vsgravestone/component_create_brains.gd" id="8_createbrains"]
+[ext_resource type="Shader" path="res://mods_builtin/player_battle/vsgravestone/mask_invisible.gdshader" id="9_maskshader"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_break1.tres" id="10_break1"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_break2.tres" id="11_break2"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_break3.tres" id="12_break3"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_break4.tres" id="13_break4"]
+[ext_resource type="Animation" path="res://mods_builtin/player_battle/animation/character/plant/VSGravestone/VSGravestone_break5.tres" id="14_break5"]
+[ext_resource type="Script" path="res://data/character/resource_body_change.gd" id="15_bodychange"]
+[ext_resource type="Script" path="res://src/entities/character/components/damage_modifier_component/component_immune_mower.gd" id="16_immmower"]
+
+; idle（静帧）+ rise（出土）+ break1~5（受损五阶）合成一个库（挂到动画场景里那个 AnimLib 上）
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_vsg"]
+_data = {
+&"VSGravestone_idle": ExtResource("6_idle"),
+&"VSGravestone_rise": ExtResource("7_rise"),
+&"VSGravestone_break1": ExtResource("10_break1"),
+&"VSGravestone_break2": ExtResource("11_break2"),
+&"VSGravestone_break3": ExtResource("12_break3"),
+&"VSGravestone_break4": ExtResource("13_break4"),
+&"VSGravestone_break5": ExtResource("14_break5")
+}
+
+; 出土裁剪板：**裁剪模式必须 2；底必须「照常提交绘制、但看不见」**。三条都是 2026-10-25
+; 探针实测（黑底格子逐像素统计，见 docs/工作记录/2026-10-25_产脑光墓碑.md）：
+;   · `clip_children` 用 1（ONLY）→ 裁的是「**直接子节点**」，而本株直接子节点是动画挂点
+;     （自己一个像素都不画）→ 裁剪区域为空 → **整棵动画连同板都不渲染**（墓碑直接消失）；
+;   · 底不画（`StyleBoxEmpty` / 全透明）→ 没有裁剪区 → 石碑出土时整截从地下露出来；
+;   · 底调成低 alpha（1/255、0.02）→ 绘制命令被引擎按透明度剔除 → 同样没有裁剪区 →
+;     连石碑一起被裁没。
+; 正解：底用普通 `StyleBoxFlat`（命令照常提交、矩形被记下 → 裁剪区成立），再挂一个输出
+; 全透明的 shader（剔除发生在光栅化，不影响裁剪区）—— 裁剪照常，板肉眼完全看不见。
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mask"]
+shader = ExtResource("9_maskshader")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mask"]
+
+[node name="PlayerBattleVsGravestone" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+zombie_type = &"zombie_card_vsgravestone"
+
+[node name="HpComponent" parent="." index="4"]
+max_hp = 300
+
+; 血量阶段变化组件：本株的受损外观由脚本自己播 `break1~5`，**不走**它
+; （见 `vsgravestone_zombie.gd` 文件头）。但它必须有一份**对齐的非空表**：
+; 留空的话 `component_ready()` 会按僵尸默认补两档（2/3、1/3 血），而 `body_change`
+; 仍是空数组 → 掉到 1/3 血时 `body_change[i]` 越界抛错，把 `signal_hp_loss` 后面的
+; 接收者（脚本里的 `_on_hp_loss`）一起打断（2026-10-25 探针抓到的）。
+; 这里只留死亡线 0 + 一个 null 档：每个阶段都 `continue`，外观全交给脚本。
+[node name="HpStageChangeComponent" parent="." index="3"]
+boundary_value_hp = Array[int]([0])
+body_change = Array[ExtResource("15_bodychange")]([null])
+
+; 动画不进 AnimationTree：换空组件，由脚本直接播 AnimLib
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+; 灰烬：DLC 没有灰烬动画，`CharredComponent` 换回基类（只把本体 reparent 出去），
+; 被樱桃炸弹 / 火爆辣椒烧死时不至于去 `$ZombieCharred/CharredCorrect/AnimLib` 取空节点
+[node name="CharredComponent" parent="." index="5"]
+script = ExtResource("5_charred")
+
+; 出土裁剪板：把整段动画裁在「地面以上」（Body 本地 y ≤ +10，即墓碑脚底那条线）——
+; rise 里石碑从 y=78.8 升到 6.3，起始大半截在地面以下，不裁的话出土时会看到
+; 石碑悬空滑上来（本体墓碑的出土就是 Panel clip_children 这么裁的，见 tombstone.tscn）。
+; 墓土（Stone_dirt）在动画部件里本来就画在石碑**上面**（reanim 轨道序即层序），
+; 正好盖住裁剪缝。
+; ⚠️ Panel 挂在 Node2D 下时锚点不生效，矩形就是 offsets 那块（本体墓碑同一口径）。
+; ⚠️ 矩形**要罩住受损动画崩出去的碎块**（2026-10-25 实测）：五段 break 里碎块最远飞到
+;   Body 本地 x[-57.3, 77.3]、y[-117.5, 9.9]（Chunk / Layer / Bit 各自带缩放，按贴图尺寸量）；
+;   板子原来只有 90×110（x[-45, 45]、y[-100, 10]），碎块一出界就被裁掉半截。
+;   这里取 x[-80, 100]、y[-150, 10]：**只把「地面以下（y > 10）」裁掉**，左右上留够余量。
+;   别把底边也往下放 —— 底边就是那条地面线，rise 靠它藏住地下半截。
+;   ⚠️ 改这四条 offsets = 挪了动画的坐标系（动画节点是板的孩子），必须同步反补
+;      `VSGravestoneAnim.position`（算法见文件头「站位」）。
+[node name="VSGravestoneMask" type="Panel" parent="Body"]
+clip_children = 2
+offset_left = -80.0
+offset_top = -150.0
+offset_right = 100.0
+offset_bottom = 10.0
+mouse_filter = 2
+material = SubResource("ShaderMaterial_mask")
+theme_override_styles/panel = SubResource("StyleBoxFlat_mask")
+
+[node name="VSGravestoneAnim" parent="Body/VSGravestoneMask" instance=ExtResource("3_anim")]
+position = Vector2(40.5, 69.7)
+
+; 动画场景里的 AnimLib 换成本地合成的七段库（idle / rise / break1~5，原因见文件头）
+[node name="AnimLib" parent="Body/VSGravestoneMask/VSGravestoneAnim" index="91"]
+libraries = {
+&"": SubResource("AnimationLibrary_vsg")
+}
+
+; 脑子出生点：墓碑顶部（动画节点本地坐标，脚底中心 (39.5, 90.3) 往上约 55 px）
+[node name="Marker2DCreateSun" type="Marker2D" parent="Body"]
+position = Vector2(0, -60)
+
+; 产脑子组件：节奏沿用向日葵默认（首次 3~12.5 s，之后 23.5~25 s，每次 25 脑子）
+[node name="CreateSunComponent" type="Node2D" parent="." node_paths=PackedStringArray("marker_2d_create_sun")]
+script = ExtResource("8_createbrains")
+marker_2d_create_sun = NodePath("../Body/Marker2DCreateSun")
+
+[node name="CreateSunTimer" type="Timer" parent="CreateSunComponent"]
+one_shot = true
+
+; 免疫小推车（2026-10-26）：车体碾过来变成一次 `E_DamageCause.Mower` 的秒杀伤害，
+; 由这个修饰器组件在伤害管线里整包取消（血不掉、压扁演出不播）。
+[node name="ImmuneMowerComponent" type="Node2D" parent="."]
+script = ExtResource("16_immmower")
+
+[connection signal="timeout" from="CreateSunComponent/CreateSunTimer" to="CreateSunComponent" method="_on_create_sun_timer_timeout"]

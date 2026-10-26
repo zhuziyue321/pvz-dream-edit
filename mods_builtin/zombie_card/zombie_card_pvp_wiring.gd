@@ -19,8 +19,9 @@ extends Node
 ## 卡还挂在占位格里，存储 / 冷却 / 点卡全走本体那套。
 ##
 ## ⚠️ 只管卡槽与选卡：对战胜负 / 放置限制是对战逻辑的事，本接线不碰。
-## 脑子的「账本」在这（`_brains` + `add_brains()`）：目前唯一的收入口是
-## 产脑光墓碑（见 `vsgravestone/component_create_brains.gd`），日后做脑子收入也归这一口。
+## 脑子的「账本」在这（`_brains` + `add_brains()`）：目前唯一的收入口是**玩家对战模组**的
+## 产脑光墓碑（`mods_builtin/player_battle/vsgravestone/component_create_brains.gd`，
+## 它按节点名 `ZombieCardPvpWiring` 找到本接线入账），日后做脑子收入也归这一口。
 
 const Settings := preload("zombie_card_settings.gd")
 const BankView := preload("zombie_card_battle_slot.tscn")
@@ -29,8 +30,8 @@ const ChoosePanel := preload("zombie_card_choose_panel.tscn")
 const BrainSun := preload("zombie_card_brain_sun.gd")
 
 ## 模组素材（相对模组目录；`ModManager.load_mod_asset()` 两个加载根都认）
+## 僵尸卡卡面不在这里：全模组共用 `Settings.ASSET_ZOMBIE_CARD_BG`（所有僵尸卡一张底图）
 const ASSET_SEED_BANK := "ZombieSeedBank.png"
-const ASSET_ZOMBIE_SEED := "ZombieSeed.png"
 const ASSET_CHOOSER_BACKGROUND := "SeedChooser_Background_I_Zombie.png"
 const ASSET_BRAIN_SUN := "BrainSun.png"
 const ASSET_BRAIN_GLOW_BIG := "BrainGlowBig.png"
@@ -90,12 +91,13 @@ func _configure_slot() -> void:
 	_brains = Settings.PLAYER_BATTLE_START_BRAINS
 
 
-## 每张卡判「够不够」用哪个池：僵尸 / 僵王卡与产脑光墓碑卡问脑子，其余（植物）问阳光
+## 每张卡判「够不够」用哪个池：僵尸 / 僵王卡问脑子，其余（植物）问阳光
+## （产脑光墓碑本身也是僵尸卡 —— 它 2026-10-25 从植物改成僵尸单位，不用再单判）
 func _currency_for_card(card: Card) -> int:
 	return _brains if costs_brains(card) else _slot.sun_value
 
 
-## 用卡之后扣哪笔：僵尸 / 僵王卡与产脑光墓碑卡扣脑子（刷计数 + 重判够不够），其余扣阳光
+## 用卡之后扣哪笔：僵尸 / 僵王卡扣脑子（刷计数 + 重判够不够），其余扣阳光
 func _on_card_cost(card: Card) -> void:
 	if costs_brains(card):
 		_brains = _brains - card.sun_cost
@@ -111,17 +113,101 @@ static func is_zombie_card(card: Card) -> bool:
 		or card.card_type == ResourceCardReference.CardType.ZombieBoss)
 
 
-## 产脑光墓碑卡：**植物类卡**（运行期植物，走植物种植那套落位）但**花脑子** ——
-## 它是僵尸方的产钱单位，50 脑光放一株、周期性给脑子入账
-## （数值见 `zombie_card_settings.gd`；入账走 `add_brains()`）
-static func is_tombstone_card(card: Card) -> bool:
-	return card != null and card.card_type == ResourceCardReference.CardType.Plant \
-		and card.card_plant_type == Settings.TOMBSTONE_PLANT_ID
-
-
-## 这张卡花不花脑子：僵尸 / 僵王卡，加上墓碑卡
+## 这张卡花不花脑子：僵尸 / 僵王卡
+##
+## ★ 产脑光墓碑（玩家对战模组）2026-10-25 已从**植物**改成**僵尸单位**：
+##   它是 `CardType.Zombie`，`is_zombie_card()` 直接判中 —— 本文件不再需要
+##   向玩家对战模组确认「这是不是那张植物类卡」，货币路由与卡面统一走僵尸这条线。
 static func costs_brains(card: Card) -> bool:
-	return is_zombie_card(card) or is_tombstone_card(card)
+	return is_zombie_card(card)
+
+
+#region 对战花费（PVZ DLC Edition 对战口径）
+## 这张僵尸 / 僵王卡在对战里花多少脑子；不是这两类 / 表里没登记时返回 -1
+##
+## 表在 `zombie_card_settings.gd` 的 `PLAYER_BATTLE_ZOMBIE_COSTS`（2026-10-25 从
+## PVZ DLC Edition 对战模式同步）。**只改这张卡自己的 `sun_cost`**，不动角色注册表 ——
+## 「我是僵尸」用的还是原口径，两边互不影响。
+static func versus_cost_of(card: Card) -> int:
+	if card == null:
+		return -1
+	if card.card_type == ResourceCardReference.CardType.Zombie:
+		return int(Settings.PLAYER_BATTLE_ZOMBIE_COSTS.get(card.card_zombie_type, -1))
+	if card.card_type == ResourceCardReference.CardType.ZombieBoss:
+		return int(Settings.PLAYER_BATTLE_ZOMBIE_COSTS.get(card.card_zombie_boss_type, -1))
+	return -1
+
+
+## 把一张卡的费用换成对战口径（表里没登记就保持原值）
+static func apply_versus_cost(card: Card) -> void:
+	var cost := versus_cost_of(card)
+	if cost >= 0:
+		card.sun_cost = cost
+
+
+## 候选容器也换：面板上显示的数字是**容器自己**的 `sun_cost`，
+## 内层那张卡带着另一份（选中后原样搬进卡槽）—— 两份都要改
+static func apply_versus_cost_to_container(container: CardCandidateContainer) -> void:
+	if container == null or container.card == null:
+		return
+	var cost := versus_cost_of(container.card)
+	if cost < 0:
+		return
+	container.sun_cost = cost
+	container.card.sun_cost = cost
+
+
+## 槽里所有僵尸 / 僵王卡换成对战花费（选卡收尾走一遍）
+static func sync_versus_costs(slot: CardSlotBattle) -> void:
+	if slot == null:
+		return
+	for card in slot.curr_cards:
+		apply_versus_cost(card)
+#endregion
+
+
+#region 对战冷却（PVZ DLC Edition 对战口径）
+## 这张僵尸 / 僵王卡在对战里冷却多少秒；不是这两类 / 表里没登记时返回 -1
+##
+## 表在 `zombie_card_settings.gd` 的 `PLAYER_BATTLE_ZOMBIE_COOLDOWNS`（2026-10-25 从
+## PVZ DLC Edition wiki 同步；wiki 没写全，出处与「待核实」见那张表的注释）。
+## **只改这张卡自己的 `cool_time`**，不动角色注册表 ——「我是僵尸」仍是 0 冷却。
+static func versus_cooldown_of(card: Card) -> float:
+	if card == null:
+		return -1.0
+	if card.card_type == ResourceCardReference.CardType.Zombie:
+		return float(Settings.PLAYER_BATTLE_ZOMBIE_COOLDOWNS.get(card.card_zombie_type, -1.0))
+	if card.card_type == ResourceCardReference.CardType.ZombieBoss:
+		return float(Settings.PLAYER_BATTLE_ZOMBIE_COOLDOWNS.get(card.card_zombie_boss_type, -1.0))
+	return -1.0
+
+
+## 把一张卡的冷却换成对战口径（表里没登记就保持原值）
+##
+## ⚠️ 必须在**用卡之前**改：`Card.card_cool()` 是按当时的 `cool_time` 起表的，
+##    用卡后再改只会影响下一次。
+static func apply_versus_cooldown(card: Card) -> void:
+	var cool := versus_cooldown_of(card)
+	if cool >= 0.0:
+		card.cool_time = cool
+
+
+## 候选容器也换：`CardCandidateContainer._ready()` 会把内层卡的 `cool_time` 记进
+## `source_cool_time`（还池时按它恢复），所以**只改内层卡**、不动源值 ——
+## 下一关重新取件时容器会把卡的冷却写回本体口径，再由这里改一遍。
+static func apply_versus_cooldown_to_container(container: CardCandidateContainer) -> void:
+	if container == null or container.card == null:
+		return
+	apply_versus_cooldown(container.card)
+
+
+## 槽里所有僵尸 / 僵王卡换成对战冷却（选卡收尾走一遍）
+static func sync_versus_cooldowns(slot: CardSlotBattle) -> void:
+	if slot == null:
+		return
+	for card in slot.curr_cards:
+		apply_versus_cooldown(card)
+#endregion
 
 
 ## 脑子变了之后把槽里花脑子的卡（僵尸 / 僵王 / 墓碑）按新脑子数重判一遍
@@ -203,8 +289,8 @@ func _install_choose_panel(main_game: MainGameManager, card_manager: CardManager
 	var card_slot_norm = card_manager.card_slot_norm
 	var candidate = card_slot_norm.card_slot_candidate if card_slot_norm != null else null
 	if candidate == null:
-		## 本关没有选卡界面（比如以后出的快速开局入口）：直接发默认六张兜底
-		_deal_default_zombie_cards()
+		## 本关没有选卡界面（比如以后出的快速开局入口）：僵尸块就空着
+		## —— 没有「默认六张」兜底了，没选卡 = 这一局僵尸方没有卡可出
 		return
 	var chooser_bg := _load_texture(ASSET_CHOOSER_BACKGROUND)
 	var panel := ChoosePanel.instantiate()
@@ -217,9 +303,9 @@ func _install_choose_panel(main_game: MainGameManager, card_manager: CardManager
 		panel_x = 465.0
 	panel.position = Vector2(panel_x, 615.0)
 	card_slot_norm.add_child(panel)
-	panel.setup(_slot, _load_texture(ASSET_ZOMBIE_SEED), chooser_bg)
+	panel.setup(_slot, _load_texture(Settings.ASSET_ZOMBIE_CARD_BG), chooser_bg)
 	_choose_panel = panel
-	## 选卡结束：收面板；一张都没选就发默认六张
+	## 选卡结束：收面板（僵尸块保持玩家点出来的那些，不再发默认牌）
 	## （⚠️ 多轮重选不会重新拉起这一面 —— 对战目前没有多轮，先不管）
 	main_game.signal_choose_card_finished.connect(_on_choose_card_finished)
 
@@ -230,19 +316,13 @@ func _on_choose_card_finished() -> void:
 		_choose_panel = null
 
 
-## 一张僵尸卡都没选时的兜底：给僵尸块发默认六张（`set_cards` 会按块放位，不动植物那半）
-func _deal_default_zombie_cards() -> void:
-	_slot.set_cards(ResourceCardReference.create_zombie_list(Settings.PLAYER_BATTLE_ZOMBIE_CARDS))
-	restyle_zombie_cards(_slot, _load_texture(ASSET_ZOMBIE_SEED))
-	_slot.main_game_refresh_card()
-
-
-## 给槽里所有僵尸 / 僵王卡换上 PVZ2 的僵尸卡牌卡面（选卡收尾 / 默认发牌都要）
+## 给槽里所有**花脑子的卡**（僵尸 / 僵王，含产脑光墓碑这只僵尸）换上模组共用那张卡面
+## （选卡收尾时用；图见 `Settings.ASSET_ZOMBIE_CARD_BG`）
 static func restyle_zombie_cards(slot: CardSlotBattle, zombie_seed_tex: Texture2D) -> void:
 	if zombie_seed_tex == null:
 		return
 	for card in slot.curr_cards:
-		if not is_zombie_card(card):
+		if not costs_brains(card):
 			continue
 		if is_instance_valid(card.card_bg):
 			card.card_bg.texture = zombie_seed_tex

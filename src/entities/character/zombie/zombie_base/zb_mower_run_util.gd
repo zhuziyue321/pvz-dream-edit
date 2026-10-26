@@ -1,10 +1,17 @@
 class_name ZombieMowerRunUtil
-## 僵尸「被小推车碾压」的完整表现（原 Zombie000Base.be_mowered_run / be_mowered_run_anim_norm）
+## 僵尸「被小推车碾压」的**表现**编排（原 Zombie000Base.be_mowered_run / be_mowered_run_anim_norm）
 ## （见 docs/参考存档/重构拆分方案.md 的 B5）
 ##
 ## 为什么单独放一个文件：
 ##   50 行里全是「掉防具 → 收集掉落物 → 压扁 → 逐个掉出去」的表现编排，
 ##   和僵尸基类的其它职责没有交集，抽走后基类只留一行转发。
+##
+## ⚠️ **这里不结算血量**（2026-10-26 起）：碾压的致死已经上移到
+##   `Zombie000Base.be_mowered_run()` —— 那里把"小推车"包成一次
+##   `E_DamageCause.Mower` + `is_instant_kill` 的伤害走 `DamageSystem`，
+##   免疫单位（挂 `ComponentImmuneMower`）在修饰器链上就把包取消了，**根本进不到本文件**。
+##   所以本文件只在"确定压得动"之后被调用，职责只剩"死得难看"：
+##   掉防具 → 停止移动与动画 → 自爆节点 / 压扁 → 逐个掉出手和头 → 删节点。
 ##
 ## 约定：
 ##   · 全部 static，不持有状态；需要改僵尸自身的字段时显式传 zombie 进来
@@ -12,15 +19,11 @@ class_name ZombieMowerRunUtil
 ##     这样这里不需要写成协程，僵尸被 queue_free 时整条 Tween 一起被杀，
 ##     不会像原来的 SceneTreeTimer 那样在僵尸已经释放后还去动它的节点
 
-## 被小推车碾压：结算死亡 → 播放表现 → 删除节点
-static func run(zombie: Zombie000Base, lawn_mover: LawnMover) -> void:
-	## 取消亡语
-	zombie.is_can_death_language = false
-	## 首先死亡无掉落
-	zombie.hp_component.hp_loss_to_death(false)
+## 碾压表现入口：停移动 / 停动画 → 自爆节点优先，否则走通用压扁演出后删除节点
+static func play_crush(zombie: Zombie000Base, lawn_mover: LawnMover) -> void:
 	## 禁用移动组件 停止移动
 	zombie.move_component.disable_component(ComponentNormBase.E_IsEnableFactor.Death)
-	## 停止动画
+	## 停止动画（此时死亡段可能已经起头，压扁不需要它）
 	zombie.anim_component.stop_anim()
 
 	var zombie_death_bomb: ZombieDeathBomb = zombie.get_node_or_null("Body/ZombieDeathBomb")
@@ -56,9 +59,14 @@ static func start_anim_norm(zombie: Zombie000Base, lawn_mover: LawnMover) -> Twe
 	## 掉落本体掉落物，每个间隔 0.1 秒
 	## 这里刻意不用 for node_drop in ... + lambda：GDScript 的循环变量会被 lambda 捕获成同一个，
 	## 结果是所有掉落物都掉到最后一个身上，必须 bind 把值拷进去
+	##
+	## `lawn_mover` 允许为空（探针 / 脚本直接调用时没有车体）：掉在原地，不崩
+	var ground_x: float = zombie.global_position.x
+	if is_instance_valid(lawn_mover):
+		ground_x = lawn_mover.global_position.x
 	for i in all_node_drop.size():
 		tween.tween_callback(
-			drop_one_body_part.bind(all_node_drop[i], lawn_mover.global_position.x)
+			drop_one_body_part.bind(all_node_drop[i], ground_x)
 		)
 		tween.tween_interval(0.1)
 	return tween

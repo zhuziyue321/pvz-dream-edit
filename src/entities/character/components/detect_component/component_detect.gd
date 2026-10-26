@@ -384,6 +384,12 @@ func _judge_enemy_is_can_be_attack(enemy:Character000Base)->bool:
 
 	## 检测到僵尸
 	elif enemy is Zombie000Base:
+		## 魅惑僵尸（僵尸阵营里归植物方的那批）**无视**「非战斗单位」：
+		## 对战里的靶子僵尸 / 产脑光墓碑只当靶子、只产脑子，不该被自己人啃。
+		## 本体墓碑不是角色（`tombstone.tscn` 是场景物件），天然没这个问题；这两只是僵尸，得显式挡。
+		## 普通僵尸走不到这里 —— 上面的阵营过滤已经把它挡掉了（僵尸阵营打僵尸 = 非敌人）。
+		if owner is Zombie000Base and not enemy.is_targetable_by_hypno_zombie():
+			return false
 		if can_attack_status_component.can_attack(enemy):
 			return true
 		else:

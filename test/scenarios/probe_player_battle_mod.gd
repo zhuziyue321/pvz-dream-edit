@@ -7,12 +7,16 @@ extends RefCounted
 ##   2. 模组**开着**时：牌出现了，且注册表槽位 `ChooseLevelPlayerBattle` 注入的是玩家对战选关界面
 ##   3. 那块牌的常态 / 按下贴图都是多人版，按下能进那一页
 ##   4. 那一页：标题是「玩 家 对 战」，页里挂着**一个**对局条目「玩家对战：白天」
-##   5. 点那一关 ⇒ 进白天的关卡（草坪上没有僵尸），验「12 槽合一」：
+##   5. 点那一关 ⇒ 进白天的关卡（选卡阶段场上还没有僵尸），验「12 槽合一」：
 ##      一个 12 格出战卡槽（前 6 植物 / 后 6 僵尸，分块分池），右上反转银行只是外观
 ##      （僵尸卡模组装的，脑子计数在右）
-##   6. 退回主菜单也没崩
+##   6. 选卡收尾后，关卡每行摆一只**靶子僵尸**（共 5 只，原地不动）
+##   7. 退回主菜单也没崩
 ##
 ## 无头可跑：`powershell -ExecutionPolicy Bypass -File test/run_autopilot.ps1 -Scenario probe_player_battle_mod`
+
+## 僵尸卡面底图问僵尸卡模组的共享常量（所有僵尸卡同一张），探针别另抄一份文件名
+const ZombieCardSettings := preload("res://mods_builtin/zombie_card/zombie_card_settings.gd")
 
 var _failed := 0
 
@@ -124,11 +128,15 @@ func run(a) -> void:
 		_check(a, "这一关不出怪（monster_mode = Null）",
 			mg.game_para != null and mg.game_para.monster_mode == ConstLevelData.E_MonsterMode.Null,
 			"" if mg.game_para == null else str(mg.game_para.monster_mode))
+		## 现在这一关会在**选卡收尾、放开操作之后**每行摆一只靶子僵尸
+		## （见 `mods_builtin/player_battle/levels/player_battle_day.gd`）——
+		## 所以「场上干净」只在选卡阶段成立，摆靶子的检查放到卡槽检查之后
 		var znum := 0
 		if mg.zombie_manager != null:
 			znum = mg.zombie_manager.all_zombies_1d.size()
-		_check(a, "草坪上没有僵尸", znum == 0, "场上 %d 只" % znum)
+		_check(a, "选卡阶段草坪上没有僵尸", znum == 0, "场上 %d 只" % znum)
 		await _check_card_slots(a, mg)
+		await _check_target_zombies(a, mg)
 
 	## ---- 退回主菜单（空关卡没有结束条件，玩家只能自己退出）----
 	GlobalUtils.change_scene(
@@ -138,6 +146,38 @@ func run(a) -> void:
 	_check(a, "退出后主游戏已释放", not is_instance_valid(GameContext.curr_main_game))
 
 	_finish(a)
+
+
+## ---- 靶子僵尸（每行一只、原地不动）----
+##
+## 关卡摆靶子是在 `allow_operation()` 之后（选卡收尾那一步），所以这里要轮询等它们出现。
+## 「不动」是由靶子自己的脚本按住的（`target_zombie.gd` 的 `ready_norm()` 给移动组件上
+## `E_MoveFactor.IsDisable`），探针只读 `move_component.is_move`。
+func _check_target_zombies(a, mg) -> void:
+	var zm = mg.zombie_manager
+	_check(a, "僵尸管理器在", zm != null)
+	if zm == null:
+		return
+	var count := 0
+	for _i in range(50):
+		await a.wait(0.2)
+		count = zm.all_zombies_1d.size()
+		if count >= 5:
+			break
+	_check(a, "每行摆了一只靶子僵尸（共 5 只）", count == 5, "场上 %d 只" % count)
+	if count == 0:
+		return
+	var all_target := true
+	var all_still := true
+	for z in zm.all_zombies_1d:
+		if z == null:
+			continue
+		if z.zombie_type != &"pb_target_zombie":
+			all_target = false
+		if z.move_component != null and z.move_component.is_move:
+			all_still = false
+	_check(a, "场上僵尸都是靶子僵尸", all_target)
+	_check(a, "靶子僵尸都站着不动", all_still)
 
 
 ## ---- 一个 12 格出战卡槽（前 6 植物 / 后 6 僵尸）+ 右上银行视图 ----
@@ -224,9 +264,11 @@ func _check_zombie_choose_panel(a, mg, slot, bank) -> void:
 		for container in grid.get_children():
 			containers.append(container)
 	_check(a, "面板里的候选僵尸卡超过六张", containers.size() > 6, "%d 张" % containers.size())
-	var excluded: Array[StringName] = [ZombieIds.DANCER, ZombieIds.BOBSLED_SINGLE, ZombieIds.DUCKYTUBE]
+	var excluded: Array[StringName] = [ZombieIds.BOBSLED_SINGLE, ZombieIds.DUCKYTUBE]
 	var has_excluded := false
 	var has_doctor := false
+	## 普通僵尸在面板里的先后（僵王不算，它在最末尾单独补）
+	var zombie_order: Array[StringName] = []
 	for container in containers:
 		var candidate_card = container.card
 		if candidate_card == null:
@@ -234,10 +276,76 @@ func _check_zombie_choose_panel(a, mg, slot, bank) -> void:
 		if candidate_card.card_type == ResourceCardReference.CardType.ZombieBoss \
 				and candidate_card.card_zombie_boss_type == ZombieBossIds.DOCTOR:
 			has_doctor = true
-		elif candidate_card.card_zombie_type in excluded:
+			continue
+		if candidate_card.card_type == ResourceCardReference.CardType.Zombie:
+			zombie_order.append(candidate_card.card_zombie_type)
+		if candidate_card.card_zombie_type in excluded:
 			has_excluded = true
-	_check(a, "面板里没有伴舞 / 单个雪橇车队员 / 鸭子救生圈", not has_excluded)
+	_check(a, "面板里没有单个雪橇车队员 / 鸭子救生圈", not has_excluded)
 	_check(a, "面板里有僵王博士", has_doctor)
+	## 显示顺序（`PLAYER_BATTLE_MOVE_AFTER` + **伴舞已放开可选**，2026-10-25 用户口径）：
+	## 墓碑 ↔ 旗帜原来那格 ⇒ 墓碑紧跟普僵；旗帜挪到海豚骑士后面；伴舞按登记顺序排在舞王后面
+	_check(a, "产脑光墓碑紧跟普僵（第 2 格）",
+		_next_to(zombie_order, ZombieIds.NORM, &"zombie_card_vsgravestone"), str(zombie_order))
+	_check(a, "伴舞僵尸在面板里、且紧跟舞王",
+		_next_to(zombie_order, ZombieIds.JACKSON, ZombieIds.DANCER), str(zombie_order))
+	_check(a, "旗帜僵尸挪到海豚骑士后面",
+		_next_to(zombie_order, ZombieIds.DOLPHINRIDER, ZombieIds.FLAG), str(zombie_order))
+	## 僵尸 / 僵王卡的卡面底图是模组共用那张（`Seeds_ZombieSun`，50×70）——
+	## 比同一个资源对象（`==`），别只比尺寸（植物卡 norm 底图也是 50×70，比尺寸会漏判）；
+	## 墓碑是植物类卡，保留它自己的卡面，不参与这条
+	var panel_face_tex := ModManager.load_mod_asset(
+		ModIds.ZOMBIE_CARD, ZombieCardSettings.ASSET_ZOMBIE_CARD_BG) as Texture2D
+	var panel_zombie_cards := 0
+	var panel_restyled := 0
+	for container in containers:
+		var panel_card = container.card
+		if panel_card == null or panel_card.card_type == ResourceCardReference.CardType.Plant:
+			continue
+		panel_zombie_cards += 1
+		if panel_card.card_bg != null and panel_card.card_bg.texture == panel_face_tex:
+			panel_restyled += 1
+	_check(a, "面板里的僵尸卡候选已经换上对战卡面（Seeds_ZombieSun）",
+		panel_zombie_cards > 0 and panel_restyled == panel_zombie_cards,
+		"%d/%d" % [panel_restyled, panel_zombie_cards])
+	## 产脑光墓碑 2026-10-25 改成**僵尸单位**：它就是上面那圈僵尸卡里的一张
+	## （`panel_restyled` 已经把它算进去了），这里额外确认它确实以僵尸卡身份出现
+	var tombstone_as_zombie := false
+	for container in containers:
+		var tomb_card = container.card
+		if tomb_card == null:
+			continue
+		if tomb_card.card_type == ResourceCardReference.CardType.Zombie \
+				and tomb_card.card_zombie_type == &"zombie_card_vsgravestone":
+			tombstone_as_zombie = true
+			break
+	_check(a, "产脑光墓碑以僵尸卡身份出现在面板里（不再混在植物堆里）", tombstone_as_zombie)
+	## 面板上显示的花费 = 对战口径（容器自己那份 `sun_cost`）
+	var panel_cost_ok := true
+	var panel_cost_detail := ""
+	for container in containers:
+		var c = container.card
+		if c == null or c.card_type != ResourceCardReference.CardType.Zombie:
+			continue
+		var expect: int = int(ZombieCardSettings.PLAYER_BATTLE_ZOMBIE_COSTS.get(c.card_zombie_type, -1))
+		if expect >= 0 and container.sun_cost != expect:
+			panel_cost_ok = false
+			panel_cost_detail += "%s=%d(应 %d) " % [c.card_zombie_type, container.sun_cost, expect]
+	_check(a, "面板候选卡显示的是对战花费（DLC Edition）", panel_cost_ok, panel_cost_detail)
+	## 面板候选卡的冷却 = 对战口径（表见 `zombie_card_settings.gd` 的
+	## `PLAYER_BATTLE_ZOMBIE_COOLDOWNS`；wiki 没写全的几只表里也标了「待核实」）
+	var panel_cool_ok := true
+	var panel_cool_detail := ""
+	for container in containers:
+		var cc = container.card
+		if cc == null or cc.card_type != ResourceCardReference.CardType.Zombie:
+			continue
+		var expect_cool: float = float(
+			ZombieCardSettings.PLAYER_BATTLE_ZOMBIE_COOLDOWNS.get(cc.card_zombie_type, -1.0))
+		if expect_cool >= 0.0 and not is_equal_approx(cc.cool_time, expect_cool):
+			panel_cool_ok = false
+			panel_cool_detail += "%s=%.1f(应 %.1f) " % [cc.card_zombie_type, cc.cool_time, expect_cool]
+	_check(a, "面板候选卡的冷却是对战口径（DLC Edition）", panel_cool_ok, panel_cool_detail)
 	for i in 6:
 		containers[i].card.signal_card_click.emit()
 	_check(a, "点六张 → 僵尸块六张僵尸卡（占第 6~11 格）",
@@ -255,12 +363,46 @@ func _check_zombie_choose_panel(a, mg, slot, bank) -> void:
 	panel.finish_choose()
 	_check(a, "收尾后僵尸块还是玩家选的六张（不发默认牌）", slot.count_cards_in_block(1) == 6,
 		str(slot.count_cards_in_block(1)))
+	## 对战用的卡面底图是模组共用那张 `Seeds_ZombieSun`（50×70）—— 比同一个资源对象（`==`），
+	## 别只比尺寸（植物卡 norm 底图也是 50×70，比尺寸会漏判）
+	var face_tex := ModManager.load_mod_asset(
+		ModIds.ZOMBIE_CARD, ZombieCardSettings.ASSET_ZOMBIE_CARD_BG) as Texture2D
 	var restyled := 0
 	for card in slot.curr_cards:
-		if card != null and card.card_bg != null and card.card_bg.texture != null \
-				and card.card_bg.texture.get_size() == Vector2(50, 70):
+		if card != null and card.card_bg != null and card.card_bg.texture == face_tex:
 			restyled += 1
-	_check(a, "六张卡都换上 PVZ2 僵尸卡面（50×70）", restyled == 6, "%d 张" % restyled)
+	_check(a, "六张卡都换上僵尸卡模组共用那张卡面（Seeds_ZombieSun）", restyled == 6, "%d 张" % restyled)
+	## 槽里僵尸卡的花费 = 对战口径（选卡选中带进来的那份 `sun_cost`，见
+	## `zombie_card_pvp_wiring.sync_versus_costs()` / `zombie_card_settings.gd` 的表）
+	var slot_cost_ok := true
+	var slot_cost_detail := ""
+	for card in slot.curr_cards:
+		if card == null or card.card_type != ResourceCardReference.CardType.Zombie:
+			continue
+		var expect: int = int(ZombieCardSettings.PLAYER_BATTLE_ZOMBIE_COSTS.get(card.card_zombie_type, -1))
+		if expect >= 0 and card.sun_cost != expect:
+			slot_cost_ok = false
+			slot_cost_detail += "%s=%d(应 %d) " % [card.card_zombie_type, card.sun_cost, expect]
+	_check(a, "僵尸块里的卡费用是对战口径（DLC Edition）", slot_cost_ok, slot_cost_detail)
+	## 槽里卡的冷却 = 对战口径（选中 / 收尾各同步一遍，见接线 `sync_versus_cooldowns()`）
+	var slot_cool_ok := true
+	var slot_cool_detail := ""
+	for card in slot.curr_cards:
+		if card == null or card.card_type != ResourceCardReference.CardType.Zombie:
+			continue
+		var expect_slot_cool: float = float(
+			ZombieCardSettings.PLAYER_BATTLE_ZOMBIE_COOLDOWNS.get(card.card_zombie_type, -1.0))
+		if expect_slot_cool >= 0.0 and not is_equal_approx(card.cool_time, expect_slot_cool):
+			slot_cool_ok = false
+			slot_cool_detail += "%s=%.1f(应 %.1f) " % [card.card_zombie_type, card.cool_time, expect_slot_cool]
+	_check(a, "僵尸块里的卡冷却是对战口径（DLC Edition）", slot_cool_ok, slot_cool_detail)
+
+
+## 顺序表里 [param b] 是不是紧跟 [param a]（两张都要在表里）
+func _next_to(order: Array[StringName], a: StringName, b: StringName) -> bool:
+	var ia := order.find(a)
+	var ib := order.find(b)
+	return ia >= 0 and ib == ia + 1
 
 
 ## 僵尸块（第 6~11 格）是不是每格都有卡

@@ -89,12 +89,13 @@ func ready_norm() -> void:
 	set_hurt_window(false)
 
 
-## 僵王免疫小推车 / 屋顶清洁车：车体从它脚下开过去不做任何结算。[br]
-## 普通僵尸走 [code]ZombieMowerRunUtil[/code] 的碾压流程（扣血 + 倒地 + 删除），
-## 僵王体型过大且始终站在草坪外的 [constant FIXED_SPAWN_POSITION]，
-## 既不会被车体检测到，也不应被一次触发带走 —— 这里直接忽略（不做任何结算）。
-func be_mowered_run(_lawn_mover: LawnMover) -> void:
-	pass
+## 僵王免疫小推车 / 屋顶清洁车（**2026-10-26 改法**：不再在这里覆盖空实现）。[br]
+## 小推车已经是一种**特殊伤害**（`ConstDamage.E_DamageCause.Mower` + 秒杀），
+## `Zombie000Base.be_mowered_run()` 把包交给 `DamageSystem`，免疫靠场景里那个
+## `ImmuneMowerComponent`（`DamageModifierComponent` 子类）在修饰器链上整包取消 ——
+## 见 `zombie_boss_base.tscn`。僵王体型过大且始终站在草坪外
+## [constant FIXED_SPAWN_POSITION]，本来也不会被车体检测到，这条免疫只是兜底。
+## ⚠️ 别再把它改回空覆盖：那样会绕过伤害管线，与靶子僵尸 / 产脑光墓碑的免疫口径分叉。
 
 
 ## 只读检查普通伤害、冰冻和辣椒共用的受击资格，不扣血、不修改状态或发出信号。[br]

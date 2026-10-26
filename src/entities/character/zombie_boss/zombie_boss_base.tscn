@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://cktksmdbn2nmn" path="res://src/entities/character/zombie/zombie_base.tscn" id="1_bu51k"]
 [ext_resource type="Script" path="res://src/entities/character/zombie_boss/zb_base.gd" id="2_gwo2k"]
 [ext_resource type="Script" uid="uid://cqjynadpvsk20" path="res://src/entities/character/components/charred_component/component_charred.gd" id="3_charred"]
+[ext_resource type="Script" path="res://src/entities/character/components/damage_modifier_component/component_immune_mower.gd" id="4_immmower"]
 
 ; 僵王是正式僵尸：这里实例 Zombie000Base 的底座场景，一次性继承
 ; Move / Attack / Charred / Swim / DropItem / CriticalValue 等组件。
@@ -35,3 +36,8 @@ collision_layer = 512
 ; 不能写 type=，否则会被判成重名新节点而被自动改名。
 [node name="CharredComponent" parent="."]
 script = ExtResource("3_charred")
+
+; 免疫小推车（2026-10-26）：车体碾过来是一次 `E_DamageCause.Mower` 的秒杀伤害，
+; 由这个修饰器组件在伤害管线里整包取消 —— 替代了原先 `be_mowered_run()` 的空覆盖。
+[node name="ImmuneMowerComponent" type="Node2D" parent="."]
+script = ExtResource("4_immmower")

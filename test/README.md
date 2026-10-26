@@ -27,7 +27,7 @@
 
 `tools/check_content_wiring.ps1`（H-14①）：把「新增一个角色要动哪几处」的纪律机械化 —— 遍历 `PlantIds.ALL` / `ZombieIds.ALL`，逐个校验「注册表数值表（`PLANT_INFO` / `ZOMBIE_INFO`）有条目 + 场景 preload 文件存在」，缺一项即 exit 1。写它时按 H-09 教训做了注入验证（把某个场景路径改坏 → `FAIL plant PEA_SHOOTER_SINGLE: scene missing`）。已知例外：植物 `WATER_BOWL`（运行期由模组注入的空槽位，故意不在数值表）。⚠️ 原方向里的「动画目录存在」**未做** —— 动画目录命名与 id 非简单对应，需先确认约定再补，避免假绿检查。
 
-> 本仓 `assets/` **在版本控制内**（`git ls-files assets` 有 5339 个文件），云端 CI 技术上可行；
+> 本仓资源根 `pak/` **在版本控制内**（`git ls-files pak` 有 5919 个文件，`assets/` 已清空），云端 CI 技术上可行；
 > 当前只做本地钩子是因为更快、无需 runner —— 先前记的「assets 不入库所以跑不了 CI」**已更正**。
 
 **云端 CI**（2026-10-16 新增，TODO 清单 H-11）：`.github/workflows/ci.yml` 在 runner 上跑「编译门禁 + 快子集探针」。

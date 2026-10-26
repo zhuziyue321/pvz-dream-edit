@@ -1872,8 +1872,8 @@ tracks/153/keys = {
 "times": PackedFloat32Array(0, 0.833333),
 "transitions": PackedFloat32Array(1, 1),
 "values": [{
-"args": [],
-"method": &"random_choose_butter_or_corn"
+"args": ["choose_butter_or_corn"],
+"method": &"on_anim_event"
 }, {
 "args": ["shoot"],
 "method": &"on_anim_event"

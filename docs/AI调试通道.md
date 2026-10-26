@@ -47,13 +47,14 @@
 
 ## 一、怎么「打开游戏」
 
-三种方式，都**带窗口**，按用途选：
+四种方式，按用途选（A/B/C 带窗口；D 无头、无人值守）：
 
 | 方式                            | 怎么起                                         | 窗口 | 跑完                    | 报告落哪                                              |
 | ----------------------------- | ------------------------------------------- | -- | --------------------- | ------------------------------------------------- |
 | **A. 编辑器 F5 + 开关文件**（首选：边看边调） | 让 `test/inject/scenario.gd` 就位，编辑器里按 F5     | 有  | **停止驾驶，窗口留着**，控制权交还玩家 | `res://test/inject/report.txt`                    |
 | **B. 命令行带窗口**（脚本驱动的一遍过）       | `run_autopilot.ps1 -Windowed -Scenario xxx` | 有  | **自动退出**（除非脚本显式要求留窗口） | stdout（PS 打屏）+ `user://autopilot_reports/`        |
 | **C. 只看不驱动**（纯人工上手玩）          | 双击 `test/debug_channel.bat`                 | 有  | 手动关窗口                 | `debug_channel_log.txt` + `user://debug_reports/` |
+| **D. 无头自动跑一关**（无人值守采样）        | 双击 `test/debug_channel_auto.bat`            | 无  | **自动退出**（跑满秒数）       | `debug_channel_auto_log.txt` + `user://debug_reports/` |
 
 ### 方式 A：编辑器 F5 + 开关文件（推荐）
 
@@ -83,7 +84,24 @@ autopilot 照样自动操作并把报告打屏（同时落 `user://autopilot_rep
 ### 方式 C：只看不驱动（纯人工玩）
 
 双击 `test/debug_channel.bat`：游戏正常启动，你自己玩，想记录现场时按 **F10**  
-写一份状态快照，玩完关窗口，`debug_channel_log.txt` 里同时有 Godot 全部输出与结构化报告。
+写一份状态快照，玩完关窗口，`debug_channel_log.txt` 里同时有 Godot 全部输出与结构化报告  
+（结构化报告本体在 `user://debug_reports/`，路径会打进日志）。
+
+### 方式 D：无头自动跑一关（无人值守采样）
+
+双击 `test/debug_channel_auto.bat`：无头启动 → 自动载入 1-1 → 自己跳过选卡 →  
+跑满 `SECONDS`（默认 45）游戏秒 → 采一份运行时状态 → 退出。全程不用点任何东西。
+
+**调试通道自己的命令行开关**（只开调试通道，不注入 autopilot）：
+
+| 开关                              | 作用                                          |
+| ------------------------------- | ------------------------------------------- |
+| `-- --debug-channel`            | 开调试通道：启动只读探针 + 每 120 帧采样 + F10 快照          |
+| `-- --debug-channel-level`      | 上面那个 + **自动载入 1-1 跑 N 秒**再出报告（无头也能用）        |
+| `-- --debug-channel-seconds=45` | 自动关卡的运行秒数（默认 45，配 `-level` 用）               |
+| 存在 `user://debug_channel.on`  | 等效于 `--debug-channel`（不想动命令行时用）              |
+
+> 与 autopilot 是两套东西：方式 D 只采样、不模拟操作；要模拟点击才走方式 A / B。
 
 ### 标准调试动作
 
@@ -103,7 +121,7 @@ autopilot 照样自动操作并把报告打屏（同时落 `user://autopilot_rep
 ### 1. 开关文件（编辑器里人工按 F5）
 
 存在 **`test/inject/scenario.gd`** 时，游戏启动后由自动加载单例 `DebugChannel`  
-把 autopilot 挂进场景树执行它。报告写到 **`test/inject/report.txt`**。  
+把 autopilot 挂进场景树执行它。报告写到 **`test/inject/report.txt`**（`test/inject/sample_report.txt` 是一份样例，可先看格式）。  
 **有窗口时**跑完不关窗口，控制权交还玩家；无头时跑完直接退出。
 
 ### 2. 命令行（`--scenario=`）
@@ -155,6 +173,11 @@ await a.wait_stable("路径")      # 等控件停止移动（动画播完）再�
 await a.click(x, y)             # 真实鼠标事件 + Input.warp_mouse
 await a.click_node("路径")       # 点某个 Control 的【屏幕中心】
 await a.click_plant_cell(row, col)  # 点草坪格子，row/col 与 PlantCell.row_col 一致
+await a.drag(x1, y1, x2, y2)    # 按住拖到目标再松手（合成真实事件，中间补移动帧）
+await a.drag_plant_cell(r1, c1, r2, c2)  # 草坪格子对拖（僵尸迷阵交换相邻两株用这个）
+await a.key("动作名")            # 按一下 InputMap 动作（如 "ShortcutKeys_Card1"）
+await a.keycode(KEY_F10)        # 按一下任意键位
+await a.call_on("路径", "方法", 参数数组)  # 直接在节点上调方法
 await a.wait_scene("关键字", 超时)
 a.finish()                      # 停止驾驶（打开游戏时留窗口，无头时退出）
 a.quit_game()                   # 真退出
@@ -407,7 +430,6 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_bowling_redline.gd` —— 坚果保龄球红线（节点创建 / **画在背景之上** / 落在草坪范围内），报告里出 `[BOWLINGSTRIPE] result=PASS`
 - `test/scenarios/probe_first_coin_advice.gd` —— 第一次掉落钱的一次性提示（弹出「存钱来买更酷的道具吧！」+ 只弹一次 + 停留结束自动消失），报告里出 `[FIRSTCOIN] result=PASS`
 - `test/scenarios/probe_bobsled_bonanza.gd` —— 迷你游戏 13「全面冻结」的冰面机制（开局冰道的行数与覆盖列、冰面不可种植、雪橇队只落在有冰的行、融冰后改出洗冰车、洗冰车把冰铺回来），报告里出 `[BOBSLED] result=PASS`
-- `test/scenarios/probe_x10_note_icon.gd` —— 冒险选关界面 x-10 的「本关看点」图标（1-10 ~ 5-10 都挂纸条 `ZombieNoteSmall.png` 的 `Sprite2D`，不再实例化僵尸），报告里出 `[X10NOTE] result=PASS`
 - `test/scenarios/probe_invisi_ghoul.gd` —— 迷你游戏第 6 关「隐形战争」的隐形渲染（出场本体/影子 alpha=0、冰冻与黄油现形、状态结束后重新隐形，含 1-1 对照组），报告里出 `[INVISIGHOUL] result=PASS`
 - `test/scenarios/probe_zombie_nimble.gd` —— 迷你游戏「僵尸快跑」的全场加速（关卡倍率字段、僵尸 `LevelSpeed` 因子与 2 秒实测位移、豌豆射手攻击 CD 减半，并拿 1-1 当倍率 1.0 的对照组），报告里出 `[NIMBLE] result=PASS`
 - `test/scenarios/probe_slot_machine.gd` —— 迷你游戏第 3 关「拉霸」（UI 已挪到 `src/levels/mode_minigame/minigame_03_slot_machine_ui.gd`：开局状态、真点拉杆扣 25 阳光、转轮停下、两同/三同分别给免费植物与阳光、累计收集达标后掉奖杯 → 点奖杯进结算），报告里出 `[SLOT] result=PASS`
@@ -417,6 +439,36 @@ autopilot 的 `click_first` / `click_node` / `click_plant_cell` 已经全部换�
 - `test/scenarios/probe_level_registry_order.gd` —— 冒险模式第 n 个关卡 id 必须等于 `adventure_<大关>_<小关>`（**顺序 == 关卡序号**，是把选关页改成注册表动态生成的前提：level_id 按按钮顺序发放、save_game_name 由它拼出，错一位 = 全体玩家进度错位），报告里出 `[LVREG] result=PASS`
 - `test/scenarios/probe_debug_window_hotkey.gd` —— 调试窗口（Ctrl+Q）的热键与可见性链路（探针自己打开**调试模组** / 窗口已创建 / `_unhandled_key_input` 已启用 / 合成 Ctrl+Q 能开能关 / **`get_global_rect()` 真的落在视口内**；带窗口时再截一张图，无头跳过截图），报告里出 `[DW] result=PASS`
 - `test/scenarios/probe_debug_window_pages.gd` —— 调试窗口的七页与面板能力（页数 = 7 / 日志页有只读文本框 / 合成 Ctrl+2 切页 / 搜索只藏匹配行且清空后还原 / `Log.info()` 能在日志页读到 / 点「加金币」后底部有反馈 / 拖宽 520 与复位 460 / 关掉模组窗口被释放），报告里出 `[DWP] result=PASS`
+
+### 9.1 探针清单总口径（157 个，2026-10-25 实测）
+
+`test/scenarios/` 现有 **157 个 `probe_*.gd`**（另有 6 个 `tool_*.gd` 与少量 `tmp_*` / `boot_*` 工具脚本）。
+探针随任务增减，**权威清单随时用这条取**，不要凭下面这张表猜：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -ListOnly
+```
+
+按主题粗分（只列代表，完整名单见 `-ListOnly`）：
+
+| 主题 | 探针 |
+| --- | --- |
+| 核心玩法 / 种植 | `probe_plant`、`probe_hand`、`probe_gameplay_core`（种→索敌→开火→命中→掉血→离场）、`probe_init`、`probe_util`、`probe_freed_plant`、`probe_reload_plant_cells`、`probe_kill_all_zombie` |
+| 冒险模式 / 进度 | `probe_unlock`、`probe_adventure_round`、`probe_adventure_reward`、`probe_adventure_next_level`、`probe_adventure_drop_source`、`probe_progress_chain`、`probe_level_registry_order`、`probe_puzzle_unlock`、`probe_levels` |
+| 新手教程 | `probe_tutorial`（1-1）、`probe_tutorial_1_2`、`probe_tutorial_1_5` |
+| 夜晚 / 地图 | `probe_night`、`probe_woods_map`、`probe_moonroof_map`、`probe_boss_map`、`probe_level_map_override`、`probe_map`、`probe_map_analysis` |
+| 迷你游戏 | `probe_4_5` / `probe_4_5_play` / `probe_4_5_flow` / `probe_4_5_no_round_save`、`probe_slot_machine`、`probe_pogo_party`、`probe_seed_rain`、`probe_beghouled` / `probe_beghouled_twist`、`probe_bungi_blitz`、`probe_seeing_stars`、`probe_last_stand`、`probe_i_zombie_mode` / `probe_i_zombie_paper_plant`、`probe_zombiquarium` / `probe_zombiquarium_standalone`、`probe_column_mode`、`probe_bowling_debug_mode`、`probe_bowling_redline`、`probe_bobsled_bonanza` |
+| 僵尸 | `probe_zombie_speed`、`probe_zombie_nimble`、`probe_zombie_death_fx`、`probe_zombie_drop_chocolate`、`probe_mini_zombie`、`probe_invisi_ghoul` / `probe_invisi_ghoul_rows`、`probe_show_zombie`、`probe_zomboss_layout` / `probe_zomboss_damage` / `probe_zomboss_ice` / `probe_zomboss_spawn_interval` |
+| 植物 / 子弹 / 伤害 | `probe_sun_producer`、`probe_winter_melon_slow`、`probe_system_plant`、`probe_selectable_plant`、`probe_critical_value`、`probe_bullet_camp`、`probe_portal_combat`、`probe_anim_component`、`probe_animation_frame`、`probe_armor_component` |
+| 关卡 / 草坪设施 / 天气 | `probe_mower_protect`、`probe_rake`、`probe_tombstone_respawn`、`probe_level_progress_bar`、`probe_level_complete_fx`、`probe_wave_points`、`probe_blood_moon`、`probe_rain_lightning` |
+| 卡片 / 商店 / 图鉴 / UI | `probe_card_lock`、`probe_card_candidate_pool`、`probe_card_slot_conveyor`、`probe_store_rules`、`probe_shop_expand`、`probe_almanac_extra_page`、`probe_zombie_card_mod`、`probe_start_menu_layout`、`probe_start_menu_unlock`、`probe_award_screen`、`probe_bg_main`、`probe_console_registry` |
+| 禅境花园 / 道具 | `probe_garden_bg`、`probe_garden_tool_bar`、`probe_garden_tool_save`、`probe_watering_can`、`probe_water_bowl`、`probe_tree_of_wisdom`、`probe_snail_chocolate`、`probe_snail_eat_coin`、`probe_first_aid`、`probe_loot_effects`、`probe_loot_audio_fx`、`probe_first_coin_advice`、`probe_car_key` |
+| 存档 / 系统 | `probe_save_key`、`probe_save_corrupt_guard`、`probe_default_user`、`probe_event_trace`、`probe_ext_script_load` |
+| 调试窗口（模组） | `probe_debug_window_hotkey`、`probe_debug_window_pages` |
+| 联机 | `probe_netplay_session`、`probe_netplay_slot_layout`、`probe_netplay_host_cardslot`、`probe_netplay_pair_host` / `probe_netplay_pair_client`（后两个配 `run_netplay_pair.ps1` 双进程跑） |
+| 模组 | `probe_arknights_mod` / `probe_arknights_elite`、`probe_zhaoxiao_*`（4 个）、`probe_pvz2_install` / `probe_pvz2_pam`、`probe_eco_mod`、`probe_more_armor_mod`、`probe_custom_level_mod` / `probe_custom_level_pkg`、`probe_player_battle_*`（4 个）、`probe_hammer_zombie` / `probe_hammer_spawn_trace`、`probe_glove_unlock`、`probe_mod_page` |
+| DLC 植物 | `probe_dlc_*` 共 17 个（16 株 DLC 植物 + `probe_dlc_card_face` 卡片贴图） |
+| 工具（不是 probe） | `tool_compile_scenarios`（把 `scenarios/*.gd` 逐个 `load()`，补编译门禁的洞）、`tool_semantic_scan`（沿继承链核对裸调用）、`tool_*save_keys`、`tool_tres2gd*` |
 
 ---
 
@@ -445,8 +497,9 @@ Get-Process | Where-Object { $_.ProcessName -like "*godot*" } | Select-Object Id
 > （`2026-10-17_潜伏芹菜做成植物` 已踩过；2026-10-18 再次踩到并被明确要求停手）。
 >
 > 有残留时按这个顺序处理：① 看 `StartTime` 与自己这次跑批的对不对得上；② 是自己留下的 → **等它自己退**
-> （`run_autopilot` 每跑批一份独立 usrdir，正常会 `quit_game()` 退出）；③ 等不到再**请用户关**编辑器 / 游戏窗口，
-> 不要自己动手；④ 确实要并行跑，用 `-UsrDir` 给另一份独立临时目录，而不是杀进程。
+> （`run_autopilot` 每跑批重建一份独立 usrdir，正常会 `quit_game()` 退出）；③ 等不到再**请用户关**编辑器 / 游戏窗口，
+> 不要自己动手；④ 想并行跑批**没有开关可用** —— usrdir 固定在 `%TEMP%\pvz_autopilot\userdir`，
+> 每次启动先删后建，两条批并发会互相删档，**只能串行**。
 >
 > `run_autopilot.ps1` 遇到残留会直接 `result=STALE_PROCESS` / `exit 3` —— **这是要你等、不是要你杀**。
 
@@ -493,12 +546,34 @@ powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -Filter 'pro
 
 # 先看会跑哪些，不启动引擎
 powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -ListOnly
+
+# 带窗口跑批量（能看画面，慢；小批量排查用）
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -Filter 'probe_hand*' -Windowed
+
+# 第一个 FAIL / ERROR 就停（定位回归起点时用）
+powershell -ExecutionPolicy Bypass -File test/run_all_scenarios.ps1 -Filter 'probe_save_*' -StopOnFail
 ```
 
 `run_all_scenarios.ps1` 是**跑批汇总器**，不是新的检查器：它逐个启动真实主场景、读每个探针自己的
 `[XXX] result=PASS|FAIL` 标记，然后打一张汇总表。判定只有四档：PASS / FAIL / DONE（跑完但没断言）/
 ERROR（崩溃、超时或压根没输出 result 行）。**它必须串行** —— `run_autopilot.ps1` 每次都会重建同一个
-重定向用户目录，并发会互相删档。全量 88 个探针约 30~60 分钟，日常用 `-Filter` 跑子集。
+重定向用户目录，并发会互相删档。全量 **157 个探针**（2026-10-25 口径）每个都要启动一次引擎，整轮很慢；
+日常用 `-Filter` 跑子集，`-MaxSeconds` 可改单个探针的看门狗上限（默认 180）。
+
+### 联机专属：双进程实测
+
+单进程探针覆盖不到「主机推事件 ⇒ 发命令 ⇒ 客户端重建」那半段（`rpc()` 没对端时**不本地回调**），
+联机类改动只有这个能验：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File test/run_netplay_pair.ps1
+
+# 保留两侧日志（默认跑完清理）
+powershell -ExecutionPolicy Bypass -File test/run_netplay_pair.ps1 -KeepLogs
+```
+
+起两个 headless 实例（主机 + 客户端）连 localhost，约 4 分钟；客户端每 2 秒把场上视图经**真实命令通道**
+回传主机，主机收到即采样自己的视图并记成一对，避免事后对时间戳。
 
 不通过 `run_autopilot.ps1` 时，等价的打开游戏命令是：
 

@@ -413,6 +413,12 @@ func character_death():
 	swim_box_component._on_owner_is_death()
 	#attack_component.queue_free()
 
+## 死亡动画开始时的钩子：普通僵尸在这里把内臂显示出来（旗帜 / 铁门，见 `zombie_norm.gd`）。
+## 没有内臂的僵尸（ZomBotany 的火炬僵尸 / 磁力菇僵尸等）什么都不做即可。
+## 死亡动画资源的方法轨直接点名本方法，基类不给默认实现时那些僵尸每播一次死亡动画就报一次「方法不存在」。
+func anim_death_start() -> void:
+	pass
+
 ## 僵尸死亡后逐渐透明，最后删除节点
 func _fade_and_remove():
 	var tween = create_tween()  # 自动创建并绑定Tween节点
@@ -432,9 +438,38 @@ func character_death_disappear():
 	hp_component.hp_loss_to_death(false)
 	queue_free()
 
-## 被小推车碾压（表现编排见 ZombieMowerRunUtil）
+## 被小推车碾压：**小推车是一种特殊伤害**（`E_DamageCause.Mower` + 秒杀），走伤害管线。[br]
+## 车体不管是「启动那一下」还是「跑动中撞上」都走这里。[br]
+## 免疫 = 挂 `ComponentImmuneMower`（`DamageModifierComponent` 子类，在 ②-c 修饰器链上整包取消），
+## 角色脚本里**不用**再写「压不动」的特判；被取消时连压扁演出都不播。[br]
+## 表现编排见 `ZombieMowerRunUtil.play_crush()`（那里只负责"怎么难看地散架"，不管血量）。
 func be_mowered_run(lawn_mover:LawnMover):
-	ZombieMowerRunUtil.run(self, lawn_mover)
+	## 先取消亡语：死亡信号在管线里**同步**发出，被车压扁的僵尸不该再触发亡语
+	## （记一份原值：被免疫取消时要放回去，别把"本来就不触发亡语"的僵尸误开）
+	var can_death_language := is_can_death_language
+	is_can_death_language = false
+	var info := DamageInfo.create(
+		self, hp_component.get_all_hp(), ConstDamage.E_DamageMode.Norm,
+		ConstDamage.E_DamageCause.Mower)
+	## 秒杀：不看伤害值，也不看防具的固定吸收（与 `hp_loss_to_death()` 同一口径）
+	info.is_instant_kill = true
+	## 车压过去不掉钱 / 脑袋，也不该响"挨打"音效
+	info.is_drop_on_death = false
+	info.trigger_sfx = false
+	var result := apply_damage(info)
+	if not result.is_applied:
+		## 被修饰器取消 = 压不动（靶子僵尸 / 产脑光墓碑 / 僵王那一类）：
+		## 亡语开关要放回去，否则这只僵尸以后再死也不触发亡语
+		is_can_death_language = can_death_language
+		return
+	ZombieMowerRunUtil.play_crush(self, lawn_mover)
+
+## 能不能被**魅惑僵尸**（僵尸阵营里归植物方的那批）当作攻击目标。[br]
+## 默认 true；「非战斗单位」覆盖成 false —— 对战里的靶子僵尸、产脑光墓碑走这条
+## （它们只当靶子 / 只产脑子，魅惑僵尸不该去啃；见 `mods_builtin/player_battle` 两个子类）。[br]
+## ⚠️ 只挡「僵尸打僵尸」这一条通道：**植物仍然要能打靶子**（击破 3 只判胜），别写成全局无敌。
+func is_targetable_by_hypno_zombie() -> bool:
+	return true
 
 ## 角色在泳池中死亡,泳池死亡动画调用
 func in_water_death_start():

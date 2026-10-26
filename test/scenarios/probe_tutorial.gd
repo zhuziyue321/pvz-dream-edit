@@ -141,9 +141,9 @@ func run(a) -> void:
 	_check(a, "阳光达到 100", battle.sun_value >= 100, str(battle.sun_value))
 	## 带 \n 的长提示：提示条要撑到够放（不够会裁字），又不能撑成几百高盖住草坪
 	## 具体的行数 / 高度估算在 TutorialAdviceUI._measure_advice_height 里
-	## 提示条贴屏幕底部、宽度接近整屏，长句在 26 号字下最多两行：够放即可（下限 = 最小条高 64）
+	## 提示条贴屏幕底部、通栏，长句在 28 号字下最多两行：够放即可（下限 = 最小条高 55，原版 HINT_LONG 同值）
 	var long_height: float = _hint().get_advice_panel_size().y if _hint() != null else 0.0
-	_check(a, "多行提示时提示条高度合理", long_height >= 64.0 and long_height <= 200.0, str(long_height))
+	_check(a, "多行提示时提示条高度合理", long_height >= 55.0 and long_height <= 200.0, str(long_height))
 
 	# ------------------------------------------------ STEP5 没动手才补「再种一棵」
 	a.log("STEP5 说完「阳光够了」先等玩家自己动手")

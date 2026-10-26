@@ -1,0 +1,90 @@
+[gd_scene load_steps=7 format=3]
+
+; 靶子僵尸（DLC 的 Zombie_target）—— 模组「玩家对战」提供的热注册僵尸
+;
+; 玩法：对战里僵尸方每行摆一只当靶子（站着不动），植物方击破 3 只即胜 —— 见
+;   `levels/player_battle_day.gd`。
+;
+; 结构照 `../../more_armor` 那三只矿石桶僵尸：本体 `zombie_base.tscn`（组件齐全）+ 自己的脚本；
+; 差别只有**动画**：DLC 动画是转换器逐帧烘焙的 Sprite 组，没有 AnimationTree，
+; 所以把 `AnimComponent` 换成 `AnimComponentEmpty`，动画由脚本直接播 `AnimLib`。
+;
+; 摆放：动画画布坐标里脚底中心 ≈ (66, 130)（`Zombie_outerleg_foot` 首帧左上 (44.6, 109.3) +
+;   42×21 的尺寸 → 底边中心 (65.6, 130.3)），所以 `BodyCorrect` 设 -(脚底中心) = (-66, -130)，
+;   让脚底正好落在角色原点。靶子（Target）在身体左侧伸出，属于形象的一部分，不额外偏移。
+;   ⚠️ 这是按首帧坐标算的，实测若浮空 / 陷地，就改这一行的 position（正负几像素的事）。
+;
+; 灰烬：DLC 没有灰烬动画，`CharredComponent` 换回基类（只把本体 reparent 出去），
+;   被樱桃炸弹 / 火爆辣椒烧死时不至于去 `$ZombieCharred/CharredCorrect/AnimLib` 取空节点。
+;
+; 血量：**200**（覆盖 `HpComponent.max_hp`，本体默认 270）—— 来源：DLC Edition wiki
+;   `https://pvz-dlc-edition.fandom.com/wiki/Target_Zombie`：「Toughness 200」，
+;   受创在 60 / 110 / 160 三档换外观，累计 200 死（wiki 的 Overview 段）。
+;   ⚠️ 同一页的图鉴文案写「Toughness: low」，信息框与 Overview 都是 200 —— 取 200。
+;
+; 受创换外观（三档）：**换手里那块招牌的贴图** —— DLC 的 `TARGET_1/2/3`
+;   （= `reanim/ZombieTarget/zombie_target_damage01~03.png`，见
+;   `PVZ_DLC/_unpacked/properties/resources.xml` 的 `<Image id="TARGET_1..3">`），
+;   三档阈值 = **累计受创 60 / 110 / 160** ⇒ 剩余 140 / 90 / 40 血，200 血打完死。
+;   走本体的 `HpStageChangeComponent`（`boundary_value_hp` 写的是**剩余血量**，
+;   见 `judge_body_change`）：四个临界值 [140, 90, 40, 0]，最后一档 0 = 死亡，
+;   每个 `ResourceBodyChange` 只做「亮出这一档的招牌 / 收掉上一档」。
+;   ⚠️ 换的是 `Target` 底下的**覆盖精灵**（`TargetDamage1~3`，加在动画场景里），
+;   不是 `Target.texture` —— idle 段会重播并把 `Target:texture` 写回完好那张。
+;   ⚠️ `Zombie_target_body2.png`（身上带伤）**没接**：DLC 本体没有引用它
+;   （`resources.xml` 里只有 TARGET_1..3，exe 里也搜不到 `Zombie_target_body2`），
+;   属于素材包里的残留，不做无出处的换装。
+
+[ext_resource type="PackedScene" path="res://src/entities/character/zombie/zombie_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://mods_builtin/player_battle/targetzombie/target_zombie.gd" id="2_script"]
+[ext_resource type="PackedScene" path="res://mods_builtin/player_battle/animation/character/zombie/ZombieTarget/Zombie_target.tscn" id="3_anim"]
+[ext_resource type="Script" path="res://src/entities/character/components/anim_component/component_anim_empty.gd" id="4_animempty"]
+[ext_resource type="Script" path="res://src/entities/character/components/charred_component/component_charred.gd" id="5_charred"]
+[ext_resource type="Script" path="res://data/character/resource_body_change.gd" id="6_bodychange"]
+[ext_resource type="Script" path="res://src/entities/character/components/damage_modifier_component/component_immune_mower.gd" id="7_immmower"]
+
+; 三档受创：每个只「亮出自己的招牌 + 收掉上一档」（第一档没有上一档）
+[sub_resource type="Resource" id="Resource_target_damage1"]
+script = ExtResource("6_bodychange")
+sprite_appear = Array[NodePath]([NodePath("../Body/BodyCorrect/ZombieTargetAnim/Target/TargetDamage1")])
+
+[sub_resource type="Resource" id="Resource_target_damage2"]
+script = ExtResource("6_bodychange")
+sprite_appear = Array[NodePath]([NodePath("../Body/BodyCorrect/ZombieTargetAnim/Target/TargetDamage2")])
+sprite_disappear = Array[NodePath]([NodePath("../Body/BodyCorrect/ZombieTargetAnim/Target/TargetDamage1")])
+
+[sub_resource type="Resource" id="Resource_target_damage3"]
+script = ExtResource("6_bodychange")
+sprite_appear = Array[NodePath]([NodePath("../Body/BodyCorrect/ZombieTargetAnim/Target/TargetDamage3")])
+sprite_disappear = Array[NodePath]([NodePath("../Body/BodyCorrect/ZombieTargetAnim/Target/TargetDamage2")])
+
+[node name="DlcTargetZombie" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+zombie_type = &"pb_target_zombie"
+
+[node name="BodyCorrect" parent="Body" index="0"]
+unique_name_in_owner = true
+position = Vector2(-66, -130)
+
+[node name="ZombieTargetAnim" parent="Body/BodyCorrect" instance=ExtResource("3_anim")]
+
+[node name="AnimComponent" parent="." index="2"]
+script = ExtResource("4_animempty")
+
+[node name="HpComponent" parent="." index="4"]
+max_hp = 200
+
+; 受创三档（剩余血量 140 / 90 / 40，末项 0 = 死亡线 —— 组件会把最后一个临界值当 death_hp，
+; 写 40 的话僵尸会在还剩 40 血时倒下）：每档亮一块更破的招牌
+[node name="HpStageChangeComponent" parent="." index="3"]
+boundary_value_hp = Array[int]([140, 90, 40, 0])
+body_change = Array[ExtResource("6_bodychange")]([SubResource("Resource_target_damage1"), SubResource("Resource_target_damage2"), SubResource("Resource_target_damage3"), null])
+
+[node name="CharredComponent" parent="." index="5"]
+script = ExtResource("5_charred")
+
+; 免疫小推车（2026-10-26）：小推车现在是一种**特殊伤害**（`E_DamageCause.Mower` + 秒杀），
+; 由这个修饰器组件在伤害管线里整包取消 —— 车体开过去一滴血不掉，也不播压扁演出。
+; 之前是脚本里覆盖 `be_mowered_run()` 为空，现在统一走「免疫一类伤害」。
+[node name="ImmuneMowerComponent" type="Node2D" parent="."]
+script = ExtResource("7_immmower")

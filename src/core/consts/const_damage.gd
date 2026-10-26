@@ -68,9 +68,13 @@ enum E_DamageCause {
 	Freeze,		## 冰冻附带伤害（寒冰菇：伤害是主体，冰冻是挂在这次伤害上的控制）
 	Burn,		## 灼烧（辣椒烧一整行）
 	Drain,		## 残血流失（临界值组件的自动掉血，不是"被打"）
-	Crush,		## 碾压 / 压扁（小推车 / 倭瓜 / 钉耙这一类"直接压死"）
+	Crush,		## 碾压 / 压扁（倭瓜 / 钉耙这一类"直接压死"；小推车另有 `Mower`，见末尾）
 	Death,		## 直接清空血（铲子铲除 / 死亡消失 / 关卡脚本强制致死，见 `HpComponent.hp_loss_to_death`）
 	Script,		## 关卡脚本 / 其它一次性机制（硬约束 §1-8：一关专属机制留在关卡脚本里）
+	Mower,		## 小推车 / 屋顶清洁车（2026-10-26 起车体不再直接改血，而是由
+				## `Zombie000Base.be_mowered_run()` 包成一次**秒杀伤害**走管线）。
+				## 免疫它的单位挂 `ComponentImmuneMower`（`DamageModifierComponent` 子类）即可。
+				## ⚠️ 加在**末尾**：本枚举值会随 `DamageInfo` 进日志 / 联机包，中间插一项会让存量对不上。
 }
 
 
